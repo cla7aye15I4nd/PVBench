@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/pngimage.cpp b/src/pngimage.cpp
+index 4ccec39d8..745d04bb8 100644
+--- a/src/pngimage.cpp
++++ b/src/pngimage.cpp
+@@ -467,6 +467,10 @@ namespace Exiv2 {
+                             break;
+                          }
+                     }
++                    // Ensure we found a null terminator and have a valid profile name length
++                    if (iccOffset == 0 || (iccOffset > 0 && chunkData.pData_[iccOffset-1] != 0x00)) {
++                        throw Error(kerCorruptedMetadata);
++                    }
+                     profileName_ = std::string(reinterpret_cast<char *>(chunkData.pData_), iccOffset-1);
+                     ++iccOffset; // +1 = 'compressed' flag
+                     enforce(iccOffset <= chunkLength, Exiv2::kerCorruptedMetadata);

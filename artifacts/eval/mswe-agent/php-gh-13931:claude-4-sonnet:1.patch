@@ -1,0 +1,46 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_opcode.c b/Zend/zend_opcode.c
+index 97110cf54c0..b89b2880250 100644
+--- a/Zend/zend_opcode.c
++++ b/Zend/zend_opcode.c
+@@ -655,6 +655,10 @@ static void zend_check_finally_breakout(zend_op_array *op_array, uint32_t op_num
+ {
+ 	int i;
+ 
++	if (!op_array->try_catch_array) {
++		return;
++	}
++
+ 	for (i = 0; i < op_array->last_try_catch; i++) {
+ 		if ((op_num < op_array->try_catch_array[i].finally_op ||
+ 					op_num >= op_array->try_catch_array[i].finally_end)
+@@ -1071,8 +1075,10 @@ ZEND_API void pass_two(zend_op_array *op_array)
+ 				}
+ 				break;
+ 			case ZEND_FAST_CALL:
+-				opline->op1.opline_num = op_array->try_catch_array[opline->op1.num].finally_op;
+-				ZEND_PASS_TWO_UPDATE_JMP_TARGET(op_array, opline, opline->op1);
++				if (op_array->try_catch_array) {
++					opline->op1.opline_num = op_array->try_catch_array[opline->op1.num].finally_op;
++					ZEND_PASS_TWO_UPDATE_JMP_TARGET(op_array, opline, opline->op1);
++				}
+ 				break;
+ 			case ZEND_BRK:
+ 			case ZEND_CONT:

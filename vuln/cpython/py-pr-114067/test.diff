@@ -1,0 +1,12 @@
+diff --git a/Lib/test/test_int.py b/Lib/test/test_int.py
+index 5545ee39d8e..0bf55facad9 100644
+--- a/Lib/test/test_int.py
++++ b/Lib/test/test_int.py
+@@ -90,6 +90,7 @@ def test_basic(self):
+ 
+ 
+         self.assertRaises(TypeError, int, 1, 12)
++        self.assertRaises(TypeError, int, "10", 2, 1)
+ 
+         self.assertEqual(int('0o123', 0), 83)
+         self.assertEqual(int('0x123', 16), 291)

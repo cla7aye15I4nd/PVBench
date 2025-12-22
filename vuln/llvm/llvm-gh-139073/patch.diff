@@ -1,0 +1,58 @@
+diff --git a/clang/docs/ReleaseNotes.rst b/clang/docs/ReleaseNotes.rst
+index 1f0dbe565db6..6c32a7e9a561 100644
+--- a/clang/docs/ReleaseNotes.rst
++++ b/clang/docs/ReleaseNotes.rst
+@@ -901,6 +901,8 @@ OpenMP Support
+ - Added support 'no_openmp_constructs' assumption clause.
+ - Added support for 'self_maps' in map and requirement clause.
+ - Added support for 'omp stripe' directive.
++- Fixed a crashing bug with ``omp tile sizes`` if the argument to ``sizes`` was
++  an invalid expression. (#GH139073)
+ 
+ Improvements
+ ^^^^^^^^^^^^
+diff --git a/clang/lib/Sema/SemaOpenMP.cpp b/clang/lib/Sema/SemaOpenMP.cpp
+index 835dba22a858..2534822b72f8 100644
+--- a/clang/lib/Sema/SemaOpenMP.cpp
++++ b/clang/lib/Sema/SemaOpenMP.cpp
+@@ -14328,6 +14328,10 @@ StmtResult SemaOpenMP::ActOnOpenMPTileDirective(ArrayRef<OMPClause *> Clauses,
+   auto MakeDimTileSize = [&SemaRef = this->SemaRef, &CopyTransformer, &Context,
+                           SizesClause, CurScope](int I) -> Expr * {
+     Expr *DimTileSizeExpr = SizesClause->getSizesRefs()[I];
++
++    if (DimTileSizeExpr->containsErrors())
++      return nullptr;
++
+     if (isa<ConstantExpr>(DimTileSizeExpr))
+       return AssertSuccess(CopyTransformer.TransformExpr(DimTileSizeExpr));
+ 
+@@ -14397,10 +14401,13 @@ StmtResult SemaOpenMP::ActOnOpenMPTileDirective(ArrayRef<OMPClause *> Clauses,
+ 
+     // For cond-expression:
+     //   .tile.iv < min(.floor.iv + DimTileSize, NumIterations)
++    Expr *DimTileSize = MakeDimTileSize(I);
++    if (!DimTileSize)
++      return StmtError();
+     ExprResult EndOfTile = SemaRef.BuildBinOp(
+         CurScope, LoopHelper.Cond->getExprLoc(), BO_Add,
+         makeFloorIVRef(SemaRef, FloorIndVars, I, IVTy, OrigCntVar),
+-        MakeDimTileSize(I));
++        DimTileSize);
+     if (!EndOfTile.isUsable())
+       return StmtError();
+     ExprResult IsPartialTile =
+@@ -14482,10 +14489,13 @@ StmtResult SemaOpenMP::ActOnOpenMPTileDirective(ArrayRef<OMPClause *> Clauses,
+       return StmtError();
+ 
+     // For incr-statement: .floor.iv += DimTileSize
++    Expr *DimTileSize = MakeDimTileSize(I);
++    if (!DimTileSize)
++      return StmtError();
+     ExprResult IncrStmt = SemaRef.BuildBinOp(
+         CurScope, LoopHelper.Inc->getExprLoc(), BO_AddAssign,
+         makeFloorIVRef(SemaRef, FloorIndVars, I, IVTy, OrigCntVar),
+-        MakeDimTileSize(I));
++        DimTileSize);
+     if (!IncrStmt.isUsable())
+       return StmtError();
+ 

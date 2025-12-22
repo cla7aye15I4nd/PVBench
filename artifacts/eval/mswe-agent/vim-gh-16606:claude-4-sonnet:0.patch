@@ -1,0 +1,65 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0d38d901d..9f2f930da 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -121,3 +121,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/ex_docmd.c b/src/ex_docmd.c
+index 443883490..bb5c446bd 100644
+--- a/src/ex_docmd.c
++++ b/src/ex_docmd.c
+@@ -1021,7 +1021,7 @@ do_cmdline(
+ 	    }
+ 	}
+ 
+-	if ((p_verbose >= 15 && SOURCING_NAME != NULL) || p_verbose >= 16)
++	if ((p_verbose >= 15 && HAVE_SOURCING_INFO) || p_verbose >= 16)
+ 	    msg_verbose_cmd(SOURCING_LNUM, cmdline_copy);
+ 
+ 	/*
+@@ -9930,7 +9930,7 @@ eval_vars(
+ 		break;
+ 
+ 	case SPEC_SLNUM:	// line in file for ":so" command
+-		if (SOURCING_NAME == NULL || SOURCING_LNUM == 0)
++		if (!HAVE_SOURCING_INFO || SOURCING_LNUM == 0)
+ 		{
+ 		    *errormsg = _(e_no_line_number_to_use_for_slnum);
+ 		    return NULL;
+diff --git a/src/message.c b/src/message.c
+index 24984123b..dc09b688f 100644
+--- a/src/message.c
++++ b/src/message.c
+@@ -518,7 +518,7 @@ get_emsg_lnum(void)
+ 
+     // lnum is 0 when executing a command from the command line
+     // argument, we don't want a line number then
+-    if (SOURCING_NAME != NULL
++    if (HAVE_SOURCING_INFO
+ 	    && (other_sourcing_name() || SOURCING_LNUM != last_sourcing_lnum)
+ 	    && SOURCING_LNUM != 0)
+     {
+@@ -564,10 +564,10 @@ msg_source(int attr)
+     }
+ 
+     // remember the last sourcing name printed, also when it's empty
+-    if (SOURCING_NAME == NULL || other_sourcing_name())
++    if (!HAVE_SOURCING_INFO || other_sourcing_name())
+     {
+ 	VIM_CLEAR(last_sourcing_name);
+-	if (SOURCING_NAME != NULL)
++	if (HAVE_SOURCING_INFO)
+ 	    last_sourcing_name = vim_strsave(SOURCING_NAME);
+     }
+     --no_wait_return;

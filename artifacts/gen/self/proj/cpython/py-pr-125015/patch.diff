@@ -1,0 +1,24 @@
+diff --git a/Parser/asdl_c.py b/Parser/asdl_c.py
+index ab5fd229cc4..f50c28afcfe 100755
+--- a/Parser/asdl_c.py
++++ b/Parser/asdl_c.py
+@@ -1608,7 +1608,6 @@ def visitModule(self, mod):
+ 
+         if (!value_repr) {
+             Py_DECREF(name);
+-            Py_DECREF(value);
+             goto error;
+         }
+ 
+diff --git a/Python/Python-ast.c b/Python/Python-ast.c
+index 4a58c0973d1..89c52b9dc73 100644
+--- a/Python/Python-ast.c
++++ b/Python/Python-ast.c
+@@ -5809,7 +5809,6 @@ ast_repr_max_depth(AST_object *self, int depth)
+ 
+         if (!value_repr) {
+             Py_DECREF(name);
+-            Py_DECREF(value);
+             goto error;
+         }
+ 

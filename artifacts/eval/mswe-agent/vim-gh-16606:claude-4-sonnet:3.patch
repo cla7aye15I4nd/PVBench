@@ -1,0 +1,49 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0d38d901d..9f2f930da 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -121,3 +121,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/message.c b/src/message.c
+index 24984123b..7d1229a1f 100644
+--- a/src/message.c
++++ b/src/message.c
+@@ -518,7 +518,7 @@ get_emsg_lnum(void)
+ 
+     // lnum is 0 when executing a command from the command line
+     // argument, we don't want a line number then
+-    if (SOURCING_NAME != NULL
++    if (HAVE_SOURCING_INFO
+ 	    && (other_sourcing_name() || SOURCING_LNUM != last_sourcing_lnum)
+ 	    && SOURCING_LNUM != 0)
+     {
+@@ -560,14 +560,15 @@ msg_source(int attr)
+     {
+ 	msg_attr((char *)p, HL_ATTR(HLF_N));
+ 	vim_free(p);
+-	last_sourcing_lnum = SOURCING_LNUM;  // only once for each line
++	if (HAVE_SOURCING_INFO)
++	    last_sourcing_lnum = SOURCING_LNUM;  // only once for each line
+     }
+ 
+     // remember the last sourcing name printed, also when it's empty
+-    if (SOURCING_NAME == NULL || other_sourcing_name())
++    if (!HAVE_SOURCING_INFO || other_sourcing_name())
+     {
+ 	VIM_CLEAR(last_sourcing_name);
+-	if (SOURCING_NAME != NULL)
++	if (HAVE_SOURCING_INFO)
+ 	    last_sourcing_name = vim_strsave(SOURCING_NAME);
+     }
+     --no_wait_return;

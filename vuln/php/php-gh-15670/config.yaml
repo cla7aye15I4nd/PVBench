@@ -1,0 +1,14 @@
+id: php-gh-15670
+project: php
+sanitizer: LeakAddressSanitizer
+type: Use of Uninitialized Variable
+trigger_commit: 73b7993b0dbe92d351fe38a78b2e8892c89b801f
+binary: php
+patch:
+  commit: 82c504fa9c36bed95dc28e79b2374889d8a952e7
+  date: '2024-08-31T12:13:21+02:00'
+reference:
+- https://github.com/php/php-src.git
+- https://github.com/php/php-src/issues/15670
+- https://github.com/php/php-src/commit/73b7993b0dbe92d351fe38a78b2e8892c89b801f
+- https://github.com/php/php-src/commit/82c504fa9c36bed95dc28e79b2374889d8a952e7

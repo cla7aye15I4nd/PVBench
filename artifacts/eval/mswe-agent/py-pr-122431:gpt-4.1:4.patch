@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/readline.c b/Modules/readline.c
+index 35655c70a46..3f67f336bb5 100644
+--- a/Modules/readline.c
++++ b/Modules/readline.c
+@@ -354,6 +354,10 @@ readline_append_history_file_impl(PyObject *module, int nelements,
+     PyObject *filename_bytes;
+     const char *filename;
+     int err;
++    if (nelements < 0 || nelements > INT_MAX/2) {
++        PyErr_SetString(PyExc_ValueError, "nelements out of valid range");
++        return NULL;
++    }
+     if (filename_obj != Py_None) {
+         if (!PyUnicode_FSConverter(filename_obj, &filename_bytes))
+             return NULL;

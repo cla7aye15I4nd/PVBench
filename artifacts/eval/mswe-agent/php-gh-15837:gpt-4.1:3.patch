@@ -1,0 +1,44 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/libxml/php_libxml.h b/ext/libxml/php_libxml.h
+index 8b800ae27d9..b1e41850d05 100644
+--- a/ext/libxml/php_libxml.h
++++ b/ext/libxml/php_libxml.h
+@@ -185,3 +185,4 @@ static zend_always_inline void php_libxml_sanitize_parse_ctxt_options(xmlParserC
+ #define phpext_libxml_ptr libxml_module_ptr
+ 
+ #endif /* PHP_LIBXML_H */
++
+diff --git a/ext/simplexml/simplexml.c b/ext/simplexml/simplexml.c
+index 6bcb9edcffa..656f15a8617 100644
+--- a/ext/simplexml/simplexml.c
++++ b/ext/simplexml/simplexml.c
+@@ -2550,11 +2550,8 @@ static void php_sxe_iterator_current_key(zend_object_iterator *iter, zval *key)
+ 	php_sxe_object *intern = Z_SXEOBJ_P(curobj);
+ 
+ 	xmlNodePtr curnode = NULL;
+-	if (intern != NULL && intern->node != NULL) {
++	if (intern != NULL && intern->node != NULL && ((php_libxml_node_ptr *)intern->node)->node != NULL) {
+ 		curnode = (xmlNodePtr)((php_libxml_node_ptr *)intern->node)->node;
+-	}
+-
+-	if (curnode) {
+ 		ZVAL_STRINGL(key, (char *) curnode->name, xmlStrlen(curnode->name));
+ 	} else {
+ 		ZVAL_NULL(key);

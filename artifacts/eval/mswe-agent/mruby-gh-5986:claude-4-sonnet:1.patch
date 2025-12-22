@@ -1,0 +1,65 @@
+
+diff --git a/.gitignore b/.gitignore
+index c2918f31a..6bf18697a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -32,3 +32,13 @@ compile_flags.txt
+ cscope.files
+ cscope.out
+ tags
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/string.c b/src/string.c
+index 1bd3f6f8f..0b357c7b0 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2950,10 +2950,18 @@ str_bytesplice(mrb_state *mrb, mrb_value str, mrb_int idx1, mrb_int len1, mrb_va
+   if (RSTR_LEN(s) < idx1 || RSTRING_LEN(replace) < idx2) {
+     mrb_raise(mrb, E_INDEX_ERROR, "index out of string");
+   }
+-  if (RSTR_LEN(s) <= idx1+len1) {
++  if (len1 > 0 && idx1 > MRB_INT_MAX - len1) {
++    /* Prevent integer overflow in idx1+len1 */
+     len1 = RSTR_LEN(s) - idx1;
+   }
+-  if (RSTRING_LEN(replace) <= idx2+len2) {
++  else if (RSTR_LEN(s) <= idx1+len1) {
++    len1 = RSTR_LEN(s) - idx1;
++  }
++  if (len2 > 0 && idx2 > MRB_INT_MAX - len2) {
++    /* Prevent integer overflow in idx2+len2 */
++    len2 = RSTRING_LEN(replace) - idx2;
++  }
++  else if (RSTRING_LEN(replace) <= idx2+len2) {
+     len2 = RSTRING_LEN(replace) - idx2;
+   }
+   if (len2 == 0) return str;
+@@ -2961,14 +2969,18 @@ str_bytesplice(mrb_state *mrb, mrb_value str, mrb_int idx1, mrb_int len1, mrb_va
+   if (len1 >= len2) {
+     memmove(RSTR_PTR(s)+idx1, RSTRING_PTR(replace)+idx2, len2);
+     if (len1 > len2) {
+-      memmove(RSTR_PTR(s)+idx1+len2, RSTR_PTR(s)+idx1+len1, RSTR_LEN(s)-(idx1+len1));
++      if (idx1 <= MRB_INT_MAX - len1) {
++        memmove(RSTR_PTR(s)+idx1+len2, RSTR_PTR(s)+idx1+len1, RSTR_LEN(s)-(idx1+len1));
++      }
+       RSTR_SET_LEN(s, RSTR_LEN(s)-(len1-len2));
+     }
+   }
+   else { /* len1 < len2 */
+     mrb_int slen = RSTR_LEN(s);
+     mrb_str_resize(mrb, str, slen+len2-len1);
+-    memmove(RSTR_PTR(s)+idx1+len2, RSTR_PTR(s)+idx1+len1, slen-(idx1+len1));
++    if (idx1 <= MRB_INT_MAX - len1) {
++      memmove(RSTR_PTR(s)+idx1+len2, RSTR_PTR(s)+idx1+len1, slen-(idx1+len1));
++    }
+     memmove(RSTR_PTR(s)+idx1, RSTRING_PTR(replace)+idx2, len2);
+   }
+   return str;

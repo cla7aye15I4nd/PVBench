@@ -1,0 +1,28 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/Python-ast.c b/Python/Python-ast.c
+index 38d74b48d23..2a3298c49cf 100644
+--- a/Python/Python-ast.c
++++ b/Python/Python-ast.c
+@@ -5130,7 +5130,7 @@ ast_type_init(PyObject *self, PyObject *args, PyObject *kw)
+     if (kw) {
+         i = 0;  /* needed by PyDict_Next */
+         while (PyDict_Next(kw, &i, &key, &value)) {
+-            int contains = PySequence_Contains(fields, key);
++            int contains = fields ? PySequence_Contains(fields, key) : 0;
+             if (contains == -1) {
+                 res = -1;
+                 goto cleanup;

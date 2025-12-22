@@ -1,0 +1,49 @@
+
+diff --git a/.gclient b/.gclient
+new file mode 100644
+index 00000000000..83f3684c275
+--- /dev/null
++++ b/.gclient
+@@ -0,0 +1 @@
++solutions = [{"url": "https://chromium.googlesource.com/v8/v8.git", "managed": False, "name": "v8"}]
+\ No newline at end of file
+diff --git a/.gitignore b/.gitignore
+index 075446de1e1..7e0cadd6054 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -122,3 +122,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 530a249adde..f3200fa3e25 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -2686,12 +2686,12 @@ void Scope::AllocateScopeInfosRecursively(
+   MaybeHandle<ScopeInfo> next_outer_scope = outer_scope;
+ 
+   auto it = scope_infos_to_reuse.find(UniqueIdInScript());
++
+   if (it != scope_infos_to_reuse.end()) {
+     scope_info_ = it->second;
+-    CHECK(NeedsContext());
+     // The ScopeInfo chain mirrors the context chain, so we only link to the
+     // next outer scope that needs a context.
+-    next_outer_scope = scope_info_;
++    if (NeedsContext()) next_outer_scope = scope_info_;
+     DCHECK(!scope_info_.is_null());
+     DCHECK(!is_hidden_catch_scope());
+     CHECK_EQ(scope_info_->scope_type(), scope_type_);
+diff --git a/test_fix b/test_fix
+new file mode 100755
+index 00000000000..654ea0cf01b
+Binary files /dev/null and b/test_fix differ

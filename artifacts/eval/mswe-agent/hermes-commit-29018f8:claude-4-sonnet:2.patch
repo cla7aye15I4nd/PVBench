@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index 24208ddbb..e3bfbe6e6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -31,3 +31,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ # VS Code and Visual Studio
+ .vs
+ .vscode
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/AST/ESTree.h b/include/hermes/AST/ESTree.h
+index 29bd16b69..3b662134e 100644
+--- a/include/hermes/AST/ESTree.h
++++ b/include/hermes/AST/ESTree.h
+@@ -947,6 +947,9 @@ constexpr unsigned MAX_NESTED_ASSIGNMENTS = 30000;
+ /// non-recursively, so this can be very large, but we don't want to let it
+ /// consume all our memory.
+ constexpr unsigned MAX_NESTED_BINARY = 30000;
++/// An arbitrary limit to nested conditional expressions. We handle them
++/// recursively, so this needs to be smaller to avoid stack overflow.
++constexpr unsigned MAX_NESTED_CONDITIONALS = 1000;
+ 
+ /// Check if an AST node is of the specified type and its `_operator`
+ /// attribute is within the set of allowed operators.

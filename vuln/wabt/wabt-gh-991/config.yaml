@@ -1,0 +1,14 @@
+id: wabt-gh-991
+project: wabt
+sanitizer: AddressSanitizer
+type: Integer Overflow
+binary: wasm-objdump
+trigger_commit: 943164db9bc1147a856dc202f177cf32b64231b7
+patch:
+  commit: fb7e8666afb76307bb41d5067c8c85754120ec1f
+  date: '2019-01-07T15:40:27-08:00'
+reference:
+- https://github.com/WebAssembly/wabt
+- https://github.com/WebAssembly/wabt/issues/991
+- https://github.com/WebAssembly/wabt/commit/943164db9bc1147a856dc202f177cf32b64231b7
+- https://github.com/WebAssembly/wabt/commit/fb7e8666afb76307bb41d5067c8c85754120ec1f

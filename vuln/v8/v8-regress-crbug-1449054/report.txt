@@ -1,0 +1,30 @@
+#
+# Fatal error in ../../src/ast/scopes.h, line 1028
+# Debug check failed: (receiver_) != nullptr.
+#
+#
+#
+#FailureMessage Object: 0x7ff2025c4c60
+==== C stack trace ===============================
+
+    out/debug_asan/d8(backtrace+0x57) [0x5576de196347]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x5576e3f397a3]
+    out/debug_asan/d8(+0x815747a) [0x5576e3f3747a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x26f) [0x5576e3ef5c3f]
+    out/debug_asan/d8(+0x8114bcf) [0x5576e3ef4bcf]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::UseThis()+0x294) [0x5576e01aed44]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParsePrimaryExpression()+0xbea) [0x5576e01a20fa]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseBinaryExpression(int)+0x2a0) [0x5576e019aa80]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseAssignmentExpressionCoverGrammar()+0x34d) [0x5576e01945fd]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseProperty(v8::internal::ParserBase<v8::internal::Parser>::ParsePropertyInfo*)+0x156e) [0x5576e01b764e]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseClassPropertyDefinition(v8::internal::ParserBase<v8::internal::Parser>::ClassInfo*, v8::internal::ParserBase<v8::internal::Parser>::ParsePropertyInfo*, bool)+0x31d) [0x5576e01bfd0d]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseClassLiteral(v8::internal::Scope*, v8::internal::AstRawString const*, v8::internal::Scanner::Location, bool, int)+0x11db) [0x5576e01bd18b]
+    out/debug_asan/d8(v8::internal::Parser::ParseClassForMemberInitialization(v8::internal::Isolate*, v8::internal::MaybeHandle<v8::internal::ScopeInfo>, v8::internal::FunctionKind, int, int, int)+0x730) [0x5576e01516f0]
+    out/debug_asan/d8(v8::internal::Parser::ParseFunction(v8::internal::Isolate*, v8::internal::ParseInfo*, v8::internal::Handle<v8::internal::SharedFunctionInfo>)+0xbf2) [0x5576e0147ff2]
+    out/debug_asan/d8(v8::internal::parsing::ParseFunction(v8::internal::ParseInfo*, v8::internal::Handle<v8::internal::SharedFunctionInfo>, v8::internal::Isolate*, v8::internal::parsing::ReportStatisticsMode)+0x394) [0x5576e01ed054]
+    out/debug_asan/d8(v8::internal::parsing::ParseAny(v8::internal::ParseInfo*, v8::internal::Handle<v8::internal::SharedFunctionInfo>, v8::internal::Isolate*, v8::internal::parsing::ReportStatisticsMode)+0xf3) [0x5576e01ed343]
+    out/debug_asan/d8(+0x30b9a12) [0x5576dee99a12]
+    out/debug_asan/d8(v8::internal::ErrorUtils::NewCalledNonCallableError(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Object>)+0x102) [0x5576dee9c002]
+    out/debug_asan/d8(+0x47f0777) [0x5576e05d0777]
+    out/debug_asan/d8(v8::internal::Runtime_ThrowCalledNonCallable(int, unsigned long*, v8::internal::Isolate*)+0x167) [0x5576e05cfc87]
+    out/debug_asan/d8(+0x783433d) [0x5576e361433d]

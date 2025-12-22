@@ -1,0 +1,60 @@
+==2317==ERROR: AddressSanitizer: heap-use-after-free on address 0x5020000012f0 at pc 0x77d2500e0c85 bp 0x7ffd7e94eeb0 sp 0x7ffd7e94eea8
+READ of size 1 at 0x5020000012f0 thread T0
+    #0 0x77d2500e0c84 in pcpp::GtpV1Layer::addExtension(unsigned char, unsigned short) /tmp/pcap-gh-1711/build/Packet++/src/GtpLayer.cpp:418:32
+    #1 0x5ddfca4f0d56 in main /tmp/pcap-gh-1711/build/poc.cpp:11:15
+    #2 0x77d24f90f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #3 0x77d24f90f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #4 0x5ddfca415394 in _start (/tmp/pcap-gh-1711/build/poc+0x2c394) (BuildId: 0fe5be6d92bb39ffcc9f047a5de4561ef42e9e75)
+
+0x5020000012f0 is located 0 bytes inside of 12-byte region [0x5020000012f0,0x5020000012fc)
+freed by thread T0 here:
+    #0 0x5ddfca4ef181 in operator delete[](void*) (/tmp/pcap-gh-1711/build/poc+0x106181) (BuildId: 0fe5be6d92bb39ffcc9f047a5de4561ef42e9e75)
+    #1 0x77d2501658e8 in pcpp::Layer::extendLayer(int, unsigned long) /tmp/pcap-gh-1711/build/Packet++/src/Layer.cpp:79:4
+    #2 0x77d2500e0a78 in pcpp::GtpV1Layer::addExtension(unsigned char, unsigned short) /tmp/pcap-gh-1711/build/Packet++/src/GtpLayer.cpp:403:8
+    #3 0x5ddfca4f0d56 in main /tmp/pcap-gh-1711/build/poc.cpp:11:15
+    #4 0x77d24f90f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x77d24f90f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x5ddfca415394 in _start (/tmp/pcap-gh-1711/build/poc+0x2c394) (BuildId: 0fe5be6d92bb39ffcc9f047a5de4561ef42e9e75)
+
+previously allocated by thread T0 here:
+    #0 0x5ddfca4ee921 in operator new[](unsigned long) (/tmp/pcap-gh-1711/build/poc+0x105921) (BuildId: 0fe5be6d92bb39ffcc9f047a5de4561ef42e9e75)
+    #1 0x77d2500dd96e in pcpp::GtpV1Layer::init(pcpp::GtpV1MessageType, unsigned int, bool, unsigned short, bool, unsigned char) /tmp/pcap-gh-1711/build/Packet++/src/GtpLayer.cpp:173:12
+    #2 0x77d2500ddf51 in pcpp::GtpV1Layer::GtpV1Layer(pcpp::GtpV1MessageType, unsigned int, bool, unsigned short, bool, unsigned char) /tmp/pcap-gh-1711/build/Packet++/src/GtpLayer.cpp:160:3
+    #3 0x5ddfca4f0cb5 in main /tmp/pcap-gh-1711/build/poc.cpp:9:9
+    #4 0x77d24f90f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x77d24f90f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x5ddfca415394 in _start (/tmp/pcap-gh-1711/build/poc+0x2c394) (BuildId: 0fe5be6d92bb39ffcc9f047a5de4561ef42e9e75)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /tmp/pcap-gh-1711/build/Packet++/src/GtpLayer.cpp:418:32 in pcpp::GtpV1Layer::addExtension(unsigned char, unsigned short)
+Shadow bytes around the buggy address:
+  0x502000001000: fa fa 00 00 fa fa 00 00 fa fa 00 00 fa fa 00 00
+  0x502000001080: fa fa 00 00 fa fa 00 00 fa fa 00 00 fa fa 00 00
+  0x502000001100: fa fa 00 00 fa fa 00 00 fa fa 00 00 fa fa 00 00
+  0x502000001180: fa fa 00 00 fa fa 00 00 fa fa 00 00 fa fa 00 00
+  0x502000001200: fa fa 00 00 fa fa 00 00 fa fa 00 00 fa fa 00 00
+=>0x502000001280: fa fa 00 00 fa fa 00 00 fa fa 00 00 fa fa[fd]fd
+  0x502000001300: fa fa 00 00 fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000001380: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000001400: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000001480: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000001500: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==2317==ABORTING

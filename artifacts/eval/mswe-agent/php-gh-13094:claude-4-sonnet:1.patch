@@ -1,0 +1,162 @@
+
+diff --git a/.gitignore b/.gitignore
+index 49acc9f2e17..de22b095dfc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/edge_test.php b/edge_test.php
+new file mode 100644
+index 00000000000..961d4c08ad5
+--- /dev/null
++++ b/edge_test.php
+@@ -0,0 +1,6 @@
++<?php 
++echo "Testing null byte range\n"; 
++try { $r = range("\0", "z"); echo "Success with null byte\n"; } catch (Exception $e) { echo "Exception: " . $e->getMessage() . "\n"; }
++echo "Testing both empty\n";
++try { $r = range("", ""); echo "Success with both empty\n"; } catch (Exception $e) { echo "Exception: " . $e->getMessage() . "\n"; }
++?>
+diff --git a/empty_test.php b/empty_test.php
+new file mode 100644
+index 00000000000..eb969753506
+--- /dev/null
++++ b/empty_test.php
+@@ -0,0 +1 @@
++<?php echo "Testing empty string range\n"; try { $r = range("", "z"); echo "Success\n"; } catch (Exception $e) { echo "Exception: " . $e->getMessage() . "\n"; } ?>
+diff --git a/ext/standard/array.c b/ext/standard/array.c
+index eee260f2243..acf42f79e91 100644
+--- a/ext/standard/array.c
++++ b/ext/standard/array.c
+@@ -2960,6 +2960,12 @@ PHP_FUNCTION(range)
+ 		}
+ 
+ 		/* Generate array of characters */
++		/* Ensure strings are valid and not empty before accessing first character */
++		if (UNEXPECTED(!user_start || Z_TYPE_P(user_start) != IS_STRING || Z_STRLEN_P(user_start) == 0 ||
++		               !user_end || Z_TYPE_P(user_end) != IS_STRING || Z_STRLEN_P(user_end) == 0)) {
++			php_error_docref(NULL, E_WARNING, "Invalid string arguments for character range");
++			RETURN_THROWS();
++		}
+ 		unsigned char low = (unsigned char)Z_STRVAL_P(user_start)[0];
+ 		unsigned char high = (unsigned char)Z_STRVAL_P(user_end)[0];
+ 
+diff --git a/normal_test.php b/normal_test.php
+new file mode 100644
+index 00000000000..954a4e264aa
+--- /dev/null
++++ b/normal_test.php
+@@ -0,0 +1,9 @@
++<?php 
++echo "Testing normal range functionality\n";
++$r1 = range("a", "e");
++echo "a-e: " . implode(",", $r1) . "\n";
++$r2 = range(1, 5);
++echo "1-5: " . implode(",", $r2) . "\n";
++$r3 = range("A", "E");
++echo "A-E: " . implode(",", $r3) . "\n";
++?>
+diff --git a/simple_test.php b/simple_test.php
+new file mode 100644
+index 00000000000..5391d81c268
+--- /dev/null
++++ b/simple_test.php
+@@ -0,0 +1 @@
++<?php echo "Testing range function\n"; $r = range("a", "c"); print_r($r); ?>
+diff --git a/test_range.php b/test_range.php
+new file mode 100644
+index 00000000000..be766242ff4
+--- /dev/null
++++ b/test_range.php
+@@ -0,0 +1,36 @@
++<?php
++// Test cases that might trigger the SEGV in zif_range
++echo "Testing range function with various inputs...\n";
++
++// Test with empty strings
++try {
++    $result = range("", "z");
++    echo "range('', 'z') succeeded\n";
++} catch (Exception $e) {
++    echo "range('', 'z') failed: " . $e->getMessage() . "\n";
++}
++
++try {
++    $result = range("a", "");
++    echo "range('a', '') succeeded\n";
++} catch (Exception $e) {
++    echo "range('a', '') failed: " . $e->getMessage() . "\n";
++}
++
++try {
++    $result = range("", "");
++    echo "range('', '') succeeded\n";
++} catch (Exception $e) {
++    echo "range('', '') failed: " . $e->getMessage() . "\n";
++}
++
++// Test with null bytes or corrupted strings
++try {
++    $result = range("\0", "z");
++    echo "range('\\0', 'z') succeeded\n";
++} catch (Exception $e) {
++    echo "range('\\0', 'z') failed: " . $e->getMessage() . "\n";
++}
++
++echo "Test completed\n";
++?>
+diff --git a/test_range_crash.php b/test_range_crash.php
+new file mode 100644
+index 00000000000..4dc8d49bf9b
+--- /dev/null
++++ b/test_range_crash.php
+@@ -0,0 +1,38 @@
++<?php
++// Test cases that might trigger the original zif_range SEGV issue
++echo "Testing range function with edge cases that might cause SEGV...\n";
++
++// Test with potentially corrupted or edge case string inputs
++$test_cases = [
++    // Empty strings that might bypass validation
++    ["", "z"],
++    ["a", ""],
++    ["", ""],
++    
++    // Single null byte
++    ["\0", "z"],
++    ["a", "\0"],
++    
++    // Very short strings that might cause issues
++    ["a", "b"],
++    ["z", "a"],
++    
++    // Test with strings that might have length issues
++    [chr(0), chr(255)],
++    [chr(255), chr(0)],
++];
++
++foreach ($test_cases as $i => $case) {
++    echo "Test case $i: range('" . addcslashes($case[0], "\0..\37") . "', '" . addcslashes($case[1], "\0..\37") . "')\n";
++    try {
++        $result = range($case[0], $case[1]);
++        echo "  Success: " . count($result) . " elements\n";
++    } catch (Exception $e) {
++        echo "  Exception: " . $e->getMessage() . "\n";
++    } catch (Error $e) {
++        echo "  Error: " . $e->getMessage() . "\n";
++    }
++}
++
++echo "All tests completed without crash\n";
++?>

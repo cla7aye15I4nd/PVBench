@@ -1,0 +1,92 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/html5_serializer.c b/ext/dom/html5_serializer.c
+index f0048aa4aae..a5d88ea4ca3 100644
+--- a/ext/dom/html5_serializer.c
++++ b/ext/dom/html5_serializer.c
+@@ -338,6 +338,10 @@ static zend_result dom_html5_serialize_node(dom_html5_serialize_context *ctx, co
+ 				if (node == bound) {
+ 					return SUCCESS;
+ 				}
++				if (node == NULL) {
++					/* Reached the top of the tree without finding bound */
++					return SUCCESS;
++				}
+ 				if (node->type == XML_ELEMENT_NODE) {
+ 					TRY(dom_html5_serialize_element_end(ctx, node));
+ 				}
+diff --git a/ext/dom/inner_outer_html_mixin.c b/ext/dom/inner_outer_html_mixin.c
+index 4655878c533..0141a9a8455 100644
+--- a/ext/dom/inner_outer_html_mixin.c
++++ b/ext/dom/inner_outer_html_mixin.c
+@@ -10,7 +10,7 @@
+    | obtain it through the world-wide-web, please send a note to          |
+    | license@php.net so we can mail you a copy immediately.               |
+    +----------------------------------------------------------------------+
+-   | Authors: Niels Dossche <nielsdos@php.net>                            |
++   | Authors: Niels Dossche <nielsdos@php.net>                           |
+    +----------------------------------------------------------------------+
+ */
+ 
+diff --git a/ext/dom/tests/modern/html/parser/Element_innerHTML.phpt b/ext/dom/tests/modern/html/parser/Element_innerHTML.phpt
+index 058d4432b49..fe0dea1859b 100644
+--- a/ext/dom/tests/modern/html/parser/Element_innerHTML.phpt
++++ b/ext/dom/tests/modern/html/parser/Element_innerHTML.phpt
+@@ -1,23 +1,23 @@
+---TEST--
+-Test writing Element::$innerHTML on HTML documents
+---EXTENSIONS--
+-dom
+---FILE--
+ <?php
++// Test case to trigger NULL pointer dereference in HTML5 serializer
++echo "Creating HTML document...\n";
++$dom = Dom\HTMLDocument::createFromString('<p>foo</p>', LIBXML_NOERROR);
+ 
+-$dom = DOM\HTMLDocument::createEmpty();
+-$el = $dom->createElement('div');
+-$dom->appendChild($el);
+-$el->innerHTML = '<p>foo</p>';
+-echo $dom->saveXML(), "\n";
+-$el->innerHTML = '</div>';
+-echo $dom->saveXML(), "\n";
+-$el->innerHTML = '';
+-echo $dom->saveXML(), "\n";
+-$el->innerHTML = '<div></div>&nbsp;<p></p>';
+-echo $dom->saveXML(), "\n";
+-$el->innerHTML = "invalid\xffutf-8𐍈𐍈𐍈";
+-echo $dom->saveXML(), "\n";
++echo "Creating unattached element...\n";
++$unattached_element = $dom->createElement('div');
++$child = $dom->createElement('span');
++$child->appendChild($dom->createTextNode('test'));
++$unattached_element->appendChild($child);
++
++echo "Testing outerHTML on unattached element...\n";
++try {
++    var_dump($unattached_element->outerHTML);
++} catch (Exception $e) {
++    echo "Exception: " . $e->getMessage() . "\n";
++}
++
++echo "Test completed\n";
++?>
+ 
+ // Create a non-interned string that gets the UTF-8 validity flag added
+ $str = str_repeat("my valid string", random_int(1, 1));

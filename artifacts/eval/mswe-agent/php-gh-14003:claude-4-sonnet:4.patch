@@ -1,0 +1,42 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..80bb6f32164 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -206,3 +206,4 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 	}
+ }
+ /* }}} */
++
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..ccdd547b95c 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -556,6 +556,10 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+ 					zval_ptr_dtor(data);
++					/* Check if the object was freed during destruction */
++					if (UNEXPECTED(GC_TYPE(object) == IS_NULL || (OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED))) {
++						return;
++					}
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));

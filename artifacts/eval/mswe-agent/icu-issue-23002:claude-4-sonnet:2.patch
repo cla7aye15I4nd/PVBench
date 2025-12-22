@@ -1,0 +1,32 @@
+
+diff --git a/.gitignore b/.gitignore
+index 503e3e8135f..2006ad6e4a1 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -293,3 +293,6 @@ icu4c/build_qnx/nto-x86_64-o/*
+ icu4c/build_qnx/linux-x86_64-o/Makefile
+ icu4c/build_qnx/nto-aarch64-le/Makefile
+ icu4c/build_qnx/nto-x86_64-o/Makefile
++build/
++Build/
++*.exe
+diff --git a/icu4c/source/i18n/nfrule.cpp b/icu4c/source/i18n/nfrule.cpp
+index 264e8d79e2d..99f15d339fc 100644
+--- a/icu4c/source/i18n/nfrule.cpp
++++ b/icu4c/source/i18n/nfrule.cpp
+@@ -326,7 +326,14 @@ NFRule::parseRuleDescriptor(UnicodeString& description, UErrorCode& status)
+                 while (p < descriptorLength) {
+                     c = descriptor.charAt(p);
+                     if (c >= gZero && c <= gNine) {
+-                        val = val * ll_10 + static_cast<int32_t>(c - gZero);
++                        int32_t single_digit = static_cast<int32_t>(c - gZero);
++                        if ((val > 0 && val > (std::numeric_limits<int64_t>::max() - single_digit) / 10) ||
++                            (val < 0 && val < (std::numeric_limits<int64_t>::min() - single_digit) / 10)) {
++                            // out of int64_t range
++                            status = U_PARSE_ERROR;
++                            return;
++                        }
++                        val = val * ll_10 + single_digit;
+                     }
+                     else if (c == gGreaterThan) {
+                         break;

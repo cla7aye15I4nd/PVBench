@@ -1,0 +1,28 @@
+diff --git a/NEWS b/NEWS
+index 217b7e07be..d173e4c141 100644
+--- a/NEWS
++++ b/NEWS
+@@ -70,6 +70,7 @@ PHP                                                                        NEWS
+   . Fixed bug GH-16337 (Use-after-free in SplHeap). (nielsdos)
+   . Fixed bug GH-16464 (Use-after-free in SplDoublyLinkedList::offsetSet()).
+     (ilutov)
++  . Fixed bug GH-16479 (Use-after-free in SplObjectStorage::setInfo()). (ilutov)
+ 
+ - Standard:
+   . Fixed bug GH-16293 (Failed assertion when throwing in assert() callback with
+diff --git a/ext/spl/spl_observer.c b/ext/spl/spl_observer.c
+index 21b19cffa3..cc2956ccc2 100644
+--- a/ext/spl/spl_observer.c
++++ b/ext/spl/spl_observer.c
+@@ -746,8 +746,10 @@ PHP_METHOD(SplObjectStorage, setInfo)
+ 	if ((element = zend_hash_get_current_data_ptr_ex(&intern->storage, &intern->pos)) == NULL) {
+ 		RETURN_NULL();
+ 	}
+-	zval_ptr_dtor(&element->inf);
++	zval garbage;
++	ZVAL_COPY_VALUE(&garbage, &element->inf);
+ 	ZVAL_COPY(&element->inf, inf);
++	zval_ptr_dtor(&garbage);
+ } /* }}} */
+ 
+ /* {{{ Moves position forward */

@@ -1,0 +1,70 @@
+
+diff --git a/.gitignore b/.gitignore
+index fa8fbb49d9d..d9670c75cbc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,3 +126,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/fix_summary.md b/fix_summary.md
+new file mode 100644
+index 00000000000..ca191ed1372
+--- /dev/null
++++ b/fix_summary.md
+@@ -0,0 +1,22 @@
++# Fix for Reachable Assertion in Object::ConvertToNumeric
++
++## Problem
++The issue was in src/objects/objects.cc at line 361 where the code was performing an unsafe cast to JSReceiver without first checking if the object is actually a JSReceiver.
++
++## Root Cause
++Both Object::ConvertToNumber and Object::ConvertToNumeric functions had the same bug:
++- They check for various primitive types (Number, String, Oddball, Symbol, BigInt)
++- If none of these match, they assume the object must be a JSReceiver
++- They then unconditionally cast to JSReceiver using Cast<JSReceiver>(input)
++- This assumption is incorrect - there can be objects that are not JSReceivers
++
++## Solution
++Added proper validation before casting to JSReceiver by checking IsJSReceiver(*input) first.
++
++If the input is not a JSReceiver, the functions now throw a TypeError with the message template kCannotConvertToPrimitive.
++
++## Changes Made
++1. ConvertToNumber (lines 332-334): Added IsJSReceiver check
++2. ConvertToNumeric (lines 361-363): Added IsJSReceiver check
++
++Both functions now follow the same safe pattern used elsewhere in the V8 codebase.
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 11ed284473a..9f1eff76643 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -329,6 +329,9 @@ MaybeHandle<Number> Object::ConvertToNumber(Isolate* isolate,
+     if (IsBigInt(*input)) {
+       THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kBigIntToNumber));
+     }
++    if (!IsJSReceiver(*input)) {
++      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kCannotConvertToPrimitive));
++    }
+     ASSIGN_RETURN_ON_EXCEPTION(
+         isolate, input,
+         JSReceiver::ToPrimitive(isolate, Cast<JSReceiver>(input),
+@@ -355,6 +358,9 @@ MaybeHandle<Numeric> Object::ConvertToNumeric(Isolate* isolate,
+     if (IsBigInt(*input)) {
+       return Cast<BigInt>(input);
+     }
++    if (!IsJSReceiver(*input)) {
++      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kCannotConvertToPrimitive));
++    }
+     ASSIGN_RETURN_ON_EXCEPTION(
+         isolate, input,
+         JSReceiver::ToPrimitive(isolate, Cast<JSReceiver>(input),

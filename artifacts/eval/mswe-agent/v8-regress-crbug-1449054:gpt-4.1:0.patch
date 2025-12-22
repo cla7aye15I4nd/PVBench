@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1687038dc70..12768176b4a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -113,3 +113,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/ast/scopes.h b/src/ast/scopes.h
+index 6b9e1f5607c..e2fe8a06119 100644
+--- a/src/ast/scopes.h
++++ b/src/ast/scopes.h
+@@ -1023,9 +1023,10 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
+                                  VariableKind variable_kind, Scope* cache);
+ 
+   // The variable corresponding to the 'this' value.
++  // The variable corresponding to the 'this' value.
++  // Note: receiver_ may be nullptr for some scope types (e.g., non-script, non-function).
+   Variable* receiver() {
+     DCHECK(has_this_declaration() || is_script_scope());
+-    DCHECK_NOT_NULL(receiver_);
+     return receiver_;
+   }
+ 

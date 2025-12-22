@@ -1,0 +1,36 @@
+diff --git a/NEWS b/NEWS
+index 9921764951..a56df16f5e 100644
+--- a/NEWS
++++ b/NEWS
+@@ -25,6 +25,9 @@ PHP                                                                        NEWS
+   . Fixed bug GH-15432 (Heap corruption when querying a vector). (cmb,
+     Kamil Tekiela)
+ 
++- Standard:
++  . Fixed bug GH-15552 (Signed integer overflow in ext/standard/scanf.c). (cmb)
++
+ - Streams:
+   . Fixed bug GH-15628 (php_stream_memory_get_buffer() not zero-terminated).
+     (cmb)
+diff --git a/ext/standard/scanf.c b/ext/standard/scanf.c
+index 78ecc1642c..408e5ede88 100644
+--- a/ext/standard/scanf.c
++++ b/ext/standard/scanf.c
+@@ -361,8 +361,7 @@ PHPAPI int ValidateFormat(char *format, int numVars, int *totalSubs)
+ 			if (gotSequential) {
+ 				goto mixedXPG;
+ 			}
+-			objIndex = value - 1;
+-			if ((objIndex < 0) || (numVars && (objIndex >= numVars))) {
++			if ((value < 1) || (numVars && (value > numVars))) {
+ 				goto badIndex;
+ 			} else if (numVars == 0) {
+ 				/*
+@@ -382,6 +381,7 @@ PHPAPI int ValidateFormat(char *format, int numVars, int *totalSubs)
+ 
+ 				xpgSize = (xpgSize > value) ? xpgSize : value;
+ 			}
++			objIndex = value - 1;
+ 			goto xpgCheckDone;
+ 		}
+ 

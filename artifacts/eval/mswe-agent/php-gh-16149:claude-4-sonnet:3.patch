@@ -1,0 +1,65 @@
+
+diff --git a/.gitignore b/.gitignore
+index 49acc9f2e17..de22b095dfc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/element.c b/ext/dom/element.c
+index 46f1100a767..aa1b715dc00 100644
+--- a/ext/dom/element.c
++++ b/ext/dom/element.c
+@@ -339,7 +339,11 @@ PHP_METHOD(DOMElement, getAttributeNames)
+ 
+ 	for (xmlNsPtr nsptr = nodep->nsDef; nsptr; nsptr = nsptr->next) {
+ 		const char *prefix = (const char *) nsptr->prefix;
+-		ZVAL_STR(&tmp, dom_node_concatenated_name_helper(strlen(prefix), prefix, strlen("xmlns"), (const char *) "xmlns"));
++		if (prefix != NULL) {
++			ZVAL_STR(&tmp, dom_node_concatenated_name_helper(strlen(prefix), prefix, strlen("xmlns"), (const char *) "xmlns"));
++		} else {
++			ZVAL_STR(&tmp, zend_string_init("xmlns", strlen("xmlns"), false));
++		}
+ 		zend_hash_next_index_insert(ht, &tmp);
+ 	}
+ 
+diff --git a/test_crash.php b/test_crash.php
+new file mode 100644
+index 00000000000..95305f360e0
+--- /dev/null
++++ b/test_crash.php
+@@ -0,0 +1,9 @@
++<?php
++// This test should trigger the NULL pointer dereference in the original buggy code
++$doc = new DOMDocument();
++$doc->loadXML('<?xml version="1.0"?><root><element xmlns="http://example.com/default"/></root>');
++$element = $doc->documentElement->firstChild;
++echo "About to call getAttributeNames() - this would crash in the original buggy code...\n";
++var_dump($element->getAttributeNames());
++echo "Test completed successfully - fix is working!\n";
++?>
+diff --git a/test_dom.php b/test_dom.php
+new file mode 100644
+index 00000000000..3e4608c0617
+--- /dev/null
++++ b/test_dom.php
+@@ -0,0 +1,9 @@
++<?php
++$doc = new DOMDocument();
++// Create an element with a default namespace declaration
++$doc->loadXML('<?xml version="1.0"?><root><element xmlns="http://example.com/default" attr="value"/></root>');
++$element = $doc->documentElement->firstChild;
++echo "Calling getAttributeNames()...\n";
++var_dump($element->getAttributeNames());
++echo "Test completed successfully.\n";
++?>

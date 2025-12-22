@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/compiler/turboshaft/typer.h b/src/compiler/turboshaft/typer.h
+index f8c2ba1e9cf..76817111f3a 100644
+--- a/src/compiler/turboshaft/typer.h
++++ b/src/compiler/turboshaft/typer.h
+@@ -1159,6 +1159,7 @@ class Typer {
+ 
+   static Type TypeForRepresentation(
+       base::Vector<const RegisterRepresentation> reps, Zone* zone) {
++    if (reps.size() == 0) return Type::Any();
+     DCHECK_LT(0, reps.size());
+     if (reps.size() == 1) return TypeForRepresentation(reps[0]);
+     base::SmallVector<Type, 4> tuple_types;

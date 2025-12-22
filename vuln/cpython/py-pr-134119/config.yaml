@@ -1,0 +1,15 @@
+id: py-pr-134119
+project: cpython
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+trigger_commit: 84914ad0e5f96f0ca7238f3b4bc7fc4e50b1abb3
+binary: python
+patch:
+  commit: fc7f4c36664314393bd4c30355e21bd7aeac524d
+  date: '2025-05-17T12:23:19-07:00'
+reference:
+- https://github.com/python/cpython.git
+- https://github.com/python/cpython/pull/134120
+- https://github.com/python/cpython/issues/134119
+- https://github.com/python/cpython/commit/84914ad0e5f96f0ca7238f3b4bc7fc4e50b1abb3
+- https://github.com/python/cpython/commit/fc7f4c36664314393bd4c30355e21bd7aeac524d

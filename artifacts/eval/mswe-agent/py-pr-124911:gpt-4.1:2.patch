@@ -1,0 +1,15 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj

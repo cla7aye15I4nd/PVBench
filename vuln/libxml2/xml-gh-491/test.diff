@@ -1,0 +1,38 @@
+diff --git a/result/schemas/issue491_0_0.err b/result/schemas/issue491_0_0.err
+new file mode 100644
+index 00000000..9b2bb969
+--- /dev/null
++++ b/result/schemas/issue491_0_0.err
+@@ -0,0 +1 @@
++./test/schemas/issue491_0.xsd:8: element complexType: Schemas parser error : complex type 'ChildType': The content type of both, the type and its base type, must either 'mixed' or 'element-only'.
+diff --git a/test/schemas/issue491_0.xml b/test/schemas/issue491_0.xml
+new file mode 100644
+index 00000000..e2b2fc2e
+--- /dev/null
++++ b/test/schemas/issue491_0.xml
+@@ -0,0 +1 @@
++<Child xmlns="http://www.test.com">5</Child>
+diff --git a/test/schemas/issue491_0.xsd b/test/schemas/issue491_0.xsd
+new file mode 100644
+index 00000000..81702649
+--- /dev/null
++++ b/test/schemas/issue491_0.xsd
+@@ -0,0 +1,18 @@
++<?xml version='1.0' encoding='UTF-8'?>
++<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.test.com" targetNamespace="http://www.test.com" elementFormDefault="qualified" attributeFormDefault="unqualified">
++  <xs:complexType name="BaseType">
++    <xs:simpleContent>
++      <xs:extension base="xs:int" />
++    </xs:simpleContent>
++  </xs:complexType>
++  <xs:complexType name="ChildType">
++    <xs:complexContent>
++      <xs:extension base="BaseType">
++        <xs:sequence>
++          <xs:element name="bad" type="xs:int" minOccurs="0" maxOccurs="1"/>
++        </xs:sequence>
++      </xs:extension>
++    </xs:complexContent>
++  </xs:complexType>
++  <xs:element name="Child" type="ChildType" />
++</xs:schema>

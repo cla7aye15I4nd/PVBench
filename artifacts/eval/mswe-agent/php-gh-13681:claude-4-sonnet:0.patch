@@ -1,0 +1,106 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/sapi/phpdbg/phpdbg_watch.c b/sapi/phpdbg/phpdbg_watch.c
+index 0468d4614fd..e7db4958cf2 100644
+--- a/sapi/phpdbg/phpdbg_watch.c
++++ b/sapi/phpdbg/phpdbg_watch.c
+@@ -556,7 +556,7 @@ bool phpdbg_is_recursively_watched(void *ptr, phpdbg_watch_element *element) {
+ 	phpdbg_watch_element *next = element;
+ 	do {
+ 		element = next;
+-		if (element->watch->addr.ptr == ptr) {
++		if (element->watch && element->watch->addr.ptr == ptr) {
+ 			return 1;
+ 		}
+ 		next = element->parent;
+@@ -593,7 +593,7 @@ void phpdbg_recurse_watch_element(phpdbg_watch_element *element) {
+ 	phpdbg_watch_element *child;
+ 	zval *zv;
+ 
+-	if (element->watch->type == WATCH_ON_ZVAL || element->watch->type == WATCH_ON_BUCKET) {
++	if (element->watch && (element->watch->type == WATCH_ON_ZVAL || element->watch->type == WATCH_ON_BUCKET)) {
+ 		zv = element->watch->addr.zv;
+ 		while (Z_TYPE_P(zv) == IS_INDIRECT) {
+ 			zv = Z_INDIRECT_P(zv);
+@@ -630,7 +630,7 @@ void phpdbg_recurse_watch_element(phpdbg_watch_element *element) {
+ 		zend_string *str;
+ 		zend_long idx;
+ 
+-		ZEND_ASSERT(element->watch->type == WATCH_ON_HASHTABLE);
++		ZEND_ASSERT(element->watch && element->watch->type == WATCH_ON_HASHTABLE);
+ 		ZEND_HASH_FOREACH_KEY_VAL(HT_WATCH_HT(element->watch), idx, str, zv) {
+ 			phpdbg_add_recursive_watch_from_ht(element, idx, str, zv);
+ 		} ZEND_HASH_FOREACH_END();
+@@ -638,7 +638,7 @@ void phpdbg_recurse_watch_element(phpdbg_watch_element *element) {
+ }
+ 
+ void phpdbg_watch_parent_ht(phpdbg_watch_element *element) {
+-	if (element->watch->type == WATCH_ON_BUCKET) {
++	if (element->watch && element->watch->type == WATCH_ON_BUCKET) {
+ 		phpdbg_btree_result *res;
+ 		HashPosition pos;
+ 		phpdbg_watch_ht_info *hti;
+@@ -668,7 +668,7 @@ void phpdbg_watch_parent_ht(phpdbg_watch_element *element) {
+ }
+ 
+ void phpdbg_unwatch_parent_ht(phpdbg_watch_element *element) {
+-	if (element->watch->type == WATCH_ON_BUCKET) {
++	if (element->watch && element->watch->type == WATCH_ON_BUCKET) {
+ 		phpdbg_btree_result *res = phpdbg_btree_find(&PHPDBG_G(watch_HashTables), (zend_ulong) element->parent_container);
+ 		ZEND_ASSERT(element->parent_container);
+ 		if (res) {
+@@ -859,7 +859,9 @@ void phpdbg_remove_watch_element(phpdbg_watch_element *element) {
+ }
+ 
+ void phpdbg_backup_watch_element(phpdbg_watch_element *element) {
+-	memcpy(&element->backup, &element->watch->backup, /* element->watch->size */ sizeof(element->backup));
++	if (element->watch) {
++		memcpy(&element->backup, &element->watch->backup, /* element->watch->size */ sizeof(element->backup));
++	}
+ }
+ 
+ /* until argument to prevent double remove of children elements */
+@@ -917,7 +919,7 @@ void phpdbg_update_watch_element_watch(phpdbg_watch_element *element) {
+ 			child = child->child;
+ 		}
+ 
+-		ZEND_ASSERT(element->watch->type == WATCH_ON_ZVAL || element->watch->type == WATCH_ON_BUCKET);
++		ZEND_ASSERT(element->watch && (element->watch->type == WATCH_ON_ZVAL || element->watch->type == WATCH_ON_BUCKET));
+ 		phpdbg_queue_element_for_recreation(element);
+ 	} else if (element->flags & (PHPDBG_WATCH_RECURSIVE_ROOT | PHPDBG_WATCH_SIMPLE)) {
+ 		phpdbg_queue_element_for_recreation(element);
+@@ -969,11 +971,13 @@ void phpdbg_remove_watchpoint(phpdbg_watchpoint_t *watch) {
+ }
+ 
+ void phpdbg_clean_watch_element(phpdbg_watch_element *element) {
+-	HashTable *elements = &element->watch->elements;
+-	phpdbg_unwatch_parent_ht(element);
+-	zend_hash_del(elements, element->str);
+-	if (zend_hash_num_elements(elements) == 0) {
+-		phpdbg_remove_watchpoint(element->watch);
++	if (element->watch) {
++		HashTable *elements = &element->watch->elements;
++		phpdbg_unwatch_parent_ht(element);
++		zend_hash_del(elements, element->str);
++		if (zend_hash_num_elements(elements) == 0) {
++			phpdbg_remove_watchpoint(element->watch);
++		}
+ 	}
+ }
+ 

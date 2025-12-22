@@ -1,0 +1,20 @@
+diff --git a/src/runtime/runtime-regexp.cc b/src/runtime/runtime-regexp.cc
+index 555c85277bc..59f7610194b 100644
+--- a/src/runtime/runtime-regexp.cc
++++ b/src/runtime/runtime-regexp.cc
+@@ -1116,6 +1116,15 @@ class VectorBackedMatch : public String::Match {
+                                       CaptureState* state) override {
+     DCHECK(has_named_captures_);
+ 
++    // Strings representing integer indices are not valid identifiers (and
++    // therefore not valid capture names).
++    {
++      size_t unused;
++      if (name->AsIntegerIndex(&unused)) {
++        *state = UNMATCHED;
++        return isolate_->factory()->empty_string();
++      }
++    }
+     Handle<Object> capture_obj;
+     ASSIGN_RETURN_ON_EXCEPTION(isolate_, capture_obj,
+                                Object::GetProperty(isolate_, groups_obj_, name),

@@ -1,0 +1,23 @@
+runtime error: signed integer overflow: 922337203 * 10 cannot be represented in type 'int'
+    #0 0x623d377ddfe2 in xmlXPathCompNumber /tmp/xml-commit-f4029cd/build/xpath.c:10248:33
+    #1 0x623d377d946f in xmlXPathCompPrimaryExpr /tmp/xml-commit-f4029cd/build/xpath.c:10524:2
+    #2 0x623d377d4917 in xmlXPathCompFilterExpr /tmp/xml-commit-f4029cd/build/xpath.c:10550:5
+    #3 0x623d377d17d9 in xmlXPathCompPathExpr /tmp/xml-commit-f4029cd/build/xpath.c:10757:2
+    #4 0x623d377ce537 in xmlXPathCompUnionExpr /tmp/xml-commit-f4029cd/build/xpath.c:10787:5
+    #5 0x623d377ce0ca in xmlXPathCompUnaryExpr /tmp/xml-commit-f4029cd/build/xpath.c:10827:5
+    #6 0x623d377cbb37 in xmlXPathCompMultiplicativeExpr /tmp/xml-commit-f4029cd/build/xpath.c:10852:5
+    #7 0x623d377ca697 in xmlXPathCompAdditiveExpr /tmp/xml-commit-f4029cd/build/xpath.c:10893:5
+    #8 0x623d377c8ca7 in xmlXPathCompRelationalExpr /tmp/xml-commit-f4029cd/build/xpath.c:10931:5
+    #9 0x623d377c75a7 in xmlXPathCompEqualityExpr /tmp/xml-commit-f4029cd/build/xpath.c:10973:5
+    #10 0x623d377c4407 in xmlXPathCompAndExpr /tmp/xml-commit-f4029cd/build/xpath.c:11004:5
+    #11 0x623d377b537a in xmlXPathCompileExpr /tmp/xml-commit-f4029cd/build/xpath.c:11030:5
+    #12 0x623d377b8014 in xmlXPathEvalExpr /tmp/xml-commit-f4029cd/build/xpath.c:15036:2
+    #13 0x623d377b952b in xmlXPathEval /tmp/xml-commit-f4029cd/build/xpath.c:15073:5
+    #14 0x623d37498718 in doXPathQuery /tmp/xml-commit-f4029cd/build/xmllint.c:2157:11
+    #15 0x623d37491a49 in parseAndPrintFile /tmp/xml-commit-f4029cd/build/xmllint.c:2453:9
+    #16 0x623d3748c687 in main /tmp/xml-commit-f4029cd/build/xmllint.c:3772:7
+    #17 0x75a7754cf1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x75a7754cf28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x623d374589f4 in _start (/tmp/xml-commit-f4029cd/build/xmllint+0x4c29f4) (BuildId: 4018b5f73841471ef782987217a48a235db6fe7c)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior xpath.c:10248:33 

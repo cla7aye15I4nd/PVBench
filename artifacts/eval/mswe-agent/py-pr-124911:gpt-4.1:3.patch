@@ -1,0 +1,44 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/pythonrun.c b/Python/pythonrun.c
+index 5f3d249df45..d3daadf2403 100644
+--- a/Python/pythonrun.c
++++ b/Python/pythonrun.c
+@@ -422,7 +422,23 @@ _PyRun_SimpleFileObject(FILE *fp, PyObject *filename, int closeit,
+             goto done;
+         }
+         v = run_pyc_file(pyc_fp, d, d, flags);
+-    } else {
++        /* Check if the file is likely to be valid Python source (ASCII text) */
++        long pos = ftell(fp);
++        char checkbuf[4];
++        size_t nread = fread(checkbuf, 1, 4, fp);
++        int is_ascii = 1;
++        for (size_t i = 0; i < nread; ++i) {
++            if ((checkbuf[i] < 9) || (checkbuf[i] > 126)) {  /* not tab/newline or printable ASCII */
++                is_ascii = 0;
++                break;
++            }
++        }
++        fseek(fp, pos, SEEK_SET);
++        if (!is_ascii) {
++            fprintf(stderr, "Error: File does not appear to be valid Python source code. Aborting.\\n");
++            ret = -1;
++            goto done;
++        }
+         /* When running from stdin, leave __main__.__loader__ alone */
+         if (PyUnicode_CompareWithASCIIString(filename, "<stdin>") != 0 &&
+             set_main_loader(d, filename, "SourceFileLoader") < 0) {

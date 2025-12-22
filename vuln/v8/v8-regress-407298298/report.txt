@@ -1,0 +1,16 @@
+#
+# Fatal error in ../../src/runtime/runtime-typedarray.cc, line 69
+# Debug check failed: isolate->IsOnCentralStack().
+#
+#
+#
+#FailureMessage Object: 0x7bb83a33fc60
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x46) [0x55856e0d6dc6]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x558575b7ad23]
+    out/debug_asan/d8(+0xb59a05a) [0x558575b7905a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x558575b492d0]
+    out/debug_asan/d8(+0xb5692ef) [0x558575b482ef]
+    out/debug_asan/d8(v8::internal::Runtime_GrowableSharedArrayBufferByteLength(int, unsigned long*, v8::internal::Isolate*)+0x26c) [0x5585709ddd1c]
+    out/debug_asan/d8(+0xaadf23d) [0x5585750be23d]

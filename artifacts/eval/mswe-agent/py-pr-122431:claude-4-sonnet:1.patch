@@ -1,0 +1,54 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/readline.c b/Modules/readline.c
+index 35655c70a46..451a5bcce71 100644
+--- a/Modules/readline.c
++++ b/Modules/readline.c
+@@ -362,8 +362,32 @@ readline_append_history_file_impl(PyObject *module, int nelements,
+         filename_bytes = NULL;
+         filename = NULL;
+     }
+-    errno = err = append_history(
+-        nelements - libedit_append_replace_history_offset, filename);
++    int safe_nelements;
++    
++    // Validate nelements is within reasonable bounds
++    // History files typically don't have billions of lines, so we set a reasonable limit
++    const int MAX_REASONABLE_HISTORY_LINES = 1000000;  // 1 million lines
++    
++    if (nelements < 0) {
++        PyErr_SetString(PyExc_ValueError, "nelements must be non-negative");
++        Py_XDECREF(filename_bytes);
++        return NULL;
++    }
++    
++    if (nelements > MAX_REASONABLE_HISTORY_LINES) {
++        PyErr_SetString(PyExc_ValueError, "nelements value is too large");
++        Py_XDECREF(filename_bytes);
++        return NULL;
++    }
++    
++    // Check for integer overflow/underflow when subtracting libedit_append_replace_history_offset
++    if (nelements < libedit_append_replace_history_offset) {
++        // This would result in negative number, which is invalid for append_history
++        safe_nelements = 0;
++    } else {
++        safe_nelements = nelements - libedit_append_replace_history_offset;
++    }
++    errno = err = append_history(safe_nelements, filename);
+     if (!err && _history_length >= 0)
+         history_truncate_file(filename, _history_length);
+     Py_XDECREF(filename_bytes);

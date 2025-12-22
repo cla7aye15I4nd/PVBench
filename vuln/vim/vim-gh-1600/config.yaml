@@ -1,0 +1,14 @@
+id: vim-gh-1600
+project: vim
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: vim
+trigger_commit: 13489b9c41922b9ecb16fa47564ec76641515c08
+patch:
+  commit: 658a3a2caf5852d071b6b1be92d9d6614a6208dc
+  date: '2017-03-31T22:27:12+02:00'
+reference:
+- https://github.com/vim/vim
+- https://github.com/vim/vim/issues/1600
+- https://github.com/vim/vim/commit/13489b9c41922b9ecb16fa47564ec76641515c08
+- https://github.com/vim/vim/commit/658a3a2caf5852d071b6b1be92d9d6614a6208dc

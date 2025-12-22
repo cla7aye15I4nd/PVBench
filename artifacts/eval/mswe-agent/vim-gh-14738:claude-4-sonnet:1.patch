@@ -1,0 +1,44 @@
+
+diff --git a/.gitignore b/.gitignore
+index 241e96eaf..6bdb4f440 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -117,3 +117,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/maxtest.bin b/maxtest.bin
+new file mode 100644
+index 000000000..6d1c7e6fa
+--- /dev/null
++++ b/maxtest.bin
+@@ -0,0 +1 @@
++AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+\ No newline at end of file
+diff --git a/src/xxd/xxd.c b/src/xxd/xxd.c
+index cf8b4ea6a..8b2471153 100644
+--- a/src/xxd/xxd.c
++++ b/src/xxd/xxd.c
+@@ -226,6 +226,7 @@ char osver[] = "";
+              (11 * 2 + 4 + 1) * (COLS / 2) +         /* 1st group */   \
+ 	     1 +                                     /* space */       \
+ 	     (1 + 11) * COLS +                       /* 2nd group */   \
++	     (COLS / 2) * 11 +                       /* extra color sequences for grouping */ \
+ 	     1 +                                     /* new line */    \
+ 	     1)                                      /* zero */
+ 
+diff --git a/test.bin b/test.bin
+new file mode 100644
+index 000000000..b19436197
+--- /dev/null
++++ b/test.bin
+@@ -0,0 +1 @@
++AAAA

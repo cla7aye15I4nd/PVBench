@@ -1,0 +1,44 @@
+diff --git a/Lib/test/list_tests.py b/Lib/test/list_tests.py
+index 89cd10f76a3..dbc5ef4f9f2 100644
+--- a/Lib/test/list_tests.py
++++ b/Lib/test/list_tests.py
+@@ -191,6 +191,14 @@ def test_setslice(self):
+ 
+         self.assertRaises(TypeError, a.__setitem__)
+ 
++    def test_slice_assign_iterator(self):
++        x = self.type2test(range(5))
++        x[0:3] = reversed(range(3))
++        self.assertEqual(x, self.type2test([2, 1, 0, 3, 4]))
++
++        x[:] = reversed(range(3))
++        self.assertEqual(x, self.type2test([2, 1, 0]))
++
+     def test_delslice(self):
+         a = self.type2test([0, 1])
+         del a[1:2]
+diff --git a/Lib/test/test_list.py b/Lib/test/test_list.py
+index d21429fae09..4d2d54705fc 100644
+--- a/Lib/test/test_list.py
++++ b/Lib/test/test_list.py
+@@ -245,6 +245,20 @@ def __lt__(self, other):
+         with self.assertRaises(TypeError):
+             a[0] < a
+ 
++    def test_list_index_modifing_operand(self):
++        # See gh-120384
++        class evil:
++            def __init__(self, lst):
++                self.lst = lst
++            def __iter__(self):
++                yield from self.lst
++                self.lst.clear()
++
++        lst = list(range(5))
++        operand = evil(lst)
++        with self.assertRaises(ValueError):
++            lst[::-1] = operand
++
+     @cpython_only
+     def test_preallocation(self):
+         iterable = [0] * 10

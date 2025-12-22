@@ -1,0 +1,70 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..131ddbdfcbf 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -320,7 +320,7 @@ static zval *spl_array_get_dimension_ptr(int check_inherited, spl_array_object *
+ 	}
+ 
+ 	if ((type == BP_VAR_W || type == BP_VAR_RW) && intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return &EG(error_zval);
+ 	}
+ 
+@@ -537,7 +537,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return;
+ 	}
+ 
+@@ -546,6 +546,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		return;
+ 	}
+ 
++	intern->nApplyCount++;
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
+@@ -575,6 +576,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++	intern->nApplyCount--;
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+@@ -1050,8 +1052,12 @@ static HashTable *spl_array_it_get_gc(zend_object_iterator *iter, zval **table,
+ 
+ /* {{{ spl_array_set_array */
+ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *array, zend_long ar_flags, bool just_array) {
++	if (intern->nApplyCount > 0) {
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
++		return;
++	}
++
+ 	/* Handled by ZPP prior to this, or for __unserialize() before passing to here */
+-	ZEND_ASSERT(Z_TYPE_P(array) == IS_ARRAY || Z_TYPE_P(array) == IS_OBJECT);
+ 	if (Z_TYPE_P(array) == IS_ARRAY) {
+ 		zval_ptr_dtor(&intern->array);
+ 		if (Z_REFCOUNT_P(array) == 1) {

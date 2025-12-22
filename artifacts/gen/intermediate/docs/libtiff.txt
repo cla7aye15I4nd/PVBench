@@ -1,0 +1,237 @@
+# LibTIFF API Documentation Guide
+
+## Core Types
+
+### TIFF*
+- Opaque pointer to TIFF file handle
+- NULL on failure
+- Must be closed with TIFFClose
+
+## File Operations
+
+### TIFFOpen
+```c
+TIFF* TIFFOpen(const char* filename, const char* mode)
+```
+- Opens a TIFF file
+- Returns: TIFF* pointer on success, NULL on failure
+
+**Mode strings:**
+- "r" - Open for reading
+- "w" - Open for writing (creates new file)
+- "a" - Open for appending
+- "r+" - Open for reading and writing
+- "rh" - Open for reading without reading first directory
+- "r+h" - Open for read/write without reading first directory
+- "wh" - Open for writing without writing first directory
+
+The "h" suffix means "don't read/write the first directory" - useful for:
+- Working with custom/GPS directories
+- Avoiding automatic directory loading
+
+### TIFFClose
+```c
+void TIFFClose(TIFF* tif)
+```
+- Closes a TIFF file
+- Returns: void (no return value)
+- Must be called to free resources
+
+### TIFFFdOpen
+```c
+TIFF* TIFFFdOpen(int fd, const char* name, const char* mode)
+```
+- Opens TIFF from file descriptor
+- Returns: TIFF* or NULL
+
+## Field Operations
+
+### TIFFSetField
+```c
+int TIFFSetField(TIFF* tif, ttag_t tag, ...)
+```
+- Sets a TIFF field/tag value
+- Returns: 1 on success, 0 on failure
+
+**Common tags:**
+- TIFFTAG_IMAGEWIDTH - Image width in pixels
+- TIFFTAG_IMAGELENGTH - Image height in pixels
+- TIFFTAG_BITSPERSAMPLE - Bits per sample
+- TIFFTAG_SAMPLESPERPIXEL - Samples per pixel
+- TIFFTAG_COMPRESSION - Compression scheme
+- TIFFTAG_PHOTOMETRIC - Photometric interpretation
+- TIFFTAG_DOCUMENTNAME - Document name string
+
+### TIFFGetField
+```c
+int TIFFGetField(TIFF* tif, ttag_t tag, ...)
+```
+- Gets a TIFF field/tag value
+- Returns: 1 if tag is defined, 0 otherwise
+
+### TIFFGetFieldDefaulted
+```c
+int TIFFGetFieldDefaulted(TIFF* tif, ttag_t tag, ...)
+```
+- Gets field value or default if not set
+- Returns: 1 on success, 0 on failure
+
+## Directory Operations
+
+### TIFFReadDirectory
+```c
+int TIFFReadDirectory(TIFF* tif)
+```
+- Reads next directory in file
+- Returns: 1 on success, 0 on failure/end of file
+
+### TIFFWriteDirectory
+```c
+int TIFFWriteDirectory(TIFF* tif)
+```
+- Writes current directory to file
+- Returns: 1 on success, 0 on failure
+
+### TIFFSetDirectory
+```c
+int TIFFSetDirectory(TIFF* tif, tdir_t dirnum)
+```
+- Sets current directory by number
+- Returns: 1 on success, 0 on failure
+
+### TIFFReadGPSDirectory
+```c
+int TIFFReadGPSDirectory(TIFF* tif, toff_t diroff)
+```
+- Reads GPS IFD (Image File Directory)
+- diroff: Offset to GPS directory
+- Returns: 1 on success, 0 on failure
+
+### TIFFReadCustomDirectory
+```c
+int TIFFReadCustomDirectory(TIFF* tif, toff_t diroff, const TIFFFieldArray* infoarray)
+```
+- Reads a custom IFD
+- Returns: 1 on success, 0 on failure
+
+## Strip/Tile Operations
+
+### TIFFReadScanline
+```c
+int TIFFReadScanline(TIFF* tif, void* buf, uint32_t row, uint16_t sample)
+```
+- Reads a scanline of data
+- Returns: 1 on success, -1 on failure
+
+### TIFFWriteScanline
+```c
+int TIFFWriteScanline(TIFF* tif, void* buf, uint32_t row, uint16_t sample)
+```
+- Writes a scanline of data
+- Returns: 1 on success, -1 on failure
+
+### TIFFReadEncodedStrip
+```c
+tmsize_t TIFFReadEncodedStrip(TIFF* tif, uint32_t strip, void* buf, tmsize_t size)
+```
+- Reads and decodes a strip
+- Returns: number of bytes read, -1 on failure
+
+### TIFFWriteEncodedStrip
+```c
+tmsize_t TIFFWriteEncodedStrip(TIFF* tif, uint32_t strip, void* data, tmsize_t cc)
+```
+- Encodes and writes a strip
+- Returns: number of bytes written, -1 on failure
+
+## Utility Functions
+
+### TIFFCurrentDirectory
+```c
+tdir_t TIFFCurrentDirectory(TIFF* tif)
+```
+- Returns current directory number
+
+### TIFFNumberOfDirectories
+```c
+tdir_t TIFFNumberOfDirectories(TIFF* tif)
+```
+- Returns total number of directories
+
+### TIFFFileName
+```c
+const char* TIFFFileName(TIFF* tif)
+```
+- Returns filename of open TIFF
+
+## Common Assertion Patterns
+
+```c
+#include <tiffio.h>
+#include <assert.h>
+
+// Opening a file
+TIFF* tif = TIFFOpen(filename, "r");
+assert(tif != NULL);
+
+// Opening with "h" option (no auto directory read)
+tif = TIFFOpen(filename, "rh");
+assert(tif != NULL);
+
+// Setting a field
+int ret = TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, "test");
+assert(ret != 0);  // 1 on success
+
+// Getting a field
+uint32_t width;
+ret = TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+assert(ret == 1);
+
+// Reading a directory
+ret = TIFFReadDirectory(tif);
+assert(ret == 1);  // or assert(ret != 0);
+
+// Reading GPS directory
+ret = TIFFReadGPSDirectory(tif, offset);
+assert(ret == 1);
+
+// Closing (no return value to check)
+TIFFClose(tif);
+
+// Complete example with file creation
+TIFF* tif = TIFFOpen("test.tif", "w");
+assert(tif != NULL);
+assert(TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, "Test") != 0);
+TIFFClose(tif);
+
+// Reopen and verify
+tif = TIFFOpen("test.tif", "r+h");
+assert(tif != NULL);
+assert(TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, "Updated") != 0);
+TIFFClose(tif);
+```
+
+## Error Handling Notes
+- Most functions return 0 or -1 on failure
+- TIFFOpen returns NULL on failure
+- TIFFClose has no return value (void)
+- Always check return values before proceeding
+
+## Important: Command Line Arguments
+**When the harness uses argv[1] for a filename:**
+- Do NOT add `assert(argc > 1)` - the test framework handles argument validation
+- Do NOT add assertions on command line arguments
+- Simply use argv[1] as the harness does
+- Focus assertions on TIFF API return values, not program arguments
+
+Example - WRONG:
+```c
+assert(argc > 1);  // DO NOT ADD THIS
+TIFF* tif = TIFFOpen(argv[1], "rh");
+```
+
+Example - CORRECT:
+```c
+TIFF* tif = TIFFOpen(argv[1], "rh");
+assert(tif != NULL);  // Only assert on API return value
+```

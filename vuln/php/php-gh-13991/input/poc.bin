@@ -1,0 +1,5 @@
+<?php
+$dbfile = '13991db';
+$db = new PDO('sqlite:' . $dbfile, null, null, [PDO::ATTR_PERSISTENT => true]);
+echo 'done!';
+?>

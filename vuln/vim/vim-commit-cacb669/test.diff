@@ -1,0 +1,48 @@
+diff --git a/src/testdir/crash/reverse_text_overflow b/src/testdir/crash/reverse_text_overflow
+new file mode 100644
+index 0000000000000000000000000000000000000000..dfbfe2c9a611aad20c444aec335a11c9edf0ebf6
+GIT binary patch
+literal 314
+zcmXry1p-aY9IoR33dPBssrhM)3jd2U^2_rLbqu9z|CVq9X)Xn>q(lXVCVhRb23)|N
+zE3bipfq^S8FSWQNHAN**Oib*hwwRbJkS^m&Fq~h|0JJ0(WXb<}1{SV*1~CP$;>?`X
+zyb{H{{G#0drFo_GIgB3FMmmNDaWN_XQ~rBYJLni10@*>;hB~?i!ayJmaxTx`NyVup
+zVVNKSeSKbiAYcHRm8wvb!v!>|;lBz<1~>S~o0AIkvu0X!ba6?tE+;2vU|=9;SyC>S
+iqZ`Z@Ko_Z~*g}AxN+1Ix1A~|V*fW{Ma)!JL!u0@x2~~;!
+
+literal 0
+HcmV?d00001
+
+diff --git a/src/testdir/test_crash.vim b/src/testdir/test_crash.vim
+index 800f3e5e6..302d3730b 100644
+--- a/src/testdir/test_crash.vim
++++ b/src/testdir/test_crash.vim
+@@ -150,6 +150,13 @@ func Test_crash1_2()
+     \ ' ; echo "crash 4: [OK]" >> '.. result .. "\<cr>")
+   call TermWait(buf, 150)
+ 
++  let file = 'crash/reverse_text_overflow'
++  let cmn_args = "%s -u NONE -i NONE -n -X -m -n -e -s -S %s -c ':qa!'"
++  let args = printf(cmn_args, vim, file)
++  call term_sendkeys(buf, args ..
++    \ ' ; echo "crash 5: [OK]" >> '.. result .. "\<cr>")
++  call TermWait(buf, 150)
++
+   " clean up
+   exe buf .. "bw!"
+   exe "sp " .. result
+@@ -158,6 +165,7 @@ func Test_crash1_2()
+       \ 'crash 2: [OK]',
+       \ 'crash 3: [OK]',
+       \ 'crash 4: [OK]',
++      \ 'crash 5: [OK]',
+       \ ]
+ 
+   call assert_equal(expected, getline(1, '$'))
+@@ -201,6 +209,7 @@ func Test_crash1_3()
+   let args = printf(cmn_args, vim, file)
+   call term_sendkeys(buf, args)
+   call TermWait(buf, 150)
++  call delete('Untitled')
+ 
+   let file = 'crash/nullpointer'
+   let cmn_args = "%s -u NONE -i NONE -n -e -s -S %s -c ':qa!'\<cr>"

@@ -1,0 +1,194 @@
+diff --git a/include/hermes/VM/JSCallableProxy.h b/include/hermes/VM/JSCallableProxy.h
+index 5aab5d3de..a07b6ebb3 100644
+--- a/include/hermes/VM/JSCallableProxy.h
++++ b/include/hermes/VM/JSCallableProxy.h
+@@ -37,10 +37,7 @@ class JSCallableProxy : public NativeFunction {
+       Handle<JSObject> target,
+       Handle<JSObject> handler);
+ 
+-  bool isConstructor(Runtime *runtime) {
+-    return vm::isConstructor(
+-        runtime, vmcast_or_null<Callable>(slots_.target.get(runtime)));
+-  }
++  CallResult<bool> isConstructor(Runtime *runtime);
+ 
+ #ifdef HERMESVM_SERIALIZE
+   explicit JSCallableProxy(Deserializer &d);
+diff --git a/include/hermes/VM/Operations.h b/include/hermes/VM/Operations.h
+index a1f476466..803622c8f 100644
+--- a/include/hermes/VM/Operations.h
++++ b/include/hermes/VM/Operations.h
+@@ -356,12 +356,12 @@ CallResult<Handle<Callable>> speciesConstructor(
+ /// ES7 7.2.4
+ /// Returns true if the \c value is a constructor.  The value can be
+ /// Anything.
+-bool isConstructor(Runtime *runtime, HermesValue value);
++CallResult<bool> isConstructor(Runtime *runtime, HermesValue value);
+ 
+ /// ES7 7.2.4
+ /// Returns true if \c callable is a constructor.  Passing \c nullptr
+ /// is allowed, and returns false.
+-bool isConstructor(Runtime *runtime, Callable *callable);
++CallResult<bool> isConstructor(Runtime *runtime, Callable *callable);
+ 
+ /// ES6.0 7.2.8
+ /// Returns true if the object is a JSRegExp or has a Symbol.match property that
+diff --git a/lib/VM/JSCallableProxy.cpp b/lib/VM/JSCallableProxy.cpp
+index 60ad53439..4f419a3e3 100644
+--- a/lib/VM/JSCallableProxy.cpp
++++ b/lib/VM/JSCallableProxy.cpp
+@@ -97,6 +97,15 @@ void JSCallableProxy::setTargetAndHandler(
+   slots_.handler.set(runtime, handler.get(), &runtime->getHeap());
+ }
+ 
++CallResult<bool> JSCallableProxy::isConstructor(Runtime *runtime) {
++  ScopedNativeDepthTracker depthTracker(runtime);
++  if (LLVM_UNLIKELY(depthTracker.overflowed())) {
++    return runtime->raiseStackOverflow(Runtime::StackOverflowKind::NativeStack);
++  }
++  return vm::isConstructor(
++      runtime, vmcast_or_null<Callable>(slots_.target.get(runtime)));
++}
++
+ CallResult<HermesValue>
+ JSCallableProxy::_proxyNativeCall(void *, Runtime *runtime, NativeArgs) {
+   // We don't use NativeArgs; the implementations just read the current
+@@ -200,7 +209,12 @@ CallResult<PseudoHandle<JSObject>> JSCallableProxy::_newObjectImpl(
+     Handle<Callable> callable,
+     Runtime *runtime,
+     Handle<JSObject> protoHandle) {
+-  if (!vmcast<JSCallableProxy>(*callable)->isConstructor(runtime)) {
++  CallResult<bool> isConstructorRes =
++      vmcast<JSCallableProxy>(*callable)->isConstructor(runtime);
++  if (LLVM_UNLIKELY(isConstructorRes == ExecutionStatus::EXCEPTION)) {
++    return ExecutionStatus::EXCEPTION;
++  }
++  if (!*isConstructorRes) {
+     return runtime->raiseTypeError("Function is not a constructor");
+   }
+   return vm::Callable::newObject(
+diff --git a/lib/VM/JSLib/Array.cpp b/lib/VM/JSLib/Array.cpp
+index 0122e94f4..3cd9ee4fd 100644
+--- a/lib/VM/JSLib/Array.cpp
++++ b/lib/VM/JSLib/Array.cpp
+@@ -3413,8 +3413,12 @@ CallResult<HermesValue> arrayOf(void *, Runtime *runtime, NativeArgs args) {
+   auto C = args.getThisHandle();
+ 
+   MutableHandle<JSObject> A{runtime};
++  CallResult<bool> isConstructorRes = isConstructor(runtime, *C);
++  if (LLVM_UNLIKELY(isConstructorRes == ExecutionStatus::EXCEPTION)) {
++    return ExecutionStatus::EXCEPTION;
++  }
+   // 4. If IsConstructor(C) is true, then
+-  if (isConstructor(runtime, *C)) {
++  if (*isConstructorRes) {
+     // a. Let A be Construct(C, «len»).
+     auto aRes = Callable::executeConstruct1(
+         Handle<Callable>::vmcast(C),
+@@ -3512,8 +3516,12 @@ CallResult<HermesValue> arrayFrom(void *, Runtime *runtime, NativeArgs args) {
+   MutableHandle<JSObject> A{runtime};
+   // 6. If usingIterator is not undefined, then
+   if (!usingIterator->isUndefined()) {
++    CallResult<bool> isConstructorRes = isConstructor(runtime, *C);
++    if (LLVM_UNLIKELY(isConstructorRes == ExecutionStatus::EXCEPTION)) {
++      return ExecutionStatus::EXCEPTION;
++    }
+     // a. If IsConstructor(C) is true, then
+-    if (isConstructor(runtime, *C)) {
++    if (*isConstructorRes) {
+       GCScopeMarkerRAII markerConstruct{gcScope};
+       // i. Let A be Construct(C).
+       auto callRes =
+@@ -3633,8 +3641,12 @@ CallResult<HermesValue> arrayFrom(void *, Runtime *runtime, NativeArgs args) {
+     return ExecutionStatus::EXCEPTION;
+   }
+   uint64_t len = lengthRes->getNumberAs<uint64_t>();
++  CallResult<bool> isConstructorRes = isConstructor(runtime, *C);
++  if (LLVM_UNLIKELY(isConstructorRes == ExecutionStatus::EXCEPTION)) {
++    return ExecutionStatus::EXCEPTION;
++  }
+   // 12. If IsConstructor(C) is true, then
+-  if (isConstructor(runtime, *C)) {
++  if (*isConstructorRes) {
+     // a. Let A be Construct(C, «len»).
+     auto callRes = Callable::executeConstruct1(
+         Handle<Callable>::vmcast(C),
+diff --git a/lib/VM/JSLib/Reflect.cpp b/lib/VM/JSLib/Reflect.cpp
+index b469b9d02..a7c3142fd 100644
+--- a/lib/VM/JSLib/Reflect.cpp
++++ b/lib/VM/JSLib/Reflect.cpp
+@@ -43,7 +43,11 @@ reflectConstruct(void *, Runtime *runtime, NativeArgs args) {
+   if (LLVM_UNLIKELY(!target)) {
+     return runtime->raiseTypeError("target is not constructible");
+   }
+-  if (LLVM_UNLIKELY(!isConstructor(runtime, *target))) {
++  CallResult<bool> isConstructorRes = isConstructor(runtime, *target);
++  if (LLVM_UNLIKELY(isConstructorRes == ExecutionStatus::EXCEPTION)) {
++    return ExecutionStatus::EXCEPTION;
++  }
++  if (LLVM_UNLIKELY(!*isConstructorRes)) {
+     return runtime->raiseTypeError("target is not constructible");
+   }
+   Handle<Callable> newTarget = args.dyncastArg<Callable>(2);
+@@ -51,7 +55,11 @@ reflectConstruct(void *, Runtime *runtime, NativeArgs args) {
+     if (LLVM_UNLIKELY(!newTarget)) {
+       return runtime->raiseTypeError("newTarget is not constructible");
+     }
+-    if (LLVM_UNLIKELY(!isConstructor(runtime, *newTarget))) {
++    CallResult<bool> isConstructorRes = isConstructor(runtime, *newTarget);
++    if (LLVM_UNLIKELY(isConstructorRes == ExecutionStatus::EXCEPTION)) {
++      return ExecutionStatus::EXCEPTION;
++    }
++    if (LLVM_UNLIKELY(!*isConstructorRes)) {
+       return runtime->raiseTypeError("newTarget is not constructible");
+     }
+   }
+diff --git a/lib/VM/JSLib/TypedArray.cpp b/lib/VM/JSLib/TypedArray.cpp
+index 05e9d4f32..7eb149e00 100644
+--- a/lib/VM/JSLib/TypedArray.cpp
++++ b/lib/VM/JSLib/TypedArray.cpp
+@@ -513,8 +513,12 @@ typedArrayConstructor(void *, Runtime *runtime, NativeArgs args) {
+ CallResult<HermesValue>
+ typedArrayFrom(void *, Runtime *runtime, NativeArgs args) {
+   auto source = args.getArgHandle(0);
++  CallResult<bool> isConstructorRes = isConstructor(runtime, args.getThisArg());
++  if (LLVM_UNLIKELY(isConstructorRes == ExecutionStatus::EXCEPTION)) {
++    return ExecutionStatus::EXCEPTION;
++  }
+   // 1. Let C be the this value.
+-  if (!isConstructor(runtime, args.getThisArg())) {
++  if (!*isConstructorRes) {
+     // 2. If IsConstructor(C) is false, throw a TypeError exception.
+     return runtime->raiseTypeError(
+         "Cannot invoke when the this is not a constructor");
+@@ -600,7 +604,11 @@ typedArrayOf(void *, Runtime *runtime, NativeArgs args) {
+   // 2. Let items be the List of arguments passed to this function. (args is
+   // items).
+   // 3. Let C be the this value.
+-  if (!isConstructor(runtime, args.getThisArg())) {
++  CallResult<bool> isConstructorRes = isConstructor(runtime, args.getThisArg());
++  if (LLVM_UNLIKELY(isConstructorRes == ExecutionStatus::EXCEPTION)) {
++    return ExecutionStatus::EXCEPTION;
++  }
++  if (!*isConstructorRes) {
+     // 4. If IsConstructor(C) is false, throw a TypeError exception.
+     return runtime->raiseTypeError(
+         "Cannot invoke %TypedArray%.of when %TypedArray% is not a constructor "
+diff --git a/lib/VM/Operations.cpp b/lib/VM/Operations.cpp
+index 60820798a..d16b01ad8 100644
+--- a/lib/VM/Operations.cpp
++++ b/lib/VM/Operations.cpp
+@@ -1347,11 +1347,11 @@ CallResult<Handle<Callable>> speciesConstructor(
+   return defaultConstructor;
+ }
+ 
+-bool isConstructor(Runtime *runtime, HermesValue value) {
++CallResult<bool> isConstructor(Runtime *runtime, HermesValue value) {
+   return isConstructor(runtime, dyn_vmcast<Callable>(value));
+ }
+ 
+-bool isConstructor(Runtime *runtime, Callable *callable) {
++CallResult<bool> isConstructor(Runtime *runtime, Callable *callable) {
+   // This is not a complete definition, since ES6 and later define member
+   // functions of objects to not be constructors; however, Hermes does not have
+   // ES6 classes implemented yet, so we cannot check for that case.

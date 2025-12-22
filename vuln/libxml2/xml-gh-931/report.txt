@@ -1,0 +1,82 @@
+==14433==ERROR: AddressSanitizer: heap-use-after-free on address 0x504000000618 at pc 0x7d2321012370 bp 0x7ffd3b696a80 sp 0x7ffd3b696a78
+READ of size 8 at 0x504000000618 thread T0
+    #0 0x7d232101236f in xmlSchematronFormatReport /tmp/xml-gh-931/build/schematron.c:1442:24
+    #1 0x7d23210119bb in xmlSchematronReportSuccess /tmp/xml-gh-931/build/schematron.c:1577:22
+    #2 0x7d232100de06 in xmlSchematronRunTest /tmp/xml-gh-931/build/schematron.c:1827:5
+    #3 0x7d232100d0a7 in xmlSchematronValidateDoc /tmp/xml-gh-931/build/schematron.c:1938:25
+    #4 0x5835e4f389d7 in main /tmp/xml-gh-931/build/poc.c:85:18
+    #5 0x7d23209021c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x7d232090228a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x5835e4e5f3f4 in _start (/tmp/xml-gh-931/build/poc+0x2c3f4) (BuildId: 3df1de8bde2095f50e5ca287d03b90bc0bb4b58c)
+
+0x504000000618 is located 8 bytes inside of 37-byte region [0x504000000610,0x504000000635)
+freed by thread T0 here:
+    #0 0x5835e4ef9faa in free (/tmp/xml-gh-931/build/poc+0xc6faa) (BuildId: 3df1de8bde2095f50e5ca287d03b90bc0bb4b58c)
+    #1 0x7d2321039175 in xmlXPathNodeSetFreeNs /tmp/xml-gh-931/build/xpath.c:2653:6
+    #2 0x7d2321039de8 in xmlXPathFreeNodeSet /tmp/xml-gh-931/build/xpath.c:3110:3
+    #3 0x7d2321032485 in xmlXPathFreeObject /tmp/xml-gh-931/build/xpath.c:4235:13
+    #4 0x7d2321013447 in xmlSchematronGetNode /tmp/xml-gh-931/build/schematron.c:1386:5
+    #5 0x7d23210122f8 in xmlSchematronFormatReport /tmp/xml-gh-931/build/schematron.c:1436:24
+    #6 0x7d23210119bb in xmlSchematronReportSuccess /tmp/xml-gh-931/build/schematron.c:1577:22
+    #7 0x7d232100de06 in xmlSchematronRunTest /tmp/xml-gh-931/build/schematron.c:1827:5
+    #8 0x7d232100d0a7 in xmlSchematronValidateDoc /tmp/xml-gh-931/build/schematron.c:1938:25
+    #9 0x5835e4f389d7 in main /tmp/xml-gh-931/build/poc.c:85:18
+    #10 0x7d23209021c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7d232090228a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x5835e4e5f3f4 in _start (/tmp/xml-gh-931/build/poc+0x2c3f4) (BuildId: 3df1de8bde2095f50e5ca287d03b90bc0bb4b58c)
+
+previously allocated by thread T0 here:
+    #0 0x5835e4efa243 in malloc (/tmp/xml-gh-931/build/poc+0xc7243) (BuildId: 3df1de8bde2095f50e5ca287d03b90bc0bb4b58c)
+    #1 0x7d2320e1de2f in xmlStrndup /tmp/xml-gh-931/build/xmlstring.c:54:11
+    #2 0x7d2320e1df77 in xmlStrdup /tmp/xml-gh-931/build/xmlstring.c:77:12
+    #3 0x7d2321039902 in xmlXPathNodeSetDupNs /tmp/xml-gh-931/build/xpath.c:2621:14
+    #4 0x7d232103b944 in xmlXPathNodeSetMerge /tmp/xml-gh-931/build/xpath.c:2929:33
+    #5 0x7d232107e83e in xmlXPathCompOpEval /tmp/xml-gh-931/build/xpath.c:10846:22
+    #6 0x7d232107e080 in xmlXPathCompOpEval /tmp/xml-gh-931/build/xpath.c:10818:22
+    #7 0x7d232108227b in xmlXPathCompOpEval /tmp/xml-gh-931/build/xpath.c:11114:26
+    #8 0x7d232105cc3a in xmlXPathRunEval /tmp/xml-gh-931/build/xpath.c:11530:2
+    #9 0x7d232105c6f2 in xmlXPathEvalExpr /tmp/xml-gh-931/build/xpath.c:12016:5
+    #10 0x7d232105cd7c in xmlXPathEval /tmp/xml-gh-931/build/xpath.c:12042:5
+    #11 0x7d232101325a in xmlSchematronGetNode /tmp/xml-gh-931/build/schematron.c:1378:11
+    #12 0x7d23210122f8 in xmlSchematronFormatReport /tmp/xml-gh-931/build/schematron.c:1436:24
+    #13 0x7d23210119bb in xmlSchematronReportSuccess /tmp/xml-gh-931/build/schematron.c:1577:22
+    #14 0x7d232100de06 in xmlSchematronRunTest /tmp/xml-gh-931/build/schematron.c:1827:5
+    #15 0x7d232100d0a7 in xmlSchematronValidateDoc /tmp/xml-gh-931/build/schematron.c:1938:25
+    #16 0x5835e4f389d7 in main /tmp/xml-gh-931/build/poc.c:85:18
+    #17 0x7d23209021c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x7d232090228a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x5835e4e5f3f4 in _start (/tmp/xml-gh-931/build/poc+0x2c3f4) (BuildId: 3df1de8bde2095f50e5ca287d03b90bc0bb4b58c)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /tmp/xml-gh-931/build/schematron.c:1442:24 in xmlSchematronFormatReport
+Shadow bytes around the buggy address:
+  0x504000000380: fa fa 00 00 00 00 00 00 fa fa fd fd fd fd fd fa
+  0x504000000400: fa fa fd fd fd fd fd fd fa fa fd fd fd fd fd fa
+  0x504000000480: fa fa fd fd fd fd fd fd fa fa fd fd fd fd fd fd
+  0x504000000500: fa fa fd fd fd fd fd fa fa fa fd fd fd fd fd fd
+  0x504000000580: fa fa fd fd fd fd fd fa fa fa fd fd fd fd fd fd
+=>0x504000000600: fa fa fd[fd]fd fd fd fa fa fa fa fa fa fa fa fa
+  0x504000000680: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000000700: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000000780: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000000800: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000000880: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==14433==ABORTING

@@ -1,0 +1,69 @@
+diff --git a/Include/internal/pycore_object.h b/Include/internal/pycore_object.h
+index 19d657070ff..0b1df7e68b8 100644
+--- a/Include/internal/pycore_object.h
++++ b/Include/internal/pycore_object.h
+@@ -62,7 +62,7 @@ extern void _Py_ForgetReference(PyObject *);
+ PyAPI_FUNC(int) _PyObject_IsFreed(PyObject *);
+ 
+ /* We need to maintain an internal copy of Py{Var}Object_HEAD_INIT to avoid
+-   designated initializer conflicts in C++20. If we use the deinition in
++   designated initializer conflicts in C++20. If we use the definition in
+    object.h, we will be mixing designated and non-designated initializers in
+    pycore objects which is forbiddent in C++20. However, if we then use
+    designated initializers in object.h then Extensions without designated break.
+diff --git a/Misc/NEWS.d/next/Core_and_Builtins/2024-11-18-12-17-45.gh-issue-125723.tW_hFG.rst b/Misc/NEWS.d/next/Core_and_Builtins/2024-11-18-12-17-45.gh-issue-125723.tW_hFG.rst
+new file mode 100644
+index 00000000000..62ca6f62f52
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core_and_Builtins/2024-11-18-12-17-45.gh-issue-125723.tW_hFG.rst
+@@ -0,0 +1,2 @@
++Fix crash with ``gi_frame.f_locals`` when generator frames outlive their
++generator. Patch by Mikhail Efimov.
+diff --git a/Objects/genobject.c b/Objects/genobject.c
+index b32140766c4..bc3a65d8aa2 100644
+--- a/Objects/genobject.c
++++ b/Objects/genobject.c
+@@ -134,6 +134,19 @@ _PyGen_Finalize(PyObject *self)
+     PyErr_SetRaisedException(exc);
+ }
+ 
++static void
++gen_clear_frame(PyGenObject *gen)
++{
++    if (gen->gi_frame_state == FRAME_CLEARED)
++        return;
++
++    gen->gi_frame_state = FRAME_CLEARED;
++    _PyInterpreterFrame *frame = &gen->gi_iframe;
++    frame->previous = NULL;
++    _PyFrame_ClearExceptCode(frame);
++    _PyErr_ClearExcState(&gen->gi_exc_state);
++}
++
+ static void
+ gen_dealloc(PyObject *self)
+ {
+@@ -159,13 +172,7 @@ gen_dealloc(PyObject *self)
+     if (PyCoro_CheckExact(gen)) {
+         Py_CLEAR(((PyCoroObject *)gen)->cr_origin_or_finalizer);
+     }
+-    if (gen->gi_frame_state != FRAME_CLEARED) {
+-        _PyInterpreterFrame *frame = &gen->gi_iframe;
+-        gen->gi_frame_state = FRAME_CLEARED;
+-        frame->previous = NULL;
+-        _PyFrame_ClearExceptCode(frame);
+-        _PyErr_ClearExcState(&gen->gi_exc_state);
+-    }
++    gen_clear_frame(gen);
+     assert(gen->gi_exc_state.exc_value == NULL);
+     PyStackRef_CLEAR(gen->gi_iframe.f_executable);
+     Py_CLEAR(gen->gi_name);
+@@ -400,7 +407,7 @@ gen_close(PyObject *self, PyObject *args)
+             // RESUME after YIELD_VALUE and exception depth is 1
+             assert((oparg & RESUME_OPARG_LOCATION_MASK) != RESUME_AT_FUNC_START);
+             gen->gi_frame_state = FRAME_COMPLETED;
+-            _PyFrame_ClearLocals(&gen->gi_iframe);
++            gen_clear_frame(gen);
+             Py_RETURN_NONE;
+         }
+     }

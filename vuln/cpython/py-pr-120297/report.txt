@@ -1,0 +1,127 @@
+==245942==ERROR: AddressSanitizer: heap-use-after-free on address 0x50300001a1a0 at pc 0x7efec434b971 bp 0x7ffd453a7940 sp 0x7ffd453a7938
+WRITE of size 8 at 0x50300001a1a0 thread T0
+    #0 0x7efec434b970 in initContext /py-pr-120297/build/./Modules/_lsprof.c:310:14
+    #1 0x7efec434a9e0 in ptrace_enter_call /py-pr-120297/build/./Modules/_lsprof.c:379:5
+    #2 0x7efec434a841 in pystart_callback /py-pr-120297/build/./Modules/_lsprof.c:604:5
+    #3 0x559fa447206d in cfunction_vectorcall_FASTCALL /py-pr-120297/build/Objects/methodobject.c:425:24
+    #4 0x559fa488271f in _PyObject_VectorcallTstate /py-pr-120297/build/./Include/internal/pycore_call.h:167:11
+    #5 0x559fa487bb67 in call_one_instrument /py-pr-120297/build/Python/instrumentation.c:907:21
+    #6 0x559fa48798ac in call_instrumentation_vector /py-pr-120297/build/Python/instrumentation.c:1095:19
+    #7 0x559fa48795ac in _Py_call_instrumentation /py-pr-120297/build/Python/instrumentation.c:1132:12
+    #8 0x559fa474d7a3 in _PyEval_EvalFrameDefault /py-pr-120297/build/Python/generated_cases.c.h:3791:27
+    #9 0x559fa472bf01 in _PyEval_EvalFrame /py-pr-120297/build/./Include/internal/pycore_ceval.h:119:16
+    #10 0x559fa472bdfe in _PyEval_Vector /py-pr-120297/build/Python/ceval.c:1866:12
+    #11 0x559fa472b77c in PyEval_EvalCode /py-pr-120297/build/Python/ceval.c:624:21
+    #12 0x559fa48de693 in run_eval_code_obj /py-pr-120297/build/Python/pythonrun.c:1292:9
+    #13 0x559fa48de3cb in run_mod /py-pr-120297/build/Python/pythonrun.c:1377:19
+    #14 0x559fa48da052 in pyrun_file /py-pr-120297/build/Python/pythonrun.c:1210:15
+    #15 0x559fa48d89bf in _PyRun_SimpleFileObject /py-pr-120297/build/Python/pythonrun.c:459:13
+    #16 0x559fa48d8148 in _PyRun_AnyFileObject /py-pr-120297/build/Python/pythonrun.c:77:15
+    #17 0x559fa49736a6 in pymain_run_file_obj /py-pr-120297/build/Modules/main.c:409:15
+    #18 0x559fa497236b in pymain_run_file /py-pr-120297/build/Modules/main.c:428:15
+    #19 0x559fa49701ac in pymain_run_python /py-pr-120297/build/Modules/main.c:692:21
+    #20 0x559fa496f5a5 in Py_RunMain /py-pr-120297/build/Modules/main.c:771:5
+    #21 0x559fa4970645 in pymain_main /py-pr-120297/build/Modules/main.c:801:12
+    #22 0x559fa4970784 in Py_BytesMain /py-pr-120297/build/Modules/main.c:825:12
+    #23 0x559fa41a2521 in main /py-pr-120297/build/./Programs/python.c:15:12
+    #24 0x7efec47e71c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #25 0x7efec47e728a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #26 0x559fa40c9114 in _start (/py-pr-120297/build/python+0x19b114) (BuildId: 0155330d479b5e8e4eed08481af8e04a310d8802)
+
+0x50300001a1a0 is located 0 bytes inside of 32-byte region [0x50300001a1a0,0x50300001a1c0)
+freed by thread T0 here:
+    #0 0x559fa4163cca in free (/py-pr-120297/build/python+0x235cca) (BuildId: 0155330d479b5e8e4eed08481af8e04a310d8802)
+    #1 0x559fa44aac38 in _PyMem_RawFree /py-pr-120297/build/Objects/obmalloc.c:90:5
+    #2 0x559fa44ad027 in PyMem_Free /py-pr-120297/build/Objects/obmalloc.c:1018:5
+    #3 0x7efec4350db8 in flush_unmatched /py-pr-120297/build/./Modules/_lsprof.c:766:13
+    #4 0x7efec434f837 in profiler_disable /py-pr-120297/build/./Modules/_lsprof.c:815:9
+    #5 0x559fa438e43c in method_vectorcall_NOARGS /py-pr-120297/build/Objects/descrobject.c:447:24
+    #6 0x559fa43675ff in _PyObject_VectorcallTstate /py-pr-120297/build/./Include/internal/pycore_call.h:167:11
+    #7 0x559fa43691c9 in PyObject_Vectorcall /py-pr-120297/build/Objects/call.c:327:12
+    #8 0x559fa473436d in _PyEval_EvalFrameDefault /py-pr-120297/build/Python/generated_cases.c.h:871:35
+    #9 0x559fa472bf01 in _PyEval_EvalFrame /py-pr-120297/build/./Include/internal/pycore_ceval.h:119:16
+    #10 0x559fa472bdfe in _PyEval_Vector /py-pr-120297/build/Python/ceval.c:1866:12
+    #11 0x559fa4369611 in _PyFunction_Vectorcall /py-pr-120297/build/Objects/call.c:413:16
+    #12 0x559fa43677a7 in _PyObject_VectorcallDictTstate /py-pr-120297/build/Objects/call.c:135:15
+    #13 0x559fa4369b29 in _PyObject_Call_Prepend /py-pr-120297/build/Objects/call.c:504:24
+    #14 0x559fa44fe6b5 in slot_tp_call /py-pr-120297/build/Objects/typeobject.c:9718:15
+    #15 0x559fa4367b87 in _PyObject_MakeTpCall /py-pr-120297/build/Objects/call.c:242:18
+    #16 0x7efec434cac9 in _PyObject_VectorcallTstate /py-pr-120297/build/./Include/internal/pycore_call.h:165:16
+    #17 0x7efec434ca4c in _PyObject_CallNoArgs /py-pr-120297/build/./Include/internal/pycore_call.h:183:12
+    #18 0x7efec434c7c1 in CallExternalTimer /py-pr-120297/build/./Modules/_lsprof.c:90:19
+    #19 0x7efec434c613 in call_timer /py-pr-120297/build/./Modules/_lsprof.c:121:16
+    #20 0x7efec434b941 in initContext /py-pr-120297/build/./Modules/_lsprof.c:310:16
+    #21 0x7efec434a9e0 in ptrace_enter_call /py-pr-120297/build/./Modules/_lsprof.c:379:5
+    #22 0x7efec434a841 in pystart_callback /py-pr-120297/build/./Modules/_lsprof.c:604:5
+    #23 0x559fa447206d in cfunction_vectorcall_FASTCALL /py-pr-120297/build/Objects/methodobject.c:425:24
+    #24 0x559fa488271f in _PyObject_VectorcallTstate /py-pr-120297/build/./Include/internal/pycore_call.h:167:11
+    #25 0x559fa487bb67 in call_one_instrument /py-pr-120297/build/Python/instrumentation.c:907:21
+    #26 0x559fa48798ac in call_instrumentation_vector /py-pr-120297/build/Python/instrumentation.c:1095:19
+    #27 0x559fa48795ac in _Py_call_instrumentation /py-pr-120297/build/Python/instrumentation.c:1132:12
+    #28 0x559fa474d7a3 in _PyEval_EvalFrameDefault /py-pr-120297/build/Python/generated_cases.c.h:3791:27
+    #29 0x559fa472bf01 in _PyEval_EvalFrame /py-pr-120297/build/./Include/internal/pycore_ceval.h:119:16
+
+previously allocated by thread T0 here:
+    #0 0x559fa4163f63 in malloc (/py-pr-120297/build/python+0x235f63) (BuildId: 0155330d479b5e8e4eed08481af8e04a310d8802)
+    #1 0x559fa44aab7b in _PyMem_RawMalloc /py-pr-120297/build/Objects/obmalloc.c:62:12
+    #2 0x559fa44acdb8 in PyMem_Malloc /py-pr-120297/build/Objects/obmalloc.c:989:12
+    #3 0x7efec434a967 in ptrace_enter_call /py-pr-120297/build/./Modules/_lsprof.c:373:13
+    #4 0x7efec434a841 in pystart_callback /py-pr-120297/build/./Modules/_lsprof.c:604:5
+    #5 0x559fa447206d in cfunction_vectorcall_FASTCALL /py-pr-120297/build/Objects/methodobject.c:425:24
+    #6 0x559fa488271f in _PyObject_VectorcallTstate /py-pr-120297/build/./Include/internal/pycore_call.h:167:11
+    #7 0x559fa487bb67 in call_one_instrument /py-pr-120297/build/Python/instrumentation.c:907:21
+    #8 0x559fa48798ac in call_instrumentation_vector /py-pr-120297/build/Python/instrumentation.c:1095:19
+    #9 0x559fa48795ac in _Py_call_instrumentation /py-pr-120297/build/Python/instrumentation.c:1132:12
+    #10 0x559fa474d7a3 in _PyEval_EvalFrameDefault /py-pr-120297/build/Python/generated_cases.c.h:3791:27
+    #11 0x559fa472bf01 in _PyEval_EvalFrame /py-pr-120297/build/./Include/internal/pycore_ceval.h:119:16
+    #12 0x559fa472bdfe in _PyEval_Vector /py-pr-120297/build/Python/ceval.c:1866:12
+    #13 0x559fa472b77c in PyEval_EvalCode /py-pr-120297/build/Python/ceval.c:624:21
+    #14 0x559fa48de693 in run_eval_code_obj /py-pr-120297/build/Python/pythonrun.c:1292:9
+    #15 0x559fa48de3cb in run_mod /py-pr-120297/build/Python/pythonrun.c:1377:19
+    #16 0x559fa48da052 in pyrun_file /py-pr-120297/build/Python/pythonrun.c:1210:15
+    #17 0x559fa48d89bf in _PyRun_SimpleFileObject /py-pr-120297/build/Python/pythonrun.c:459:13
+    #18 0x559fa48d8148 in _PyRun_AnyFileObject /py-pr-120297/build/Python/pythonrun.c:77:15
+    #19 0x559fa49736a6 in pymain_run_file_obj /py-pr-120297/build/Modules/main.c:409:15
+    #20 0x559fa497236b in pymain_run_file /py-pr-120297/build/Modules/main.c:428:15
+    #21 0x559fa49701ac in pymain_run_python /py-pr-120297/build/Modules/main.c:692:21
+    #22 0x559fa496f5a5 in Py_RunMain /py-pr-120297/build/Modules/main.c:771:5
+    #23 0x559fa4970645 in pymain_main /py-pr-120297/build/Modules/main.c:801:12
+    #24 0x559fa4970784 in Py_BytesMain /py-pr-120297/build/Modules/main.c:825:12
+    #25 0x559fa41a2521 in main /py-pr-120297/build/./Programs/python.c:15:12
+    #26 0x7efec47e71c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #27 0x7efec47e728a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #28 0x559fa40c9114 in _start (/py-pr-120297/build/python+0x19b114) (BuildId: 0155330d479b5e8e4eed08481af8e04a310d8802)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /py-pr-120297/build/./Modules/_lsprof.c:310:14 in initContext
+Shadow bytes around the buggy address:
+  0x503000019f00: 00 00 00 fa fa fa 00 00 01 fa fa fa 00 00 00 00
+  0x503000019f80: fa fa 00 00 07 fa fa fa 00 00 00 00 fa fa 00 00
+  0x50300001a000: 00 02 fa fa 00 00 00 00 fa fa fd fd fd fd fa fa
+  0x50300001a080: 00 00 00 00 fa fa fd fd fd fd fa fa fd fd fd fd
+  0x50300001a100: fa fa fd fd fd fd fa fa fd fd fd fd fa fa fd fd
+=>0x50300001a180: fd fd fa fa[fd]fd fd fd fa fa fd fd fd fd fa fa
+  0x50300001a200: fd fd fd fd fa fa fd fd fd fd fa fa fd fd fd fd
+  0x50300001a280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50300001a300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50300001a380: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50300001a400: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==245942==ABORTING

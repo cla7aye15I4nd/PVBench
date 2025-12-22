@@ -1,0 +1,14 @@
+id: llvm-gh-137333
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: Reachable Assertion
+trigger_commit: 40e1f7d1e7755726a27d34cb4d601019d376299b
+binary: mlir-opt
+patch:
+  commit: 26b81c4300a8efc8e9377dd04b5c78896e96740d
+  date: '2025-05-31T13:25:42+08:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/137333
+- https://github.com/llvm/llvm-project/commit/40e1f7d1e7755726a27d34cb4d601019d376299b
+- https://github.com/llvm/llvm-project/commit/26b81c4300a8efc8e9377dd04b5c78896e96740d

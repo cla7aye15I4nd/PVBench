@@ -1,0 +1,31 @@
+diff --git a/result/XPath/expr/strings b/result/XPath/expr/strings
+index 1ae5cc40..4b0125cf 100644
+--- a/result/XPath/expr/strings
++++ b/result/XPath/expr/strings
+@@ -135,6 +135,14 @@ Object is a string :
+ Expression: substring("12345",-1 div 0,5)
+ Object is a string : 
+ 
++========================
++Expression: substring("12345",-0.7,4)
++Object is a string : 12
++
++========================
++Expression: substring("12345",-5000000000,5000000004)
++Object is a string : 123
++
+ ========================
+ Expression: string-length("")
+ Object is a number : 0
+diff --git a/test/XPath/expr/strings b/test/XPath/expr/strings
+index ba02c794..c741ee25 100644
+--- a/test/XPath/expr/strings
++++ b/test/XPath/expr/strings
+@@ -32,5 +32,7 @@ substring("12345",3,-1 div 0)
+ substring("12345",-42, 1 div 0)
+ substring("12345",-1 div 0, 1 div 0)
+ substring("12345",-1 div 0,5)
++substring("12345",-0.7,4)
++substring("12345",-5000000000,5000000004)
+ string-length("")
+ string-length("titi")

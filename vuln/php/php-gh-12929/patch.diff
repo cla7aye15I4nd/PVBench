@@ -1,0 +1,71 @@
+diff --git a/NEWS b/NEWS
+index 69d3ffb52a..8d6fc8d544 100644
+--- a/NEWS
++++ b/NEWS
+@@ -34,6 +34,8 @@ PHP                                                                        NEWS
+ - SimpleXML:
+   . Fix getting the address of an uninitialized property of a SimpleXMLElement
+     resulting in a crash. (nielsdos)
++  . Fixed bug GH-12929 (SimpleXMLElement with stream_wrapper_register can
++    segfault). (nielsdos)
+ 
+ 07 Dec 2023, PHP 8.3.1RC1
+ 
+diff --git a/ext/simplexml/simplexml.c b/ext/simplexml/simplexml.c
+index ae3c98b7e3..eebf4af023 100644
+--- a/ext/simplexml/simplexml.c
++++ b/ext/simplexml/simplexml.c
+@@ -421,8 +421,6 @@ static zval *sxe_prop_dim_write(zend_object *object, zval *member, zval *value,
+ 
+ 	GET_NODE(sxe, node);
+ 
+-	php_libxml_invalidate_node_list_cache_from_doc(node->doc);
+-
+ 	if (sxe->iter.type == SXE_ITER_ATTRLIST) {
+ 		attribs = 1;
+ 		elements = 0;
+@@ -483,6 +481,8 @@ static zval *sxe_prop_dim_write(zend_object *object, zval *member, zval *value,
+ 	}
+ 
+ 	if (node) {
++		php_libxml_invalidate_node_list_cache_from_doc(node->doc);
++
+ 		if (attribs) {
+ 			if (Z_TYPE_P(member) == IS_LONG) {
+ 				while (attr && nodendx <= Z_LVAL_P(member)) {
+@@ -797,8 +797,6 @@ static void sxe_prop_dim_delete(zend_object *object, zval *member, bool elements
+ 
+ 	GET_NODE(sxe, node);
+ 
+-	php_libxml_invalidate_node_list_cache_from_doc(node->doc);
+-
+ 	if (Z_TYPE_P(member) == IS_LONG) {
+ 		if (sxe->iter.type != SXE_ITER_ATTRLIST) {
+ 			attribs = 0;
+@@ -822,6 +820,8 @@ static void sxe_prop_dim_delete(zend_object *object, zval *member, bool elements
+ 	}
+ 
+ 	if (node) {
++		php_libxml_invalidate_node_list_cache_from_doc(node->doc);
++
+ 		if (attribs) {
+ 			if (Z_TYPE_P(member) == IS_LONG) {
+ 				int	nodendx = 0;
+@@ -1678,8 +1678,6 @@ PHP_METHOD(SimpleXMLElement, addChild)
+ 	sxe = Z_SXEOBJ_P(ZEND_THIS);
+ 	GET_NODE(sxe, node);
+ 
+-	php_libxml_invalidate_node_list_cache_from_doc(node->doc);
+-
+ 	if (sxe->iter.type == SXE_ITER_ATTRLIST) {
+ 		php_error_docref(NULL, E_WARNING, "Cannot add element to attributes");
+ 		return;
+@@ -1692,6 +1690,8 @@ PHP_METHOD(SimpleXMLElement, addChild)
+ 		return;
+ 	}
+ 
++	php_libxml_invalidate_node_list_cache_from_doc(node->doc);
++
+ 	localname = xmlSplitQName2((xmlChar *)qname, &prefix);
+ 	if (localname == NULL) {
+ 		localname = xmlStrdup((xmlChar *)qname);

@@ -1,0 +1,27 @@
+==2910190==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x000000000000 bp 0x7fffffffdf40 sp 0x7fffffff4218 T0)
+==2910190==Hint: pc points to the zero page.
+==2910190==The signal is caused by a READ memory access.
+==2910190==Hint: address points to the zero page.
+    #0 0x0  (<unknown module>)
+    #1 0x555555d824e1 in _PyEval_EvalFrame /tmp/py-pr-108727/build/./Include/internal/pycore_ceval.h:107:16
+    #2 0x555555d823de in _PyEval_Vector /tmp/py-pr-108727/build/Python/ceval.c:1634:12
+    #3 0x555555d81d6f in PyEval_EvalCode /tmp/py-pr-108727/build/Python/ceval.c:584:21
+    #4 0x555555f3fe42 in run_eval_code_obj /tmp/py-pr-108727/build/Python/pythonrun.c:1730:9
+    #5 0x555555f38b85 in run_mod /tmp/py-pr-108727/build/Python/pythonrun.c:1751:19
+    #6 0x555555f36e0e in pyrun_file /tmp/py-pr-108727/build/Python/pythonrun.c:1647:15
+    #7 0x555555f358c0 in _PyRun_SimpleFileObject /tmp/py-pr-108727/build/Python/pythonrun.c:464:13
+    #8 0x555555f35098 in _PyRun_AnyFileObject /tmp/py-pr-108727/build/Python/pythonrun.c:79:15
+    #9 0x555555fc21e6 in pymain_run_file_obj /tmp/py-pr-108727/build/Modules/main.c:361:15
+    #10 0x555555fc115b in pymain_run_file /tmp/py-pr-108727/build/Modules/main.c:380:15
+    #11 0x555555fbf14d in pymain_run_python /tmp/py-pr-108727/build/Modules/main.c:611:21
+    #12 0x555555fbe8b8 in Py_RunMain /tmp/py-pr-108727/build/Modules/main.c:689:5
+    #13 0x555555fbf588 in pymain_main /tmp/py-pr-108727/build/Modules/main.c:719:12
+    #14 0x555555fbf697 in Py_BytesMain /tmp/py-pr-108727/build/Modules/main.c:743:12
+    #15 0x5555558a5481 in main /tmp/py-pr-108727/build/./Programs/python.c:15:12
+    #16 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x5555557cc074 in _start (/tmp/py-pr-108727/build/python+0x278074) (BuildId: c0ce7803577b20974e5498d9dd159cd5b247c824)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (<unknown module>) 
+==2910190==ABORTING

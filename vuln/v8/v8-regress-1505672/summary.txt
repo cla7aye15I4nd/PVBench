@@ -1,0 +1,22 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/objects/lookup-inl.h, line 108
+# Debug check failed: !name_->AsIntegerIndex(&integer_index).
+#
+#
+#
+#FailureMessage Object: 0x7fbac9b34460
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x80) [0x555dd9287ff0]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x555de0db18e3]
+    out/debug_asan/d8(+0xa7b5d3a) [0x555de0daed3a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x26f) [0x555de0d68b1f]
+    out/debug_asan/d8(+0xa76e84f) [0x555de0d6784f]
+    out/debug_asan/d8(v8::internal::LookupIterator::LookupIterator(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Object>, v8::internal::Handle<v8::internal::Name>, unsigned long, v8::internal::Handle<v8::internal::Object>, v8::internal::LookupIterator::Configuration)+0x901) [0x555dd93ec361]
+    out/debug_asan/d8(+0x588d0a5) [0x555ddbe860a5]
+    out/debug_asan/d8(v8::internal::String::GetSubstitution(v8::internal::Isolate*, v8::internal::String::Match*, v8::internal::Handle<v8::internal::String>, int)+0x702) [0x555ddb7dc612]
+    out/debug_asan/d8(+0x5875775) [0x555ddbe6e775]
+    out/debug_asan/d8(v8::internal::Runtime_RegExpReplaceRT(int, unsigned long*, v8::internal::Isolate*)+0x14c) [0x555ddbe6a11c]
+    out/debug_asan/d8(+0x9d53abd) [0x555de034cabd]

@@ -1,0 +1,20 @@
+==908691==ERROR: AddressSanitizer: SEGV on unknown address 0x00009fff8002 (pc 0x5631d2c59ce0 bp 0x7ffda5bf1d30 sp 0x7ffda5bf1b60 T0)
+==908691==The signal is caused by a READ memory access.
+    #0 0x5631d2c59ce0 in dom_html_fragment_parsing_algorithm /php-gh-15670/build/ext/dom/inner_html_mixin.c:196:52
+    #1 0x5631d2c58d3b in dom_element_inner_html_write /php-gh-15670/build/ext/dom/inner_html_mixin.c:347:14
+    #2 0x5631d2c92a12 in dom_write_property /php-gh-15670/build/ext/dom/php_dom.c:438:3
+    #3 0x5631d3e381b8 in ZEND_ASSIGN_OBJ_SPEC_CV_CONST_OP_DATA_CV_HANDLER /php-gh-15670/build/Zend/zend_vm_execute.h:43877:10
+    #4 0x5631d3d3506c in execute_ex /php-gh-15670/build/Zend/zend_vm_execute.h:58573:7
+    #5 0x5631d3d36907 in zend_execute /php-gh-15670/build/Zend/zend_vm_execute.h:64225:2
+    #6 0x5631d43cb740 in zend_execute_script /php-gh-15670/build/Zend/zend.c:1913:3
+    #7 0x5631d37ed33d in php_execute_script_ex /php-gh-15670/build/main/main.c:2576:13
+    #8 0x5631d37ed7c8 in php_execute_script /php-gh-15670/build/main/main.c:2616:9
+    #9 0x5631d43d3a11 in do_cli /php-gh-15670/build/sapi/cli/php_cli.c:935:5
+    #10 0x5631d43d197b in main /php-gh-15670/build/sapi/cli/php_cli.c:1309:18
+    #11 0x7fbb9a5c21c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x7fbb9a5c228a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x5631d28033a4 in _start (/php-gh-15670/build/sapi/cli/php+0x4033a4) (BuildId: 242ccf40e28e2a19b347f7aebdc9962192dbda21)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-15670/build/ext/dom/inner_html_mixin.c:196:52 in dom_html_fragment_parsing_algorithm
+==908691==ABORTING

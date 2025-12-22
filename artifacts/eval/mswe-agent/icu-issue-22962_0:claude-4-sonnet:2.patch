@@ -1,0 +1,48 @@
+
+diff --git a/.gitignore b/.gitignore
+index 503e3e8135f..2006ad6e4a1 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -293,3 +293,6 @@ icu4c/build_qnx/nto-x86_64-o/*
+ icu4c/build_qnx/linux-x86_64-o/Makefile
+ icu4c/build_qnx/nto-aarch64-le/Makefile
+ icu4c/build_qnx/nto-x86_64-o/Makefile
++build/
++Build/
++*.exe
+diff --git a/icu4c/source/i18n/calendar.cpp b/icu4c/source/i18n/calendar.cpp
+index 167d8644827..f4af7bf1203 100644
+--- a/icu4c/source/i18n/calendar.cpp
++++ b/icu4c/source/i18n/calendar.cpp
+@@ -3804,14 +3804,29 @@ int32_t Calendar::handleGetExtendedYearFromWeekFields(int32_t yearWoy, int32_t w
+ 
+ int32_t Calendar::handleGetMonthLength(int32_t extendedYear, int32_t month, UErrorCode& status) const
+ {
+-    return handleComputeMonthStart(extendedYear, month+1, true, status) -
++    if (U_FAILURE(status)) {
++        return 0;
++    }
++    
++    int32_t nextMonth;
++    if (uprv_add32_overflow(month, 1, &nextMonth)) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++        return 0;
++    }
++    
++    return handleComputeMonthStart(extendedYear, nextMonth, true, status) -
+         handleComputeMonthStart(extendedYear, month, true, status);
+ }
+ 
+ int32_t Calendar::handleGetYearLength(int32_t eyear) const
+ {
+     UErrorCode status = U_ZERO_ERROR;
+-    int32_t result = handleComputeMonthStart(eyear+1, 0, false, status) -
++    int32_t nextYear;
++    if (uprv_add32_overflow(eyear, 1, &nextYear)) {
++        // If overflow occurs, return 0 as a safe fallback
++        return 0;
++    }
++    int32_t result = handleComputeMonthStart(nextYear, 0, false, status) -
+         handleComputeMonthStart(eyear, 0, false, status);
+     U_ASSERT(U_SUCCESS(status));
+     return result;

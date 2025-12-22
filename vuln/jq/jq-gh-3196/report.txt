@@ -1,0 +1,63 @@
+==10653==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7f7d327566b0 at pc 0x56140f71a77e bp 0x7ffc5c892720 sp 0x7ffc5c892718
+WRITE of size 2 at 0x7f7d327566b0 thread T0
+    #0 0x56140f71a77d in decNumberCopy /tmp/jq-gh-3196/build/vendor/decNumber/decNumber.c:3375:45
+    #1 0x56140f72813d in decNaNs /tmp/jq-gh-3196/build/vendor/decNumber/decNumber.c:7706:33
+    #2 0x56140f718e62 in decCompareOp /tmp/jq-gh-3196/build/vendor/decNumber/decNumber.c:6085:7
+    #3 0x56140f718111 in decNumberCompare /tmp/jq-gh-3196/build/vendor/decNumber/decNumber.c:858:3
+    #4 0x56140f6d5588 in jvp_number_cmp /tmp/jq-gh-3196/build/src/jv.c:761:5
+    #5 0x56140f6dcc0c in jvp_number_equal /tmp/jq-gh-3196/build/src/jv.c:786:10
+    #6 0x56140f6d713f in jv_equal /tmp/jq-gh-3196/build/src/jv.c:1935:11
+    #7 0x56140f6dce1a in jvp_array_equal /tmp/jq-gh-3196/build/src/jv.c:898:10
+    #8 0x56140f6d715c in jv_equal /tmp/jq-gh-3196/build/src/jv.c:1938:11
+    #9 0x56140f6e43a9 in jv_group /tmp/jq-gh-3196/build/src/jv_aux.c:714:11
+    #10 0x56140f75d780 in f_group_by_impl /tmp/jq-gh-3196/build/src/builtin.c:876:12
+    #11 0x56140f6ceb75 in jq_next /tmp/jq-gh-3196/build/src/execute.c:918:21
+    #12 0x56140f6c60f8 in LLVMFuzzerTestOneInput /tmp/jq-gh-3196/build/./tests/jq_fuzz_fixed.cpp:283:23
+    #13 0x56140f5d10c4 in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) (/tmp/jq-gh-3196/build/build/jq_fuzz_fixed+0x7e0c4) (BuildId: 13662a48980c1601d66e921f70b5c34740867d0a)
+    #14 0x56140f5ba1f6 in fuzzer::RunOneTest(fuzzer::Fuzzer*, char const*, unsigned long) (/tmp/jq-gh-3196/build/build/jq_fuzz_fixed+0x671f6) (BuildId: 13662a48980c1601d66e921f70b5c34740867d0a)
+    #15 0x56140f5bfcaa in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) (/tmp/jq-gh-3196/build/build/jq_fuzz_fixed+0x6ccaa) (BuildId: 13662a48980c1601d66e921f70b5c34740867d0a)
+    #16 0x56140f5ea466 in main (/tmp/jq-gh-3196/build/build/jq_fuzz_fixed+0x97466) (BuildId: 13662a48980c1601d66e921f70b5c34740867d0a)
+    #17 0x7f7d347611c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x7f7d3476128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x56140f5b4dc4 in _start (/tmp/jq-gh-3196/build/build/jq_fuzz_fixed+0x61dc4) (BuildId: 13662a48980c1601d66e921f70b5c34740867d0a)
+
+Address 0x7f7d327566b0 is located in stack of thread T0 at offset 48 in frame
+    #0 0x56140f6d53af in jvp_number_cmp /tmp/jq-gh-3196/build/src/jv.c:750
+
+  This frame has 1 object(s):
+    [32, 48) 'res' (line 756) <== Memory access at offset 48 overflows this variable
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+      (longjmp and C++ exceptions *are* supported)
+SUMMARY: AddressSanitizer: stack-buffer-overflow /tmp/jq-gh-3196/build/vendor/decNumber/decNumber.c:3375:45 in decNumberCopy
+Shadow bytes around the buggy address:
+  0x7f7d32756400: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5
+  0x7f7d32756480: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5
+  0x7f7d32756500: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5
+  0x7f7d32756580: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5
+  0x7f7d32756600: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5
+=>0x7f7d32756680: f1 f1 f1 f1 00 00[f3]f3 f1 f1 f1 f1 04 f3 f3 f3
+  0x7f7d32756700: f1 f1 f1 f1 f8 f3 f3 f3 00 00 00 00 00 00 00 00
+  0x7f7d32756780: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7f7d32756800: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7f7d32756880: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7f7d32756900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==10653==ABORTING

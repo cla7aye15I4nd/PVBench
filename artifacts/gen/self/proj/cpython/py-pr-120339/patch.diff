@@ -1,0 +1,28 @@
+diff --git a/Misc/NEWS.d/next/Core and Builtins/2024-06-10-10-42-48.gh-issue-120298.napREA.rst b/Misc/NEWS.d/next/Core and Builtins/2024-06-10-10-42-48.gh-issue-120298.napREA.rst
+new file mode 100644
+index 00000000000..531d39517ac
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core and Builtins/2024-06-10-10-42-48.gh-issue-120298.napREA.rst	
+@@ -0,0 +1,2 @@
++Fix use-after free in ``list_richcompare_impl`` which can be invoked via
++some specificly tailored evil input.
+diff --git a/Objects/listobject.c b/Objects/listobject.c
+index f59abe2e644..ee724dbe146 100644
+--- a/Objects/listobject.c
++++ b/Objects/listobject.c
+@@ -2759,7 +2759,14 @@ list_richcompare(PyObject *v, PyObject *w, int op)
+     }
+ 
+     /* Compare the final item again using the proper operator */
+-    return PyObject_RichCompare(vl->ob_item[i], wl->ob_item[i], op);
++    PyObject *vitem = vl->ob_item[i];
++    PyObject *witem = wl->ob_item[i];
++    Py_INCREF(vitem);
++    Py_INCREF(witem);
++    PyObject *result = PyObject_RichCompare(vl->ob_item[i], wl->ob_item[i], op);
++    Py_DECREF(vitem);
++    Py_DECREF(witem);
++    return result;
+ }
+ 
+ /*[clinic input]

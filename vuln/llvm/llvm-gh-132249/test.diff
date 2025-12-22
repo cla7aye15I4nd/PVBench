@@ -1,0 +1,20 @@
+diff --git a/clang/test/CXX/class/class.compare/class.compare.default/p1.cpp b/clang/test/CXX/class/class.compare/class.compare.default/p1.cpp
+index a195e0548152..f3e241c7bbd5 100644
+--- a/clang/test/CXX/class/class.compare/class.compare.default/p1.cpp
++++ b/clang/test/CXX/class/class.compare/class.compare.default/p1.cpp
+@@ -285,3 +285,15 @@ struct j {
+ };
+ bool j::operator==(const j &) const = default;
+ }
++
++namespace evil2 {
++  struct k {
++  };
++  
++  struct l {
++      friend bool operator==(const l& a, const l& b);
++      friend class k;
++  };
++  
++  bool operator==(const l& a, const l& b) = default;
++}

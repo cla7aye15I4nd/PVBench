@@ -1,0 +1,32 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/sapi/phpdbg/phpdbg_watch.c b/sapi/phpdbg/phpdbg_watch.c
+index 0468d4614fd..0a76fdb97ea 100644
+--- a/sapi/phpdbg/phpdbg_watch.c
++++ b/sapi/phpdbg/phpdbg_watch.c
+@@ -668,6 +668,9 @@ void phpdbg_watch_parent_ht(phpdbg_watch_element *element) {
+ }
+ 
+ void phpdbg_unwatch_parent_ht(phpdbg_watch_element *element) {
++	if (!element->watch) {
++		return;
++	}
+ 	if (element->watch->type == WATCH_ON_BUCKET) {
+ 		phpdbg_btree_result *res = phpdbg_btree_find(&PHPDBG_G(watch_HashTables), (zend_ulong) element->parent_container);
+ 		ZEND_ASSERT(element->parent_container);

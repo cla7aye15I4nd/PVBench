@@ -1,0 +1,27 @@
+diff --git a/ext/spl/tests/gh16478.phpt b/ext/spl/tests/gh16478.phpt
+new file mode 100644
+index 0000000000..5a708b36fe
+--- /dev/null
++++ b/ext/spl/tests/gh16478.phpt
+@@ -0,0 +1,21 @@
++--TEST--
++GH-16478: Use-after-free in SplFixedArray::unset()
++--FILE--
++<?php
++
++class C {
++    function __destruct() {
++        global $arr;
++        $arr->setSize(0);
++    }
++}
++
++$arr = new SplFixedArray(2);
++$arr[0] = new C;
++unset($arr[0]);
++var_dump($arr);
++
++?>
++--EXPECT--
++object(SplFixedArray)#1 (0) {
++}

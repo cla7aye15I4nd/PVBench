@@ -1,0 +1,24 @@
+#
+# Fatal error in ../../src/strings/string-hasher-inl.h, line 183
+# Debug check failed: index > 0 (0 vs. 0).
+#
+#
+#
+#FailureMessage Object: 0x7b8f0614b460
+==== C stack trace ===============================
+
+    out/debug_asan/d8(___interceptor_backtrace+0x46) [0x5635bbd7adf6]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x5635c36c0e03]
+    out/debug_asan/d8(+0xb45f16a) [0x5635c36bf16a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x5635c368f640]
+    out/debug_asan/d8(+0xb42e67f) [0x5635c368e67f]
+    out/debug_asan/d8(v8::internal::detail::IndexParseResult v8::internal::detail::TryParseIntegerIndex<unsigned char>(unsigned char const*, unsigned int, unsigned int, unsigned int)+0x3de) [0x5635bc0a569e]
+    out/debug_asan/d8(unsigned int v8::internal::StringHasher::HashSequentialString<unsigned char>(unsigned char const*, unsigned int, unsigned long)+0x126) [0x5635bc0a21b6]
+    out/debug_asan/d8(v8::internal::String::ComputeAndSetRawHash(v8::internal::SharedStringAccessGuardIfNeeded const&)+0xab7) [0x5635bdde0817]
+    out/debug_asan/d8(v8::internal::String::ComputeAndSetRawHash()+0x123) [0x5635bdddfca3]
+    out/debug_asan/d8(v8::internal::StringTable::LookupString(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::String>)+0x32d) [0x5635bddb8d0d]
+    out/debug_asan/d8(v8::internal::LookupIterator::LookupIterator(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Union<v8::internal::Smi, v8::internal::HeapNumber, v8::internal::BigInt, v8::internal::String, v8::internal::Symbol, v8::internal::Boolean, v8::internal::Null, v8::internal::Undefined, v8::internal::JSReceiver>>, v8::internal::DirectHandle<v8::internal::Name>, unsigned long, v8::internal::DirectHandle<v8::internal::Union<v8::internal::Smi, v8::internal::HeapNumber, v8::internal::BigInt, v8::internal::String, v8::internal::Symbol, v8::internal::Boolean, v8::internal::Null, v8::internal::Undefined, v8::internal::JSReceiver>>, v8::internal::LookupIterator::Configuration)+0x896) [0x5635bbecb1a6]
+    out/debug_asan/d8(v8::internal::Runtime::SetObjectProperty(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Union<v8::internal::Smi, v8::internal::HeapNumber, v8::internal::BigInt, v8::internal::String, v8::internal::Symbol, v8::internal::Boolean, v8::internal::Null, v8::internal::Undefined, v8::internal::JSReceiver>>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::MaybeDirectHandle<v8::internal::Union<v8::internal::Smi, v8::internal::HeapNumber, v8::internal::BigInt, v8::internal::String, v8::internal::Symbol, v8::internal::Boolean, v8::internal::Null, v8::internal::Undefined, v8::internal::JSReceiver>>, v8::internal::StoreOrigin, v8::Maybe<v8::internal::ShouldThrow>)+0x3d5) [0x5635be2c49c5]
+    out/debug_asan/d8(+0x6073440) [0x5635be2d3440]
+    out/debug_asan/d8(v8::internal::Runtime_SetKeyedProperty(int, unsigned long*, v8::internal::Isolate*)+0x1da) [0x5635be2d2ada]
+    out/debug_asan/d8(+0xa9f4b3d) [0x5635c2c54b3d]

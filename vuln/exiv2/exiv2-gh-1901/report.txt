@@ -1,0 +1,16 @@
+runtime error: signed integer overflow: -9223372036854775808 - 1900 cannot be represented in type 'long int'
+    #0 0x7ef8291e8319 in XMPUtils::SetTimeZone(XMP_DateTime*) /tmp/exiv2-gh-1901/build/xmpsdk/src/XMPUtils.cpp:1963
+    #1 0x7ef8291e91b4 in XMPUtils::ConvertToLocalTime(XMP_DateTime*) /tmp/exiv2-gh-1901/build/xmpsdk/src/XMPUtils.cpp:2084
+    #2 0x7ef829157662 in WXMPUtils_ConvertToLocalTime_1 /tmp/exiv2-gh-1901/build/xmpsdk/src/WXMPUtils.cpp:399
+    #3 0x7ef828eaa782 in TXMPUtils<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >::ConvertToLocalTime(XMP_DateTime*) /tmp/exiv2-gh-1901/build/xmpsdk/include/client-glue/TXMPUtils.incl_cpp:313
+    #4 0x7ef828c50b07 in Exiv2::Converter::cnvXmpDate(char const*, char const*) /tmp/exiv2-gh-1901/build/src/convert.cpp:876
+    #5 0x7ef828c4285f in Exiv2::Converter::cnvFromXmp() /tmp/exiv2-gh-1901/build/src/convert.cpp:476
+    #6 0x7ef828c5f066 in Exiv2::copyXmpToExif(Exiv2::XmpData const&, Exiv2::ExifData&) /tmp/exiv2-gh-1901/build/src/convert.cpp:1300
+    #7 0x7ef828ebd27b in Exiv2::XmpSidecar::readMetadata() /tmp/exiv2-gh-1901/build/src/xmpsidecar.cpp:111
+    #8 0x5cab4cb45c8f in Action::Print::printSummary() /tmp/exiv2-gh-1901/build/src/actions.cpp:295
+    #9 0x5cab4cb44d3b in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-1901/build/src/actions.cpp:259
+    #10 0x5cab4ca9801a in main /tmp/exiv2-gh-1901/build/src/exiv2.cpp:169
+    #11 0x7ef82779f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x7ef82779f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x5cab4ca96d04 in _start (/tmp/exiv2-gh-1901/build/build/bin/exiv2+0x13ed04) (BuildId: a0dc665a7addce8a917e77162f307cdeb7e62a28)
+

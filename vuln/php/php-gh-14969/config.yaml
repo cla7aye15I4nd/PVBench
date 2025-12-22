@@ -1,0 +1,14 @@
+id: php-gh-14969
+project: php
+sanitizer: LeakAddressSanitizer
+type: Use After Free
+trigger_commit: 6d0db528962bb29df71a368aa4dbfa10511b5418
+binary: php
+patch:
+  commit: 8c312ba74b763bee4c3cb2d5a5c80e5f4b046b92
+  date: '2024-07-16T12:40:14+02:00'
+reference:
+- https://github.com/php/php-src.git
+- https://github.com/php/php-src/issues/14969
+- https://github.com/php/php-src/commit/6d0db528962bb29df71a368aa4dbfa10511b5418
+- https://github.com/php/php-src/commit/8c312ba74b763bee4c3cb2d5a5c80e5f4b046b92

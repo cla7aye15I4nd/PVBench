@@ -1,0 +1,260 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 257de4387c0..36d71207013 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -758,8 +758,9 @@ flush_unmatched(ProfilerObject *pObj)
+             Stop(pObj, pContext, profEntry);
+         else
+             pObj->currentProfilerContext = pContext->previous;
+-        if (pContext)
+-            PyMem_Free(pContext);
++        /* put pContext into the free list instead of freeing it directly */
++        pContext->previous = pObj->freelistProfilerContext;
++        pObj->freelistProfilerContext = pContext;
+     }
+ 
+ }
+diff --git a/test_aggressive_profiler.py b/test_aggressive_profiler.py
+new file mode 100644
+index 00000000000..6f1a7c28119
+--- /dev/null
++++ b/test_aggressive_profiler.py
+@@ -0,0 +1,50 @@
++#!/usr/bin/env python3
++
++import _lsprof
++import gc
++import sys
++
++def deeply_nested_function(depth):
++    """Create deeply nested function calls to stress the profiler context stack"""
++    if depth <= 0:
++        # Force garbage collection to potentially trigger reuse of freed memory
++        gc.collect()
++        return depth
++    return deeply_nested_function(depth - 1) + 1
++
++def stress_profiler():
++    """Stress test the profiler to trigger use-after-free"""
++    profiler = _lsprof.Profiler()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Create many nested contexts
++    for i in range(100):
++        deeply_nested_function(50)
++    
++    # This should call flush_unmatched which has the bug
++    profiler.disable()
++    
++    # Try to trigger reuse of freed memory
++    gc.collect()
++    
++    # Enable again to potentially reuse freed contexts
++    profiler.enable()
++    deeply_nested_function(10)
++    profiler.disable()
++
++def main():
++    """Main function to trigger the use-after-free bug"""
++    print("Starting aggressive profiler test...")
++    
++    # Run multiple iterations to increase chances of hitting the bug
++    for i in range(20):
++        print(f"Iteration {i+1}/20")
++        stress_profiler()
++        gc.collect()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_lsprof_issue.py b/test_lsprof_issue.py
+new file mode 100644
+index 00000000000..5a5aa191cc0
+--- /dev/null
++++ b/test_lsprof_issue.py
+@@ -0,0 +1,31 @@
++#!/usr/bin/env python3
++
++import _lsprof
++import sys
++
++def test_function():
++    # Simple function to profile
++    for i in range(100):
++        pass
++
++def nested_function():
++    test_function()
++
++def main():
++    # Create a profiler object directly using _lsprof
++    profiler = _lsprof.Profiler()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Run some nested code to create contexts
++    for i in range(10):
++        nested_function()
++    
++    # This should trigger the flush_unmatched code path
++    profiler.disable()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_profiler_uaf.py b/test_profiler_uaf.py
+new file mode 100644
+index 00000000000..ab768b3bbc5
+--- /dev/null
++++ b/test_profiler_uaf.py
+@@ -0,0 +1,41 @@
++#!/usr/bin/env python3
++
++import _lsprof
++import threading
++import time
++
++def recursive_function(depth):
++    if depth <= 0:
++        return
++    recursive_function(depth - 1)
++
++def worker_thread():
++    """Worker thread that creates profiler contexts"""
++    profiler = _lsprof.Profiler()
++    profiler.enable()
++    
++    # Create nested contexts
++    for i in range(50):
++        recursive_function(10)
++    
++    # This should trigger flush_unmatched
++    profiler.disable()
++
++def main():
++    """Main function to trigger the use-after-free bug"""
++    threads = []
++    
++    # Create multiple threads to increase chances of race condition
++    for i in range(5):
++        t = threading.Thread(target=worker_thread)
++        threads.append(t)
++        t.start()
++    
++    # Wait for all threads to complete
++    for t in threads:
++        t.join()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..7aa7119115d
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,27 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++
++def test_function():
++    # Simple function to profile
++    for i in range(1000):
++        pass
++
++def main():
++    # Create a profiler
++    profiler = cProfile.Profile()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Run some code
++    test_function()
++    
++    # Disable profiling - this should trigger the flush_unmatched code path
++    profiler.disable()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_specific_uaf.py b/test_specific_uaf.py
+new file mode 100644
+index 00000000000..1c8fe8761fe
+--- /dev/null
++++ b/test_specific_uaf.py
+@@ -0,0 +1,50 @@
++#!/usr/bin/env python3
++
++import _lsprof
++import sys
++
++def create_nested_contexts():
++    """Create nested profiler contexts that will need to be flushed"""
++    def level1():
++        def level2():
++            def level3():
++                return "deep"
++            return level3()
++        return level2()
++    return level1()
++
++def test_flush_unmatched_bug():
++    """Test the specific bug in flush_unmatched function"""
++    print("Testing flush_unmatched use-after-free bug...")
++    
++    # Create a profiler
++    profiler = _lsprof.Profiler()
++    
++    # Enable profiling to start creating contexts
++    profiler.enable()
++    
++    # Create many nested function calls to build up context stack
++    for i in range(100):
++        create_nested_contexts()
++    
++    # This disable() call will trigger flush_unmatched()
++    # The bug would occur here if contexts are freed incorrectly
++    profiler.disable()
++    
++    # Try to enable again - this would crash if contexts were double-freed
++    profiler.enable()
++    create_nested_contexts()
++    profiler.disable()
++    
++    print("Test completed - no crash detected")
++
++def main():
++    """Run the test multiple times to increase chance of hitting the bug"""
++    for i in range(10):
++        print(f"Test iteration {i+1}/10")
++        test_flush_unmatched_bug()
++    
++    print("All tests completed successfully!")
++
++if __name__ == "__main__":
++    main()

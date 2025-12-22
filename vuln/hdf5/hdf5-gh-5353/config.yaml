@@ -1,0 +1,14 @@
+id: hdf5-gh-5353
+project: hdf5
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: poc
+trigger_commit: 1602e1fbfe9b92232ff71198c21baec819356a18
+patch:
+  commit: fc3b3e7bbb6e516d523464a11c39f3f693cce395
+  date: '2025-03-18T11:06:36-05:00'
+reference:
+- https://github.com/HDFGroup/hdf5
+- https://github.com/HDFGroup/hdf5/issues/5353
+- https://github.com/HDFGroup/hdf5/commit/1602e1fbfe9b92232ff71198c21baec819356a18
+- https://github.com/HDFGroup/hdf5/commit/fc3b3e7bbb6e516d523464a11c39f3f693cce395

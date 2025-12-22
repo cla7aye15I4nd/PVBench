@@ -1,0 +1,20 @@
+diff --git a/ext/dom/tests/gh15551.phpt b/ext/dom/tests/gh15551.phpt
+new file mode 100644
+index 0000000000..3b4b7d4e85
+--- /dev/null
++++ b/ext/dom/tests/gh15551.phpt
+@@ -0,0 +1,14 @@
++--TEST--
++GH-15551 (Segmentation fault (access null pointer) in ext/dom/xml_common.h)
++--EXTENSIONS--
++dom
++--FILE--
++<?php
++$fragment = new DOMDocumentFragment();
++$nodes = $fragment->childNodes;
++$iter = $nodes->getIterator();
++$iter->next();
++var_dump($iter->valid());
++?>
++--EXPECT--
++bool(false)

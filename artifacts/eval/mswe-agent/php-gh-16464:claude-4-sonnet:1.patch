@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..0953e145f2c 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -555,7 +555,11 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
++					GC_ADDREF(object);
+ 					zval_ptr_dtor(data);
++					if (GC_DELREF(object) == 0) {
++						return;
++					}
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));

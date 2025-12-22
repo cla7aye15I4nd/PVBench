@@ -1,0 +1,23 @@
+diff --git a/Misc/NEWS.d/next/Core and Builtins/2023-03-04-06-48-34.gh-issue-102397.ACJaOf.rst b/Misc/NEWS.d/next/Core and Builtins/2023-03-04-06-48-34.gh-issue-102397.ACJaOf.rst
+new file mode 100644
+index 00000000000..db0b3f32c2e
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core and Builtins/2023-03-04-06-48-34.gh-issue-102397.ACJaOf.rst	
+@@ -0,0 +1,2 @@
++Fix segfault from race condition in signal handling during garbage collection.
++Patch by Kumar Aditya.
+diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
+index 60a8067fc8c..8305f640203 100644
+--- a/Modules/signalmodule.c
++++ b/Modules/signalmodule.c
+@@ -181,6 +181,10 @@ get_signal_state(PyObject *module)
+ static inline int
+ compare_handler(PyObject *func, PyObject *dfl_ign_handler)
+ {
++    // See https://github.com/python/cpython/pull/102399
++    if (func == NULL || dfl_ign_handler == NULL) {
++        return 0;
++    }
+     assert(PyLong_CheckExact(dfl_ign_handler));
+     if (!PyLong_CheckExact(func)) {
+         return 0;

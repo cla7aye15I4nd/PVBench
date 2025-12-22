@@ -1,0 +1,15 @@
+id: py-pr-124911
+project: cpython
+sanitizer: AddressSanitizer
+type: Integer Overflow
+trigger_commit: 829cdf06d4f40b0774a5a13f9e6023f3e29bf44d
+binary: python
+patch:
+  commit: 8dce4918ab3ad6c6faa25f9e3fbbfe022b4882b5
+  date: '2024-10-02T21:40:49+00:00'
+reference:
+- https://github.com/python/cpython.git
+- https://github.com/python/cpython/pull/124911
+- https://github.com/python/cpython/issues/120378
+- https://github.com/python/cpython/commit/829cdf06d4f40b0774a5a13f9e6023f3e29bf44d
+- https://github.com/python/cpython/commit/8dce4918ab3ad6c6faa25f9e3fbbfe022b4882b5

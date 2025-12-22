@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index d32cff66144..09e183f9b37 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3255,6 +3255,10 @@ _curses_initscr_impl(PyObject *module)
+     PyCursesWindowObject *winobj;
+ 
+     if (initialised) {
++        if (stdscr == NULL) {
++            PyErr_SetString(PyCursesError, catchall_NULL);
++            return NULL;
++        }
+         wrefresh(stdscr);
+         return (PyObject *)PyCursesWindow_New(stdscr, NULL);
+     }

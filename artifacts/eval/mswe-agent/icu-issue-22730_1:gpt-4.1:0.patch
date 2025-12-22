@@ -1,0 +1,947 @@
+
+diff --git a/.gitignore b/.gitignore
+index 2663b13e874..fdfd1f9bf45 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -292,3 +292,6 @@ icu4c/build_qnx/nto-x86_64-o/*
+ icu4c/build_qnx/linux-x86_64-o/Makefile
+ icu4c/build_qnx/nto-aarch64-le/Makefile
+ icu4c/build_qnx/nto-x86_64-o/Makefile
++build/
++Build/
++*.exe
+diff --git a/icu4c/source/i18n/japancal.cpp b/icu4c/source/i18n/japancal.cpp
+index 7e69b97a3af..fa117199201 100644
+--- a/icu4c/source/i18n/japancal.cpp
++++ b/icu4c/source/i18n/japancal.cpp
+@@ -228,7 +228,13 @@ void JapaneseCalendar::handleComputeFields(int32_t julianDay, UErrorCode& status
+     int32_t eraIdx = gJapaneseEraRules->getEraIndex(year, internalGetMonth(status) + 1, internalGet(UCAL_DAY_OF_MONTH), status);
+ 
+     internalSet(UCAL_ERA, eraIdx);
+-    internalSet(UCAL_YEAR, year - gJapaneseEraRules->getStartYear(eraIdx, status) + 1);
++    int32_t startYear = gJapaneseEraRules->getStartYear(eraIdx, status);
++    int32_t result;
++    if (uprv_add32_overflow(year, -startYear + 1, &result)) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++    } else {
++        internalSet(UCAL_YEAR, result);
++    }
+ }
+ 
+ /*
+diff --git a/icu4c/source/install/include/unicode/alphaindex.h b/icu4c/source/install/include/unicode/alphaindex.h
+new file mode 100644
+index 00000000000..cbce2127176
+--- /dev/null
++++ b/icu4c/source/install/include/unicode/alphaindex.h
+@@ -0,0 +1,766 @@
++// © 2016 and later: Unicode, Inc. and others.
++// License & terms of use: http://www.unicode.org/copyright.html
++/*
++*******************************************************************************
++*
++*   Copyright (C) 2011-2014 International Business Machines
++*   Corporation and others.  All Rights Reserved.
++*
++*******************************************************************************
++*/
++
++#ifndef INDEXCHARS_H
++#define INDEXCHARS_H
++
++#include "unicode/utypes.h"
++
++#if U_SHOW_CPLUSPLUS_API
++
++#include "unicode/uobject.h"
++#include "unicode/locid.h"
++#include "unicode/unistr.h"
++
++#if !UCONFIG_NO_COLLATION
++
++/**
++ * \file
++ * \brief C++ API: Index Characters
++ */
++
++U_CDECL_BEGIN
++
++/**
++ * Constants for Alphabetic Index Label Types.
++ * The form of these enum constants anticipates having a plain C API
++ * for Alphabetic Indexes that will also use them.
++ * @stable ICU 4.8
++ */
++typedef enum UAlphabeticIndexLabelType {
++    /**
++     *  Normal Label, typically the starting letter of the names
++     *  in the bucket with this label.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_NORMAL    = 0,
++
++    /**
++     * Underflow Label.  The bucket with this label contains names
++     * in scripts that sort before any of the bucket labels in this index.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_UNDERFLOW = 1,
++
++    /**
++     * Inflow Label.  The bucket with this label contains names
++     * in scripts that sort between two of the bucket labels in this index.
++     * Inflow labels are created when an index contains normal labels for
++     * multiple scripts, and skips other scripts that sort between some of the
++     * included scripts.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_INFLOW    = 2,
++
++    /**
++     * Overflow Label. The bucket with this label contains names in scripts
++     * that sort after all of the bucket labels in this index.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_OVERFLOW  = 3
++} UAlphabeticIndexLabelType;
++
++
++struct UHashtable;
++U_CDECL_END
++
++U_NAMESPACE_BEGIN
++
++// Forward Declarations
++
++class BucketList;
++class Collator;
++class RuleBasedCollator;
++class StringEnumeration;
++class UnicodeSet;
++class UVector;
++
++/**
++ * AlphabeticIndex supports the creation of a UI index appropriate for a given language.
++ * It can support either direct use, or use with a client that doesn't support localized collation.
++ * The following is an example of what an index might look like in a UI:
++ * 
++ * <pre>
++ *  <b>... A B C D E F G H I J K L M N O P Q R S T U V W X Y Z  ...</b>
++ *
++ *  <b>A</b>
++ *     Addison
++ *     Albertson
++ *     Azensky
++ *  <b>B</b>
++ *     Baker
++ *  ...
++ * </pre>
++ *
++ * The class can generate a list of labels for use as a UI "index", that is, a list of
++ * clickable characters (or character sequences) that allow the user to see a segment
++ * (bucket) of a larger "target" list. That is, each label corresponds to a bucket in
++ * the target list, where everything in the bucket is greater than or equal to the character
++ * (according to the locale's collation). Strings can be added to the index;
++ * they will be in sorted order in the right bucket.
++ * <p>
++ * The class also supports having buckets for strings before the first (underflow),
++ * after the last (overflow), and between scripts (inflow). For example, if the index
++ * is constructed with labels for Russian and English, Greek characters would fall
++ * into an inflow bucket between the other two scripts.
++ * <p>
++ * The AlphabeticIndex class is not intended for public subclassing.
++ *
++ * <p><em>Note:</em> If you expect to have a lot of ASCII or Latin characters
++ * as well as characters from the user's language,
++ * then it is a good idea to call addLabels(Locale::getEnglish(), status).</p>
++ *
++ * <h2>Direct Use</h2>
++ * <p>The following shows an example of building an index directly.
++ *  The "show..." methods below are just to illustrate usage.
++ *
++ * <pre>
++ * // Create a simple index.  "Item" is assumed to be an application
++ * // defined type that the application's UI and other processing knows about,
++ * //  and that has a name.
++ *
++ * UErrorCode status = U_ZERO_ERROR;
++ * AlphabeticIndex index = new AlphabeticIndex(desiredLocale, status);
++ * index->addLabels(additionalLocale, status);
++ * for (Item *item in some source of Items ) {
++ *     index->addRecord(item->name(), item, status);
++ * }
++ * ...
++ * // Show index at top. We could skip or gray out empty buckets
++ *
++ * while (index->nextBucket(status)) {
++ *     if (showAll || index->getBucketRecordCount() != 0) {
++ *         showLabelAtTop(UI, index->getBucketLabel());
++ *     }
++ * }
++ *  ...
++ * // Show the buckets with their contents, skipping empty buckets
++ *
++ * index->resetBucketIterator(status);
++ * while (index->nextBucket(status)) {
++ *    if (index->getBucketRecordCount() != 0) {
++ *        showLabelInList(UI, index->getBucketLabel());
++ *        while (index->nextRecord(status)) {
++ *            showIndexedItem(UI, static_cast<Item *>(index->getRecordData()))
++ * </pre>
++ *
++ * The caller can build different UIs using this class.
++ * For example, an index character could be omitted or grayed-out
++ * if its bucket is empty. Small buckets could also be combined based on size, such as:
++ *
++ * <pre>
++ * <b>... A-F G-N O-Z ...</b>
++ * </pre>
++ *
++ * <h2>Client Support</h2>
++ * <p>Callers can also use the AlphabeticIndex::ImmutableIndex, or the AlphabeticIndex itself,
++ * to support sorting on a client that doesn't support AlphabeticIndex functionality.
++ *
++ * <p>The ImmutableIndex is both immutable and thread-safe.
++ * The corresponding AlphabeticIndex methods are not thread-safe because
++ * they "lazily" build the index buckets.
++ * <ul>
++ * <li>ImmutableIndex.getBucket(index) provides random access to all
++ *     buckets and their labels and label types.
++ * <li>The AlphabeticIndex bucket iterator or ImmutableIndex.getBucket(0..getBucketCount-1)
++ *     can be used to get a list of the labels,
++ *     such as "...", "A", "B",..., and send that list to the client.
++ * <li>When the client has a new name, it sends that name to the server.
++ * The server needs to call the following methods,
++ * and communicate the bucketIndex and collationKey back to the client.
++ *
++ * <pre>
++ * int32_t bucketIndex = index.getBucketIndex(name, status);
++ * const UnicodeString &label = immutableIndex.getBucket(bucketIndex)->getLabel();  // optional
++ * int32_t skLength = collator.getSortKey(name, sk, skCapacity);
++ * </pre>
++ *
++ * <li>The client would put the name (and associated information) into its bucket for bucketIndex. The sort key sk is a
++ * sequence of bytes that can be compared with a binary compare, and produce the right localized result.</li>
++ * </ul>
++ *
++ * @stable ICU 4.8
++ */
++class U_I18N_API AlphabeticIndex: public UObject {
++public:
++     /**
++      * An index "bucket" with a label string and type.
++      * It is referenced by getBucketIndex(),
++      * and returned by ImmutableIndex.getBucket().
++      *
++      * The Bucket class is not intended for public subclassing.
++      * @stable ICU 51
++      */
++     class U_I18N_API Bucket : public UObject {
++     public:
++        /**
++         * Destructor.
++         * @stable ICU 51
++         */
++        virtual ~Bucket();
++
++        /**
++         * Returns the label string.
++         *
++         * @return the label string for the bucket
++         * @stable ICU 51
++         */
++        const UnicodeString &getLabel() const { return label_; }
++        /**
++         * Returns whether this bucket is a normal, underflow, overflow, or inflow bucket.
++         *
++         * @return the bucket label type
++         * @stable ICU 51
++         */
++        UAlphabeticIndexLabelType getLabelType() const { return labelType_; }
++
++     private:
++        friend class AlphabeticIndex;
++        friend class BucketList;
++
++        UnicodeString label_;
++        UnicodeString lowerBoundary_;
++        UAlphabeticIndexLabelType labelType_;
++        Bucket *displayBucket_;
++        int32_t displayIndex_;
++        UVector *records_;  // Records are owned by the inputList_ vector.
++
++        Bucket(const UnicodeString &label,   // Parameter strings are copied.
++               const UnicodeString &lowerBoundary,
++               UAlphabeticIndexLabelType type);
++     };
++
++    /**
++     * Immutable, thread-safe version of AlphabeticIndex.
++     * This class provides thread-safe methods for bucketing,
++     * and random access to buckets and their properties,
++     * but does not offer adding records to the index.
++     *
++     * The ImmutableIndex class is not intended for public subclassing.
++     *
++     * @stable ICU 51
++     */
++    class U_I18N_API ImmutableIndex : public UObject {
++    public:
++        /**
++         * Destructor.
++         * @stable ICU 51
++         */
++        virtual ~ImmutableIndex();
++
++        /**
++         * Returns the number of index buckets and labels, including underflow/inflow/overflow.
++         *
++         * @return the number of index buckets
++         * @stable ICU 51
++         */
++        int32_t getBucketCount() const;
++
++        /**
++         * Finds the index bucket for the given name and returns the number of that bucket.
++         * Use getBucket() to get the bucket's properties.
++         *
++         * @param name the string to be sorted into an index bucket
++         * @param errorCode Error code, will be set with the reason if the
++         *                  operation fails.
++         * @return the bucket number for the name
++         * @stable ICU 51
++         */
++        int32_t getBucketIndex(const UnicodeString &name, UErrorCode &errorCode) const;
++
++        /**
++         * Returns the index-th bucket. Returns nullptr if the index is out of range.
++         *
++         * @param index bucket number
++         * @return the index-th bucket
++         * @stable ICU 51
++         */
++        const Bucket *getBucket(int32_t index) const;
++
++    private:
++        friend class AlphabeticIndex;
++
++        ImmutableIndex(BucketList *bucketList, Collator *collatorPrimaryOnly)
++                : buckets_(bucketList), collatorPrimaryOnly_(collatorPrimaryOnly) {}
++
++        BucketList *buckets_;
++        Collator *collatorPrimaryOnly_;
++    };
++
++    /**
++     * Construct an AlphabeticIndex object for the specified locale.  If the locale's
++     * data does not include index characters, a set of them will be
++     * synthesized based on the locale's exemplar characters.  The locale
++     * determines the sorting order for both the index characters and the
++     * user item names appearing under each Index character.
++     *
++     * @param locale the desired locale.
++     * @param status Error code, will be set with the reason if the construction
++     *               of the AlphabeticIndex object fails.
++     * @stable ICU 4.8
++     */
++     AlphabeticIndex(const Locale &locale, UErrorCode &status);
++
++   /** 
++     * Construct an AlphabeticIndex that uses a specific collator.
++     * 
++     * The index will be created with no labels; the addLabels() function must be called
++     * after creation to add the desired labels to the index.
++     * 
++     * The index adopts the collator, and is responsible for deleting it. 
++     * The caller should make no further use of the collator after creating the index.
++     * 
++     * @param collator The collator to use to order the contents of this index.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @stable ICU 51
++     */
++    AlphabeticIndex(RuleBasedCollator *collator, UErrorCode &status);
++
++    /**
++     * Add Labels to this Index.  The labels are additions to those
++     * that are already in the index; they do not replace the existing
++     * ones.
++     * @param additions The additional characters to add to the index, such as A-Z.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @return this, for chaining
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &addLabels(const UnicodeSet &additions, UErrorCode &status);
++
++    /**
++     * Add the index characters from a Locale to the index.  The labels
++     * are added to those that are already in the index; they do not replace the
++     * existing index characters.  The collation order for this index is not
++     * changed; it remains that of the locale that was originally specified
++     * when creating this Index.
++     *
++     * @param locale The locale whose index characters are to be added.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @return this, for chaining
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &addLabels(const Locale &locale, UErrorCode &status);
++
++     /**
++      * Destructor
++      * @stable ICU 4.8
++      */
++    virtual ~AlphabeticIndex();
++
++    /**
++     * Builds an immutable, thread-safe version of this instance, without data records.
++     *
++     * @return an immutable index instance
++     * @stable ICU 51
++     */
++    ImmutableIndex *buildImmutableIndex(UErrorCode &errorCode);
++
++    /**
++     * Get the Collator that establishes the ordering of the items in this index.
++     * Ownership of the collator remains with the AlphabeticIndex instance.
++     *
++     * The returned collator is a reference to the internal collator used by this
++     * index.  It may be safely used to compare the names of items or to get
++     * sort keys for names.  However if any settings need to be changed,
++     * or other non-const methods called, a cloned copy must be made first.
++     *
++     * @return The collator
++     * @stable ICU 4.8
++     */
++    virtual const RuleBasedCollator &getCollator() const;
++
++
++   /**
++     * Get the default label used for abbreviated buckets *between* other index characters.
++     * For example, consider the labels when Latin (X Y Z) and Greek (Α Β Γ) are used:
++     *
++     *     X Y Z ... Α Β Γ.
++     *
++     * @return inflow label
++     * @stable ICU 4.8
++     */
++    virtual const UnicodeString &getInflowLabel() const;
++
++   /**
++     * Set the default label used for abbreviated buckets <i>between</i> other index characters.
++     * An inflow label will be automatically inserted if two otherwise-adjacent label characters
++     * are from different scripts, e.g. Latin and Cyrillic, and a third script, e.g. Greek,
++     * sorts between the two.  The default inflow character is an ellipsis (...)
++     *
++     * @param inflowLabel the new Inflow label.
++     * @param status Error code, will be set with the reason if the operation fails.
++     * @return this
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &setInflowLabel(const UnicodeString &inflowLabel, UErrorCode &status);
++
++
++   /**
++     * Get the special label used for items that sort after the last normal label,
++     * and that would not otherwise have an appropriate label.
++     *
++     * @return the overflow label
++     * @stable ICU 4.8
++     */
++    virtual const UnicodeString &getOverflowLabel() const;
++
++
++   /**
++     * Set the label used for items that sort after the last normal label,
++     * and that would not otherwise have an appropriate label.
++     *
++     * @param overflowLabel the new overflow label.
++     * @param status Error code, will be set with the reason if the operation fails.
++     * @return this
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &setOverflowLabel(const UnicodeString &overflowLabel, UErrorCode &status);
++
++   /**
++     * Get the special label used for items that sort before the first normal label,
++     * and that would not otherwise have an appropriate label.
++     *
++     * @return underflow label
++     * @stable ICU 4.8
++     */
++    virtual const UnicodeString &getUnderflowLabel() const;
++
++   /**
++     * Set the label used for items that sort before the first normal label,
++     * and that would not otherwise have an appropriate label.
++     *
++     * @param underflowLabel the new underflow label.
++     * @param status Error code, will be set with the reason if the operation fails.
++     * @return this
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &setUnderflowLabel(const UnicodeString &underflowLabel, UErrorCode &status);
++
++
++    /**
++     * Get the limit on the number of labels permitted in the index.
++     * The number does not include over, under and inflow labels.
++     *
++     * @return maxLabelCount maximum number of labels.
++     * @stable ICU 4.8
++     */
++    virtual int32_t getMaxLabelCount() const;
++
++    /**
++     * Set a limit on the number of labels permitted in the index.
++     * The number does not include over, under and inflow labels.
++     * Currently, if the number is exceeded, then every
++     * nth item is removed to bring the count down.
++     * A more sophisticated mechanism may be available in the future.
++     *
++     * @param maxLabelCount the maximum number of labels.
++     * @param status error code
++     * @return This, for chaining
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &setMaxLabelCount(int32_t maxLabelCount, UErrorCode &status);
++
++
++    /**
++     * Add a record to the index.  Each record will be associated with an index Bucket
++     *  based on the record's name.  The list of records for each bucket will be sorted
++     *  based on the collation ordering of the names in the index's locale.
++     *  Records with duplicate names are permitted; they will be kept in the order
++     *  that they were added.
++     *
++     * @param name The display name for the Record.  The Record will be placed in
++     *             a bucket based on this name.
++     * @param data An optional pointer to user data associated with this
++     *             item.  When iterating the contents of a bucket, both the
++     *             data pointer the name will be available for each Record.
++     * @param status...  * @stable ICU 3.8
++     */
++    virtual bool operator==(const TimeZone& that) const override;
++
++    /**
++     * Return true if the given <code>TimeZone</code> objects are
++     * semantically unequal. Objects of different subclasses are considered unequal.
++     * @param that  The object to be compared with.
++     * @return  true if the given <code>TimeZone</code> objects are
++     * semantically unequal.
++     * @stable ICU 3.8
++     */
++    virtual bool operator!=(const TimeZone& that) const;
++
++    /**
++     * Create a <code>VTimeZone</code> instance by the time zone ID.
++     * @param ID The time zone ID, such as America/New_York
++     * @return A <code>VTimeZone</code> object initialized by the time zone ID,
++     * or nullptr when the ID is unknown.
++     * @stable ICU 3.8
++     */
++    static VTimeZone* createVTimeZoneByID(const UnicodeString& ID);
++
++    /**
++     * Create a <code>VTimeZone</code> instance using a basic time zone.
++     * @param basicTZ The basic time zone instance
++     * @param status Output param to filled in with a success or an error.
++     * @return A <code>VTimeZone</code> object initialized by the basic time zone.
++     * @stable ICU 4.6
++     */
++    static VTimeZone* createVTimeZoneFromBasicTimeZone(const BasicTimeZone& basicTZ,
++                                                       UErrorCode &status);
++
++    /**
++     * Create a <code>VTimeZone</code> instance by RFC2445 VTIMEZONE data
++     * 
++     * @param vtzdata The string including VTIMEZONE data block
++     * @param status Output param to filled in with a success or an error.
++     * @return A <code>VTimeZone</code> initialized by the VTIMEZONE data or
++     * nullptr if failed to load the rule from the VTIMEZONE data.
++     * @stable ICU 3.8
++     */
++    static VTimeZone* createVTimeZone(const UnicodeString& vtzdata, UErrorCode& status);
++
++    /**
++     * Gets the RFC2445 TZURL property value.  When a <code>VTimeZone</code> instance was
++     * created from VTIMEZONE data, the initial value is set by the TZURL property value
++     * in the data.  Otherwise, the initial value is not set.
++     * @param url Receives the RFC2445 TZURL property value.
++     * @return true if TZURL attribute is available and value is set.
++     * @stable ICU 3.8
++     */
++    UBool getTZURL(UnicodeString& url) const;
++
++    /**
++     * Sets the RFC2445 TZURL property value.
++     * @param url The TZURL property value.
++     * @stable ICU 3.8
++     */
++    void setTZURL(const UnicodeString& url);
++
++    /**
++     * Gets the RFC2445 LAST-MODIFIED property value.  When a <code>VTimeZone</code> instance
++     * was created from VTIMEZONE data, the initial value is set by the LAST-MODIFIED property
++     * value in the data.  Otherwise, the initial value is not set.
++     * @param lastModified Receives the last modified date.
++     * @return true if lastModified attribute is available and value is set.
++     * @stable ICU 3.8
++     */
++    UBool getLastModified(UDate& lastModified) const;
++
++    /**
++     * Sets the RFC2445 LAST-MODIFIED property value.
++     * @param lastModified The LAST-MODIFIED date.
++     * @stable ICU 3.8
++     */
++    void setLastModified(UDate lastModified);
++
++    /**
++     * Writes RFC2445 VTIMEZONE data for this time zone
++     * @param result Output param to filled in with the VTIMEZONE data.
++     * @param status Output param to filled in with a success or an error.
++     * @stable ICU 3.8
++     */
++    void write(UnicodeString& result, UErrorCode& status) const;
++
++    /**
++     * Writes RFC2445 VTIMEZONE data for this time zone applicable
++     * for dates after the specified start time.
++     * @param start The start date.
++     * @param result Output param to filled in with the VTIMEZONE data.
++     * @param status Output param to filled in with a success or an error.
++     * @stable ICU 3.8
++     */
++    void write(UDate start, UnicodeString& result, UErrorCode& status) const;
++
++    /**
++     * Writes RFC2445 VTIMEZONE data applicable for the specified date.
++     * Some common iCalendar implementations can only handle a single time
++     * zone property or a pair of standard and daylight time properties using
++     * BYDAY rule with day of week (such as BYDAY=1SUN).  This method produce
++     * the VTIMEZONE data which can be handled these implementations.  The rules
++     * produced by this method can be used only for calculating time zone offset
++     * around the specified date.
++     * @param time The date used for rule extraction.
++     * @param result Output param to filled in with the VTIMEZONE data.
++     * @param status Output param to filled in with a success or an error.
++     * @stable ICU 3.8
++     */
++    void writeSimple(UDate time, UnicodeString& result, UErrorCode& status) const;
++
++    /**
++     * Clones TimeZone objects polymorphically. Clients are responsible for deleting
++     * the TimeZone object cloned.
++     * @return   A new copy of this TimeZone object.
++     * @stable ICU 3.8
++     */
++    virtual VTimeZone* clone() const override;
++
++    /**
++     * Returns the TimeZone's adjusted GMT offset (i.e., the number of milliseconds to add
++     * to GMT to get local time in this time zone, taking daylight savings time into
++     * account) as of a particular reference date.  The reference date is used to determine
++     * whether daylight savings time is in effect and needs to be figured into the offset
++     * that is returned (in other words, what is the adjusted GMT offset in this time zone
++     * at this particular date and time?).  For the time zones produced by createTimeZone(),
++     * the reference data is specified according to the Gregorian calendar, and the date
++     * and time fields are local standard time.
++     *
++     * <p>Note: Don't call this method. Instead, call the getOffset(UDate...) overload,
++     * which returns both the raw and the DST offset for a given time. This method
++     * is retained only for backward compatibility.
++     *
++     * @param era        The reference date's era
++     * @param year       The reference date's year
++     * @param month      The reference date's month (0-based; 0 is January)
++     * @param day        The reference date's day-in-month (1-based)
++     * @param dayOfWeek  The reference date's day-of-week (1-based; 1 is Sunday)
++     * @param millis     The reference date's milliseconds in day, local standard time
++     * @param status     Output param to filled in with a success or an error.
++     * @return           The offset in milliseconds to add to GMT to get local time.
++     * @stable ICU 3.8
++     */
++    virtual int32_t getOffset(uint8_t era, int32_t year, int32_t month, int32_t day,
++                              uint8_t dayOfWeek, int32_t millis, UErrorCode& status) const override;
++
++    /**
++     * Gets the time zone offset, for current date, modified in case of
++     * daylight savings. This is the offset to add *to* UTC to get local time.
++     *
++     * <p>Note: Don't call this method. Instead, call the getOffset(UDate...) overload,
++     * which returns both the raw and the DST offset for a given time. This method
++     * is retained only for backward compatibility.
++     *
++     * @param era        The reference date's era
++     * @param year       The reference date's year
++     * @param month      The reference date's month (0-based; 0 is January)
++     * @param day        The reference date's day-in-month (1-based)
++     * @param dayOfWeek  The reference date's day-of-week (1-based; 1 is Sunday)
++     * @param millis     The reference date's milliseconds in day, local standard time
++     * @param monthLength The length of the given month in days.
++     * @param status     Output param to filled in with a success or an error.
++     * @return           The offset in milliseconds to add to GMT to get local time.
++     * @stable ICU 3.8
++     */
++    virtual int32_t getOffset(uint8_t era, int32_t year, int32_t month, int32_t day,
++                           uint8_t dayOfWeek, int32_t millis,
++                           int32_t monthLength, UErrorCode& status) const override;
++
++    /**
++     * Returns the time zone raw and GMT offset for the given moment
++     * in time.  Upon return, local-millis = GMT-millis + rawOffset +
++     * dstOffset.  All computations are performed in the proleptic
++     * Gregorian calendar.  The default implementation in the TimeZone
++     * class delegates to the 8-argument getOffset().
++     *
++     * @param date moment in time for which to return offsets, in
++     * units of milliseconds from January 1, 1970 0:00 GMT, either GMT
++     * time or local wall time, depending on `local'.
++     * @param local if true, `date' is local wall time; otherwise it
++     * is in GMT time.
++     * @param rawOffset output parameter to receive the raw offset, that
++     * is, the offset not including DST adjustments
++     * @param dstOffset output parameter to receive the DST offset,
++     * that is, the offset to be added to `rawOffset' to obtain the
++     * total offset between local and GMT time. If DST is not in
++     * effect, this value is zero; otherwise it is a positive value,
++     * typically one hour.
++     * @param ec input-output error code
++     * @stable ICU 3.8
++     */
++    virtual void getOffset(UDate date, UBool local, int32_t& rawOffset,
++                           int32_t& dstOffset, UErrorCode& ec) const override;
++
++    /**
++     * Get time zone offsets from local wall time.
++     * @stable ICU 69
++     */
++    virtual void getOffsetFromLocal(
++        UDate date, UTimeZoneLocalOption nonExistingTimeOpt,
++        UTimeZoneLocalOption duplicatedTimeOpt,
++        int32_t& rawOffset, int32_t& dstOffset, UErrorCode& status) const override;
++
++    /**
++     * Sets the TimeZone's raw GMT offset (i.e., the number of milliseconds to add
++     * to GMT to get local time, before taking daylight savings time into account).
++     *
++     * @param offsetMillis  The new raw GMT offset for this time zone.
++     * @stable ICU 3.8
++     */
++    virtual void setRawOffset(int32_t offsetMillis) override;
++
++    /**
++     * Returns the TimeZone's raw GMT offset (i.e., the number of milliseconds to add
++     * to GMT to get local time, before taking daylight savings time into account).
++     *
++     * @return   The TimeZone's raw GMT offset.
++     * @stable ICU 3.8
++     */
++    virtual int32_t getRawOffset() const override;
++
++    /**
++     * Queries if this time zone uses daylight savings time.
++     * @return true if this time zone uses daylight savings time,
++     * false, otherwise.
++     * @stable ICU 3.8
++     */
++    virtual UBool useDaylightTime() const override;
++
++#ifndef U_FORCE_HIDE_DEPRECATED_API
++    /**
++     * Queries if the given date is in daylight savings time in
++     * this time zone.
++     * This method is wasteful since it creates a new GregorianCalendar and
++     * deletes it each time it is called. This is a deprecated method
++     * and provided only for Java compatibility.
++     *
++     * @param date the given UDate.
++     * @param status Output param filled in with success/error code.
++     * @return true if the given date is in daylight savings time,
++     * false, otherwise.
++     * @deprecated ICU 2.4. Use Calendar::inDaylightTime() instead.
++     */
++    virtual UBool inDaylightTime(UDate date, UErrorCode& status) const override;
++#endif  // U_FORCE_HIDE_DEPRECATED_API
++
++    /**
++     * Returns true if this zone has the same rule and offset as another zone.
++     * That is, if this zone differs only in ID, if at all.
++     * @param other the <code>TimeZone</code> object to be compared with
++     * @return true if the given zone is the same as this one,
++     * with the possible exception of the ID
++     * @stable ICU 3.8
++     */
++    virtual UBool hasSameRules(const TimeZone& other) const override;
++
++    /**
++     * Gets the first time zone transition after the base time.
++     * @param base      The base time.
++     * @param inclusive Whether the base time is inclusive or not.
++     * @param result    Receives the first transition after the base time.
++     * @return  true if the transition is found.
++     * @stable ICU 3.8
++     */
++    virtual UBool getNextTransition(UDate base, UBool inclusive, TimeZoneTransition& result) const override;
++
++    /**
++     * Gets the most recent time zone transition before the base time.
++     * @param base      The base time.
++     * @param inclusive Whether the base time is inclusive or not.
++     * @param result    Receives the most recent transition before the base time.
++     * @return  true if the transition is found.
++     * @stable ICU 3.8
++     */
++    virtual UBool getPreviousTransition(UDate base, UBool inclusive, TimeZoneTransition& result) const override;
++
++    /**
++     * Returns the number of <code>TimeZoneRule</code>s which represents time transitions,
++     * for this time zone, that is, all <code>TimeZoneRule</code>s for this time zone except
++     * <code>InitialTimeZoneRule</code>.  The return value range is 0 or any positive value.
++     * @param status    Receives error status code.
++     * @return The number of <code>TimeZoneRule</code>s representing time transitions.
++     * @stable ICU 3.8
++     */
++    virtual int32_t countTransitionRules(UErrorCode& status) const override;
++
++    /**
++     * Gets the <code>InitialTimeZoneRule</code> and the set of <code>TimeZoneRule</code>
++     * which represent time transitions for this time zone.  On successful return,
++     * the argument initial points to non-nullptr <code>InitialTimeZoneRule</code> and
++     * the array trsrules is filled with 0 or multiple <code>TimeZoneRule</code>
++     * instances up to the size specified by trscount.  The results are referencing the
++     * rule instance held by this time zone instance.  Therefore, after this time zone
++     * is destructed, they are no longer available.
++     * @param initial       Receives the initial timezone rule
++     * @param trsrules      Receives the timezone transition rules
++     * @param trscount      On input, specify the size of the array 'transitions' receiving
++     *                      the timezone transition rules.  On output, actual number of
++     *                      rules filled in the array will be set.
++     * @param status        Receives error status code.
++     * @stable ICU 3.8
++     */
++    virtual void getTimeZoneRules(const InitialTimeZoneRule*& initial,
++        const TimeZoneRule* trsrules[], int32_t& trscount, UErrorCode& status) const override;
++
++private:
++    enum { DEFAULT_VTIMEZONE_LINES = 100 };
++
++    /**
++     * Default constructor.
++     */
++    VTimeZone();
++    void write(VTZWriter& writer, UErrorCode& status) const;
++    void write(UDate start, VTZWriter& writer, UErrorCode& status) const;
++    void writeSimple(UDate time, VTZWriter& writer, UErrorCode& status) const;
++    void load(VTZReader& reader, UErrorCode& status);
++    void parse(UErrorCode& status);
++
++    void writeZone(VTZWriter& w, BasicTimeZone& basictz, UVector* customProps,
++        UErrorCode& status) const;
++
++    void writeHeaders(VTZWriter& w, UErrorCode& status) const;
++    void writeFooter(VTZWriter& writer, UErrorCode& status) const;
++
++    void writeZonePropsByTime(VTZWriter& writer, UBool isDst, const UnicodeString& zonename,
++                              int32_t fromOffset, int32_t toOffset, UDate time, UBool withRDATE,
++                              UErrorCode& status) const;
++    void writeZonePropsByDOM(VTZWriter& writer, UBool isDst, const UnicodeString& zonename,
++                             int32_t fromOffset, int32_t toOffset,
++                             int32_t month, int32_t dayOfMonth, UDate startTime, UDate untilTime,
++                             UErrorCode& status) const;
++    void writeZonePropsByDOW(VTZWriter& writer, UBool isDst, const UnicodeString& zonename,
++                             int32_t fromOffset, int32_t toOffset,
++                             int32_t month, int32_t weekInMonth, int32_t dayOfWeek,
++                             UDate startTime, UDate untilTime, UErrorCode& status) const;
++    void writeZonePropsByDOW_GEQ_DOM(VTZWriter& writer, UBool isDst, const UnicodeString& zonename,
++                                     int32_t fromOffset, int32_t toOffset,
++                                     int32_t month, int32_t dayOfMonth, int32_t dayOfWeek,
++                                     UDate startTime, UDate untilTime, UErrorCode& status) const;
++    void writeZonePropsByDOW_GEQ_DOM_sub(VTZWriter& writer, int32_t month, int32_t dayOfMonth,
++                                         int32_t dayOfWeek, int32_t numDays,
++                                         UDate untilTime, int32_t fromOffset, UErrorCode& status) const;
++    void writeZonePropsByDOW_LEQ_DOM(VTZWriter& writer, UBool isDst, const UnicodeString& zonename,
++                                     int32_t fromOffset, int32_t toOffset,
++                                     int32_t month, int32_t dayOfMonth, int32_t dayOfWeek,
++                                     UDate startTime, UDate untilTime, UErrorCode& status) const;
++    void writeFinalRule(VTZWriter& writer, UBool isDst, const AnnualTimeZoneRule* rule,
++                        int32_t fromRawOffset, int32_t fromDSTSavings,
++                        UDate startTime, UErrorCode& status) const;
++
++    void beginZoneProps(VTZWriter& writer, UBool isDst, const UnicodeString& zonename,
++                        int32_t fromOffset, int32_t toOffset, UDate startTime, UErrorCode& status) const;
++    void endZoneProps(VTZWriter& writer, UBool isDst, UErrorCode& status) const;
++    void beginRRULE(VTZWriter& writer, int32_t month, UErrorCode& status) const;
++    void appendUNTIL(VTZWriter& writer, const UnicodeString& until, UErrorCode& status) const;
++
++    BasicTimeZone   *tz;
++    UVector         *vtzlines;
++    UnicodeString   tzurl;
++    UDate           lastmod;
++    UnicodeString   olsonzid;
++    UnicodeString   icutzver;
++
++public:
++    /**
++     * Return the class ID for this class. This is useful only for comparing to
++     * a return value from getDynamicClassID(). For example:
++     * <pre>
++     * .   Base* polymorphic_pointer = createPolymorphicObject();
++     * .   if (polymorphic_pointer->getDynamicClassID() ==
++     * .       erived::getStaticClassID()) ...
++     * </pre>
++     * @return          The class ID for all objects of this class.
++     * @stable ICU 3.8
++     */
++    static UClassID U_EXPORT2 getStaticClassID();
++
++    /**
++     * Returns a unique class ID POLYMORPHICALLY. Pure virtual override. This
++     * method is to implement a simple version of RTTI, since not all C++
++     * compilers support genuine RTTI. Polymorphic operator==() and clone()
++     * methods call this method.
++     *
++     * @return          The class ID for this object. All objects of a
++     *                  given class have the same class ID.  Objects of
++     *                  other classes have different class IDs.
++     * @stable ICU 3.8
++     */
++    virtual UClassID getDynamicClassID() const override;
++};
++
++U_NAMESPACE_END
++
++#endif /* #if !UCONFIG_NO_FORMATTING */
++
++#endif /* U_SHOW_CPLUSPLUS_API */
++
++#endif // VTZONE_H
++//eof
+diff --git a/icu4c/source/poc.cpp b/icu4c/source/poc.cpp
+new file mode 100644
+index 00000000000..07dc6b0e7d2
+--- /dev/null
++++ b/icu4c/source/poc.cpp
+@@ -0,0 +1,19 @@
++#include "unicode/calendar.h"
++#include "unicode/locid.h"
++#include "unicode/utypes.h"
++#include <cstdlib>
++#include <iostream>
++
++using namespace icu;
++
++int main() {
++  UErrorCode status = U_ZERO_ERROR;
++  LocalPointer<Calendar> calendar(
++      Calendar::createInstance(Locale("en-u-ca-japanese"), status), status);
++  calendar->clear();
++  calendar->roll(UCAL_EXTENDED_YEAR, -1946156856, status);
++  if (status == U_ILLEGAL_ARGUMENT_ERROR) {
++    std::cout << "status return without overflow" << std::endl;
++  }
++  return 0;
++}

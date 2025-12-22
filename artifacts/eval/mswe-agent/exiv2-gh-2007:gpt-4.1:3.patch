@@ -1,0 +1,56 @@
+
+diff --git a/.gitignore b/.gitignore
+index d3090138a..109566f69 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,4 +23,13 @@ src/doxygen.hpp
+ test/tmp/*
+ doc/html
+ contrib/vms/.vagrant
+-/.vscode
+\ No newline at end of file
++/.vscodebuild/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/panasonicmn_int.cpp b/src/panasonicmn_int.cpp
+index 617c5d209..50c64fa04 100644
+--- a/src/panasonicmn_int.cpp
++++ b/src/panasonicmn_int.cpp
+@@ -691,17 +691,15 @@ namespace Exiv2 {
+ 
+     std::ostream& PanasonicMakerNote::printAccelerometer(std::ostream& os, const Value& value, const ExifData*)
+     {
+-        // value is stored as unsigned int, but should be readed as signed int, so manually convert it
+-        int i = value.toLong();
+-        i = i - ((i & 0x8000) >> 15) * 0xffff;
++        // value is stored as unsigned int, but should be read as signed int, so manually convert it
++        int16_t i = static_cast<int16_t>(value.toLong() & 0xFFFF);
+         return os << i;
+     }  // PanasonicMakerNote::printAccelerometer
+ 
+     std::ostream& PanasonicMakerNote::printRollAngle(std::ostream& os, const Value& value, const ExifData*)
+     {
+         // roll angle is stored as signed int, but tag states to be unsigned int
+-        int i = value.toLong();
+-        i = i - ((i & 0x8000) >> 15) * 0xffff;
++        int16_t i = static_cast<int16_t>(value.toLong() & 0xFFFF);
+         std::ostringstream oss;
+         oss.copyfmt(os);
+         os << std::fixed << std::setprecision(1) << i / 10.0;
+@@ -714,8 +712,7 @@ namespace Exiv2 {
+     {
+         // pitch angle is stored as signed int, but tag states to be unsigned int
+         // change sign to be compatible with ExifTool: positive is upwards
+-        int i = value.toLong();
+-        i = i - ((i & 0x8000) >> 15) * 0xffff;
++        int16_t i = static_cast<int16_t>(value.toLong() & 0xFFFF);
+         std::ostringstream oss;
+         oss.copyfmt(os);
+         os << std::fixed << std::setprecision(1) << -i / 10.0;

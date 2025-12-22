@@ -1,0 +1,34 @@
+==3546188==ERROR: ThreadSanitizer: SEGV on unknown address 0x000000000008 (pc 0x555555b4d8b2 bp 0x7fffffff4190 sp 0x7fffffff4170 T3546188)
+==3546188==The signal is caused by a READ memory access.
+==3546188==Hint: address points to the zero page.
+    #0 Py_TYPE /tmp/py-pr-102397/build/./Include/object.h:133:16 (python+0x5f98b2) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #1 Py_IS_TYPE /tmp/py-pr-102397/build/./Include/object.h:150:12 (python+0x5fb281) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #2 compare_handler /tmp/py-pr-102397/build/./Modules/signalmodule.c:185:10 (python+0x5f6538) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #3 PyErr_SetInterruptEx /tmp/py-pr-102397/build/./Modules/signalmodule.c:1923:10 (python+0x5f6cca) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #4 thread_PyThread_interrupt_main /tmp/py-pr-102397/build/./Modules/_threadmodule.c:1205:9 (python+0x6967c5) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #5 cfunction_call /tmp/py-pr-102397/build/Objects/methodobject.c:553:18 (python+0x364026) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #6 _PyObject_MakeTpCall /tmp/py-pr-102397/build/Objects/call.c:214:18 (python+0x2c7a3a) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #7 _PyObject_VectorcallTstate /tmp/py-pr-102397/build/./Include/internal/pycore_call.h:90:16 (python+0x2c873d) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #8 PyObject_Vectorcall /tmp/py-pr-102397/build/Objects/call.c:299:12 (python+0x2c8692) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #9 _PyEval_EvalFrameDefault /tmp/py-pr-102397/build/Python/ceval.c:4772:23 (python+0x4c564f) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #10 _PyEval_EvalFrame /tmp/py-pr-102397/build/./Include/internal/pycore_ceval.h:73:16 (python+0x4a4abc) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #11 _PyEval_Vector /tmp/py-pr-102397/build/Python/ceval.c:6437:24 (python+0x4a4939) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #12 _PyFunction_Vectorcall /tmp/py-pr-102397/build/Objects/call.c:393:16 (python+0x2c8c57) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #13 _PyObject_VectorcallTstate /tmp/py-pr-102397/build/./Include/internal/pycore_call.h:92:11 (python+0x2c875c) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #14 _PyObject_CallFunctionVa /tmp/py-pr-102397/build/Objects/call.c:536:18 (python+0x2c943f) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #15 PyObject_CallFunction /tmp/py-pr-102397/build/Objects/call.c:558:14 (python+0x2c91c9) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #16 invoke_gc_callback /tmp/py-pr-102397/build/Modules/gcmodule.c:1378:13 (python+0x5c80f7) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #17 gc_collect_with_callback /tmp/py-pr-102397/build/Modules/gcmodule.c:1399:5 (python+0x5c3f20) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #18 PyGC_Collect /tmp/py-pr-102397/build/Modules/gcmodule.c:2086:13 (python+0x5c3e12) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #19 Py_FinalizeEx /tmp/py-pr-102397/build/Python/pylifecycle.c:1830:5 (python+0x5691aa) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #20 Py_RunMain /tmp/py-pr-102397/build/Modules/main.c:682:9 (python+0x5c15ae) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #21 pymain_main /tmp/py-pr-102397/build/Modules/main.c:710:12 (python+0x5c1bbd) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #22 Py_BytesMain /tmp/py-pr-102397/build/Modules/main.c:734:12 (python+0x5c1c2d) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #23 main /tmp/py-pr-102397/build/./Programs/python.c:15:12 (python+0x1cb788) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+    #24 <null> <null> (libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #25 __libc_start_main <null> (libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #26 _start <null> (python+0x11bef4) (BuildId: 7f566974b29584d142d0403e6c6a282f254b8b79)
+
+ThreadSanitizer can not provide additional info.
+SUMMARY: ThreadSanitizer: SEGV /tmp/py-pr-102397/build/./Include/object.h:133:16 in Py_TYPE
+==3546188==ABORTING

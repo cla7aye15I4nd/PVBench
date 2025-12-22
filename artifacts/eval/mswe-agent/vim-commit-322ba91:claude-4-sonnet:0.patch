@@ -1,0 +1,37 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/getchar.c b/src/getchar.c
+index 29323fa32..4ff08a6db 100644
+--- a/src/getchar.c
++++ b/src/getchar.c
+@@ -1037,7 +1037,7 @@ ins_typebuf(
+ 
+     addlen = (int)STRLEN(str);
+ 
+-    if (offset == 0 && addlen <= typebuf.tb_off)
++    if (offset == 0 && addlen <= typebuf.tb_off && typebuf.tb_off < typebuf.tb_buflen)
+     {
+ 	/*
+ 	 * Easy case: there is room in front of typebuf.tb_buf[typebuf.tb_off]
+diff --git a/test_overflow.c b/test_overflow.c
+new file mode 100644
+index 000000000..8b1378917
+--- /dev/null
++++ b/test_overflow.c
+@@ -0,0 +1 @@
++

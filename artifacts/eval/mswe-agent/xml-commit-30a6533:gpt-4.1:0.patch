@@ -1,0 +1,52 @@
+
+diff --git a/.gitignore b/.gitignore
+index ad751e89..ce29de49 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -125,3 +125,12 @@ xstc/Makefile
+ xstc/Makefile.in
+ xstc/Tests
+ xstc/xsts-*.tar.gz
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/xpath.c b/xpath.c
+index 5e3bb9ff..1c8183d2 100644
+--- a/xpath.c
++++ b/xpath.c
+@@ -9187,7 +9187,12 @@ xmlXPathSubstringFunction(xmlXPathParserContextPtr ctxt, int nargs) {
+          * First we go to integer form, rounding up
+ 	 * and checking for special cases
+          */
+-        i = (int) in;
++        if (in > (double)INT_MAX)
++            i = INT_MAX;
++        else if (in < (double)INT_MIN)
++            i = INT_MIN;
++        else
++            i = (int) in;
+         if (((double)i)+0.5 <= in) i++;
+ 
+ 	if (xmlXPathIsInf(le) == 1) {
+@@ -9198,8 +9203,13 @@ xmlXPathSubstringFunction(xmlXPathParserContextPtr ctxt, int nargs) {
+ 	else if (xmlXPathIsInf(le) == -1 || le < 0.0)
+ 	    l = 0;
+ 	else {
+-	    l = (int) le;
+-	    if (((double)l)+0.5 <= le) l++;
++            if (le > (double)INT_MAX)
++                l = INT_MAX;
++            else if (le < (double)INT_MIN)
++                l = INT_MIN;
++            else
++                l = (int) le;
++            if (((double)l)+0.5 <= le) l++;
+ 	}
+ 
+ 	/* Now we normalize inidices */

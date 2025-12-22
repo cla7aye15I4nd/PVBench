@@ -1,0 +1,68 @@
+diff --git a/NEWS b/NEWS
+index 45805551ee..3bf074b1e1 100644
+--- a/NEWS
++++ b/NEWS
+@@ -22,6 +22,10 @@ PHP                                                                        NEWS
+ - PHPDBG:
+   . Fixed bug GH-12675 (MEMORY_LEAK in phpdbg_prompt.c). (nielsdos)
+ 
++- SPL:
++  . Fixed bug GH-12721 (SplFileInfo::getFilename() segfault in combination
++    with GlobIterator and no directory separator). (nielsdos)
++
+ - SQLite3:
+   . Fixed bug GH-12633 (sqlite3_defensive.phpt fails with sqlite 3.44.0).
+     (SakiTakamachi)
+diff --git a/ext/spl/spl_directory.c b/ext/spl/spl_directory.c
+index 0dcb34b6a6..581183d38f 100644
+--- a/ext/spl/spl_directory.c
++++ b/ext/spl/spl_directory.c
+@@ -925,7 +925,6 @@ PHP_METHOD(SplFileInfo, getFilename)
+ 
+ 	path = spl_filesystem_object_get_path(intern);
+ 
+-	ZEND_ASSERT(path);
+ 	if (path && ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
+ 		/* +1 to skip the trailing / of the path in the file name */
+ 		size_t path_len = ZSTR_LEN(path) + 1;
+@@ -933,7 +932,9 @@ PHP_METHOD(SplFileInfo, getFilename)
+ 	} else {
+ 		RETVAL_STR_COPY(intern->file_name);
+ 	}
+-	zend_string_release_ex(path, /* persistent */ false);
++	if (path) {
++		zend_string_release_ex(path, /* persistent */ false);
++	}
+ }
+ /* }}} */
+ 
+@@ -973,14 +974,16 @@ PHP_METHOD(SplFileInfo, getExtension)
+ 
+ 	path = spl_filesystem_object_get_path(intern);
+ 
+-	if (ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
++	if (path && ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
+ 		fname = ZSTR_VAL(intern->file_name) + ZSTR_LEN(path) + 1;
+ 		flen = ZSTR_LEN(intern->file_name) - (ZSTR_LEN(path) + 1);
+ 	} else {
+ 		fname = ZSTR_VAL(intern->file_name);
+ 		flen = ZSTR_LEN(intern->file_name);
+ 	}
+-	zend_string_release_ex(path, /* persistent */ false);
++	if (path) {
++		zend_string_release_ex(path, /* persistent */ false);
++	}
+ 
+ 	ret = php_basename(fname, flen, NULL, 0);
+ 
+@@ -1052,7 +1055,9 @@ PHP_METHOD(SplFileInfo, getBasename)
+ 		fname = ZSTR_VAL(intern->file_name);
+ 		flen = ZSTR_LEN(intern->file_name);
+ 	}
+-	zend_string_release_ex(path, /* persistent */ false);
++	if (path) {
++		zend_string_release_ex(path, /* persistent */ false);
++	}
+ 
+ 	RETURN_STR(php_basename(fname, flen, suffix, slen));
+ }

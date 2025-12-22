@@ -1,0 +1,26 @@
+diff --git a/src/tag.c b/src/tag.c
+index 21ff5636a..f61f11674 100644
+--- a/src/tag.c
++++ b/src/tag.c
+@@ -3997,6 +3997,8 @@ jumpto_tag(
+ 	    ++sandbox;
+ #endif
+ 	    curwin->w_cursor.lnum = 1;		// start command in line 1
++	    curwin->w_cursor.col = 0;
++	    curwin->w_cursor.coladd = 0;
+ 	    do_cmdline_cmd(pbuf);
+ 	    retval = OK;
+ 
+diff --git a/src/version.c b/src/version.c
+index aac7ed1ae..cfb661e70 100644
+--- a/src/version.c
++++ b/src/version.c
+@@ -704,6 +704,8 @@ static char *(features[]) =
+ 
+ static int included_patches[] =
+ {   /* Add new patch number below this line */
++/**/
++    1172,
+ /**/
+     1171,
+ /**/

@@ -1,0 +1,22 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+atomic memory access' size must be byte-sized
+ i1  store atomic i1 true, ptr @g.init seq_cst, align 1
+atomic memory access' size must be byte-sized
+ i1  %g.init.val = load atomic i1, ptr @g.init seq_cst, align 1
+LLVM ERROR: Broken module found, compilation aborted!
+Stack dump:
+0.	Program arguments: ./build/bin/opt -S -passes=globalopt /testcases/llvm-gh-137152/input/poc.ll
+1.	Running pass "verify" on module "/testcases/llvm-gh-137152/input/poc.ll"
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:880:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - llvm::report_fatal_error(llvm::Twine const&, bool) llvm/lib/Support/ErrorHandling.cpp:126:9
+    - llvm::report_fatal_error(llvm::StringRef, bool) llvm/lib/Support/ErrorHandling.cpp:87:68
+    - llvm::VerifierPass::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/lib/IR/Verifier.cpp:7806:33
+    - llvm::detail::PassModel<llvm::Module, llvm::VerifierPass, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/include/llvm/IR/PassManagerInternal.h:92:3
+    - llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/include/llvm/IR/PassManagerImpl.h:85:18
+    - llvm::runPassPipeline(llvm::StringRef, llvm::Module&, llvm::TargetMachine*, llvm::TargetLibraryInfoImpl*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::StringRef, llvm::ArrayRef<llvm::PassPlugin>, llvm::ArrayRef<std::function<void (llvm::PassBuilder&)>>, llvm::opt_tool::OutputKind, llvm::opt_tool::VerifierKind, bool, bool, bool, bool, bool, bool, bool) llvm/tools/opt/NewPMDriver.cpp:557:10
+    - optMain llvm/tools/opt/optdriver.cpp:725:27
+    - main llvm/tools/opt/opt.cpp:25:64

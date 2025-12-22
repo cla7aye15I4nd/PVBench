@@ -1,0 +1,55 @@
+==2701==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x513000000a78 at pc 0x55ec1bac097a bp 0x7ffcf4c2a8f0 sp 0x7ffcf4c2a8e8
+READ of size 8 at 0x513000000a78 thread T0
+    #0 0x55ec1bac0979 in hts_itr_multi_next /tmp/htslib-gh-2063/build/hts.c:4455:75
+    #1 0x55ec1b845612 in sam_itr_next /tmp/htslib-gh-2063/build/htslib/sam.h:1366:16
+    #2 0x55ec1b841d92 in multi_region_view /samtools/sam_view.c:785:22
+    #3 0x55ec1b83e703 in main_samview /samtools/sam_view.c:1416:22
+    #4 0x55ec1b8bdf4d in main /samtools/bamtk.c:244:55
+    #5 0x7f6035b331c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x7f6035b3328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x55ec1b74cda4 in _start (/samtools/samtools+0x89da4) (BuildId: 593ad91639fc763e9317e66c48d6da2742858030)
+
+0x513000000a78 is located 8 bytes after 368-byte region [0x513000000900,0x513000000a70)
+allocated by thread T0 here:
+    #0 0x55ec1b7e7ddd in calloc (/samtools/samtools+0x124ddd) (BuildId: 593ad91639fc763e9317e66c48d6da2742858030)
+    #1 0x55ec1ba2c115 in bed_reglist /samtools/bedidx.c:638:52
+    #2 0x55ec1b83a054 in multi_region_init /samtools/sam_view.c:578:30
+    #3 0x55ec1b83e6db in main_samview /samtools/sam_view.c:1415:33
+    #4 0x55ec1b8bdf4d in main /samtools/bamtk.c:244:55
+    #5 0x7f6035b331c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x7f6035b3328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x55ec1b74cda4 in _start (/samtools/samtools+0x89da4) (BuildId: 593ad91639fc763e9317e66c48d6da2742858030)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/htslib-gh-2063/build/hts.c:4455:75 in hts_itr_multi_next
+Shadow bytes around the buggy address:
+  0x513000000780: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x513000000800: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x513000000880: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x513000000900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x513000000980: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x513000000a00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 fa[fa]
+  0x513000000a80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x513000000b00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x513000000b80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x513000000c00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x513000000c80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==2701==ABORTING

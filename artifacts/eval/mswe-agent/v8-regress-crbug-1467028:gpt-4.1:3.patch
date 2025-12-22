@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index d35b588ef65..29d98592a37 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index bb1c37968ce..6e32bcbac32 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -900,8 +900,8 @@ void Parser::ParseFunction(Isolate* isolate, ParseInfo* info,
+ 
+   FunctionKind function_kind = flags().function_kind();
+   FunctionLiteral* result;
+-  if (V8_UNLIKELY(IsClassMembersInitializerFunction(function_kind))) {
+-    DCHECK(!maybe_outer_scope_info.is_null());
++  if (V8_UNLIKELY(IsClassMembersInitializerFunction(function_kind)) &&
++      shared_info->HasOuterScopeInfo()) {
+     // Reparsing of class member initializer functions has to be handled
+     // specially because they require reparsing of the whole class body,
+     // function start/end positions correspond to the class literal body

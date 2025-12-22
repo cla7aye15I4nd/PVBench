@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index fa8fbb49d9d..d9670c75cbc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,3 +126,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
+index 72d12dd4dfe..497f33cae9e 100644
+--- a/src/compiler/js-native-context-specialization.cc
++++ b/src/compiler/js-native-context-specialization.cc
+@@ -2977,7 +2977,7 @@ JSNativeContextSpecialization::BuildPropertyLoad(
+     DCHECK_EQ(receiver, lookup_start_object);
+     value = graph()->NewNode(simplified()->StringLength(), receiver);
+   } else if (access_info.IsStringWrapperLength()) {
+-    DCHECK_EQ(receiver, lookup_start_object);
++    value = graph()->NewNode(simplified()->StringWrapperLength(), receiver);
+     value = graph()->NewNode(simplified()->StringWrapperLength(), receiver);
+   } else {
+     DCHECK(access_info.IsDataField() || access_info.IsFastDataConstant() ||

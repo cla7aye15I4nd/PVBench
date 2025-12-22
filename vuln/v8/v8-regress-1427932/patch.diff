@@ -1,0 +1,14 @@
+diff --git a/src/objects/intl-objects.cc b/src/objects/intl-objects.cc
+index ab197778b8b..84dc6bca71e 100644
+--- a/src/objects/intl-objects.cc
++++ b/src/objects/intl-objects.cc
+@@ -450,8 +450,7 @@ Maybe<icu::Locale> CreateICULocale(const std::string& bcp47_locale) {
+   UErrorCode status = U_ZERO_ERROR;
+ 
+   icu::Locale icu_locale = icu::Locale::forLanguageTag(bcp47_locale, status);
+-  DCHECK(U_SUCCESS(status));
+-  if (icu_locale.isBogus()) {
++  if (U_FAILURE(status) || icu_locale.isBogus()) {
+     return Nothing<icu::Locale>();
+   }
+ 

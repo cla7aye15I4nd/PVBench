@@ -1,0 +1,14 @@
+id: pcap-gh-1137
+project: pcapplusplus
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+binary: poc
+trigger_commit: 459477108bd56eea82216f04b9e157687c631f6c
+patch:
+  commit: aa4e62d5d3ae94dfd96c52a98414a24fd187c2a6
+  date: '2023-08-15T23:24:32-07:00'
+reference:
+- https://github.com/seladb/PcapPlusPlus
+- https://github.com/seladb/PcapPlusPlus/issues/1137
+- https://github.com/seladb/PcapPlusPlus/commit/459477108bd56eea82216f04b9e157687c631f6c
+- https://github.com/seladb/PcapPlusPlus/commit/aa4e62d5d3ae94dfd96c52a98414a24fd187c2a6

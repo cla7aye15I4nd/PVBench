@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+# No expected failures - all assertions expect success

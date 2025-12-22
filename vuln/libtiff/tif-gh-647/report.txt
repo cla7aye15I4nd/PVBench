@@ -1,0 +1,17 @@
+==10727==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x000000000000 bp 0x7ffd380a1270 sp 0x7ffd380a1238 T0)
+==10727==Hint: pc points to the zero page.
+==10727==The signal is caused by a READ memory access.
+==10727==Hint: address points to the zero page.
+    #0 0x0  (<unknown module>)
+    #1 0x7656d7d9109e in TIFFSetField /tmp/tif-gh-647/build/libtiff/tif_dir.c:1152:14
+    #2 0x7656d7dc4d7e in TIFFFetchNormalTag /tmp/tif-gh-647/build/libtiff/tif_dirread.c:6545:25
+    #3 0x7656d7dd64d9 in TIFFReadCustomDirectory /tmp/tif-gh-647/build/libtiff/tif_dirread.c:5400:31
+    #4 0x7656d7dd7034 in TIFFReadGPSDirectory /tmp/tif-gh-647/build/libtiff/tif_dirread.c:5430:12
+    #5 0x5c03f81dd82b in main /tmp/tif-gh-647/build/poc.c:17:2
+    #6 0x7656d796e1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x7656d796e28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x5c03f8104374 in _start (/tmp/tif-gh-647/build/poc-647+0x2c374) (BuildId: ac7d1d37a6e33c9c897c5877ac7e8a14579dac5b)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (<unknown module>) 
+==10727==ABORTING

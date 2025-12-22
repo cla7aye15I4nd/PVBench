@@ -1,0 +1,127 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/comprehensive_test.ll b/comprehensive_test.ll
+new file mode 100644
+index 000000000000..90b8d66b6041
+--- /dev/null
++++ b/comprehensive_test.ll
+@@ -0,0 +1,19 @@
++; Test various FMA operations that could trigger the deleted node issue
++define <4 x float> @test_vector_fma(<4 x float> %a, <4 x float> %b, <4 x float> %c) {
++  %result = call <4 x float> @llvm.fma.v4f32(<4 x float> %a, <4 x float> %b, <4 x float> %c)
++  ret <4 x float> %result
++}
++
++define float @test_scalar_fma(float %a, float %b, float %c) {
++  %result = call float @llvm.fma.f32(float %a, float %b, float %c)
++  ret float %result
++}
++
++define <4 x float> @test_complex_fma(<4 x float> %a, <4 x float> %b, <4 x float> %c) {
++  %neg_a = fneg <4 x float> %a
++  %result = call <4 x float> @llvm.fma.v4f32(<4 x float> %neg_a, <4 x float> %b, <4 x float> %c)
++  ret <4 x float> %result
++}
++
++declare float @llvm.fma.f32(float, float, float)
++declare <4 x float> @llvm.fma.v4f32(<4 x float>, <4 x float>, <4 x float>)
+diff --git a/llvm/lib/Target/X86/X86ISelLowering.cpp b/llvm/lib/Target/X86/X86ISelLowering.cpp
+index f04603867a58..f0c95695adaf 100644
+--- a/llvm/lib/Target/X86/X86ISelLowering.cpp
++++ b/llvm/lib/Target/X86/X86ISelLowering.cpp
+@@ -54745,6 +54745,13 @@ SDValue X86TargetLowering::getNegatedExpression(SDValue Op, SelectionDAG &DAG,
+     for (int i = 0, e = Op.getNumOperands(); i != e; ++i)
+       if (!NewOps[i])
+         NewOps[i] = Op.getOperand(i);
++    
++    // Check that none of the operands are deleted nodes before creating new node
++    for (const SDValue &Operand : NewOps) {
++      if (Operand.getOpcode() == ISD::DELETED_NODE)
++        return SDValue();
++    }
++    
+     return DAG.getNode(NewOpc, SDLoc(Op), VT, NewOps);
+   }
+   case X86ISD::FRCP:
+diff --git a/output.s b/output.s
+new file mode 100644
+index 000000000000..dc8693ea1118
+--- /dev/null
++++ b/output.s
+@@ -0,0 +1,38 @@
++	.file	"0.bin"
++	.section	.rodata.cst16,"aM",@progbits,16
++	.p2align	4, 0x0                          # -- Begin function _Z3foo4fVec
++.LCPI0_0:
++	.long	0x80000000                      # float -0
++	.long	0x80000000                      # float -0
++	.long	0x80000000                      # float -0
++	.long	0x80000000                      # float -0
++.LCPI0_1:
++	.long	0x3f800000                      # float 1
++	.long	0x3f800000                      # float 1
++	.long	0x3f800000                      # float 1
++	.long	0x3f800000                      # float 1
++	.section	.rodata.cst4,"aM",@progbits,4
++	.p2align	2, 0x0
++.LCPI0_2:
++	.long	0x3f800000                      # float 1
++	.text
++	.globl	_Z3foo4fVec
++	.p2align	4
++	.type	_Z3foo4fVec,@function
++_Z3foo4fVec:                            # @_Z3foo4fVec
++	.cfi_startproc
++# %bb.0:                                # %entry
++	vxorps	.LCPI0_0(%rip), %xmm0, %xmm1
++	vrcpps	%xmm0, %xmm2
++	vrcpps	%xmm1, %xmm1
++	vxorps	%xmm3, %xmm3, %xmm3
++	vcmpneqps	%xmm0, %xmm3, %xmm0
++	vbroadcastss	.LCPI0_2(%rip), %xmm4   # xmm4 = [1.0E+0,1.0E+0,1.0E+0,1.0E+0]
++	vblendvps	%xmm0, %xmm1, %xmm4, %xmm0
++	vfnmadd231ps	%xmm2, %xmm3, %xmm0     # xmm0 = -(xmm3 * xmm2) + xmm0
++	retq
++.Lfunc_end0:
++	.size	_Z3foo4fVec, .Lfunc_end0-_Z3foo4fVec
++	.cfi_endproc
++                                        # -- End function
++	.section	".note.GNU-stack","",@progbits
+diff --git a/test_script.sh b/test_script.sh
+new file mode 100755
+index 000000000000..59c3d8b6e4c8
+--- /dev/null
++++ b/test_script.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++./build/bin/llc -o - $1
+diff --git a/test_simple.ll b/test_simple.ll
+new file mode 100644
+index 000000000000..d6c7d92a37de
+--- /dev/null
++++ b/test_simple.ll
+@@ -0,0 +1,6 @@
++define float @test_fma(float %a, float %b, float %c) {
++  %result = call float @llvm.fma.f32(float %a, float %b, float %c)
++  ret float %result
++}
++
++declare float @llvm.fma.f32(float, float, float)

@@ -1,0 +1,14 @@
+id: pcap-gh-1711
+project: pcapplusplus
+sanitizer: AddressSanitizer
+type: Use After Free
+binary: poc
+trigger_commit: 9c9b90be3f55141d785e6f43d478ed3159eb7b4d
+patch:
+  commit: 003079fb261c0f6375fb8eda265daf3e7bdd0486
+  date: '2025-04-02T19:08:43-07:00'
+reference:
+- https://github.com/seladb/PcapPlusPlus
+- https://github.com/seladb/PcapPlusPlus/issues/1711
+- https://github.com/seladb/PcapPlusPlus/commit/9c9b90be3f55141d785e6f43d478ed3159eb7b4d
+- https://github.com/seladb/PcapPlusPlus/commit/003079fb261c0f6375fb8eda265daf3e7bdd0486

@@ -1,0 +1,68 @@
+==12649==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x52900000a200 at pc 0x57f9a44e2e38 bp 0x7ffe62d53d90 sp 0x7ffe62d53d88
+READ of size 1 at 0x52900000a200 thread T0
+    #0 0x57f9a44e2e37 in xmlParseEndTag2 /tmp/xml-commit-db07dd6/build/parser.c:9837:13
+    #1 0x57f9a44db1d1 in xmlParseElement /tmp/xml-commit-db07dd6/build/parser.c:10247:2
+    #2 0x57f9a44ecf85 in xmlParseDocument /tmp/xml-commit-db07dd6/build/parser.c:10921:2
+    #3 0x57f9a450ee79 in xmlDoRead /tmp/xml-commit-db07dd6/build/parser.c:15400:5
+    #4 0x57f9a450f09d in xmlReadFile /tmp/xml-commit-db07dd6/build/parser.c:15462:13
+    #5 0x57f9a443a224 in parseAndPrintFile /tmp/xml-commit-db07dd6/build/xmllint.c:2408:9
+    #6 0x57f9a4435b2e in main /tmp/xml-commit-db07dd6/build/xmllint.c:3767:7
+    #7 0x7389015fc1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x7389015fc28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x57f9a4357654 in _start (/tmp/xml-commit-db07dd6/build/xmllint+0x9c654) (BuildId: 8132f0e53f46958b3ec8b4f7c7fe6fd12ea233f2)
+
+0x52900000a200 is located 4092 bytes after 16388-byte region [0x529000005200,0x529000009204)
+allocated by thread T0 here:
+    #0 0x57f9a43f28c0 in realloc (/tmp/xml-commit-db07dd6/build/xmllint+0x1378c0) (BuildId: 8132f0e53f46958b3ec8b4f7c7fe6fd12ea233f2)
+    #1 0x57f9a46e9050 in xmlBufGrowInternal /tmp/xml-commit-db07dd6/build/buf.c:486:23
+    #2 0x57f9a46e85e0 in xmlBufGrow /tmp/xml-commit-db07dd6/build/buf.c:515:11
+    #3 0x57f9a4567251 in xmlParserInputBufferGrow /tmp/xml-commit-db07dd6/build/xmlIO.c:3326:9
+    #4 0x57f9a4461a33 in xmlParserInputGrow /tmp/xml-commit-db07dd6/build/parserInternals.c:320:8
+    #5 0x57f9a44779cf in xmlGROW /tmp/xml-commit-db07dd6/build/parser.c:2083:5
+    #6 0x57f9a451610e in xmlParseNCNameComplex /tmp/xml-commit-db07dd6/build/parser.c:3501:6
+    #7 0x57f9a4515aca in xmlParseNCName /tmp/xml-commit-db07dd6/build/parser.c:3593:12
+    #8 0x57f9a4513937 in xmlParseQName /tmp/xml-commit-db07dd6/build/parser.c:8868:9
+    #9 0x57f9a44dc5a8 in xmlParseStartTag2 /tmp/xml-commit-db07dd6/build/parser.c:9390:17
+    #10 0x57f9a44d947f in xmlParseElement /tmp/xml-commit-db07dd6/build/parser.c:10138:16
+    #11 0x57f9a44ecf85 in xmlParseDocument /tmp/xml-commit-db07dd6/build/parser.c:10921:2
+    #12 0x57f9a450ee79 in xmlDoRead /tmp/xml-commit-db07dd6/build/parser.c:15400:5
+    #13 0x57f9a450f09d in xmlReadFile /tmp/xml-commit-db07dd6/build/parser.c:15462:13
+    #14 0x57f9a443a224 in parseAndPrintFile /tmp/xml-commit-db07dd6/build/xmllint.c:2408:9
+    #15 0x57f9a4435b2e in main /tmp/xml-commit-db07dd6/build/xmllint.c:3767:7
+    #16 0x7389015fc1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x7389015fc28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x57f9a4357654 in _start (/tmp/xml-commit-db07dd6/build/xmllint+0x9c654) (BuildId: 8132f0e53f46958b3ec8b4f7c7fe6fd12ea233f2)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/xml-commit-db07dd6/build/parser.c:9837:13 in xmlParseEndTag2
+Shadow bytes around the buggy address:
+  0x529000009f80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a000: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a080: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a100: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a180: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x52900000a200:[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a380: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a400: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x52900000a480: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12649==ABORTING

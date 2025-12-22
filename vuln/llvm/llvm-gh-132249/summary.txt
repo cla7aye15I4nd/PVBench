@@ -1,0 +1,33 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+/testcases/llvm-gh-132249/input/poc.cpp:9:47: warning: defaulted comparison operators are a C++20 extension [-Wc++20-extensions]
+    9 | bool operator==(const bar& a, const bar& b) = default;
+      |                                               ^
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-132249/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-132249/build -fcoverage-compilation-dir=/tmp/llvm-gh-132249/build -resource-dir /tmp/llvm-gh-132249/build/build/lib/clang/21 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/backward -internal-isystem /tmp/llvm-gh-132249/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-5c100e.o -x c++ /testcases/llvm-gh-132249/input/poc.cpp
+1.	<eof> parser at end of file
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:880:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)::operator()(clang::FriendDecl const*) const clang/lib/Sema/SemaDeclCXX.cpp:9010:54
+    - bool llvm::none_of<llvm::iterator_range<clang::CXXRecordDecl::friend_iterator>, clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>(llvm::iterator_range<clang::CXXRecordDecl::friend_iterator>&&, clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)) llvm/include/llvm/ADT/STLExtras.h:1760:1
+    - clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind) clang/lib/Sema/SemaDeclCXX.cpp:9008:5
+    - clang::Sema::SetDeclDefaulted(clang::Decl*, clang::SourceLocation) clang/lib/Sema/SemaDeclCXX.cpp:18288:5
+    - clang::Sema::SetFunctionBodyKind(clang::Decl*, clang::SourceLocation, clang::Sema::FnBodyKind, clang::StringLiteral*) clang/lib/Sema/SemaDeclCXX.cpp:18330:5
+    - clang::Parser::ParseFunctionDefinition(clang::ParsingDeclarator&, clang::Parser::ParsedTemplateInfo const&, clang::Parser::LateParsedAttrList*) clang/lib/Parse/Parser.cpp:1494:31
+    - clang::Parser::ParseDeclGroup(clang::ParsingDeclSpec&, clang::DeclaratorContext, clang::ParsedAttributes&, clang::Parser::ParsedTemplateInfo&, clang::SourceLocation*, clang::Parser::ForRangeInit*) clang/lib/Parse/ParseDecl.cpp:2460:40
+    - clang::Parser::ParseDeclOrFunctionDefInternal(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec&, clang::AccessSpecifier) clang/lib/Parse/Parser.cpp:1260:24
+    - clang::Parser::ParseDeclarationOrFunctionDefinition(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*, clang::AccessSpecifier) clang/lib/Parse/Parser.cpp:1282:42
+    - clang::Parser::ParseExternalDeclaration(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*) clang/lib/Parse/Parser.cpp:1085:50
+    - clang::Parser::ParseTopLevelDecl(clang::OpaquePtr<clang::DeclGroupRef>&, clang::Sema::ModuleImportState&) clang/lib/Parse/Parser.cpp:771:36
+    - clang::ParseAST(clang::Sema&, bool, bool) clang/lib/Parse/ParseAST.cpp:171:37
+    - clang::ASTFrontendAction::ExecuteAction() clang/lib/Frontend/FrontendAction.cpp:1144:11
+    - clang::CodeGenAction::ExecuteAction() clang/lib/CodeGen/CodeGenAction.cpp:1102:5
+    - clang::FrontendAction::Execute() clang/lib/Frontend/FrontendAction.cpp:1030:38
+    - clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) clang/lib/Frontend/CompilerInstance.cpp:1055:42
+    - clang::ExecuteCompilerInvocation(clang::CompilerInstance*) clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+    - cc1_main(llvm::ArrayRef<char const*>, char const*, void*) clang/tools/driver/cc1_main.cpp:294:40
+    - ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) clang/tools/driver/driver.cpp:218:20
+    - clang_main(int, char**, llvm::ToolContext const&) clang/tools/driver/driver.cpp:259:26
+    - main build/tools/clang/tools/driver/clang-driver.cpp:17:20

@@ -1,0 +1,48 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/pngimage.cpp b/src/pngimage.cpp
+index 4ccec39d8..3585c12c1 100644
+--- a/src/pngimage.cpp
++++ b/src/pngimage.cpp
+@@ -462,14 +462,21 @@ namespace Exiv2 {
+                 } else if (chunkType == "iCCP") {
+                     // The ICC profile name can vary from 1-79 characters.
+                     uint32_t iccOffset = 0;
++                    // Find the null terminator for the profile name, but do not exceed chunkLength
+                     while (iccOffset < 80 && iccOffset < chunkLength) {
+-                         if (chunkData.pData_[iccOffset++] ==  0x00) {
++                        if (chunkData.pData_[iccOffset] == 0x00) {
+                             break;
+-                         }
++                        }
++                        ++iccOffset;
++                    }
++                    // Only construct the string if iccOffset is within bounds
++                    if (iccOffset == 0 || iccOffset > chunkLength) {
++                        throw Exiv2::Error(Exiv2::kerCorruptedMetadata, "Invalid ICC profile name in PNG chunk");
+                     }
+-                    profileName_ = std::string(reinterpret_cast<char *>(chunkData.pData_), iccOffset-1);
++                    profileName_ = std::string(reinterpret_cast<char *>(chunkData.pData_), iccOffset);
+                     ++iccOffset; // +1 = 'compressed' flag
+                     enforce(iccOffset <= chunkLength, Exiv2::kerCorruptedMetadata);
++                    enforce(iccOffset <= chunkLength, Exiv2::kerCorruptedMetadata);
+ 
+                     zlibToDataBuf(chunkData.pData_ + iccOffset, chunkLength - iccOffset, iccProfile_);
+ #ifdef DEBUG

@@ -1,0 +1,68 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/session/session.c b/ext/session/session.c
+index b23f1fce358..a75461d65b6 100644
+--- a/ext/session/session.c
++++ b/ext/session/session.c
+@@ -1058,18 +1058,35 @@ PS_SERIALIZER_ENCODE_FUNC(php) /* {{{ */
+ 	php_serialize_data_t var_hash;
+ 	PS_ENCODE_VARS;
+ 
++	HashTable *session_vars_copy = NULL;
++	zval *orig_session_vars = NULL;
++
++	/* Make a shallow copy of the session variables array */
++	if (!Z_ISUNDEF(PS(http_session_vars))) {
++		orig_session_vars = Z_REFVAL(PS(http_session_vars));
++		if (Z_TYPE_P(orig_session_vars) == IS_ARRAY) {
++			session_vars_copy = zend_array_dup(Z_ARRVAL_P(orig_session_vars));
++		}
++	}
++
+ 	PHP_VAR_SERIALIZE_INIT(var_hash);
+ 
+-	PS_ENCODE_LOOP(
+-		smart_str_appendl(&buf, ZSTR_VAL(key), ZSTR_LEN(key));
+-		if (memchr(ZSTR_VAL(key), PS_DELIMITER, ZSTR_LEN(key))) {
+-			PHP_VAR_SERIALIZE_DESTROY(var_hash);
+-			smart_str_free(&buf);
+-			return NULL;
+-		}
+-		smart_str_appendc(&buf, PS_DELIMITER);
+-		php_var_serialize(&buf, struc, &var_hash);
+-	);
++	if (session_vars_copy) {
++		zend_string *key;
++		zval *struc;
++		ZEND_HASH_FOREACH_STR_KEY_VAL(session_vars_copy, key, struc) {
++			smart_str_appendl(&buf, ZSTR_VAL(key), ZSTR_LEN(key));
++			if (memchr(ZSTR_VAL(key), PS_DELIMITER, ZSTR_LEN(key))) {
++				PHP_VAR_SERIALIZE_DESTROY(var_hash);
++				smart_str_free(&buf);
++				zend_array_destroy(session_vars_copy);
++				return NULL;
++			}
++			smart_str_appendc(&buf, PS_DELIMITER);
++			php_var_serialize(&buf, struc, &var_hash);
++		} ZEND_HASH_FOREACH_END();
++		zend_array_destroy(session_vars_copy);
++	}
+ 
+ 	smart_str_0(&buf);
+ 

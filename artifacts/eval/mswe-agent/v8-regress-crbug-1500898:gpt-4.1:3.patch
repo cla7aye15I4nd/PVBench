@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index 9a75efa5fd3..c59a0fb6715 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -1924,6 +1924,7 @@ Tagged<Object> Isolate::ReThrow(Tagged<Object> exception,
+   DCHECK(!has_pending_exception());
+   DCHECK(!has_pending_message());
+ 
++  clear_pending_message();
+   set_pending_message(message);
+   return ReThrow(exception);
+ }

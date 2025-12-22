@@ -1,0 +1,28 @@
+
+diff --git a/.gitignore b/.gitignore
+index c424a894c2a..94d6d1b74a0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -160,3 +160,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/longobject.c b/Objects/longobject.c
+index fae70dd13bb..cbbed17338c 100644
+--- a/Objects/longobject.c
++++ b/Objects/longobject.c
+@@ -6172,7 +6172,7 @@ long_vectorcall(PyObject *type, PyObject * const*args,
+         default:
+             return PyErr_Format(PyExc_TypeError,
+                                 "int expected at most 2 argument%s, got %zd",
+-                                nargs);
++                                nargs == 1 ? "" : "s", nargs);
+     }
+ }
+ 

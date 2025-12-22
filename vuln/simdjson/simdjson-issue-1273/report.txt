@@ -1,0 +1,19 @@
+==1511==ERROR: AddressSanitizer: SEGV on unknown address 0x791889bef6f0 (pc 0x5b9a65210ac2 bp 0x7ffeaffb9f50 sp 0x7ffeaffafc60 T0)
+==1511==The signal is caused by a READ memory access.
+    #0 0x5b9a65210ac2 in simdjson::fallback::(anonymous namespace)::numberparsing::compute_float_64(long, unsigned long, bool, double&) /tmp/simdjson-issue-1273/build/include/simdjson/generic/numberparsing.h:159:85
+    #1 0x5b9a65210ac2 in simdjson::fallback::(anonymous namespace)::numberparsing::(anonymous namespace)::parse_double(unsigned char const*) /tmp/simdjson-issue-1273/build/include/simdjson/generic/numberparsing.h:747:9
+    #2 0x5b9a65210ac2 in simdjson::fallback::ondemand::json_iterator::parse_double(unsigned char const*) /tmp/simdjson-issue-1273/build/include/simdjson/generic/ondemand/json_iterator-inl.h:166:10
+    #3 0x5b9a65210ac2 in simdjson::fallback::ondemand::value::get_double() && /tmp/simdjson-issue-1273/build/include/simdjson/generic/ondemand/value-inl.h:70:16
+    #4 0x5b9a65210ac2 in simdjson::simdjson_result<simdjson::fallback::ondemand::value>::get_double() & /tmp/simdjson-issue-1273/build/include/simdjson/generic/ondemand/value-inl.h:265:72
+    #5 0x5b9a65210ac2 in LLVMFuzzerTestOneInput /tmp/simdjson-issue-1273/build/fuzz/fuzz_ondemand.cpp:40:39
+    #6 0x5b9a65109ca4 in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) (/tmp/simdjson-issue-1273/build/build/fuzz/fuzz_ondemand+0x51ca4) (BuildId: 83c4844c30cc4dd4145f8b63a7d0b700c71f53d1)
+    #7 0x5b9a650f2dd6 in fuzzer::RunOneTest(fuzzer::Fuzzer*, char const*, unsigned long) (/tmp/simdjson-issue-1273/build/build/fuzz/fuzz_ondemand+0x3add6) (BuildId: 83c4844c30cc4dd4145f8b63a7d0b700c71f53d1)
+    #8 0x5b9a650f888a in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) (/tmp/simdjson-issue-1273/build/build/fuzz/fuzz_ondemand+0x4088a) (BuildId: 83c4844c30cc4dd4145f8b63a7d0b700c71f53d1)
+    #9 0x5b9a65123046 in main (/tmp/simdjson-issue-1273/build/build/fuzz/fuzz_ondemand+0x6b046) (BuildId: 83c4844c30cc4dd4145f8b63a7d0b700c71f53d1)
+    #10 0x7910896961c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x79108969628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x5b9a650ed9a4 in _start (/tmp/simdjson-issue-1273/build/build/fuzz/fuzz_ondemand+0x359a4) (BuildId: 83c4844c30cc4dd4145f8b63a7d0b700c71f53d1)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/simdjson-issue-1273/build/include/simdjson/generic/numberparsing.h:159:85 in simdjson::fallback::(anonymous namespace)::numberparsing::compute_float_64(long, unsigned long, bool, double&)
+==1511==ABORTING

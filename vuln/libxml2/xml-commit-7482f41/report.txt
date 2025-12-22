@@ -1,0 +1,18 @@
+runtime error: 1.23457e+19 is outside the range of representable values of type 'int'
+    #0 0x61ddece0707d in xmlXPathFormatNumber /tmp/xml-commit-7482f41/build/xpath.c:3109:24
+    #1 0x61ddece06e38 in xmlXPathCastNumberToString /tmp/xml-commit-7482f41/build/xpath.c:5716:6
+    #2 0x61ddece287a6 in xmlXPathCacheConvertString /tmp/xml-commit-7482f41/build/xpath.c:2675:8
+    #3 0x61ddece2cd60 in xmlXPathStringFunction /tmp/xml-commit-7482f41/build/xpath.c:8978:21
+    #4 0x61ddece87229 in xmlXPathCompOpEval /tmp/xml-commit-7482f41/build/xpath.c:13613:17
+    #5 0x61ddece902d2 in xmlXPathCompOpEval /tmp/xml-commit-7482f41/build/xpath.c:13998:26
+    #6 0x61ddece41fef in xmlXPathRunEval /tmp/xml-commit-7482f41/build/xpath.c:14578:2
+    #7 0x61ddece410fe in xmlXPathEvalExpr /tmp/xml-commit-7482f41/build/xpath.c:15050:5
+    #8 0x61ddece420eb in xmlXPathEval /tmp/xml-commit-7482f41/build/xpath.c:15075:5
+    #9 0x61ddecae0278 in doXPathQuery /tmp/xml-commit-7482f41/build/xmllint.c:2157:11
+    #10 0x61ddecad8915 in parseAndPrintFile /tmp/xml-commit-7482f41/build/xmllint.c:2453:9
+    #11 0x61ddecad3114 in main /tmp/xml-commit-7482f41/build/xmllint.c:3772:7
+    #12 0x7be206c031c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x7be206c0328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x61ddeca9a9f4 in _start (/tmp/xml-commit-7482f41/build/xmllint+0x4d69f4) (BuildId: 1e08a5df5ef75f95bcaf27b81ce786cbcbbfb1d3)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior xpath.c:3109:24 

@@ -1,0 +1,71 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/pngimage.cpp b/src/pngimage.cpp
+index 4ccec39d8..45f6f2743 100644
+--- a/src/pngimage.cpp
++++ b/src/pngimage.cpp
+@@ -446,6 +446,12 @@ namespace Exiv2 {
+             // Perform a chunk triage for item that we need.
+             if (chunkType == "IEND" || chunkType == "IHDR" || chunkType == "tEXt" || chunkType == "zTXt" ||
+                 chunkType == "iTXt" || chunkType == "iCCP") {
++                
++                // Special handling for iCCP chunks - they must have data
++                if (chunkType == "iCCP" && chunkLength == 0) {
++                    throw Error(kerCorruptedMetadata);
++                }
++                
+                 DataBuf chunkData(chunkLength);
+                 readChunk(chunkData, *io_);  // Extract chunk data.
+ 
+@@ -460,6 +466,7 @@ namespace Exiv2 {
+                 } else if (chunkType == "iTXt") {
+                     PngChunk::decodeTXTChunk(this, chunkData, PngChunk::iTXt_Chunk);
+                 } else if (chunkType == "iCCP") {
++                    
+                     // The ICC profile name can vary from 1-79 characters.
+                     uint32_t iccOffset = 0;
+                     while (iccOffset < 80 && iccOffset < chunkLength) {
+@@ -467,7 +474,26 @@ namespace Exiv2 {
+                             break;
+                          }
+                     }
++                    
++                    // Check if we found a null terminator within bounds
++                    // iccOffset will be > 0 if we found a null terminator
++                    if (iccOffset == 0 || iccOffset > chunkLength) {
++                        throw Error(kerCorruptedMetadata);
++                    }
++                    
++                    // Ensure we actually found a null terminator (not just reached the limit)
++                    if (chunkData.pData_[iccOffset-1] != 0x00) {
++                        throw Error(kerCorruptedMetadata);
++                    }
++                    
++                    // Create profile name safely - iccOffset-1 is now guaranteed to be valid
+                     profileName_ = std::string(reinterpret_cast<char *>(chunkData.pData_), iccOffset-1);
++                    
++                    // Check bounds before accessing compression flag
++                    if (iccOffset >= chunkLength) {
++                        throw Error(kerCorruptedMetadata);
++                    }
++                    
+                     ++iccOffset; // +1 = 'compressed' flag
+                     enforce(iccOffset <= chunkLength, Exiv2::kerCorruptedMetadata);
+ 

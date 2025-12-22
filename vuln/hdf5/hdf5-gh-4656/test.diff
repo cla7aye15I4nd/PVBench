@@ -1,0 +1,282 @@
+diff --git a/test/cache_api.c b/test/cache_api.c
+index 5ac6ca0a10..61c8062a0c 100644
+--- a/test/cache_api.c
++++ b/test/cache_api.c
+@@ -1858,6 +1858,15 @@ check_file_mdc_api_errs(unsigned paged, hid_t fcpl_id)
+ 
+     /* test H5Fget_mdc_config().  */
+ 
++    /* Create an ID to use in the H5Fset_mdc_config/H5Fget_mdc_config tests */
++    hid_t dtype_id = H5Tcopy(H5T_NATIVE_INT);
++
++    if (dtype_id < 0) {
++
++        pass         = false;
++        failure_mssg = "H5Tcopy() failed.\n";
++    }
++
+     scratch.version = H5C__CURR_AUTO_SIZE_CTL_VER;
+     if (pass) {
+ 
+@@ -1877,6 +1886,18 @@ check_file_mdc_api_errs(unsigned paged, hid_t fcpl_id)
+             pass         = false;
+             failure_mssg = "H5Fget_mdc_config() accepted invalid file_id.";
+         }
++
++        H5E_BEGIN_TRY
++        {
++            result = H5Fget_mdc_config(dtype_id, &scratch); /* not a file ID */
++        }
++        H5E_END_TRY
++
++        if (result >= 0) {
++
++            pass         = false;
++            failure_mssg = "H5Fget_mdc_config() accepted an ID that is not a file ID.";
++        }
+     }
+ 
+     if (pass) {
+@@ -1941,6 +1962,27 @@ check_file_mdc_api_errs(unsigned paged, hid_t fcpl_id)
+             pass         = false;
+             failure_mssg = "H5Fset_mdc_config() accepted bad invalid file_id.";
+         }
++
++        H5E_BEGIN_TRY
++        {
++            result = H5Fset_mdc_config(dtype_id, &default_config);
++        }
++        H5E_END_TRY
++
++        if (result >= 0) {
++
++            pass         = false;
++            failure_mssg = "H5Fset_mdc_config() accepted an ID that is not a file ID.";
++        }
++    }
++
++    /* Close the temporary datatype */
++    result = H5Tclose(dtype_id);
++
++    if (result < 0) {
++
++        pass         = false;
++        failure_mssg = "H5Tclose() failed.\n";
+     }
+ 
+     if (pass) {
+@@ -2050,6 +2092,37 @@ check_file_mdc_api_errs(unsigned paged, hid_t fcpl_id)
+             pass         = false;
+             failure_mssg = "H5Freset_mdc_hit_rate_stats() accepted bad file_id.";
+         }
++
++        /* Create an ID to use in the next test */
++        hid_t scalarsp_id = H5Screate(H5S_SCALAR);
++
++        if (scalarsp_id < 0) {
++
++            pass         = false;
++            failure_mssg = "H5Screate() failed.\n";
++        }
++
++        /* Try to call H5Freset_mdc_hit_rate_stats with an inappropriate ID */
++        H5E_BEGIN_TRY
++        {
++            result = H5Freset_mdc_hit_rate_stats(scalarsp_id);
++        }
++        H5E_END_TRY
++
++        if (result >= 0) {
++
++            pass         = false;
++            failure_mssg = "H5Freset_mdc_hit_rate_stats() accepted an ID that is not a file_id.";
++        }
++
++        /* Close the temporary dataspace */
++        result = H5Sclose(scalarsp_id);
++
++        if (result < 0) {
++
++            pass         = false;
++            failure_mssg = "H5Sclose() failed.\n";
++        }
+     }
+ 
+     /* test H5Fget_mdc_size() */
+diff --git a/test/tid.c b/test/tid.c
+index da8700f4f7..8dac7f19e4 100644
+--- a/test/tid.c
++++ b/test/tid.c
+@@ -18,6 +18,10 @@
+ #define H5I_FRIEND /*suppress error about including H5Ipkg      */
+ #include "H5Ipkg.h"
+ 
++/* Defines used in test_appropriate_ids */
++#define FILE_NAME "tid.h5"
++#define DSET_NAME "Dataset 1"
++
+ static herr_t
+ free_wrapper(void *p, void H5_ATTR_UNUSED **_ctx)
+ {
+@@ -1369,6 +1373,127 @@ error:
+     return -1;
+ } /* end test_future_ids() */
+ 
++/*-------------------------------------------------------------------------
++ * Function:    test_appropriate_ids
++ *
++ * Purpose:     Tests several API functions on detecting inappropriate ID.
++ *
++ * Return:      Success:        0
++ *              Failure:        number of errors
++ *
++ *-------------------------------------------------------------------------
++ */
++static int
++test_appropriate_ids(void)
++{
++    hid_t    file_id  = H5I_INVALID_HID;
++    hid_t    fapl_id  = H5I_INVALID_HID;
++    hid_t    fcpl_id  = H5I_INVALID_HID;
++    hid_t    plist    = H5I_INVALID_HID;
++    hid_t    dset_id  = H5I_INVALID_HID;
++    hid_t    space_id = H5I_INVALID_HID;
++    hsize_t  dims     = 2;
++    hssize_t free_space;
++    herr_t   ret = SUCCEED; /* Generic return value */
++
++    /* Create file create property list */
++    fcpl_id = H5Pcreate(H5P_FILE_CREATE);
++    CHECK(fcpl_id, H5I_INVALID_HID, "H5Pcreate");
++
++    file_id = H5Fcreate(FILE_NAME, H5F_ACC_TRUNC, fcpl_id, H5P_DEFAULT);
++    CHECK(file_id, H5I_INVALID_HID, "H5Fcreate");
++
++    /* Create a dataset in the file */
++    space_id = H5Screate_simple(1, &dims, NULL);
++    CHECK(space_id, H5I_INVALID_HID, "H5Screate_simple");
++    dset_id = H5Dcreate2(file_id, DSET_NAME, H5T_NATIVE_INT, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
++    CHECK(dset_id, H5I_INVALID_HID, "H5Dcreate2");
++
++    /* Close IDs */
++    ret = H5Pclose(fcpl_id);
++    CHECK(ret, FAIL, "H5Pclose");
++    ret = H5Sclose(space_id);
++    CHECK(ret, FAIL, "H5Sclose");
++    ret = H5Dclose(dset_id);
++    CHECK(ret, FAIL, "H5Dclose");
++    ret = H5Fclose(file_id);
++    CHECK(ret, FAIL, "H5Fclose");
++
++    file_id = H5Fopen(FILE_NAME, H5F_ACC_RDONLY, H5P_DEFAULT);
++    CHECK(file_id, H5I_INVALID_HID, "H5Fopen");
++
++    /* Get the file create property */
++    fcpl_id = H5Fget_create_plist(file_id);
++    CHECK(fcpl_id, H5I_INVALID_HID, "H5Fget_create_plist");
++
++    /* Get the file access property */
++    fapl_id = H5Fget_access_plist(file_id);
++    CHECK(fapl_id, H5I_INVALID_HID, "H5Fget_access_plist");
++
++    dset_id = H5Dopen2(file_id, DSET_NAME, H5P_DEFAULT);
++    CHECK(dset_id, H5I_INVALID_HID, "H5Dopen2");
++
++    /*-------------------------------------------------------------
++     * Try to call functions passing in a wrong ID
++     *-----------------------------------------------------------*/
++    H5E_BEGIN_TRY
++    {
++        plist = H5Fget_create_plist(dset_id); /* dset_id is not file ID */
++    }
++    H5E_END_TRY
++    VERIFY(plist, H5I_INVALID_HID, "H5Fget_create_plist");
++
++    H5E_BEGIN_TRY
++    {
++        plist = H5Fget_access_plist(fapl_id); /* fapl_id is not file ID */
++    }
++    H5E_END_TRY
++    VERIFY(plist, H5I_INVALID_HID, "H5Fget_access_plist");
++
++    H5E_BEGIN_TRY
++    {
++        unsigned intent;                       /* File access flags */
++        ret = H5Fget_intent(dset_id, &intent); /* dset_id is not file ID */
++    }
++    H5E_END_TRY
++    VERIFY(ret, FAIL, "H5Fget_intent");
++
++    H5E_BEGIN_TRY
++    {
++        unsigned long fileno = 0;
++        ret                  = H5Fget_fileno(dset_id, &fileno); /* dset_id is not file ID */
++    }
++    H5E_END_TRY
++    VERIFY(ret, FAIL, "H5Fget_fileno");
++
++    H5E_BEGIN_TRY
++    {
++        free_space = H5Fget_freespace(dset_id); /* dset_id is not file ID */
++    }
++    H5E_END_TRY
++    VERIFY(free_space, FAIL, "H5Fget_freespace");
++
++    H5E_BEGIN_TRY
++    {
++        void *os_file_handle = NULL;                                    /* OS file handle */
++        ret = H5Fget_vfd_handle(fapl_id, H5P_DEFAULT, &os_file_handle); /* fapl_id is not file ID */
++    }
++    H5E_END_TRY
++    VERIFY(ret, FAIL, "H5Fget_vfd_handle");
++
++    /* Close IDs */
++    ret = H5Pclose(fapl_id);
++    CHECK(ret, FAIL, "H5Pclose");
++    ret = H5Pclose(fcpl_id);
++    CHECK(ret, FAIL, "H5Pclose");
++    ret = H5Dclose(dset_id);
++    CHECK(ret, FAIL, "H5Dclose");
++    ret = H5Fclose(file_id);
++    CHECK(ret, FAIL, "H5Fclose");
++
++    return 0;
++}
++
+ void
+ test_ids(void)
+ {
+@@ -1389,4 +1514,6 @@ test_ids(void)
+         TestErrPrintf("ID remove during H5Iclear_type test failed\n");
+     if (test_future_ids() < 0)
+         TestErrPrintf("Future ID test failed\n");
++    if (test_appropriate_ids() < 0)
++        TestErrPrintf("Detection of inappropriate ID test failed\n");
+ }
+diff --git a/test/tvltypes.c b/test/tvltypes.c
+index 4c8813037d..1ca7de3bd8 100644
+--- a/test/tvltypes.c
++++ b/test/tvltypes.c
+@@ -491,6 +491,22 @@ test_vltypes_vlen_atomic(void)
+     H5E_END_TRY
+     VERIFY(ret, FAIL, "H5Dvlen_get_buf_size");
+ 
++    /* Try to call H5Dvlen_get_buf_size with a wrong ID */
++    H5E_BEGIN_TRY
++    {
++        ret = H5Dvlen_get_buf_size(tid1, dataset, sid2, &size); /* IDs in wrong order */
++    }
++    H5E_END_TRY
++    VERIFY(ret, FAIL, "H5Dvlen_get_buf_size");
++
++    /* Try to call H5Dvlen_get_buf_size with a wrong ID */
++    H5E_BEGIN_TRY
++    {
++        ret = H5Dvlen_get_buf_size(fid1, tid1, sid2, &size); /* not a dataset ID */
++    }
++    H5E_END_TRY
++    VERIFY(ret, FAIL, "H5Dvlen_get_buf_size");
++
+     /* Read dataset from disk */
+     ret = H5Dread(dataset, tid1, H5S_ALL, H5S_ALL, xfer_pid, rdata);
+     CHECK(ret, FAIL, "H5Dread");

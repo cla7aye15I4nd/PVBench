@@ -1,0 +1,14 @@
+id: mruby-gh-5986
+project: mruby
+sanitizer: UndefinedBehaviorSanitizer
+type: Integer Overflow
+binary: mruby
+trigger_commit: 73b6c6619ccb5911d417a7e72863ebcb0c34d70e
+patch:
+  commit: dcced0016c80b87d09386e4209078bc276533da6
+  date: '2023-04-15T21:25:58+09:00'
+reference:
+- https://github.com/mruby/mruby
+- https://github.com/mruby/mruby/issues/5986
+- https://github.com/mruby/mruby/commit/73b6c6619ccb5911d417a7e72863ebcb0c34d70e
+- https://github.com/mruby/mruby/commit/dcced0016c80b87d09386e4209078bc276533da6

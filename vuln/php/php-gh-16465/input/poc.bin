@@ -1,0 +1,20 @@
+<?php
+
+$v10 = new DOMElement("a");
+try {
+    $v10->getElementsByTagName("text\0something");
+} catch (ValueError $e) {
+    echo $e->getMessage(), "\n";
+}
+try {
+    $v10->getElementsByTagNameNS("", "text\0something");
+} catch (ValueError $e) {
+    echo $e->getMessage(), "\n";
+}
+try {
+    $v10->getElementsByTagNameNS("text\0something", "");
+} catch (ValueError $e) {
+    echo $e->getMessage(), "\n";
+}
+
+?>

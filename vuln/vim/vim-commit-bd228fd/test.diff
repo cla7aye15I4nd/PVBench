@@ -1,0 +1,18 @@
+diff --git a/src/testdir/test_help.vim b/src/testdir/test_help.vim
+index 15cc642d1..6e32edd36 100644
+--- a/src/testdir/test_help.vim
++++ b/src/testdir/test_help.vim
+@@ -134,4 +134,13 @@ func Test_help_window_height()
+   close
+ endfunc
+ 
++func Test_help_long_argument()
++  try
++    exe 'help \%' .. repeat('0', 1021)
++  catch
++    call assert_match("E149:", v:exception)
++  endtry
++endfunc
++
++
+ " vim: shiftwidth=2 sts=2 expandtab

@@ -1,0 +1,58 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/document.c b/ext/dom/document.c
+index 9650d090290..71b76b7538d 100644
+--- a/ext/dom/document.c
++++ b/ext/dom/document.c
+@@ -1616,6 +1616,11 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 
+ 	DOM_GET_OBJ(docp, ZEND_THIS, xmlDocPtr, intern);
+ 
++	/* Increment document reference count to prevent it from being freed during this function */
++	if (intern->document != NULL) {
++		intern->document->refcount++;
++	}
++
+ 	libxml_doc_props const* doc_props = dom_get_doc_props_read_only(intern->document);
+ 	bool format = doc_props->formatoutput;
+ 
+@@ -1625,6 +1630,7 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 		DOM_GET_OBJ(node, nodep, xmlNodePtr, nodeobj);
+ 		if (node->doc != docp) {
+ 			php_dom_throw_error(WRONG_DOCUMENT_ERR, dom_get_strict_error(intern->document));
++			php_libxml_decrement_doc_ref_directly(intern->document);
+ 			RETURN_FALSE;
+ 		}
+ 
+@@ -1652,12 +1658,15 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 
+ 	if (!res) {
+ 		php_error_docref(NULL, E_WARNING, "Could not save document");
++		php_libxml_decrement_doc_ref_directly(intern->document);
+ 		RETURN_FALSE;
+ 	} else {
++		php_libxml_decrement_doc_ref_directly(intern->document);
+ 		RETURN_NEW_STR(res);
+ 	}
+ }
+ 
++
+ PHP_METHOD(DOMDocument, saveXML)
+ {
+ 	dom_document_save_xml(INTERNAL_FUNCTION_PARAM_PASSTHRU, dom_node_class_entry);

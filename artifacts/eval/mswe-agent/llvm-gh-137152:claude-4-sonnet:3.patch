@@ -1,0 +1,40 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/llvm/lib/Transforms/IPO/GlobalOpt.cpp b/llvm/lib/Transforms/IPO/GlobalOpt.cpp
+index cfba8dcc05b2..9e0cd3339af5 100644
+--- a/llvm/lib/Transforms/IPO/GlobalOpt.cpp
++++ b/llvm/lib/Transforms/IPO/GlobalOpt.cpp
+@@ -1184,6 +1184,15 @@ static bool TryToShrinkGlobalToBoolean(GlobalVariable *GV, Constant *OtherVal) {
+       return false;
+     if (getLoadStoreType(U) != GVElType)
+       return false;
++    // Don't shrink to boolean if any operation is atomic, since atomic
++    // operations on i1 are not valid (must be byte-sized or larger).
++    if (auto *LI = dyn_cast<LoadInst>(U)) {
++      if (LI->isAtomic())
++        return false;
++    } else if (auto *SI = dyn_cast<StoreInst>(U)) {
++      if (SI->isAtomic())
++        return false;
++    }
+   }
+ 
+   LLVM_DEBUG(dbgs() << "   *** SHRINKING TO BOOL: " << *GV << "\n");

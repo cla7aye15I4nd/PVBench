@@ -1,0 +1,54 @@
+==7221==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7f3068b01480 at pc 0x5d70ae495d27 bp 0x7ffd903de910 sp 0x7ffd903de908
+WRITE of size 1 at 0x7f3068b01480 thread T0
+    #0 0x5d70ae495d26 in xmllintShell /tmp/xml-gh-941/build/shell.c:1148:22
+    #1 0x5d70ae488ca5 in parseAndPrintFile /tmp/xml-gh-941/build/xmllint.c:1858:9
+    #2 0x5d70ae47de0d in xmllintMain /tmp/xml-gh-941/build/xmllint.c:3264:21
+    #3 0x5d70ae49e2e1 in main /tmp/xml-gh-941/build/lintmain.c:13:12
+    #4 0x7f306a5811c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x7f306a58128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x5d70ae3a25f4 in _start (/tmp/xml-gh-941/build/xmllint+0x855f4) (BuildId: 7b5b1b5ab4a943cd33d06776e496156ed5f815f8)
+
+Address 0x7f3068b01480 is located in stack of thread T0 at offset 1152 in frame
+    #0 0x5d70ae4947df in xmllintShell /tmp/xml-gh-941/build/shell.c:1069
+
+  This frame has 5 object(s):
+    [32, 532) 'prompt' (line 1070)
+    [608, 708) 'command' (line 1072)
+    [752, 1152) 'arg' (line 1073) <== Memory access at offset 1152 overflows this variable
+    [1216, 1716) 'dir' (line 1219)
+    [1792, 2292) 'dir519' (line 1381)
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+      (longjmp and C++ exceptions *are* supported)
+SUMMARY: AddressSanitizer: stack-buffer-overflow /tmp/xml-gh-941/build/shell.c:1148:22 in xmllintShell
+Shadow bytes around the buggy address:
+  0x7f3068b01200: 00 00 04 f2 f2 f2 f2 f2 f2 f2 f2 f2 00 00 00 00
+  0x7f3068b01280: 00 00 00 00 00 00 00 00 04 f2 f2 f2 f2 f2 00 00
+  0x7f3068b01300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7f3068b01380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7f3068b01400: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x7f3068b01480:[f2]f2 f2 f2 f2 f2 f2 f2 f8 f8 f8 f8 f8 f8 f8 f8
+  0x7f3068b01500: f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8
+  0x7f3068b01580: f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8
+  0x7f3068b01600: f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8
+  0x7f3068b01680: f8 f8 f8 f8 f8 f8 f8 f2 f2 f2 f2 f2 f2 f2 f2 f2
+  0x7f3068b01700: f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8 f8
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==7221==ABORTING

@@ -1,0 +1,11 @@
+diff --git a/test/dump/bad-directory.txt b/test/dump/bad-directory.txt
+new file mode 100644
+index 00000000..b4a2e4e8
+--- /dev/null
++++ b/test/dump/bad-directory.txt
+@@ -0,0 +1,5 @@
++;;; RUN: %(wasm-objdump)s -d third_party/
++;;; ERROR: 1
++(;; STDERR ;;;
++third_party/ is not a regular file.
++;;; STDERR ;;)

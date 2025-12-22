@@ -1,0 +1,226 @@
+
+diff --git a/.gitignore b/.gitignore
+index 49acc9f2e17..de22b095dfc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/asan_output.txt b/asan_output.txt
+new file mode 100644
+index 00000000000..89a4b721b14
+--- /dev/null
++++ b/asan_output.txt
+@@ -0,0 +1,95 @@
++C::__destruct
++=================================================================
++==105299==ERROR: AddressSanitizer: heap-use-after-free on address 0x50400003b950 at pc 0x5d86ea786f10 bp 0x7ffef0b54d50 sp 0x7ffef0b54d40
++READ of size 4 at 0x50400003b950 thread T0
++    #0 0x5d86ea786f0f in zend_objects_store_del (/home/php/sapi/cli/php+0x1586f0f) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #1 0x5d86ea2556b9 in rc_dtor_func (/home/php/sapi/cli/php+0x10556b9) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #2 0x5d86ea255ad2 in zval_ptr_dtor (/home/php/sapi/cli/php+0x1055ad2) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #3 0x5d86e9c90565 in spl_array_unset_dimension_ex (/home/php/sapi/cli/php+0xa90565) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #4 0x5d86e9c909c6 in spl_array_unset_dimension (/home/php/sapi/cli/php+0xa909c6) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #5 0x5d86ea5ccf93 in ZEND_UNSET_DIM_SPEC_CV_CONST_HANDLER (/home/php/sapi/cli/php+0x13ccf93) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #6 0x5d86ea6a0446 in execute_ex (/home/php/sapi/cli/php+0x14a0446) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #7 0x5d86ea6a8940 in zend_execute (/home/php/sapi/cli/php+0x14a8940) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #8 0x5d86ea26906c in zend_execute_scripts (/home/php/sapi/cli/php+0x106906c) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #9 0x5d86ea07618c in php_execute_script (/home/php/sapi/cli/php+0xe7618c) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #10 0x5d86ea97c3a6 in do_cli (/home/php/sapi/cli/php+0x177c3a6) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #11 0x5d86ea97eaa9 in main (/home/php/sapi/cli/php+0x177eaa9) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #12 0x7c42cdc6c1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #13 0x7c42cdc6c28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #14 0x5d86e9606394 in _start (/home/php/sapi/cli/php+0x406394) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++
++0x50400003b950 is located 0 bytes inside of 40-byte region [0x50400003b950,0x50400003b978)
++freed by thread T0 here:
++    #0 0x7c42ce3834d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
++    #1 0x5d86ea184f9c in tracked_free (/home/php/sapi/cli/php+0xf84f9c) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #2 0x5d86ea17757f in _efree_custom (/home/php/sapi/cli/php+0xf7757f) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #3 0x5d86ea17fad7 in _efree (/home/php/sapi/cli/php+0xf7fad7) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #4 0x5d86ea7872ea in zend_objects_store_del (/home/php/sapi/cli/php+0x15872ea) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #5 0x5d86ea76983a in zend_objects_destroy_object (/home/php/sapi/cli/php+0x156983a) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #6 0x5d86ea786ed0 in zend_objects_store_del (/home/php/sapi/cli/php+0x1586ed0) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #7 0x5d86ea2556b9 in rc_dtor_func (/home/php/sapi/cli/php+0x10556b9) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #8 0x5d86ea255ad2 in zval_ptr_dtor (/home/php/sapi/cli/php+0x1055ad2) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #9 0x5d86e9c90565 in spl_array_unset_dimension_ex (/home/php/sapi/cli/php+0xa90565) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #10 0x5d86e9c909c6 in spl_array_unset_dimension (/home/php/sapi/cli/php+0xa909c6) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #11 0x5d86ea5ccf93 in ZEND_UNSET_DIM_SPEC_CV_CONST_HANDLER (/home/php/sapi/cli/php+0x13ccf93) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #12 0x5d86ea6a0446 in execute_ex (/home/php/sapi/cli/php+0x14a0446) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #13 0x5d86ea6a8940 in zend_execute (/home/php/sapi/cli/php+0x14a8940) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #14 0x5d86ea26906c in zend_execute_scripts (/home/php/sapi/cli/php+0x106906c) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #15 0x5d86ea07618c in php_execute_script (/home/php/sapi/cli/php+0xe7618c) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #16 0x5d86ea97c3a6 in do_cli (/home/php/sapi/cli/php+0x177c3a6) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #17 0x5d86ea97eaa9 in main (/home/php/sapi/cli/php+0x177eaa9) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #18 0x7c42cdc6c1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #19 0x7c42cdc6c28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #20 0x5d86e9606394 in _start (/home/php/sapi/cli/php+0x406394) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++
++previously allocated by thread T0 here:
++    #0 0x7c42ce3849c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
++    #1 0x5d86ea184c4b in tracked_malloc (/home/php/sapi/cli/php+0xf84c4b) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #2 0x5d86ea177532 in _malloc_custom (/home/php/sapi/cli/php+0xf77532) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #3 0x5d86ea17f7d9 in _emalloc (/home/php/sapi/cli/php+0xf7f7d9) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #4 0x5d86ea769958 in zend_objects_new (/home/php/sapi/cli/php+0x1569958) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #5 0x5d86ea27e3c0 in object_init_ex (/home/php/sapi/cli/php+0x107e3c0) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #6 0x5d86ea404805 in ZEND_NEW_SPEC_CONST_UNUSED_HANDLER (/home/php/sapi/cli/php+0x1204805) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #7 0x5d86ea66a939 in execute_ex (/home/php/sapi/cli/php+0x146a939) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #8 0x5d86ea6a8940 in zend_execute (/home/php/sapi/cli/php+0x14a8940) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #9 0x5d86ea26906c in zend_execute_scripts (/home/php/sapi/cli/php+0x106906c) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #10 0x5d86ea07618c in php_execute_script (/home/php/sapi/cli/php+0xe7618c) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #11 0x5d86ea97c3a6 in do_cli (/home/php/sapi/cli/php+0x177c3a6) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #12 0x5d86ea97eaa9 in main (/home/php/sapi/cli/php+0x177eaa9) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++    #13 0x7c42cdc6c1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #14 0x7c42cdc6c28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #15 0x5d86e9606394 in _start (/home/php/sapi/cli/php+0x406394) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2)
++
++SUMMARY: AddressSanitizer: heap-use-after-free (/home/php/sapi/cli/php+0x1586f0f) (BuildId: 51e4ff8c39b0a5ac2ac4c04de4db606a410944b2) in zend_objects_store_del
++Shadow bytes around the buggy address:
++  0x50400003b680: fa fa 00 00 00 00 00 fa fa fa 00 00 00 00 00 fa
++  0x50400003b700: fa fa 00 00 00 00 00 fa fa fa 00 00 00 00 00 fa
++  0x50400003b780: fa fa fd fd fd fd fd fa fa fa fd fd fd fd fd fa
++  0x50400003b800: fa fa fd fd fd fd fd fa fa fa 00 00 00 00 00 fa
++  0x50400003b880: fa fa fd fd fd fd fd fa fa fa fd fd fd fd fd fa
++=>0x50400003b900: fa fa 00 00 00 00 04 fa fa fa[fd]fd fd fd fd fa
++  0x50400003b980: fa fa fd fd fd fd fd fa fa fa fa fa fa fa fa fa
++  0x50400003ba00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++  0x50400003ba80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++  0x50400003bb00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++  0x50400003bb80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++Shadow byte legend (one shadow byte represents 8 application bytes):
++  Addressable:           00
++  Partially addressable: 01 02 03 04 05 06 07 
++  Heap left redzone:       fa
++  Freed heap region:       fd
++  Stack left redzone:      f1
++  Stack mid redzone:       f2
++  Stack right redzone:     f3
++  Stack after return:      f5
++  Stack use after scope:   f8
++  Global redzone:          f9
++  Global init order:       f6
++  Poisoned by user:        f7
++  Container overflow:      fc
++  Array cookie:            ac
++  Intra object redzone:    bb
++  ASan internal:           fe
++  Left alloca redzone:     ca
++  Right alloca redzone:    cb
++==105299==ABORTING
+diff --git a/ext/dom/element.c b/ext/dom/element.c
+index 46f1100a767..3fcae3595f3 100644
+--- a/ext/dom/element.c
++++ b/ext/dom/element.c
+@@ -339,7 +339,7 @@ PHP_METHOD(DOMElement, getAttributeNames)
+ 
+ 	for (xmlNsPtr nsptr = nodep->nsDef; nsptr; nsptr = nsptr->next) {
+ 		const char *prefix = (const char *) nsptr->prefix;
+-		ZVAL_STR(&tmp, dom_node_concatenated_name_helper(strlen(prefix), prefix, strlen("xmlns"), (const char *) "xmlns"));
++        ZVAL_STR(&tmp, dom_node_concatenated_name_helper(strlen(prefix ? prefix : ""), prefix ? prefix : "", strlen("xmlns"), (const char *) "xmlns"));
+ 		zend_hash_next_index_insert(ht, &tmp);
+ 	}
+ 
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 3fcce1a7682..55b2886dd0c 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -139,10 +139,13 @@ static void spl_array_object_free_storage(zend_object *object)
+ 
+ 	zend_object_std_dtor(&intern->std);
+ 
+-	zval_ptr_dtor(&intern->array);
++    if (Z_TYPE(intern->array) == IS_OBJECT && Z_OBJ(intern->array) == &intern->std) {
++        ZVAL_UNDEF(&intern->array);
++    } else if (Z_TYPE(intern->array) != IS_UNDEF) {
++        zval_ptr_dtor(&intern->array);
++        ZVAL_UNDEF(&intern->array);
++    }
+ }
+-/* }}} */
+-
+ /* {{{ spl_array_object_new_ex */
+ static zend_object *spl_array_object_new_ex(zend_class_entry *class_type, zend_object *orig, int clone_orig)
+ {
+@@ -548,33 +551,45 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
+-	if (key.key) {
+-		zval *data = zend_hash_find(ht, key.key);
+-		if (data) {
+-			if (Z_TYPE_P(data) == IS_INDIRECT) {
+-				data = Z_INDIRECT_P(data);
+-				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
+-					ZVAL_UNDEF(data);
+-					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+-					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+-					if (spl_array_is_object(intern)) {
+-						spl_array_skip_protected(intern, ht);
+-					}
+-				}
+-			} else {
+-				zend_hash_del(ht, key.key);
+-			}
+-		}
+-		spl_hash_key_release(&key);
+-	} else {
+-		zend_hash_index_del(ht, key.h);
+-	}
+-
+-	if (refcount) {
+-		spl_array_set_refcount(intern->is_child, ht, refcount);
+-	}
+-} /* }}} */
++    if (key.key) {
++        zval *data = zend_hash_find(ht, key.key);
++        if (data) {
++            if (Z_TYPE_P(data) == IS_INDIRECT) {
++                data = Z_INDIRECT_P(data);
++                if (Z_TYPE_P(data) != IS_UNDEF) {
++                    if (Z_TYPE_P(data) == IS_OBJECT && Z_OBJ_P(data) == &intern->std) {
++                        ZVAL_UNDEF(data);
++                        ZVAL_UNDEF(&intern->array);
++                        HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
++                        zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
++                        spl_array_skip_protected(intern, ht);
++                    } else {
++                        zval_ptr_dtor(data);
++                        ZVAL_UNDEF(data);
++                        HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
++                        zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
++                        spl_array_skip_protected(intern, ht);
++                    }
++
++                }
++            } else {
++                if (Z_TYPE_P(data) == IS_OBJECT && Z_OBJ_P(data) == &intern->std) {
++                    ZVAL_UNDEF(data);
++                    ZVAL_UNDEF(&intern->array);
++                } else {
++                    zend_hash_del(ht, key.key);
++                }
++            }
++        }
++        spl_hash_key_release(&key);
++    } else {
++        zend_hash_index_del(ht, key.h);
++    }
++
++    if (refcount) {
++        spl_array_set_refcount(intern->is_child, ht, refcount);
++    }
++}
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+ {

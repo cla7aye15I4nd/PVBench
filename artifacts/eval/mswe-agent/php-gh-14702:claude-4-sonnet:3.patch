@@ -1,0 +1,98 @@
+
+diff --git a/.gitignore b/.gitignore
+index 3aca5e6440c..0fd5f17b697 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 9205b523079..c4e7374ebf8 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -536,7 +536,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during sorting or destruction is prohibited");
+ 		return;
+ 	}
+ 
+@@ -548,6 +548,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
++	/* Increment nApplyCount to prevent reentrant modifications during destruction */
++	intern->nApplyCount++;
++
+ 	if (key.key) {
+ 		zval *data = zend_hash_find(ht, key.key);
+ 		if (data) {
+@@ -570,6 +573,8 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	} else {
+ 		zend_hash_index_del(ht, key.h);
+ 	}
++	/* Decrement nApplyCount after the operation is complete */
++	intern->nApplyCount--;
+ 
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+@@ -581,6 +586,8 @@ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{
+ 	spl_array_unset_dimension_ex(1, object, offset);
+ } /* }}} */
+ 
++
++
+ /* check_empty can take value 0, 1, or 2
+  * 0/1 are used as normal boolean, but 2 is used for the case when this function is called from
+  * the offsetExists() method, in which case it needs to report the offset exist even if the value is null */
+@@ -935,6 +942,10 @@ static zend_result spl_array_skip_protected(spl_array_object *intern, HashTable
+ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *array, zend_long ar_flags, bool just_array) {
+ 	/* Handled by ZPP prior to this, or for __unserialize() before passing to here */
+ 	ZEND_ASSERT(Z_TYPE_P(array) == IS_ARRAY || Z_TYPE_P(array) == IS_OBJECT);
++	
++	/* Increment nApplyCount to prevent reentrant modifications during destruction */
++	intern->nApplyCount++;
++	
+ 	if (Z_TYPE_P(array) == IS_ARRAY) {
+ 		zval_ptr_dtor(&intern->array);
+ 		if (Z_REFCOUNT_P(array) == 1) {
+@@ -969,6 +980,8 @@ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *ar
+ 		} else {
+ 			zend_object_get_properties_t handler = Z_OBJ_HANDLER_P(array, get_properties);
+ 			if (handler != zend_std_get_properties) {
++				/* Decrement nApplyCount before throwing exception */
++				intern->nApplyCount--;
+ 				zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0,
+ 					"Overloaded object of type %s is not compatible with %s",
+ 					ZSTR_VAL(Z_OBJCE_P(array)->name), ZSTR_VAL(intern->std.ce->name));
+@@ -985,6 +998,9 @@ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *ar
+ 		zend_hash_iterator_del(intern->ht_iter);
+ 		intern->ht_iter = (uint32_t)-1;
+ 	}
++	
++	/* Decrement nApplyCount after the operation is complete */
++	intern->nApplyCount--;
+ }
+ /* }}} */
+ 
+@@ -1087,7 +1103,7 @@ PHP_METHOD(ArrayObject, exchangeArray)
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during sorting or destruction is prohibited");
+ 		RETURN_THROWS();
+ 	}
+ 

@@ -1,0 +1,14 @@
+id: vim-commit-c9a1e25
+project: vim
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: vim
+trigger_commit: 9598a6369bce32d3da831e8968caf4625985ac3c
+patch:
+  commit: c9a1e257f1630a0866447e53a564f7ff96a80ead
+  date: '2025-01-11T15:25:00+01:00'
+reference:
+- https://github.com/vim/vim
+- https://github.com/vim/vim/security/advisories/GHSA-5rgf-26wj-48v8
+- https://github.com/vim/vim/commit/9598a6369bce32d3da831e8968caf4625985ac3c
+- https://github.com/vim/vim/commit/c9a1e257f1630a0866447e53a564f7ff96a80ead

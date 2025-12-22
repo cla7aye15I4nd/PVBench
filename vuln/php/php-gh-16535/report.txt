@@ -1,0 +1,66 @@
+==2855082==ERROR: AddressSanitizer: attempting double-free on 0x50f000000f40 in thread T0:
+    #0 0x55be9ba9dd3a in free (/php-gh-16535/build/sapi/cli/php+0x49dd3a) (BuildId: 13d41fc2224dae57445919cab2fdfce77e073731)
+    #1 0x7f2a1cba8127 in xmlFreeDoc (/lib/x86_64-linux-gnu/libxml2.so.2+0x68127) (BuildId: e8570b8e62a2bf44888a990d90526a4931817b62)
+    #2 0x55be9bbf3da6 in php_libxml_decrement_doc_ref /php-gh-16535/build/ext/libxml/libxml.c:1238:5
+    #3 0x55be9bbf44dd in php_libxml_node_decrement_resource /php-gh-16535/build/ext/libxml/libxml.c:1311:3
+    #4 0x55be9bdd90b6 in dom_objects_free_storage /php-gh-16535/build/ext/dom/php_dom.c:989:4
+    #5 0x55be9d0492e9 in zend_objects_store_del /php-gh-16535/build/Zend/zend_objects_API.c:200:4
+    #6 0x55be9c9d064a in rc_dtor_func /php-gh-16535/build/Zend/zend_variables.c:57:2
+    #7 0x55be9c9d07ac in i_zval_ptr_dtor /php-gh-16535/build/Zend/zend_variables.h:44:4
+    #8 0x55be9c9d07ac in zval_ptr_dtor /php-gh-16535/build/Zend/zend_variables.c:84:2
+    #9 0x55be9ca9247f in _zend_hash_del_el_ex /php-gh-16535/build/Zend/zend_hash.c:1425:3
+    #10 0x55be9ca9247f in _zend_hash_del_el /php-gh-16535/build/Zend/zend_hash.c:1452:2
+    #11 0x55be9ca9247f in zend_hash_reverse_apply /php-gh-16535/build/Zend/zend_hash.c:2168:5
+    #12 0x55be9c95afb1 in shutdown_destructors /php-gh-16535/build/Zend/zend_execute_API.c:259:4
+    #13 0x55be9c9de53c in zend_call_destructors /php-gh-16535/build/Zend/zend.c:1253:3
+    #14 0x55be9c782171 in php_request_shutdown /php-gh-16535/build/main/main.c:1861:3
+    #15 0x55be9d311b99 in do_cli /php-gh-16535/build/sapi/cli/php_cli.c:1136:3
+    #16 0x55be9d30d999 in main /php-gh-16535/build/sapi/cli/php_cli.c:1334:18
+    #17 0x7f2a1c7ad1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x7f2a1c7ad28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x55be9ba03184 in _start (/php-gh-16535/build/sapi/cli/php+0x403184) (BuildId: 13d41fc2224dae57445919cab2fdfce77e073731)
+
+0x50f000000f40 is located 0 bytes inside of 176-byte region [0x50f000000f40,0x50f000000ff0)
+freed by thread T0 here:
+    #0 0x55be9ba9dd3a in free (/php-gh-16535/build/sapi/cli/php+0x49dd3a) (BuildId: 13d41fc2224dae57445919cab2fdfce77e073731)
+    #1 0x55be9bbed557 in php_libxml_node_free /php-gh-16535/build/ext/libxml/libxml.c:172:5
+    #2 0x55be9bbecf4b in php_libxml_node_free_list /php-gh-16535/build/ext/libxml/libxml.c:215:4
+    #3 0x55be9bbf41ec in php_libxml_node_free_resource /php-gh-16535/build/ext/libxml/libxml.c:1267:5
+    #4 0x55be9bbf440b in php_libxml_node_decrement_resource /php-gh-16535/build/ext/libxml/libxml.c:1302:4
+    #5 0x55be9bdd90b6 in dom_objects_free_storage /php-gh-16535/build/ext/dom/php_dom.c:989:4
+    #6 0x55be9d0492e9 in zend_objects_store_del /php-gh-16535/build/Zend/zend_objects_API.c:200:4
+    #7 0x55be9c9d064a in rc_dtor_func /php-gh-16535/build/Zend/zend_variables.c:57:2
+    #8 0x55be9c9d07ac in i_zval_ptr_dtor /php-gh-16535/build/Zend/zend_variables.h:44:4
+    #9 0x55be9c9d07ac in zval_ptr_dtor /php-gh-16535/build/Zend/zend_variables.c:84:2
+    #10 0x55be9ca9247f in _zend_hash_del_el_ex /php-gh-16535/build/Zend/zend_hash.c:1425:3
+    #11 0x55be9ca9247f in _zend_hash_del_el /php-gh-16535/build/Zend/zend_hash.c:1452:2
+    #12 0x55be9ca9247f in zend_hash_reverse_apply /php-gh-16535/build/Zend/zend_hash.c:2168:5
+    #13 0x55be9c95afb1 in shutdown_destructors /php-gh-16535/build/Zend/zend_execute_API.c:259:4
+    #14 0x55be9c9de53c in zend_call_destructors /php-gh-16535/build/Zend/zend.c:1253:3
+    #15 0x55be9c782171 in php_request_shutdown /php-gh-16535/build/main/main.c:1861:3
+    #16 0x55be9d311b99 in do_cli /php-gh-16535/build/sapi/cli/php_cli.c:1136:3
+    #17 0x55be9d30d999 in main /php-gh-16535/build/sapi/cli/php_cli.c:1334:18
+    #18 0x7f2a1c7ad1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x7f2a1c7ad28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #20 0x55be9ba03184 in _start (/php-gh-16535/build/sapi/cli/php+0x403184) (BuildId: 13d41fc2224dae57445919cab2fdfce77e073731)
+
+previously allocated by thread T0 here:
+    #0 0x55be9ba9dfd3 in malloc (/php-gh-16535/build/sapi/cli/php+0x49dfd3) (BuildId: 13d41fc2224dae57445919cab2fdfce77e073731)
+    #1 0x7f2a1cbd9064 in htmlNewDocNoDtD (/lib/x86_64-linux-gnu/libxml2.so.2+0x99064) (BuildId: e8570b8e62a2bf44888a990d90526a4931817b62)
+    #2 0x7f2a1cc904d8 in xmlSAX2StartDocument (/lib/x86_64-linux-gnu/libxml2.so.2+0x1504d8) (BuildId: e8570b8e62a2bf44888a990d90526a4931817b62)
+    #3 0x7f2a1cbdf363 in htmlParseDocument (/lib/x86_64-linux-gnu/libxml2.so.2+0x9f363) (BuildId: e8570b8e62a2bf44888a990d90526a4931817b62)
+    #4 0x55be9be1c356 in dom_load_html /php-gh-16535/build/ext/dom/document.c:1974:2
+    #5 0x55be9be1c93e in zim_DOMDocument_loadHTML /php-gh-16535/build/ext/dom/document.c:2021:2
+    #6 0x55be9cc9edef in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-16535/build/Zend/zend_vm_execute.h:1842:4
+    #7 0x55be9cb02daf in execute_ex /php-gh-16535/build/Zend/zend_vm_execute.h:55866:7
+    #8 0x55be9cb04546 in zend_execute /php-gh-16535/build/Zend/zend_vm_execute.h:60439:2
+    #9 0x55be9c9e4916 in zend_execute_scripts /php-gh-16535/build/Zend/zend.c:1842:4
+    #10 0x55be9c787f9b in php_execute_script /php-gh-16535/build/main/main.c:2578:13
+    #11 0x55be9d30f9dc in do_cli /php-gh-16535/build/sapi/cli/php_cli.c:964:5
+    #12 0x55be9d30d999 in main /php-gh-16535/build/sapi/cli/php_cli.c:1334:18
+    #13 0x7f2a1c7ad1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x7f2a1c7ad28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x55be9ba03184 in _start (/php-gh-16535/build/sapi/cli/php+0x403184) (BuildId: 13d41fc2224dae57445919cab2fdfce77e073731)
+
+SUMMARY: AddressSanitizer: double-free (/php-gh-16535/build/sapi/cli/php+0x49dd3a) (BuildId: 13d41fc2224dae57445919cab2fdfce77e073731) in free
+==2855082==ABORTING

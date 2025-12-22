@@ -1,0 +1,60 @@
+diff --git a/result/XPath/expr/base b/result/XPath/expr/base
+index e2f6389e..57c93cf8 100644
+--- a/result/XPath/expr/base
++++ b/result/XPath/expr/base
+@@ -31,6 +31,38 @@ Object is a number : 1e-51
+ Expression: -0.000000000000000000000000000000000000000000000000001
+ Object is a number : -1e-51
+ 
++========================
++Expression: 1e2147483648
++Object is a number : Infinity
++
++========================
++Expression: 1e4294967296
++Object is a number : Infinity
++
++========================
++Expression: 1e9223372036854775808
++Object is a number : Infinity
++
++========================
++Expression: 1e18446744073709551616
++Object is a number : Infinity
++
++========================
++Expression: 1e-2147483649
++Object is a number : 0
++
++========================
++Expression: 1e-4294967296
++Object is a number : 0
++
++========================
++Expression: 1e-9223372036854775809
++Object is a number : 0
++
++========================
++Expression: 1e-18446744073709551616
++Object is a number : 0
++
+ ========================
+ Expression: self::-name
+ Object is empty (NULL)
+diff --git a/test/XPath/expr/base b/test/XPath/expr/base
+index 823f64b7..cc187356 100644
+--- a/test/XPath/expr/base
++++ b/test/XPath/expr/base
+@@ -6,4 +6,12 @@
+ 1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1
+ 0.000000000000000000000000000000000000000000000000001
+ -0.000000000000000000000000000000000000000000000000001
++1e2147483648
++1e4294967296
++1e9223372036854775808
++1e18446744073709551616
++1e-2147483649
++1e-4294967296
++1e-9223372036854775809
++1e-18446744073709551616
+ self::-name

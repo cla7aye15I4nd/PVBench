@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index 503e3e8135f..2006ad6e4a1 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -293,3 +293,6 @@ icu4c/build_qnx/nto-x86_64-o/*
+ icu4c/build_qnx/linux-x86_64-o/Makefile
+ icu4c/build_qnx/nto-aarch64-le/Makefile
+ icu4c/build_qnx/nto-x86_64-o/Makefile
++build/
++Build/
++*.exe
+diff --git a/icu4c/source/i18n/calendar.cpp b/icu4c/source/i18n/calendar.cpp
+index c3643a98689..41fe851ccf5 100644
+--- a/icu4c/source/i18n/calendar.cpp
++++ b/icu4c/source/i18n/calendar.cpp
+@@ -3605,9 +3605,14 @@ int32_t Calendar::handleComputeJulianDay(UCalendarDateFields bestField, UErrorCo
+ 
+ #if defined (U_DEBUG_CAL)
+                     fprintf(stderr, "%s:%d - y=%d, y-1=%d doy%d, njd%d (C.F. %d)\n",
+-                        __FILE__, __LINE__, year, year-1, testDate, julianDay+testDate, nextJulianDay);
++                        __FILE__, __LINE__, year, year-1, testDate, julianDay, nextJulianDay);
+ #endif
+-                    if(julianDay+testDate > nextJulianDay) { // is it past Dec 31?  (nextJulianDay is day BEFORE year+1's  Jan 1)
++                    int32_t julianDayPlusTestDate;
++                    if (uprv_add32_overflow(julianDay, testDate, &julianDayPlusTestDate)) {
++                        status = U_ILLEGAL_ARGUMENT_ERROR;
++                        return 0;
++                    }
++                    if(julianDayPlusTestDate > nextJulianDay) { // is it past Dec 31?  (nextJulianDay is day BEFORE year+1's  Jan 1)
+                         // Fire up the calculating engines.. retry YWOY = (year-1)
+                         int32_t prevYear;
+                         if (uprv_add32_overflow(year, -1, &prevYear)) {

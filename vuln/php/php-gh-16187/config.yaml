@@ -1,0 +1,14 @@
+id: php-gh-16187
+project: php
+sanitizer: LeakAddressSanitizer
+type: Reachable Assertion
+trigger_commit: 3d80d98a1071e8007ae9f5b6840019c403f15437
+binary: php
+patch:
+  commit: 331da7e8693ffb028c6678b5182f3436444d1c3b
+  date: '2024-10-05T10:18:11+02:00'
+reference:
+- https://github.com/php/php-src.git
+- https://github.com/php/php-src/issues/16187
+- https://github.com/php/php-src/commit/3d80d98a1071e8007ae9f5b6840019c403f15437
+- https://github.com/php/php-src/commit/331da7e8693ffb028c6678b5182f3436444d1c3b

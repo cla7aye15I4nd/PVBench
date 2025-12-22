@@ -1,0 +1,32 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 5cf9eba243b..e199c73b26c 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -278,10 +278,8 @@ static void clearEntries(ProfilerObject *pObj)
+     RotatingTree_Enum(pObj->profilerEntries, freeEntry, NULL);
+     pObj->profilerEntries = EMPTY_ROTATING_TREE;
+     /* release the memory hold by the ProfilerContexts */
+-    if (pObj->currentProfilerContext) {
+-        PyMem_Free(pObj->currentProfilerContext);
+-        pObj->currentProfilerContext = NULL;
+-    }
++    /* Do not free currentProfilerContext or its stack; only free the freelist */
++    /* pObj->currentProfilerContext may still be in use if profiling is active */
+     while (pObj->freelistProfilerContext) {
+         ProfilerContext *c = pObj->freelistProfilerContext;
+         pObj->freelistProfilerContext = c->previous;

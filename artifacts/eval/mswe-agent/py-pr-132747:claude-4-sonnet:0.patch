@@ -1,0 +1,36 @@
+
+diff --git a/.gitignore b/.gitignore
+index 596e0f3af6a..8d4234061fa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -172,3 +172,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/descrobject.c b/Objects/descrobject.c
+index 268af0b217c..07d5888f603 100644
+--- a/Objects/descrobject.c
++++ b/Objects/descrobject.c
+@@ -145,13 +145,14 @@ method_get(PyObject *self, PyObject *obj, PyObject *type)
+         return NULL;
+     }
+     if (descr->d_method->ml_flags & METH_METHOD) {
+-        if (PyType_Check(type)) {
++        if (type != NULL && PyType_Check(type)) {
+             return PyCMethod_New(descr->d_method, obj, NULL, descr->d_common.d_type);
+         } else {
++            const char *type_name = (type == NULL) ? "None" : Py_TYPE(type)->tp_name;
+             PyErr_Format(PyExc_TypeError,
+                         "descriptor '%V' needs a type, not '%s', as arg 2",
+                         descr_name((PyDescrObject *)descr),
+-                        Py_TYPE(type)->tp_name);
++                        type_name);
+             return NULL;
+         }
+     } else {

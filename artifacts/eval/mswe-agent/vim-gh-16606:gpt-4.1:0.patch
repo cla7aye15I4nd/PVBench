@@ -1,0 +1,149 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0d38d901d..9f2f930da 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -121,3 +121,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/autocmd.c b/src/autocmd.c
+index aa1808717..8d9bd4f97 100644
+--- a/src/autocmd.c
++++ b/src/autocmd.c
+@@ -2602,7 +2602,8 @@ auto_next_pat(
+     estack_T	*entry;
+     char_u	*namep;
+ 
+-    entry = ((estack_T *)exestack.ga_data) + exestack.ga_len - 1;
++    if (exestack.ga_len == 0)
++        return;
+ 
+     // Clear the exestack entry for this ETYPE_AUCMD entry.
+     VIM_CLEAR(entry->es_name);
+diff --git a/src/logfile.c b/src/logfile.c
+index 999acf03f..f062b6d31 100644
+--- a/src/logfile.c
++++ b/src/logfile.c
+@@ -24,7 +24,7 @@ static proftime_T log_start;
+ #endif
+ 
+     void
+-ch_logfile(char_u *fname, char_u *opt)
++
+ {
+     FILE	*file = NULL;
+     char	*mode = "a";
+@@ -48,7 +48,7 @@ ch_logfile(char_u *fname, char_u *opt)
+ 	file = fopen((char *)fname, mode);
+ 	if (file == NULL)
+ 	{
+-	    semsg(_(e_cant_open_file_str), fname);
++//	    semsg(_(e_cant_open_file_str), fname);
+ 	    return;
+ 	}
+ 	vim_free(log_name);
+@@ -208,3 +208,5 @@ f_ch_logfile(typval_T *argvars, typval_T *rettv UNUSED)
+ }
+ 
+ #endif // FEAT_EVAL
++#define SOURCING_NAME (exestack.ga_data != NULL && exestack.ga_len > 0 ? ((estack_T *)exestack.ga_data)[exestack.ga_len - 1].es_name : NULL)
++#define SOURCING_LNUM (exestack.ga_data != NULL && exestack.ga_len > 0 ? ((estack_T *)exestack.ga_data)[exestack.ga_len - 1].es_lnum : 0)
+diff --git a/src/main.c b/src/main.c
+index ecc61f4d0..0a6600692 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -158,6 +158,7 @@ main
+ # endif
+ # ifdef FEAT_EVAL
+ 	if (STRICMP(argv[i], "--log") == 0)
++	if (STRICMP(argv[i], "--log") == 0 && argv[i + 1] != NULL)
+ 	    ch_logfile((char_u *)(argv[i + 1]), (char_u *)"ao");
+ # endif
+     }
+diff --git a/src/message.c b/src/message.c
+index 24984123b..7103e1a96 100644
+--- a/src/message.c
++++ b/src/message.c
+@@ -483,7 +483,8 @@ get_emsg_source(void)
+ {
+     char_u	*Buf, *p;
+ 
+-    if (HAVE_SOURCING_INFO && SOURCING_NAME != NULL && other_sourcing_name())
++    if (!HAVE_SOURCING_INFO)
++	return NULL;
+     {
+ 	char_u	    *sname = estack_sfile(ESTACK_NONE);
+ 	char_u	    *tofree = sname;
+@@ -515,21 +516,7 @@ get_emsg_source(void)
+ get_emsg_lnum(void)
+ {
+     char_u	*Buf, *p;
+-
+-    // lnum is 0 when executing a command from the command line
+-    // argument, we don't want a line number then
+-    if (SOURCING_NAME != NULL
+-	    && (other_sourcing_name() || SOURCING_LNUM != last_sourcing_lnum)
+-	    && SOURCING_LNUM != 0)
+-    {
+-	p = (char_u *)_("line %4ld:");
+-	Buf = alloc(STRLEN(p) + 20);
+-	if (Buf != NULL)
+-	    sprintf((char *)Buf, (char *)p, (long)SOURCING_LNUM);
+-	return Buf;
+-    }
+     return NULL;
+-}
+ 
+ /*
+  * Display name and line number for the source of an error.
+@@ -564,11 +551,12 @@ msg_source(int attr)
+     }
+ 
+     // remember the last sourcing name printed, also when it's empty
+-    if (SOURCING_NAME == NULL || other_sourcing_name())
++    if (exestack.ga_data != NULL && exestack.ga_len > 0 &&
++        (SOURCING_NAME == NULL || other_sourcing_name()))
+     {
+-	VIM_CLEAR(last_sourcing_name);
+-	if (SOURCING_NAME != NULL)
+-	    last_sourcing_name = vim_strsave(SOURCING_NAME);
++        VIM_CLEAR(last_sourcing_name);
++        if (SOURCING_NAME != NULL)
++            last_sourcing_name = vim_strsave(SOURCING_NAME);
+     }
+     --no_wait_return;
+ 
+diff --git a/src/scriptfile.c b/src/scriptfile.c
+index 856d00fbb..863e7d19a 100644
+--- a/src/scriptfile.c
++++ b/src/scriptfile.c
+@@ -95,8 +95,9 @@ estack_top_is_ufunc(ufunc_T *ufunc, long lnum)
+ 
+     if (exestack.ga_len == 0)
+ 	return FALSE;
++    if (exestack.ga_len == 0)
++        return FALSE;
+     entry = ((estack_T *)exestack.ga_data) + exestack.ga_len - 1;
+-    return entry->es_type == ETYPE_UFUNC
+ 	&& STRCMP( entry->es_name, ufunc->uf_name_exp != NULL
+ 				    ? ufunc->uf_name_exp : ufunc->uf_name) == 0
+ 	&& entry->es_lnum == lnum;
+@@ -130,7 +131,8 @@ estack_sfile(estack_arg_T which UNUSED)
+     int		idx;
+     etype_T	last_type = ETYPE_SCRIPT;
+ #endif
+-
++    if (exestack.ga_len == 0)
++        return NULL;
+     entry = ((estack_T *)exestack.ga_data) + exestack.ga_len - 1;
+ #ifdef FEAT_EVAL
+     if (which == ESTACK_SFILE && entry->es_type != ETYPE_UFUNC)

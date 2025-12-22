@@ -1,0 +1,88 @@
+
+diff --git a/.gitignore b/.gitignore
+index 2a6f249275c..b3c9b7a4ed8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -173,3 +173,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/sysmodule.c b/Python/sysmodule.c
+index dd048205757..006e6a6ddee 100644
+--- a/Python/sysmodule.c
++++ b/Python/sysmodule.c
+@@ -2488,6 +2488,10 @@ sys_remote_exec_impl(PyObject *module, int pid, PyObject *script)
+     if (PyUnicode_FSConverter(script, &path) < 0) {
+         return NULL;
+     }
++    if (path == NULL || !PyBytes_Check(path)) {
++        PyErr_SetString(PyExc_TypeError, "script path conversion did not return bytes");
++        return NULL;
++    }
+     debugger_script_path = PyBytes_AS_STRING(path);
+ #ifdef MS_WINDOWS
+     PyObject *unicode_path;
+diff --git a/asan_final.log b/asan_final.log
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/asan_stderr.log b/asan_stderr.log
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/asan_test.log b/asan_test.log
+new file mode 100644
+index 00000000000..6fa47ff0f66
+--- /dev/null
++++ b/asan_test.log
+@@ -0,0 +1,39 @@
++AddressSanitizer:DEADLYSIGNAL
++=================================================================
++==14032==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x76412815d8dc bp 0x7ffdaa07dd20 sp 0x7ffdaa07d4a8 T0)
++==14032==The signal is caused by a READ memory access.
++==14032==Hint: address points to the zero page.
++    #0 0x76412815d8dc  (/lib/x86_64-linux-gnu/libc.so.6+0x19b8dc) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #1 0x76412833a826 in strlen ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:389
++    #2 0x7641273b3fef in string_at Modules/_ctypes/_ctypes.c:6040
++    #3 0x7641273b3fef in string_at Modules/_ctypes/_ctypes.c:6034
++    #4 0x764127551b15  (/lib/x86_64-linux-gnu/libffi.so.8+0x7b15) (BuildId: c9149b6e99105aa4321ddd4a10ee4b90de7b7d49)
++    #5 0x76412754e3ee  (/lib/x86_64-linux-gnu/libffi.so.8+0x43ee) (BuildId: c9149b6e99105aa4321ddd4a10ee4b90de7b7d49)
++    #6 0x7641275510bd in ffi_call (/lib/x86_64-linux-gnu/libffi.so.8+0x70bd) (BuildId: c9149b6e99105aa4321ddd4a10ee4b90de7b7d49)
++    #7 0x7641273d60bb in _call_function_pointer Modules/_ctypes/callproc.c:953
++    #8 0x7641273d60bb in _ctypes_callproc Modules/_ctypes/callproc.c:1319
++    #9 0x7641273c688f in PyCFuncPtr_call_lock_held Modules/_ctypes/_ctypes.c:4639
++    #10 0x7641273c688f in PyCFuncPtr_call Modules/_ctypes/_ctypes.c:4680
++    #11 0x59dbb7b3293d in _PyObject_MakeTpCall Objects/call.c:242
++    #12 0x59dbb79e2f7a in _PyEval_EvalFrameDefault Python/generated_cases.c.h:1619
++    #13 0x59dbb7e8a042 in _PyEval_EvalFrame Include/internal/pycore_ceval.h:119
++    #14 0x59dbb7e8a042 in _PyEval_Vector Python/ceval.c:1964
++    #15 0x59dbb7e8a042 in PyEval_EvalCode Python/ceval.c:856
++    #16 0x59dbb7fbf499 in run_eval_code_obj Python/pythonrun.c:1365
++    #17 0x59dbb7fbf499 in run_mod Python/pythonrun.c:1436
++    #18 0x59dbb7fc3deb in pyrun_file Python/pythonrun.c:1293
++    #19 0x59dbb7fc3deb in _PyRun_SimpleFileObject Python/pythonrun.c:521
++    #20 0x59dbb7fc4883 in _PyRun_AnyFileObject Python/pythonrun.c:81
++    #21 0x59dbb803b13a in pymain_run_file_obj Modules/main.c:402
++    #22 0x59dbb803b13a in pymain_run_file Modules/main.c:421
++    #23 0x59dbb803b13a in pymain_run_python Modules/main.c:686
++    #24 0x59dbb803cd77 in Py_RunMain Modules/main.c:767
++    #25 0x59dbb803cd77 in pymain_main Modules/main.c:797
++    #26 0x59dbb803cd77 in Py_BytesMain Modules/main.c:821
++    #27 0x764127fec1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #28 0x764127fec28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #29 0x59dbb7a18e24 in _start (/home/cpython/python+0x1eae24) (BuildId: 4c233bdd85f7bb082810dfa32aa1c2f1fd33209f)
++
++AddressSanitizer can not provide additional info.
++SUMMARY: AddressSanitizer: SEGV (/lib/x86_64-linux-gnu/libc.so.6+0x19b8dc) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667) 
++==14032==ABORTING
+diff --git a/segv_test.py b/segv_test.py
+new file mode 100644
+index 00000000000..e5efe509f7f
+--- /dev/null
++++ b/segv_test.py
+@@ -0,0 +1 @@
++import ctypes; ctypes.string_at(0)

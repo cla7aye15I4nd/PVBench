@@ -1,0 +1,261 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 18dc2859357..144d0a17c57 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2720,7 +2720,7 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+ {
+     int clear_exc = 0;
+     PyObject *result = NULL;
+-    PyObject *coro;
++    PyObject *coro = NULL;  // Initialize to NULL
+     PyObject *o;
+ 
+     if (task->task_state != STATE_PENDING) {
+@@ -2750,12 +2750,14 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+     Py_CLEAR(task->task_fut_waiter);
+ 
+     coro = task->task_coro;
++    Py_XINCREF(coro);  // Ensure we have a reference to prevent use-after-free
+     if (coro == NULL) {
+         PyErr_SetString(PyExc_RuntimeError, "uninitialized Task object");
+         if (clear_exc) {
+             /* We created 'exc' during this call */
+             Py_DECREF(exc);
+         }
++        Py_XDECREF(coro);  // Release our reference (will be NULL, so safe)
+         return NULL;
+     }
+ 
+@@ -2791,9 +2793,11 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+             Py_DECREF(result);
+ 
+             if (tmp == NULL) {
++                Py_XDECREF(coro);  // Release our reference
+                 return NULL;
+             }
+             Py_DECREF(tmp);
++            Py_XDECREF(coro);  // Release our reference
+             Py_RETURN_NONE;
+         }
+ 
+@@ -2806,7 +2810,7 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+             FutureObj *fut = (FutureObj*)task;
+             /* transfer ownership */
+             fut->fut_cancelled_exc = exc;
+-
++            Py_XDECREF(coro);  // Release our reference
+             return future_cancel(state, fut, NULL);
+         }
+ 
+@@ -2832,14 +2836,16 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+         }
+ 
+         Py_DECREF(exc);
+-
++        Py_XDECREF(coro);  // Release our reference
+         Py_RETURN_NONE;
+     }
+ 
+     PyObject *ret = task_step_handle_result_impl(state, task, result);
++    Py_XDECREF(coro);  // Release our reference
+     return ret;
+ 
+ fail:
++    Py_XDECREF(coro);  // Release our reference on failure path
+     return NULL;
+ }
+ 
+diff --git a/comprehensive_test.py b/comprehensive_test.py
+new file mode 100644
+index 00000000000..0713de6a246
+--- /dev/null
++++ b/comprehensive_test.py
+@@ -0,0 +1,106 @@
++#!/usr/bin/env python3
++
++import asyncio
++import gc
++import sys
++
++def test_basic_eager_task():
++    """Test basic eager task functionality"""
++    print("Testing basic eager task functionality...")
++    
++    async def simple_coro():
++        return 42
++    
++    async def main():
++        asyncio.get_event_loop().set_task_factory(asyncio.eager_task_factory)
++        task = asyncio.create_task(simple_coro())
++        result = await task
++        # This should work without issues
++        coro = task.get_coro()
++        return result, coro
++    
++    result, coro = asyncio.run(main())
++    assert result == 42
++    print(f"✓ Basic test passed: result={result}, coro={coro}")
++
++def test_get_coro_after_completion():
++    """Test accessing get_coro() after task completion - this was the original bug"""
++    print("Testing get_coro() after task completion...")
++    
++    async def simple_coro():
++        return "completed"
++    
++    async def main():
++        asyncio.get_event_loop().set_task_factory(asyncio.eager_task_factory)
++        task = asyncio.create_task(simple_coro())
++        result = await task
++        # This was causing use-after-free
++        coro = task.get_coro()
++        return result, coro
++    
++    result, coro = asyncio.run(main())
++    assert result == "completed"
++    print(f"✓ get_coro() test passed: result={result}, coro={coro}")
++
++def test_multiple_tasks():
++    """Test multiple eager tasks"""
++    print("Testing multiple eager tasks...")
++    
++    async def worker(n):
++        return n * 2
++    
++    async def main():
++        asyncio.get_event_loop().set_task_factory(asyncio.eager_task_factory)
++        tasks = [asyncio.create_task(worker(i)) for i in range(10)]
++        results = await asyncio.gather(*tasks)
++        
++        # Access get_coro() on all completed tasks
++        coros = [task.get_coro() for task in tasks]
++        return results, coros
++    
++    results, coros = asyncio.run(main())
++    expected = [i * 2 for i in range(10)]
++    assert results == expected
++    print(f"✓ Multiple tasks test passed: results={results}")
++
++def test_with_gc():
++    """Test with garbage collection to stress test memory management"""
++    print("Testing with garbage collection...")
++    
++    async def coro_with_gc():
++        gc.collect()  # Force garbage collection
++        return "gc_test"
++    
++    async def main():
++        asyncio.get_event_loop().set_task_factory(asyncio.eager_task_factory)
++        task = asyncio.create_task(coro_with_gc())
++        result = await task
++        gc.collect()  # Force GC again
++        coro = task.get_coro()  # This should still work
++        return result, coro
++    
++    result, coro = asyncio.run(main())
++    assert result == "gc_test"
++    print(f"✓ GC test passed: result={result}, coro={coro}")
++
++def main():
++    print("Running comprehensive tests for asyncio eager task fix...")
++    print()
++    
++    try:
++        test_basic_eager_task()
++        test_get_coro_after_completion()
++        test_multiple_tasks()
++        test_with_gc()
++        
++        print()
++        print("✓ All tests passed! The use-after-free fix appears to be working correctly.")
++        return 0
++    except Exception as e:
++        print(f"✗ Test failed with error: {e}")
++        import traceback
++        traceback.print_exc()
++        return 1
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/fix_use_after_free.patch b/fix_use_after_free.patch
+new file mode 100644
+index 00000000000..0aa91245b00
+--- /dev/null
++++ b/fix_use_after_free.patch
+@@ -0,0 +1,28 @@
++--- a/Modules/_asynciomodule.c
+++++ b/Modules/_asynciomodule.c
++@@ -2749,7 +2749,8 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
++ 
++     Py_CLEAR(task->task_fut_waiter);
++ 
++-    coro = task->task_coro;
+++    coro = task->task_coro;
+++    Py_XINCREF(coro);  // Ensure we have a reference to prevent use-after-free
++     if (coro == NULL) {
++         PyErr_SetString(PyExc_RuntimeError, "uninitialized Task object");
++         if (clear_exc) {
++@@ -2857,6 +2858,7 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
++         }
++     }
++ 
+++    Py_XDECREF(coro);  // Release our reference
++     Py_RETURN_NONE;
++ 
++ fail:
++@@ -2864,6 +2866,7 @@ fail:
++         /* We created 'exc' during this call */
++         Py_DECREF(exc);
++     }
+++    Py_XDECREF(coro);  // Release our reference on failure path too
++     return NULL;
++ }
++ 
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..1dd99a6405f
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,27 @@
++#!/usr/bin/env python3
++
++import subprocess
++import sys
++
++# Run the POC multiple times to try to trigger the use-after-free
++for i in range(100):
++    print(f"Run {i+1}/100", end="\r")
++    try:
++        result = subprocess.run([
++            "./python", "/home/poc/0.bin"
++        ], capture_output=True, text=True, timeout=5,
++        env={"ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1", "TERM": "xterm"})
++        
++        if result.returncode != 0:
++            print(f"\nError on run {i+1}:")
++            print("STDOUT:", result.stdout)
++            print("STDERR:", result.stderr)
++            break
++    except subprocess.TimeoutExpired:
++        print(f"\nTimeout on run {i+1}")
++        break
++    except Exception as e:
++        print(f"\nException on run {i+1}: {e}")
++        break
++
++print("\nCompleted test runs")

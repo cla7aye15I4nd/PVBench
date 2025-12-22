@@ -1,0 +1,38 @@
+==3084811==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x55555611c14f bp 0x7fffffff40f0 sp 0x7fffffff4050 T0)
+==3084811==The signal is caused by a READ memory access.
+==3084811==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x55555611c14f in _Py_IsImmortal /tmp/py-pr-106524/build/./Include/object.h:227:12
+    #1 0x55555611c14f in Py_DECREF /tmp/py-pr-106524/build/./Include/object.h:689:9
+    #2 0x55555611c14f in template_clear /tmp/py-pr-106524/build/./Modules/_sre/sre.c:2791:9
+    #3 0x55555611bbfa in template_dealloc /tmp/py-pr-106524/build/./Modules/_sre/sre.c:2802:11
+    #4 0x555555b768f3 in _Py_Dealloc /tmp/py-pr-106524/build/Objects/object.c:2578:5
+    #5 0x5555560c4ccb in Py_DECREF /tmp/py-pr-106524/build/./Include/object.h:694:9
+    #6 0x5555560c4ccb in Py_XDECREF /tmp/py-pr-106524/build/./Include/object.h:790:9
+    #7 0x5555560c4bb0 in _sre_template_impl /tmp/py-pr-106524/build/./Modules/_sre/sre.c:1569:5
+    #8 0x5555560bff0e in _sre_template /tmp/py-pr-106524/build/./Modules/_sre/clinic/sre.c.h:1104:20
+    #9 0x555555b62aad in cfunction_vectorcall_FASTCALL /tmp/py-pr-106524/build/Objects/methodobject.c:423:24
+    #10 0x555555a6968f in _PyObject_VectorcallTstate /tmp/py-pr-106524/build/./Include/internal/pycore_call.h:186:11
+    #11 0x555555a6b139 in PyObject_Vectorcall /tmp/py-pr-106524/build/Objects/call.c:326:12
+    #12 0x555555db5e9d in _PyEval_EvalFrameDefault /tmp/py-pr-106524/build/Python/bytecodes.c:2813:19
+    #13 0x555555d89581 in _PyEval_EvalFrame /tmp/py-pr-106524/build/./Include/internal/pycore_ceval.h:88:16
+    #14 0x555555d8943e in _PyEval_Vector /tmp/py-pr-106524/build/Python/ceval.c:1609:12
+    #15 0x555555d88dcf in PyEval_EvalCode /tmp/py-pr-106524/build/Python/ceval.c:572:21
+    #16 0x555555f3df04 in run_eval_code_obj /tmp/py-pr-106524/build/Python/pythonrun.c:1724:9
+    #17 0x555555f36d05 in run_mod /tmp/py-pr-106524/build/Python/pythonrun.c:1745:19
+    #18 0x555555f34f8e in pyrun_file /tmp/py-pr-106524/build/Python/pythonrun.c:1645:15
+    #19 0x555555f33a39 in _PyRun_SimpleFileObject /tmp/py-pr-106524/build/Python/pythonrun.c:462:13
+    #20 0x555555f33218 in _PyRun_AnyFileObject /tmp/py-pr-106524/build/Python/pythonrun.c:78:15
+    #21 0x555555fbfbe6 in pymain_run_file_obj /tmp/py-pr-106524/build/Modules/main.c:360:15
+    #22 0x555555fbeb5b in pymain_run_file /tmp/py-pr-106524/build/Modules/main.c:379:15
+    #23 0x555555fbcb4d in pymain_run_python /tmp/py-pr-106524/build/Modules/main.c:610:21
+    #24 0x555555fbc2b8 in Py_RunMain /tmp/py-pr-106524/build/Modules/main.c:688:5
+    #25 0x555555fbcf88 in pymain_main /tmp/py-pr-106524/build/Modules/main.c:718:12
+    #26 0x555555fbd097 in Py_BytesMain /tmp/py-pr-106524/build/Modules/main.c:742:12
+    #27 0x5555558a4481 in main /tmp/py-pr-106524/build/./Programs/python.c:15:12
+    #28 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #29 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #30 0x5555557cb074 in _start (/tmp/py-pr-106524/build/python+0x277074) (BuildId: b61c33ff071206a9085bf2d7805161db83420d21)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/py-pr-106524/build/./Include/object.h:227:12 in _Py_IsImmortal
+==3084811==ABORTING

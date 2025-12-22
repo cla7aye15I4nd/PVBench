@@ -1,0 +1,146 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ba8d67d9..8556f202b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,3 +24,14 @@ test/ApplePlatformsIntegrationTestApp/Podfile.lock
+ test/ApplePlatformsIntegrationTestApp/Pods
+ test/ApplePlatformsIntegrationTestApp/**/xcuserdata
+ test/ApplePlatformsIntegrationTestApp/ApplePlatformsIntegrationTestApp.xcworkspace
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/Support/SHA1.h b/include/hermes/Support/SHA1.h
+index 48f70b538..dd78f4a38 100644
+--- a/include/hermes/Support/SHA1.h
++++ b/include/hermes/Support/SHA1.h
+@@ -9,6 +9,7 @@
+ #define HERMES_SUPPORT_SHA1_H
+ 
+ #include <array>
++#include <cstdint>
+ #include <string>
+ 
+ namespace hermes {
+diff --git a/lib/VM/Operations.cpp b/lib/VM/Operations.cpp
+index 60820798a..68ae31905 100644
+--- a/lib/VM/Operations.cpp
++++ b/lib/VM/Operations.cpp
+@@ -29,6 +29,7 @@
+ 
+ #include <cfloat>
+ #include <cmath>
++#include <unordered_set>
+ 
+ namespace hermes {
+ namespace vm {
+@@ -1346,12 +1347,12 @@ CallResult<Handle<Callable>> speciesConstructor(
+   // no other constructor specified.
+   return defaultConstructor;
+ }
+-
+-bool isConstructor(Runtime *runtime, HermesValue value) {
+-  return isConstructor(runtime, dyn_vmcast<Callable>(value));
+-}
+-
+-bool isConstructor(Runtime *runtime, Callable *callable) {
++// Helper function to check if a callable is a constructor while avoiding
++// infinite recursion in JSCallableProxy chains.
++static bool isConstructorImpl(
++    Runtime *runtime,
++    Callable *callable,
++    std::unordered_set<JSCallableProxy *> &visited) {
+   // This is not a complete definition, since ES6 and later define member
+   // functions of objects to not be constructors; however, Hermes does not have
+   // ES6 classes implemented yet, so we cannot check for that case.
+@@ -1380,14 +1381,40 @@ bool isConstructor(Runtime *runtime, Callable *callable) {
+   }
+ 
+   // JSCallableProxy is a NativeFunction, but may or may not be a
+-  // constructor, so we ask it.
++  // constructor, so we ask it. However, we need to prevent infinite recursion.
+   if (auto *cproxy = dyn_vmcast<JSCallableProxy>(callable)) {
+-    return cproxy->isConstructor(runtime);
++    // Check if we've already visited this JSCallableProxy to prevent infinite recursion
++    if (visited.find(cproxy) != visited.end()) {
++      // We've encountered a cycle. In this case, we return false to break the cycle.
++      // This is a reasonable default since circular proxy chains are unusual.
++      return false;
++    }
++    
++    // Mark this proxy as visited
++    visited.insert(cproxy);
++    
++    // Get the target and recursively check it
++    Callable *target = dyn_vmcast<Callable>(JSProxy::getTarget(cproxy, runtime).get());
++    bool result = isConstructorImpl(runtime, target, visited);
++    
++    // Remove from visited set (backtrack)
++    visited.erase(cproxy);
++    
++    return result;
+   }
+ 
+   return false;
+ }
+ 
++bool isConstructor(Runtime *runtime, HermesValue value) {
++  return isConstructor(runtime, dyn_vmcast<Callable>(value));
++}
++
++bool isConstructor(Runtime *runtime, Callable *callable) {
++  std::unordered_set<JSCallableProxy *> visited;
++  return isConstructorImpl(runtime, callable, visited);
++}
++
+ CallResult<bool>
+ ordinaryHasInstance(Runtime *runtime, Handle<> constructor, Handle<> object) {
+   // 1. If IsCallable(C) is false, return false.
+diff --git a/public/hermes/Public/DebuggerTypes.h b/public/hermes/Public/DebuggerTypes.h
+index 191a81d1a..6243ff915 100644
+--- a/public/hermes/Public/DebuggerTypes.h
++++ b/public/hermes/Public/DebuggerTypes.h
+@@ -9,6 +9,7 @@
+ #define HERMES_PUBLIC_DEBUGGERTYPES_H
+ 
+ #include <string>
++#include <cstdint>
+ #include <vector>
+ 
+ namespace hermes {
+diff --git a/test_stack_overflow.js b/test_stack_overflow.js
+new file mode 100644
+index 000000000..71e3b4cf4
+--- /dev/null
++++ b/test_stack_overflow.js
+@@ -0,0 +1,22 @@
++// Test case to trigger JSCallableProxy infinite recursion
++function createCircularProxy() {
++    let target = function() { return "target"; };
++    let handler = {
++        construct: function(target, args) {
++            return new target(...args);
++        }
++    };
++    
++    let proxy1 = new Proxy(target, handler);
++    let proxy2 = new Proxy(proxy1, handler);
++    
++    // Try to create a circular reference
++    handler.construct = function(target, args) {
++        return new proxy2(...args);
++    };
++    
++    // This should trigger the isConstructor check
++    new proxy1();
++}
++
++createCircularProxy();

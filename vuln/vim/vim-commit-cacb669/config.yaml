@@ -1,0 +1,14 @@
+id: vim-commit-cacb669
+project: vim
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: vim
+trigger_commit: 95e90781a4c92b7b061213cfa38b35bdbf719cc1
+patch:
+  commit: cacb6693c10bb19f28a50eca47bc4bc33eccbae3
+  date: '2024-08-22T21:40:14+02:00'
+reference:
+- https://github.com/vim/vim
+- https://github.com/vim/vim/security/advisories/GHSA-v2x2-cjcg-f9jm
+- https://github.com/vim/vim/commit/95e90781a4c92b7b061213cfa38b35bdbf719cc1
+- https://github.com/vim/vim/commit/cacb6693c10bb19f28a50eca47bc4bc33eccbae3

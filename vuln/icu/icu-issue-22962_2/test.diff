@@ -1,0 +1,42 @@
+diff --git a/icu4c/source/test/intltest/caltest.cpp b/icu4c/source/test/intltest/caltest.cpp
+index ca3597c3f02..83b410967c4 100644
+--- a/icu4c/source/test/intltest/caltest.cpp
++++ b/icu4c/source/test/intltest/caltest.cpp
+@@ -192,6 +192,7 @@ void CalendarTest::runIndexedTest( int32_t index, UBool exec, const char* &name,
+     TESTCASE_AUTO(TestFirstDayOfWeek);
+ 
+     TESTCASE_AUTO(Test22633ChineseOverflow);
++    TESTCASE_AUTO(Test22962ChineseOverflow);
+     TESTCASE_AUTO(Test22633IndianOverflow);
+     TESTCASE_AUTO(Test22633IslamicUmalquraOverflow);
+     TESTCASE_AUTO(Test22633PersianOverflow);
+@@ -5663,6 +5664,17 @@ void CalendarTest::Test22633ChineseOverflow() {
+     cal->add(UCAL_YEAR, 1935762034, status);
+     assertTrue("Should return falure", U_FAILURE(status));
+ }
++
++void CalendarTest::Test22962ChineseOverflow() {
++    UErrorCode status = U_ZERO_ERROR;
++    LocalPointer<Calendar> cal(Calendar::createInstance(Locale("en@calendar=chinese"), status), status);
++    U_ASSERT(U_SUCCESS(status));
++    cal->add(UCAL_DAY_OF_WEEK_IN_MONTH, 1661092210, status);
++    cal->add(UCAL_MINUTE, -1330638081, status);
++    cal->add(UCAL_MONTH, 643194, status);
++    assertTrue("Should return falure", U_FAILURE(status));
++}
++
+ void CalendarTest::Test22633IndianOverflow() {
+     UErrorCode status = U_ZERO_ERROR;
+     LocalPointer<Calendar> cal(Calendar::createInstance(Locale("en@calendar=indian"), status), status);
+diff --git a/icu4c/source/test/intltest/caltest.h b/icu4c/source/test/intltest/caltest.h
+index 5795a176d72..c83c0ffe044 100644
+--- a/icu4c/source/test/intltest/caltest.h
++++ b/icu4c/source/test/intltest/caltest.h
+@@ -335,6 +335,7 @@ class CalendarTest: public CalendarTimeZoneTest {
+     void TestAddOverflow();
+     void TestRollWeekOfYear();
+     void Test22633ChineseOverflow();
++    void Test22962ChineseOverflow();
+     void Test22633IndianOverflow();
+     void Test22633IslamicUmalquraOverflow();
+     void Test22633PersianOverflow();

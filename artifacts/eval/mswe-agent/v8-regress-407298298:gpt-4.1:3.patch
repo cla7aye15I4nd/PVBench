@@ -1,0 +1,40 @@
+
+diff --git a/.gitignore b/.gitignore
+index 243f9d5ac0b..b8063aa4207 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -131,3 +131,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index 6d7a8a46edf..922e05d835b 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -2093,7 +2093,7 @@ Tagged<Object> Isolate::Throw(Tagged<Object> raw_exception,
+   DCHECK(!has_exception());
+   DCHECK_IMPLIES(IsHole(raw_exception),
+                  raw_exception == ReadOnlyRoots{this}.termination_exception());
+-  CHECK(IsOnCentralStack());
++  DCHECK(IsOnCentralStack());
+ #if V8_ENABLE_WEBASSEMBLY
+   trap_handler::AssertThreadNotInWasm();
+ #endif
+diff --git a/src/runtime/runtime-utils.cc b/src/runtime/runtime-utils.cc
+index 36c50ec5001..0b3a14aa38c 100644
+--- a/src/runtime/runtime-utils.cc
++++ b/src/runtime/runtime-utils.cc
+@@ -30,3 +30,4 @@ SaveAndClearThreadInWasmFlag::~SaveAndClearThreadInWasmFlag() {
+ #endif
+ 
+ }  // namespace v8::internal
++  DCHECK(IsOnCentralStack());

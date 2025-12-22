@@ -1,0 +1,28 @@
+
+diff --git a/.gitignore b/.gitignore
+index 596e0f3af6a..8d4234061fa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -172,3 +172,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_ctypes/callproc.c b/Modules/_ctypes/callproc.c
+index 352487ed964..3a1e00824bb 100644
+--- a/Modules/_ctypes/callproc.c
++++ b/Modules/_ctypes/callproc.c
+@@ -1026,7 +1026,7 @@ static PyObject *GetResult(ctypes_state *st,
+            called Py_INCREF.
+         */
+         if (info->getfunc == _ctypes_get_fielddesc("O")->getfunc) {
+-            Py_DECREF(retval);
++            Py_XDECREF(retval);
+         }
+     }
+     else {

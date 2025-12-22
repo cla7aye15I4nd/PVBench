@@ -1,0 +1,5 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+24|cal->add(UCAL_YEAR, 1935762034, status)|U_FAILURE(status)|Should return failure
+29|cal->add(UCAL_YEAR, 1935762034, status)|U_FAILURE(status)|Should return failure

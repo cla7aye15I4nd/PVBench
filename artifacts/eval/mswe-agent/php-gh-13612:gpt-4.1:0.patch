@@ -1,0 +1,43 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/standard/var.c b/ext/standard/var.c
+index 61abc3dce70..5b0f79165b6 100644
+--- a/ext/standard/var.c
++++ b/ext/standard/var.c
+@@ -123,10 +123,12 @@ PHPAPI void php_var_dump(zval *struc, int level) /* {{{ */
+ 			PUTS("\"\n");
+ 			break;
+ 		case IS_ARRAY:
++			Z_ADDREF_P(struc);
+ 			myht = Z_ARRVAL_P(struc);
+ 			if (!(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+ 				if (GC_IS_RECURSIVE(myht)) {
+ 					PUTS("*RECURSION*\n");
++					Z_DELREF_P(struc);
+ 					return;
+ 				}
+ 				GC_ADDREF(myht);
+@@ -145,6 +147,7 @@ PHPAPI void php_var_dump(zval *struc, int level) /* {{{ */
+ 				php_printf("%*c", level-1, ' ');
+ 			}
+ 			PUTS("}\n");
++			Z_DELREF_P(struc);
+ 			break;
+ 		case IS_OBJECT: {
+ 			zend_class_entry *ce = Z_OBJCE_P(struc);

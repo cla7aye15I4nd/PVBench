@@ -1,0 +1,22 @@
+==2935555==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x55e858af535f bp 0x7fff36a246a0 sp 0x7fff36a242a0 T0)
+==2935555==The signal is caused by a READ memory access.
+==2935555==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x55e858af535f in zend_gc_delref /php-gh-14003/build/Zend/zend_types.h:1228:2
+    #1 0x55e858af535f in zval_delref_p /php-gh-14003/build/Zend/zend_types.h:1264:9
+    #2 0x55e858af535f in zval_ptr_dtor_nogc /php-gh-14003/build/Zend/zend_variables.h:34:35
+    #3 0x55e858af535f in zend_vm_stack_free_args /php-gh-14003/build/Zend/zend_execute.h:291:4
+    #4 0x55e858af535f in cleanup_unfinished_calls /php-gh-14003/build/Zend/zend_execute.c:4315:4
+    #5 0x55e858e2f4a8 in ZEND_HANDLE_EXCEPTION_SPEC_HANDLER /php-gh-14003/build/Zend/zend_vm_execute.h:3208:2
+    #6 0x55e858afd36f in execute_ex /php-gh-14003/build/Zend/zend_vm_execute.h:55866:7
+    #7 0x55e858afeb06 in zend_execute /php-gh-14003/build/Zend/zend_vm_execute.h:60439:2
+    #8 0x55e8589df396 in zend_execute_scripts /php-gh-14003/build/Zend/zend.c:1840:4
+    #9 0x55e858784a6b in php_execute_script /php-gh-14003/build/main/main.c:2565:13
+    #10 0x55e85931150c in do_cli /php-gh-14003/build/sapi/cli/php_cli.c:964:5
+    #11 0x55e85930f4c9 in main /php-gh-14003/build/sapi/cli/php_cli.c:1333:18
+    #12 0x7f12af27a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x7f12af27a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x55e857a03164 in _start (/php-gh-14003/build/sapi/cli/php+0x403164) (BuildId: d15ff8d5501319ecc0f4b909eb2d7de7c970b269)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-14003/build/Zend/zend_types.h:1228:2 in zend_gc_delref
+==2935555==ABORTING

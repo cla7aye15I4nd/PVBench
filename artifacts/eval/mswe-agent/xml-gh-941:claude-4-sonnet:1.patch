@@ -1,0 +1,1440 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ec7961f..87231784 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -64,3 +64,12 @@ Makefile.in
+ /m4/lt*.m4
+ /py-compile
+ /stamp-h1
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/install/include/libxml2/libxml/HTMLparser.h b/install/include/libxml2/libxml/HTMLparser.h
+new file mode 100644
+index 00000000..d8722fc5
+--- /dev/null
++++ b/install/include/libxml2/libxml/HTMLparser.h
+@@ -0,0 +1,393 @@
++/**
++ * @file
++ * 
++ * @brief HTML parser, doesn't support HTML5
++ * 
++ * This module orginally implemented an HTML parser based on the
++ * (underspecified) HTML 4.0 spec. As of 2.14, the tokenizer
++ * conforms to HTML5. Tree construction still follows a custom,
++ * unspecified algorithm with many differences to HTML5.
++ *
++ * The parser defaults to ISO-8859-1, the default encoding of
++ * HTTP/1.0.
++ *
++ * @copyright See Copyright for the status of this software.
++ *
++ * @author Daniel Veillard
++ */
++
++#ifndef __HTML_PARSER_H__
++#define __HTML_PARSER_H__
++#include <libxml/xmlversion.h>
++#include <libxml/parser.h>
++
++#ifdef LIBXML_HTML_ENABLED
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/** @cond ignore */
++
++/*
++ * Backward compatibility
++ */
++#define UTF8ToHtml htmlUTF8ToHtml
++#define htmlDefaultSubelement(elt) elt->defaultsubelt
++#define htmlElementAllowedHereDesc(parent,elt) \
++	htmlElementAllowedHere((parent), (elt)->name)
++#define htmlRequiredAttrs(elt) (elt)->attrs_req
++
++/*
++ * Most of the back-end structures from XML and HTML are shared.
++ */
++typedef xmlParserCtxt htmlParserCtxt;
++typedef xmlParserCtxtPtr htmlParserCtxtPtr;
++typedef xmlParserNodeInfo htmlParserNodeInfo;
++typedef xmlSAXHandler htmlSAXHandler;
++typedef xmlSAXHandlerPtr htmlSAXHandlerPtr;
++typedef xmlParserInput htmlParserInput;
++typedef xmlParserInputPtr htmlParserInputPtr;
++typedef xmlDocPtr htmlDocPtr;
++typedef xmlNodePtr htmlNodePtr;
++
++/*
++ * Internal description of an HTML element, representing HTML 4.01
++ * and XHTML 1.0 (which share the same structure).
++ */
++typedef struct _htmlElemDesc htmlElemDesc;
++typedef htmlElemDesc *htmlElemDescPtr;
++struct _htmlElemDesc {
++    const char *name;	/* The tag name */
++    char startTag;      /* unused */
++    char endTag;        /* Whether the end tag can be implied */
++    char saveEndTag;    /* unused */
++    char empty;         /* Is this an empty element ? */
++    char depr;          /* unused */
++    char dtd;           /* unused */
++    char isinline;      /* is this a block 0 or inline 1 element */
++    const char *desc;   /* the description */
++
++    const char** subelts XML_DEPRECATED_MEMBER;
++    const char* defaultsubelt XML_DEPRECATED_MEMBER;
++    const char** attrs_opt XML_DEPRECATED_MEMBER;
++    const char** attrs_depr XML_DEPRECATED_MEMBER;
++    const char** attrs_req XML_DEPRECATED_MEMBER;
++
++    int dataMode;
++};
++
++/*
++ * Internal description of an HTML entity.
++ */
++typedef struct _htmlEntityDesc htmlEntityDesc;
++typedef htmlEntityDesc *htmlEntityDescPtr;
++struct _htmlEntityDesc {
++    unsigned int value;	/* the UNICODE value for the character */
++    const char *name;	/* The entity name */
++    const char *desc;   /* the description */
++};
++
++#ifdef LIBXML_SAX1_ENABLED
++
++XML_DEPRECATED
++XMLPUBVAR const xmlSAXHandlerV1 htmlDefaultSAXHandler;
++
++#endif /* LIBXML_SAX1_ENABLED */
++
++/** @endcond */
++
++/*
++ * There is only few public functions.
++ */
++XML_DEPRECATED
++XMLPUBFUN void
++			htmlInitAutoClose	(void);
++XML_DEPRECATED
++XMLPUBFUN const htmlElemDesc *
++			htmlTagLookup	(const xmlChar *tag);
++XML_DEPRECATED
++XMLPUBFUN const htmlEntityDesc *
++			htmlEntityLookup(const xmlChar *name);
++XML_DEPRECATED
++XMLPUBFUN const htmlEntityDesc *
++			htmlEntityValueLookup(unsigned int value);
++
++XML_DEPRECATED
++XMLPUBFUN int
++			htmlIsAutoClosed(xmlDoc *doc,
++					 xmlNode *elem);
++XML_DEPRECATED
++XMLPUBFUN int
++			htmlAutoCloseTag(xmlDoc *doc,
++					 const xmlChar *name,
++					 xmlNode *elem);
++XML_DEPRECATED
++XMLPUBFUN const htmlEntityDesc *
++			htmlParseEntityRef(htmlParserCtxt *ctxt,
++					 const xmlChar **str);
++XML_DEPRECATED
++XMLPUBFUN int
++			htmlParseCharRef(htmlParserCtxt *ctxt);
++XML_DEPRECATED
++XMLPUBFUN void
++			htmlParseElement(htmlParserCtxt *ctxt);
++
++XMLPUBFUN htmlParserCtxt *
++			htmlNewParserCtxt(void);
++XMLPUBFUN htmlParserCtxt *
++			htmlNewSAXParserCtxt(const htmlSAXHandler *sax,
++					     void *userData);
++
++XMLPUBFUN htmlParserCtxt *
++			htmlCreateMemoryParserCtxt(const char *buffer,
++						   int size);
++
++XMLPUBFUN int
++			htmlParseDocument(htmlParserCtxt *ctxt);
++XML_DEPRECATED
++XMLPUBFUN xmlDoc *
++			htmlSAXParseDoc	(const xmlChar *cur,
++					 const char *encoding,
++					 htmlSAXHandler *sax,
++					 void *userData);
++XMLPUBFUN xmlDoc *
++			htmlParseDoc	(const xmlChar *cur,
++					 const char *encoding);
++XMLPUBFUN htmlParserCtxt *
++			htmlCreateFileParserCtxt(const char *filename,
++	                                         const char *encoding);
++XML_DEPRECATED
++XMLPUBFUN xmlDoc *
++			htmlSAXParseFile(const char *filename,
++					 const char *encoding,
++					 htmlSAXHandler *sax,
++					 void *userData);
++XMLPUBFUN xmlDoc *
++			htmlParseFile	(const char *filename,
++					 const char *encoding);
++XML_DEPRECATED
++XMLPUBFUN int
++			htmlUTF8ToHtml	(unsigned char *out,
++					 int *outlen,
++					 const unsigned char *in,
++					 int *inlen);
++XML_DEPRECATED
++XMLPUBFUN int
++			htmlEncodeEntities(unsigned char *out,
++					 int *outlen,
++					 const unsigned char *in,
++					 int *inlen, int quoteChar);
++XML_DEPRECATED
++XMLPUBFUN int
++			htmlIsScriptAttribute(const xmlChar *name);
++XML_DEPRECATED
++XMLPUBFUN int
++			htmlHandleOmittedElem(int val);
++
++#ifdef LIBXML_PUSH_ENABLED
++/*
++ * Interfaces for the Push mode.
++ */
++XMLPUBFUN htmlParserCtxt *
++			htmlCreatePushParserCtxt(htmlSAXHandler *sax,
++						 void *user_data,
++						 const char *chunk,
++						 int size,
++						 const char *filename,
++						 xmlCharEncoding enc);
++XMLPUBFUN int
++			htmlParseChunk		(htmlParserCtxt *ctxt,
++						 const char *chunk,
++						 int size,
++						 int terminate);
++#endif /* LIBXML_PUSH_ENABLED */
++
++XMLPUBFUN void
++			htmlFreeParserCtxt	(htmlParserCtxt *ctxt);
++
++/*
++ * New set of simpler/more flexible APIs
++ */
++
++/**
++ * This is the set of HTML parser options that can be passed to
++ * #htmlReadDoc, #htmlCtxtSetOptions and other functions.
++ */
++typedef enum {
++    /**
++     * No effect as of 2.14.0.
++     */
++    HTML_PARSE_RECOVER = 1<<0,
++    /**
++     * Do not default to a doctype if none was found.
++     */
++    HTML_PARSE_NODEFDTD = 1<<2,
++    /**
++     * Disable error and warning reports to the error handlers.
++     * Errors are still accessible with xmlCtxtGetLastError().
++     */
++    HTML_PARSE_NOERROR = 1<<5,
++    /**
++     * Disable warning reports.
++     */
++    HTML_PARSE_NOWARNING = 1<<6,
++    /**
++     * No effect.
++     */
++    HTML_PARSE_PEDANTIC = 1<<7,
++    /**
++     * Remove some text nodes containing only whitespace from the
++     * result document. Which nodes are removed depends on a conservative
++     * heuristic. The reindenting feature of the serialization code relies
++     * on this option to be set when parsing. Use of this option is
++     * DISCOURAGED.
++     */
++    HTML_PARSE_NOBLANKS = 1<<8,
++    /**
++     * No effect.
++     */
++    HTML_PARSE_NONET = 1<<11,
++    /**
++     * Do not add implied html, head or body elements.
++     */
++    HTML_PARSE_NOIMPLIED = 1<<13,
++    /**
++     * Store small strings directly in the node struct to save
++     * memory.
++    */
++    HTML_PARSE_COMPACT = 1<<16,
++    /**
++     * Relax some internal limits. See XML_PARSE_HUGE in xmlParserOption.
++     *
++     * @since 2.14.0
++     *
++     * Use XML_PARSE_HUGE with older versions.
++     */
++    HTML_PARSE_HUGE = 1<<19,
++    /**
++     * Ignore the encoding in the HTML declaration. This option is
++     * mostly unneeded these days. The only effect is to enforce
++     * ISO-8859-1 decoding of ASCII-like data.
++     */
++    HTML_PARSE_IGNORE_ENC =1<<21,
++    /**
++     * Enable reporting of line numbers larger than 65535.
++     *
++     * @since 2.14.0
++     *
++     * Use XML_PARSE_BIG_LINES with older versions.
++     */
++    HTML_PARSE_BIG_LINES = 1<<22,
++    /**
++     * Make the tokenizer emit a SAX callback for each token. This results
++     * in unbalanced invocations of startElement and endElement.
++     *
++     * For now, this is only usable to tokenize HTML5 with custom SAX
++     * callbacks. A tree builder isn't implemented yet.
++     *
++     * @since 2.14.0
++    */
++    HTML_PARSE_HTML5 = 1<<26
++} htmlParserOption;
++
++XMLPUBFUN void
++		htmlCtxtReset		(htmlParserCtxt *ctxt);
++XMLPUBFUN int
++		htmlCtxtSetOptions	(htmlParserCtxt *ctxt,
++					 int options);
++XMLPUBFUN int
++		htmlCtxtUseOptions	(htmlParserCtxt *ctxt,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlReadDoc		(const xmlChar *cur,
++					 const char *URL,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlReadFile		(const char *URL,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlReadMemory		(const char *buffer,
++					 int size,
++					 const char *URL,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlReadFd		(int fd,
++					 const char *URL,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlReadIO		(xmlInputReadCallback ioread,
++					 xmlInputCloseCallback ioclose,
++					 void *ioctx,
++					 const char *URL,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlCtxtParseDocument	(htmlParserCtxt *ctxt,
++					 xmlParserInput *input);
++XMLPUBFUN xmlDoc *
++		htmlCtxtReadDoc		(xmlParserCtxt *ctxt,
++					 const xmlChar *cur,
++					 const char *URL,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlCtxtReadFile		(xmlParserCtxt *ctxt,
++					 const char *filename,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlCtxtReadMemory		(xmlParserCtxt *ctxt,
++					 const char *buffer,
++					 int size,
++					 const char *URL,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlCtxtReadFd		(xmlParserCtxt *ctxt,
++					 int fd,
++					 const char *URL,
++					 const char *encoding,
++					 int options);
++XMLPUBFUN xmlDoc *
++		htmlCtxtReadIO		(xmlParserCtxt *ctxt,
++					 xmlInputReadCallback ioread,
++					 xmlInputCloseCallback ioclose,
++					 void *ioctx,
++					 const char *URL,
++					 const char *encoding,
++					 int options);
++
++/**
++ * deprecated content model
++ */
++typedef enum {
++  HTML_NA = 0 ,		/* something we don't check at all */
++  HTML_INVALID = 0x1 ,
++  HTML_DEPRECATED = 0x2 ,
++  HTML_VALID = 0x4 ,
++  HTML_REQUIRED = 0xc /* VALID bit set so ( & HTML_VALID ) is TRUE */
++} htmlStatus ;
++
++/* Using htmlElemDesc rather than name here, to emphasise the fact
++   that otherwise there's a lookup overhead
++*/
++XML_DEPRECATED
++XMLPUBFUN htmlStatus htmlAttrAllowed(const htmlElemDesc*, const xmlChar*, int) ;
++XML_DEPRECATED
++XMLPUBFUN int htmlElementAllowedHere(const htmlElemDesc*, const xmlChar*) ;
++XML_DEPRECATED
++XMLPUBFUN htmlStatus htmlElementStatusHere(const htmlElemDesc*, const htmlElemDesc*) ;
++XML_DEPRECATED
++XMLPUBFUN htmlStatus htmlNodeStatus(xmlNode *, int) ;
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* LIBXML_HTML_ENABLED */
++#endif /* __HTML_PARSER_H__ */
+diff --git a/install/include/libxml2/libxml/HTMLtree.h b/install/include/libxml2/libxml/HTMLtree.h
+new file mode 100644
+index 00000000..042f45e5
+--- /dev/null
++++ b/install/include/libxml2/libxml/HTMLtree.h
+@@ -0,0 +1,123 @@
++/**
++ * @file
++ * 
++ * @brief HTML documents
++ * 
++ * This modules implements functions to work with HTML documents,
++ * most of them related to serialization.
++ *
++ * @copyright See Copyright for the status of this software.
++ *
++ * @author Daniel Veillard
++ */
++
++#ifndef __HTML_TREE_H__
++#define __HTML_TREE_H__
++
++#include <stdio.h>
++#include <libxml/xmlversion.h>
++#include <libxml/tree.h>
++#include <libxml/HTMLparser.h>
++
++#ifdef LIBXML_HTML_ENABLED
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/* Deprecated */
++/** @cond ignore */
++#define HTML_TEXT_NODE		XML_TEXT_NODE
++#define HTML_ENTITY_REF_NODE	XML_ENTITY_REF_NODE
++#define HTML_COMMENT_NODE	XML_COMMENT_NODE
++#define HTML_PRESERVE_NODE	XML_CDATA_SECTION_NODE
++#define HTML_PI_NODE		XML_PI_NODE
++/** @endcond */
++
++XMLPUBFUN xmlDoc *
++		htmlNewDoc		(const xmlChar *URI,
++					 const xmlChar *ExternalID);
++XMLPUBFUN xmlDoc *
++		htmlNewDocNoDtD		(const xmlChar *URI,
++					 const xmlChar *ExternalID);
++XMLPUBFUN const xmlChar *
++		htmlGetMetaEncoding	(xmlDoc *doc);
++XMLPUBFUN int
++		htmlSetMetaEncoding	(xmlDoc *doc,
++					 const xmlChar *encoding);
++#ifdef LIBXML_OUTPUT_ENABLED
++XMLPUBFUN void
++		htmlDocDumpMemory	(xmlDoc *cur,
++					 xmlChar **mem,
++					 int *size);
++XMLPUBFUN void
++		htmlDocDumpMemoryFormat	(xmlDoc *cur,
++					 xmlChar **mem,
++					 int *size,
++					 int format);
++XMLPUBFUN int
++		htmlSaveFile		(const char *filename,
++					 xmlDoc *cur);
++XMLPUBFUN int
++		htmlSaveFileEnc		(const char *filename,
++					 xmlDoc *cur,
++					 const char *encoding);
++XMLPUBFUN int
++		htmlSaveFileFormat	(const char *filename,
++					 xmlDoc *cur,
++					 const char *encoding,
++					 int format);
++XMLPUBFUN int
++		htmlNodeDump		(xmlBuffer *buf,
++					 xmlDoc *doc,
++					 xmlNode *cur);
++XMLPUBFUN int
++		htmlDocDump		(FILE *f,
++					 xmlDoc *cur);
++XMLPUBFUN void
++		htmlNodeDumpFile	(FILE *out,
++					 xmlDoc *doc,
++					 xmlNode *cur);
++XMLPUBFUN int
++		htmlNodeDumpFileFormat	(FILE *out,
++					 xmlDoc *doc,
++					 xmlNode *cur,
++					 const char *encoding,
++					 int format);
++
++XMLPUBFUN void
++		htmlNodeDumpOutput	(xmlOutputBuffer *buf,
++					 xmlDoc *doc,
++					 xmlNode *cur,
++					 const char *encoding);
++XMLPUBFUN void
++		htmlNodeDumpFormatOutput(xmlOutputBuffer *buf,
++					 xmlDoc *doc,
++					 xmlNode *cur,
++					 const char *encoding,
++					 int format);
++XMLPUBFUN void
++		htmlDocContentDumpOutput(xmlOutputBuffer *buf,
++					 xmlDoc *cur,
++					 const char *encoding);
++XMLPUBFUN void
++		htmlDocContentDumpFormatOutput(xmlOutputBuffer *buf,
++					 xmlDoc *cur,
++					 const char *encoding,
++					 int format);
++
++#endif /* LIBXML_OUTPUT_ENABLED */
++
++XML_DEPRECATED
++XMLPUBFUN int
++		htmlIsBooleanAttr	(const xmlChar *name);
++
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* LIBXML_HTML_ENABLED */
++
++#endif /* __HTML_TREE_H__ */
++
+diff --git a/install/include/libxml2/libxml/SAX.h b/install/include/libxml2/libxml/SAX.h
+new file mode 100644
+index 00000000..308efc15
+--- /dev/null
++++ b/install/include/libxml2/libxml/SAX.h
+@@ -0,0 +1,21 @@
++/**
++ * @file
++ * 
++ * @brief Old SAX version 1 handler, deprecated
++ * 
++ * @deprecated set of SAX version 1 interfaces used to
++ *              build the DOM tree.
++ *
++ * @copyright See Copyright for the status of this software.
++ *
++ * @author Daniel Veillard
++ */
++
++#ifndef __XML_SAX_H__
++#define __XML_SAX_H__
++
++#ifdef __GNUC__
++  #warning "libxml/SAX.h is deprecated"
++#endif
++
++#endif /* __XML_SAX_H__ */
+diff --git a/install/include/libxml2/libxml/SAX2.h b/install/include/libxml2/libxml/SAX2.h
+new file mode 100644
+index 00000000..9d167ffb
+--- /dev/null
++++ b/install/include/libxml2/libxml/SAX2.h
+@@ -0,0 +1,173 @@
++/**
++ * @file
++ * 
++ * @brief SAX2 parser interface used to build the DOM tree
++ * 
++ * those are the default SAX2 interfaces used by
++ *              the library when building DOM tree.
++ *
++ * @copyright See Copyright for the status of this software.
++ *
++ * @author Daniel Veillard
++ */
++
++
++#ifndef __XML_SAX2_H__
++#define __XML_SAX2_H__
++
++#include <libxml/xmlversion.h>
++#include <libxml/parser.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++XMLPUBFUN const xmlChar *
++		xmlSAX2GetPublicId		(void *ctx);
++XMLPUBFUN const xmlChar *
++		xmlSAX2GetSystemId		(void *ctx);
++XMLPUBFUN void
++		xmlSAX2SetDocumentLocator	(void *ctx,
++						 xmlSAXLocator *loc);
++
++XMLPUBFUN int
++		xmlSAX2GetLineNumber		(void *ctx);
++XMLPUBFUN int
++		xmlSAX2GetColumnNumber		(void *ctx);
++
++XMLPUBFUN int
++		xmlSAX2IsStandalone		(void *ctx);
++XMLPUBFUN int
++		xmlSAX2HasInternalSubset	(void *ctx);
++XMLPUBFUN int
++		xmlSAX2HasExternalSubset	(void *ctx);
++
++XMLPUBFUN void
++		xmlSAX2InternalSubset		(void *ctx,
++						 const xmlChar *name,
++						 const xmlChar *publicId,
++						 const xmlChar *systemId);
++XMLPUBFUN void
++		xmlSAX2ExternalSubset		(void *ctx,
++						 const xmlChar *name,
++						 const xmlChar *publicId,
++						 const xmlChar *systemId);
++XMLPUBFUN xmlEntity *
++		xmlSAX2GetEntity		(void *ctx,
++						 const xmlChar *name);
++XMLPUBFUN xmlEntity *
++		xmlSAX2GetParameterEntity	(void *ctx,
++						 const xmlChar *name);
++XMLPUBFUN xmlParserInput *
++		xmlSAX2ResolveEntity		(void *ctx,
++						 const xmlChar *publicId,
++						 const xmlChar *systemId);
++
++XMLPUBFUN void
++		xmlSAX2EntityDecl		(void *ctx,
++						 const xmlChar *name,
++						 int type,
++						 const xmlChar *publicId,
++						 const xmlChar *systemId,
++						 xmlChar *content);
++XMLPUBFUN void
++		xmlSAX2AttributeDecl		(void *ctx,
++						 const xmlChar *elem,
++						 const xmlChar *fullname,
++						 int type,
++						 int def,
++						 const xmlChar *defaultValue,
++						 xmlEnumeration *tree);
++XMLPUBFUN void
++		xmlSAX2ElementDecl		(void *ctx,
++						 const xmlChar *name,
++						 int type,
++						 xmlElementContent *content);
++XMLPUBFUN void
++		xmlSAX2NotationDecl		(void *ctx,
++						 const xmlChar *name,
++						 const xmlChar *publicId,
++						 const xmlChar *systemId);
++XMLPUBFUN void
++		xmlSAX2UnparsedEntityDecl	(void *ctx,
++						 const xmlChar *name,
++						 const xmlChar *publicId,
++						 const xmlChar *systemId,
++						 const xmlChar *notationName);
++
++XMLPUBFUN void
++		xmlSAX2StartDocument		(void *ctx);
++XMLPUBFUN void
++		xmlSAX2EndDocument		(void *ctx);
++XML_DEPRECATED
++XMLPUBFUN void
++		xmlSAX2StartElement		(void *ctx,
++						 const xmlChar *fullname,
++						 const xmlChar **atts);
++XML_DEPRECATED
++XMLPUBFUN void
++		xmlSAX2EndElement		(void *ctx,
++						 const xmlChar *name);
++XMLPUBFUN void
++		xmlSAX2StartElementNs		(void *ctx,
++						 const xmlChar *localname,
++						 const xmlChar *prefix,
++						 const xmlChar *URI,
++						 int nb_namespaces,
++						 const xmlChar **namespaces,
++						 int nb_attributes,
++						 int nb_defaulted,
++						 const xmlChar **attributes);
++XMLPUBFUN void
++		xmlSAX2EndElementNs		(void *ctx,
++						 const xmlChar *localname,
++						 const xmlChar *prefix,
++						 const xmlChar *URI);
++XMLPUBFUN void
++		xmlSAX2Reference		(void *ctx,
++						 const xmlChar *name);
++XMLPUBFUN void
++		xmlSAX2Characters		(void *ctx,
++						 const xmlChar *ch,
++						 int len);
++XMLPUBFUN void
++		xmlSAX2IgnorableWhitespace	(void *ctx,
++						 const xmlChar *ch,
++						 int len);
++XMLPUBFUN void
++		xmlSAX2ProcessingInstruction	(void *ctx,
++						 const xmlChar *target,
++						 const xmlChar *data);
++XMLPUBFUN void
++		xmlSAX2Comment			(void *ctx,
++						 const xmlChar *value);
++XMLPUBFUN void
++		xmlSAX2CDataBlock		(void *ctx,
++						 const xmlChar *value,
++						 int len);
++
++#ifdef LIBXML_SAX1_ENABLED
++XML_DEPRECATED
++XMLPUBFUN int
++		xmlSAXDefaultVersion		(int version);
++#endif /* LIBXML_SAX1_ENABLED */
++
++XMLPUBFUN int
++		xmlSAXVersion			(xmlSAXHandler *hdlr,
++						 int version);
++XMLPUBFUN void
++		xmlSAX2InitDefaultSAXHandler    (xmlSAXHandler *hdlr,
++						 int warning);
++#ifdef LIBXML_HTML_ENABLED
++XMLPUBFUN void
++		xmlSAX2InitHtmlDefaultSAXHandler(xmlSAXHandler *hdlr);
++XML_DEPRECATED
++XMLPUBFUN void
++		htmlDefaultSAXHandlerInit	(void);
++#endif
++XML_DEPRECATED
++XMLPUBFUN void
++		xmlDefaultSAXHandlerInit	(void);
++#ifdef __cplusplus
++}
++#endif
++#endif /* __XML_SAX2_H__ */
+diff --git a/install/include/libxml2/libxml/c14n.h b/install/include/libxml2/libxml/c14n.h
+new file mode 100644
+index 00000000..e0baabd1
+--- /dev/null
++++ b/install/include/libxml2/libxml/c14n.h
+@@ -0,0 +1,116 @@
++/**
++ * @file
++ * 
++ * @brief Provide Canonical XML and Exclusive XML Canonicalization
++ * 
++ * the c14n modules pro...
++
++#ifndef __XML_XPATH_INTERNALS_H__
++#define __XML_XPATH_INTERNALS_H__
++
++#include <stdio.h>
++#include <libxml/xmlversion.h>
++#include <libxml/xpath.h>
++
++#ifdef LIBXML_XPATH_ENABLED
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/**
++ * Push a value on the stack
++ *
++ * @deprecated Use #xmlXPathValuePush
++ */
++#define valuePush xmlXPathValuePush
++/**
++ * Pop a value from the stack
++ *
++ * @deprecated Use #xmlXPathValuePop
++ */
++#define valuePop xmlXPathValuePop
++
++/************************************************************************
++ *									*
++ *			Helpers						*
++ *									*
++ ************************************************************************/
++
++/*
++ * Many of these macros may later turn into functions. They
++ * shouldn't be used in \#ifdef's preprocessor instructions.
++ */
++/**
++ * Raises an error.
++ *
++ * @param ctxt  an XPath parser context
++ * @param err  an xmlXPathError code
++ */
++#define xmlXPathSetError(ctxt, err)					\
++    { xmlXPatherror((ctxt), __FILE__, __LINE__, (err));			\
++      if ((ctxt) != NULL) (ctxt)->error = (err); }
++
++/**
++ * Raises an XPATH_INVALID_ARITY error.
++ *
++ * @param ctxt  an XPath parser context
++ */
++#define xmlXPathSetArityError(ctxt)					\
++    xmlXPathSetError((ctxt), XPATH_INVALID_ARITY)
++
++/**
++ * Raises an XPATH_INVALID_TYPE error.
++ *
++ * @param ctxt  an XPath parser context
++ */
++#define xmlXPathSetTypeError(ctxt)					\
++    xmlXPathSetError((ctxt), XPATH_INVALID_TYPE)
++
++/**
++ * Get the error code of an XPath context.
++ *
++ * @param ctxt  an XPath parser context
++ * @returns the context error.
++ */
++#define xmlXPathGetError(ctxt)	  ((ctxt)->error)
++
++/**
++ * Check if an XPath error was raised.
++ *
++ * @param ctxt  an XPath parser context
++ * @returns true if an error has been raised, false otherwise.
++ */
++#define xmlXPathCheckError(ctxt)  ((ctxt)->error != XPATH_EXPRESSION_OK)
++
++/**
++ * Get the document of an XPath context.
++ *
++ * @param ctxt  an XPath parser context
++ * @returns the context document.
++ */
++#define xmlXPathGetDocument(ctxt)	((ctxt)->context->doc)
++
++/**
++ * Get the context node of an XPath context.
++ *
++ * @param ctxt  an XPath parser context
++ * @returns the context node.
++ */
++#define xmlXPathGetContextNode(ctxt)	((ctxt)->context->node)
++
++XMLPUBFUN int
++		xmlXPathPopBoolean	(xmlXPathParserContext *ctxt);
++XMLPUBFUN double
++		xmlXPathPopNumber	(xmlXPathParserContext *ctxt);
++XMLPUBFUN xmlChar *
++		xmlXPathPopString	(xmlXPathParserContext *ctxt);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathPopNodeSet	(xmlXPathParserContext *ctxt);
++XMLPUBFUN void *
++		xmlXPathPopExternal	(xmlXPathParserContext *ctxt);
++
++/**
++ * Pushes the boolean `val` on the context stack.
++ *
++ * @param ctxt  an XPath parser context
++ * @param val  a boolean
++ */
++#define xmlXPathReturnBoolean(ctxt, val)				\
++    valuePush((ctxt), xmlXPathNewBoolean(val))
++
++/**
++ * Pushes true on the context stack.
++ *
++ * @param ctxt  an XPath parser context
++ */
++#define xmlXPathReturnTrue(ctxt)   xmlXPathReturnBoolean((ctxt), 1)
++
++/**
++ * Pushes false on the context stack.
++ *
++ * @param ctxt  an XPath parser context
++ */
++#define xmlXPathReturnFalse(ctxt)  xmlXPathReturnBoolean((ctxt), 0)
++
++/**
++ * Pushes the double `val` on the context stack.
++ *
++ * @param ctxt  an XPath parser context
++ * @param val  a double
++ */
++#define xmlXPathReturnNumber(ctxt, val)					\
++    valuePush((ctxt), xmlXPathNewFloat(val))
++
++/**
++ * Pushes the string `str` on the context stack.
++ *
++ * @param ctxt  an XPath parser context
++ * @param str  a string
++ */
++#define xmlXPathReturnString(ctxt, str)					\
++    valuePush((ctxt), xmlXPathWrapString(str))
++
++/**
++ * Pushes an empty string on the stack.
++ *
++ * @param ctxt  an XPath parser context
++ */
++#define xmlXPathReturnEmptyString(ctxt)					\
++    valuePush((ctxt), xmlXPathNewCString(""))
++
++/**
++ * Pushes the node-set `ns` on the context stack.
++ *
++ * @param ctxt  an XPath parser context
++ * @param ns  a node-set
++ */
++#define xmlXPathReturnNodeSet(ctxt, ns)					\
++    valuePush((ctxt), xmlXPathWrapNodeSet(ns))
++
++/**
++ * Pushes an empty node-set on the context stack.
++ *
++ * @param ctxt  an XPath parser context
++ */
++#define xmlXPathReturnEmptyNodeSet(ctxt)				\
++    valuePush((ctxt), xmlXPathNewNodeSet(NULL))
++
++/**
++ * Pushes user data on the context stack.
++ *
++ * @param ctxt  an XPath parser context
++ * @param val  user data
++ */
++#define xmlXPathReturnExternal(ctxt, val)				\
++    valuePush((ctxt), xmlXPathWrapExternal(val))
++
++/**
++ * Check if the current value on the XPath stack is a node set or
++ * an XSLT value tree.
++ *
++ * @param ctxt  an XPath parser context
++ * @returns true if the current object on the stack is a node-set.
++ */
++#define xmlXPathStackIsNodeSet(ctxt)					\
++    (((ctxt)->value != NULL)						\
++     && (((ctxt)->value->type == XPATH_NODESET)				\
++         || ((ctxt)->value->type == XPATH_XSLT_TREE)))
++
++/**
++ * Checks if the current value on the XPath stack is an external
++ * object.
++ *
++ * @param ctxt  an XPath parser context
++ * @returns true if the current object on the stack is an external
++ * object.
++ */
++#define xmlXPathStackIsExternal(ctxt)					\
++	((ctxt->value != NULL) && (ctxt->value->type == XPATH_USERS))
++
++/**
++ * Empties a node-set.
++ *
++ * @param ns  a node-set
++ */
++#define xmlXPathEmptyNodeSet(ns)					\
++    { while ((ns)->nodeNr > 0) (ns)->nodeTab[--(ns)->nodeNr] = NULL; }
++
++/**
++ * Macro to return from the function if an XPath error was detected.
++ */
++#define CHECK_ERROR							\
++    if (ctxt->error != XPATH_EXPRESSION_OK) return
++
++/**
++ * Macro to return 0 from the function if an XPath error was detected.
++ */
++#define CHECK_ERROR0							\
++    if (ctxt->error != XPATH_EXPRESSION_OK) return(0)
++
++/**
++ * Macro to raise an XPath error and return.
++ *
++ * @param X  the error code
++ */
++#define XP_ERROR(X)							\
++    { xmlXPathErr(ctxt, X); return; }
++
++/**
++ * Macro to raise an XPath error and return 0.
++ *
++ * @param X  the error code
++ */
++#define XP_ERROR0(X)							\
++    { xmlXPathErr(ctxt, X); return(0); }
++
++/**
++ * Macro to check that the value on top of the XPath stack is of a given
++ * type.
++ *
++ * @param typeval  the XPath type
++ */
++#define CHECK_TYPE(typeval)						\
++    if ((ctxt->value == NULL) || (ctxt->value->type != typeval))	\
++        XP_ERROR(XPATH_INVALID_TYPE)
++
++/**
++ * Macro to check that the value on top of the XPath stack is of a given
++ * type. Return(0) in case of failure
++ *
++ * @param typeval  the XPath type
++ */
++#define CHECK_TYPE0(typeval)						\
++    if ((ctxt->value == NULL) || (ctxt->value->type != typeval))	\
++        XP_ERROR0(XPATH_INVALID_TYPE)
++
++/**
++ * Macro to check that the number of args passed to an XPath function matches.
++ *
++ * @param x  the number of expected args
++ */
++#define CHECK_ARITY(x)							\
++    if (ctxt == NULL) return;						\
++    if (nargs != (x))							\
++        XP_ERROR(XPATH_INVALID_ARITY);					\
++    if (ctxt->valueNr < (x))						\
++        XP_ERROR(XPATH_STACK_ERROR);
++
++/**
++ * Macro to try to cast the value on the top of the XPath stack to a string.
++ */
++#define CAST_TO_STRING							\
++    if ((ctxt->value != NULL) && (ctxt->value->type != XPATH_STRING))	\
++        xmlXPathStringFunction(ctxt, 1);
++
++/**
++ * Macro to try to cast the value on the top of the XPath stack to a number.
++ */
++#define CAST_TO_NUMBER							\
++    if ((ctxt->value != NULL) && (ctxt->value->type != XPATH_NUMBER))	\
++        xmlXPathNumberFunction(ctxt, 1);
++
++/**
++ * Macro to try to cast the value on the top of the XPath stack to a boolean.
++ */
++#define CAST_TO_BOOLEAN							\
++    if ((ctxt->value != NULL) && (ctxt->value->type != XPATH_BOOLEAN))	\
++        xmlXPathBooleanFunction(ctxt, 1);
++
++/*
++ * Variable Lookup forwarding.
++ */
++
++XMLPUBFUN void
++	xmlXPathRegisterVariableLookup	(xmlXPathContext *ctxt,
++					 xmlXPathVariableLookupFunc f,
++					 void *data);
++
++/*
++ * Function Lookup forwarding.
++ */
++
++XMLPUBFUN void
++	    xmlXPathRegisterFuncLookup	(xmlXPathContext *ctxt,
++					 xmlXPathFuncLookupFunc f,
++					 void *funcCtxt);
++
++/*
++ * Error reporting.
++ */
++XMLPUBFUN void
++		xmlXPatherror	(xmlXPathParserContext *ctxt,
++				 const char *file,
++				 int line,
++				 int no);
++
++XMLPUBFUN void
++		xmlXPathErr	(xmlXPathParserContext *ctxt,
++				 int error);
++
++#ifdef LIBXML_DEBUG_ENABLED
++XMLPUBFUN void
++		xmlXPathDebugDumpObject	(FILE *output,
++					 xmlXPathObject *cur,
++					 int depth);
++XMLPUBFUN void
++	    xmlXPathDebugDumpCompExpr(FILE *output,
++					 xmlXPathCompExpr *comp,
++					 int depth);
++#endif
++/**
++ * NodeSet handling.
++ */
++XMLPUBFUN int
++		xmlXPathNodeSetContains		(xmlNodeSet *cur,
++						 xmlNode *val);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathDifference		(xmlNodeSet *nodes1,
++						 xmlNodeSet *nodes2);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathIntersection		(xmlNodeSet *nodes1,
++						 xmlNodeSet *nodes2);
++
++XMLPUBFUN xmlNodeSet *
++		xmlXPathDistinctSorted		(xmlNodeSet *nodes);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathDistinct		(xmlNodeSet *nodes);
++
++XMLPUBFUN int
++		xmlXPathHasSameNodes		(xmlNodeSet *nodes1,
++						 xmlNodeSet *nodes2);
++
++XMLPUBFUN xmlNodeSet *
++		xmlXPathNodeLeadingSorted	(xmlNodeSet *nodes,
++						 xmlNode *node);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathLeadingSorted		(xmlNodeSet *nodes1,
++						 xmlNodeSet *nodes2);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathNodeLeading		(xmlNodeSet *nodes,
++						 xmlNode *node);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathLeading			(xmlNodeSet *nodes1,
++						 xmlNodeSet *nodes2);
++
++XMLPUBFUN xmlNodeSet *
++		xmlXPathNodeTrailingSorted	(xmlNodeSet *nodes,
++						 xmlNode *node);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathTrailingSorted		(xmlNodeSet *nodes1,
++						 xmlNodeSet *nodes2);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathNodeTrailing		(xmlNodeSet *nodes,
++						 xmlNode *node);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathTrailing		(xmlNodeSet *nodes1,
++						 xmlNodeSet *nodes2);
++
++
++/**
++ * Extending a context.
++ */
++
++XMLPUBFUN int
++		xmlXPathRegisterNs		(xmlXPathContext *ctxt,
++						 const xmlChar *prefix,
++						 const xmlChar *ns_uri);
++XMLPUBFUN const xmlChar *
++		xmlXPathNsLookup		(xmlXPathContext *ctxt,
++						 const xmlChar *prefix);
++XMLPUBFUN void
++		xmlXPathRegisteredNsCleanup	(xmlXPathContext *ctxt);
++
++XMLPUBFUN int
++		xmlXPathRegisterFunc		(xmlXPathContext *ctxt,
++						 const xmlChar *name,
++						 xmlXPathFunction f);
++XMLPUBFUN int
++		xmlXPathRegisterFuncNS		(xmlXPathContext *ctxt,
++						 const xmlChar *name,
++						 const xmlChar *ns_uri,
++						 xmlXPathFunction f);
++XMLPUBFUN int
++		xmlXPathRegisterVariable	(xmlXPathContext *ctxt,
++						 const xmlChar *name,
++						 xmlXPathObject *value);
++XMLPUBFUN int
++		xmlXPathRegisterVariableNS	(xmlXPathContext *ctxt,
++						 const xmlChar *name,
++						 const xmlChar *ns_uri,
++						 xmlXPathObject *value);
++XMLPUBFUN xmlXPathFunction
++		xmlXPathFunctionLookup		(xmlXPathContext *ctxt,
++						 const xmlChar *name);
++XMLPUBFUN xmlXPathFunction
++		xmlXPathFunctionLookupNS	(xmlXPathContext *ctxt,
++						 const xmlChar *name,
++						 const xmlChar *ns_uri);
++XMLPUBFUN void
++		xmlXPathRegisteredFuncsCleanup	(xmlXPathContext *ctxt);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathVariableLookup		(xmlXPathContext *ctxt,
++						 const xmlChar *name);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathVariableLookupNS	(xmlXPathContext *ctxt,
++						 const xmlChar *name,
++						 const xmlChar *ns_uri);
++XMLPUBFUN void
++		xmlXPathRegisteredVariablesCleanup(xmlXPathContext *ctxt);
++
++/**
++ * Utilities to extend XPath.
++ */
++XMLPUBFUN xmlXPathParserContext *
++		  xmlXPathNewParserContext	(const xmlChar *str,
++						 xmlXPathContext *ctxt);
++XMLPUBFUN void
++		xmlXPathFreeParserContext	(xmlXPathParserContext *ctxt);
++
++XMLPUBFUN xmlXPathObject *
++		xmlXPathValuePop		(xmlXPathParserContext *ctxt);
++XMLPUBFUN int
++		xmlXPathValuePush		(xmlXPathParserContext *ctxt,
++						 xmlXPathObject *value);
++
++XMLPUBFUN xmlXPathObject *
++		xmlXPathNewString		(const xmlChar *val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathNewCString		(const char *val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathWrapString		(xmlChar *val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathWrapCString		(char * val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathNewFloat		(double val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathNewBoolean		(int val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathNewNodeSet		(xmlNode *val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathNewValueTree		(xmlNode *val);
++XMLPUBFUN int
++		xmlXPathNodeSetAdd		(xmlNodeSet *cur,
++						 xmlNode *val);
++XMLPUBFUN int
++		xmlXPathNodeSetAddUnique	(xmlNodeSet *cur,
++						 xmlNode *val);
++XMLPUBFUN int
++		xmlXPathNodeSetAddNs		(xmlNodeSet *cur,
++						 xmlNode *node,
++						 xmlNs *ns);
++XMLPUBFUN void
++		xmlXPathNodeSetSort		(xmlNodeSet *set);
++
++XMLPUBFUN void
++		xmlXPathRoot			(xmlXPathParserContext *ctxt);
++XML_DEPRECATED
++XMLPUBFUN void
++		xmlXPathEvalExpr		(xmlXPathParserContext *ctxt);
++XMLPUBFUN xmlChar *
++		xmlXPathParseName		(xmlXPathParserContext *ctxt);
++XMLPUBFUN xmlChar *
++		xmlXPathParseNCName		(xmlXPathParserContext *ctxt);
++
++/*
++ * Existing functions.
++ */
++XMLPUBFUN double
++		xmlXPathStringEvalNumber	(const xmlChar *str);
++XMLPUBFUN int
++		xmlXPathEvaluatePredicateResult (xmlXPathParserContext *ctxt,
++						 xmlXPathObject *res);
++XMLPUBFUN void
++		xmlXPathRegisterAllFunctions	(xmlXPathContext *ctxt);
++XMLPUBFUN xmlNodeSet *
++		xmlXPathNodeSetMerge		(xmlNodeSet *val1,
++						 xmlNodeSet *val2);
++XMLPUBFUN void
++		xmlXPathNodeSetDel		(xmlNodeSet *cur,
++						 xmlNode *val);
++XMLPUBFUN void
++		xmlXPathNodeSetRemove		(xmlNodeSet *cur,
++						 int val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathNewNodeSetList		(xmlNodeSet *val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathWrapNodeSet		(xmlNodeSet *val);
++XMLPUBFUN xmlXPathObject *
++		xmlXPathWrapExternal		(void *val);
++
++XMLPUBFUN int xmlXPathEqualValues(xmlXPathParserContext *ctxt);
++XMLPUBFUN int xmlXPathNotEqualValues(xmlXPathParserContext *ctxt);
++XMLPUBFUN int xmlXPathCompareValues(xmlXPathParserContext *ctxt, int inf, int strict);
++XMLPUBFUN void xmlXPathValueFlipSign(xmlXPathParserContext *ctxt);
++XMLPUBFUN void xmlXPathAddValues(xmlXPathParserContext *ctxt);
++XMLPUBFUN void xmlXPathSubValues(xmlXPathParserContext *ctxt);
++XMLPUBFUN void xmlXPathMultValues(xmlXPathParserContext *ctxt);
++XMLPUBFUN void xmlXPathDivValues(xmlXPathParserContext *ctxt);
++XMLPUBFUN void xmlXPathModValues(xmlXPathParserContext *ctxt);
++
++XMLPUBFUN int xmlXPathIsNodeType(const xmlChar *name);
++
++/*
++ * Some of the axis navigation routines.
++ */
++XMLPUBFUN xmlNode *xmlXPathNextSelf(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextChild(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextDescendant(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextDescendantOrSelf(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextParent(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextAncestorOrSelf(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextFollowingSibling(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextFollowing(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextNamespace(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextAttribute(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextPreceding(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextAncestor(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++XMLPUBFUN xmlNode *xmlXPathNextPrecedingSibling(xmlXPathParserContext *ctxt,
++			xmlNode *cur);
++/*
++ * The official core of XPath functions.
++ */
++XMLPUBFUN void xmlXPathLastFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathPositionFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathCountFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathIdFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathLocalNameFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathNamespaceURIFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathStringFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathStringLengthFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathConcatFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathContainsFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathStartsWithFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathSubstringFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathSubstringBeforeFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathSubstringAfterFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathNormalizeFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathTranslateFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathNotFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathTrueFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathFalseFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathLangFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathNumberFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathSumFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathFloorFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathCeilingFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathRoundFunction(xmlXPathParserContext *ctxt, int nargs);
++XMLPUBFUN void xmlXPathBooleanFunction(xmlXPathParserContext *ctxt, int nargs);
++
++/**
++ * Really internal functions
++ */
++XMLPUBFUN void xmlXPathNodeSetFreeNs(xmlNs *ns);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* LIBXML_XPATH_ENABLED */
++#endif /* ! __XML_XPATH_INTERNALS_H__ */
+diff --git a/install/include/libxml2/libxml/xpointer.h b/install/include/libxml2/libxml/xpointer.h
+new file mode 100644
+index 00000000..63869073
+--- /dev/null
++++ b/install/include/libxml2/libxml/xpointer.h
+@@ -0,0 +1,52 @@
++/**
++ * @file
++ *
++ * @brief XPointer framework and schemes
++ *
++ * API to evaluate XPointer expressions. The following schemes are
++ * supported:
++ *
++ * - element()
++ * - xmlns()
++ * - xpath1()
++ *
++ * xpointer() is an alias for the xpath1() scheme. The point and
++ * range extensions are not supported.
++ *
++ * @copyright See Copyright for the status of this software.
++ *
++ * @author Daniel Veillard
++ */
++
++#ifndef __XML_XPTR_H__
++#define __XML_XPTR_H__
++
++#include <libxml/xmlversion.h>
++
++#ifdef LIBXML_XPTR_ENABLED
++
++#include <libxml/tree.h>
++#include <libxml/xpath.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/*
++ * Functions.
++ */
++XML_DEPRECATED
++XMLPUBFUN xmlXPathContext *
++		    xmlXPtrNewContext		(xmlDoc *doc,
++						 xmlNode *here,
++						 xmlNode *origin);
++XMLPUBFUN xmlXPathObject *
++		    xmlXPtrEval			(const xmlChar *str,
++						 xmlXPathContext *ctx);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* LIBXML_XPTR_ENABLED */
++#endif /* __XML_XPTR_H__ */
+diff --git a/shell.c b/shell.c
+index 8ecc05b9..d0e9f1fb 100644
+--- a/shell.c
++++ b/shell.c
+@@ -1130,6 +1130,8 @@ xmllintShell(xmlDoc *doc, const char *filename, FILE * output)
+                (*cur != '\n') && (*cur != '\r')) {
+             if (*cur == 0)
+                 break;
++            if (i >= sizeof(command) - 1)
++                break;
+             command[i++] = *cur++;
+         }
+         command[i] = 0;
+@@ -1145,6 +1147,8 @@ xmllintShell(xmlDoc *doc, const char *filename, FILE * output)
+         while ((*cur != '\n') && (*cur != '\r') && (*cur != 0)) {
+             if (*cur == 0)
+                 break;
++            if (i >= sizeof(arg) - 1)
++                break;
+             arg[i++] = *cur++;
+         }
+         arg[i] = 0;

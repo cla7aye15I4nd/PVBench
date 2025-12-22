@@ -1,0 +1,38 @@
+
+diff --git a/.gitignore b/.gitignore
+index 842be311..59bd51ea 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -117,3 +117,12 @@ xstc/Makefile
+ xstc/Makefile.in
+ xstc/Tests
+ xstc/xsts-*.tar.gz
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/test.xml b/test.xml
+new file mode 100644
+index 00000000..10a7e703
+--- /dev/null
++++ b/test.xml
+@@ -0,0 +1 @@
++<e/>
+diff --git a/xmlschemas.c b/xmlschemas.c
+index ade10f78..c16ebe20 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -14937,6 +14937,8 @@ xmlSchemaCheckCOSSTDerivedOK(xmlSchemaAbstractCtxtPtr actxt,
+ 			     xmlSchemaTypePtr baseType,
+ 			     int subset)
+ {
++    if (type == NULL || baseType == NULL)
++        return(-1);
+     /*
+     * 1 They are the same type definition.
+     * TODO: The identity check might have to be more complex than this.

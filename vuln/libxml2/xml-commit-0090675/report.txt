@@ -1,0 +1,76 @@
+==12854==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x5030000000ff at pc 0x5e1233afdccb bp 0x7ffca999a600 sp 0x7ffca999a5f8
+READ of size 1 at 0x5030000000ff thread T0
+    #0 0x5e1233afdcca in xmlDictComputeFastKey /tmp/xml-commit-0090675/build/dict.c:451:18
+    #1 0x5e1233afca3a in xmlDictLookup /tmp/xml-commit-0090675/build/dict.c:851:12
+    #2 0x5e123370e9d5 in xmlParseNameComplex /tmp/xml-commit-0090675/build/parser.c:3421:12
+    #3 0x5e123370213a in xmlParseName /tmp/xml-commit-0090675/build/parser.c:3483:12
+    #4 0x5e12336fc7ac in xmlParserHandlePEReference /tmp/xml-commit-0090675/build/parser.c:2587:12
+    #5 0x5e12336fbb8f in xmlSkipBlankChars /tmp/xml-commit-0090675/build/parser.c:2181:36
+    #6 0x5e123373f9ae in xmlParseElementContentDecl /tmp/xml-commit-0090675/build/parser.c:6671:5
+    #7 0x5e12337420ad in xmlParseElementDecl /tmp/xml-commit-0090675/build/parser.c:6740:12
+    #8 0x5e1233742d36 in xmlParseMarkupDecl /tmp/xml-commit-0090675/build/parser.c:6991:4
+    #9 0x5e1233745ea9 in xmlParseConditionalSections /tmp/xml-commit-0090675/build/parser.c:6852:3
+    #10 0x5e123374335d in xmlParseMarkupDecl /tmp/xml-commit-0090675/build/parser.c:7033:6
+    #11 0x5e1233774e4f in xmlParseInternalSubset /tmp/xml-commit-0090675/build/parser.c:8467:6
+    #12 0x5e1233773997 in xmlParseDocument /tmp/xml-commit-0090675/build/parser.c:10915:6
+    #13 0x5e1233796019 in xmlDoRead /tmp/xml-commit-0090675/build/parser.c:15426:5
+    #14 0x5e123379623d in xmlReadFile /tmp/xml-commit-0090675/build/parser.c:15488:13
+    #15 0x5e12336c1224 in parseAndPrintFile /tmp/xml-commit-0090675/build/xmllint.c:2408:9
+    #16 0x5e12336bcb2e in main /tmp/xml-commit-0090675/build/xmllint.c:3767:7
+    #17 0x7b8f75a461c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x7b8f75a4628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x5e12335de654 in _start (/tmp/xml-commit-0090675/build/xmllint+0x9c654) (BuildId: fe134b0e9f3151a46b80d8591b4aaf21b3dea99d)
+
+0x5030000000ff is located 1 bytes before 23-byte region [0x503000000100,0x503000000117)
+allocated by thread T0 here:
+    #0 0x5e12336794a3 in malloc (/tmp/xml-commit-0090675/build/xmllint+0x1374a3) (BuildId: fe134b0e9f3151a46b80d8591b4aaf21b3dea99d)
+    #1 0x5e1233969664 in xmlStrndup /tmp/xml-commit-0090675/build/xmlstring.c:45:23
+    #2 0x5e12336ca9ca in xmlCreateEntity /tmp/xml-commit-0090675/build/entities.c:186:21
+    #3 0x5e12336c9dc6 in xmlAddEntity /tmp/xml-commit-0090675/build/entities.c:236:11
+    #4 0x5e12336c9fb7 in xmlAddDocEntity /tmp/xml-commit-0090675/build/entities.c:367:11
+    #5 0x5e1233b06b45 in xmlSAX2EntityDecl /tmp/xml-commit-0090675/build/SAX2.c:676:8
+    #6 0x5e123372b619 in xmlParseEntityDecl /tmp/xml-commit-0090675/build/parser.c:5558:4
+    #7 0x5e1233742e07 in xmlParseMarkupDecl /tmp/xml-commit-0090675/build/parser.c:6993:4
+    #8 0x5e1233774e4f in xmlParseInternalSubset /tmp/xml-commit-0090675/build/parser.c:8467:6
+    #9 0x5e1233773997 in xmlParseDocument /tmp/xml-commit-0090675/build/parser.c:10915:6
+    #10 0x5e1233796019 in xmlDoRead /tmp/xml-commit-0090675/build/parser.c:15426:5
+    #11 0x5e123379623d in xmlReadFile /tmp/xml-commit-0090675/build/parser.c:15488:13
+    #12 0x5e12336c1224 in parseAndPrintFile /tmp/xml-commit-0090675/build/xmllint.c:2408:9
+    #13 0x5e12336bcb2e in main /tmp/xml-commit-0090675/build/xmllint.c:3767:7
+    #14 0x7b8f75a461c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x7b8f75a4628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #16 0x5e12335de654 in _start (/tmp/xml-commit-0090675/build/xmllint+0x9c654) (BuildId: fe134b0e9f3151a46b80d8591b4aaf21b3dea99d)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/xml-commit-0090675/build/dict.c:451:18 in xmlDictComputeFastKey
+Shadow bytes around the buggy address:
+  0x502ffffffe00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502ffffffe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502fffffff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502fffffff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x503000000000: fa fa 00 00 00 fa fa fa 00 00 00 00 fa fa 00 00
+=>0x503000000080: 00 00 fa fa 00 00 00 00 fa fa 00 00 00 00 fa[fa]
+  0x503000000100: 00 00 07 fa fa fa fd fd fd fd fa fa fd fd fd fd
+  0x503000000180: fa fa fd fd fd fd fa fa fd fd fd fd fa fa 00 00
+  0x503000000200: 02 fa fa fa 00 00 02 fa fa fa fa fa fa fa fa fa
+  0x503000000280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12854==ABORTING

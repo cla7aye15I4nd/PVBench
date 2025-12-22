@@ -1,0 +1,1276 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1d2af48c714..fc3141c31e3 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -978,3 +978,14 @@ tools/unicode/c/genuca/release
+ tools/unicode/c/genuca/x64
+ tools/unicode/c/genuca/x86
+ tools/unicodetools/com/ibm/rbm/lib
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/icu4c/source/i18n/islamcal.cpp b/icu4c/source/i18n/islamcal.cpp
+index 4fd0e07d920..7bfea70d871 100644
+--- a/icu4c/source/i18n/islamcal.cpp
++++ b/icu4c/source/i18n/islamcal.cpp
+@@ -614,7 +614,7 @@ void IslamicCalendar::handleComputeFields(int32_t julianDay, UErrorCode &status)
+             days = julianDay - ASTRONOMICAL_EPOC;
+         }
+         // Use the civil calendar approximation, which is just arithmetic
+-        year  = (int)ClockMath::floorDivide( (double)(30 * days + 10646) , 10631.0 );
++        year  = (int)ClockMath::floorDivide( (double)(30) * days + 10646.0 , 10631.0 );
+         month = (int32_t)uprv_ceil((days - 29 - yearStart(year)) / 29.5 );
+         month = month<11?month:11;
+         startDate = monthStart(year, month);
+@@ -647,7 +647,7 @@ void IslamicCalendar::handleComputeFields(int32_t julianDay, UErrorCode &status)
+         int32_t umalquraStartdays = yearStart(UMALQURA_YEAR_START) ;
+         if( days < umalquraStartdays){
+                 //Use Civil calculation
+-                year  = (int)ClockMath::floorDivide( (double)(30 * days + 10646) , 10631.0 );
++                year  = (int)ClockMath::floorDivide( (double)(30) * days + 10646.0 , 10631.0 );
+                 month = (int32_t)uprv_ceil((days - 29 - yearStart(year)) / 29.5 );
+                 month = month<11?month:11;
+                 startDate = monthStart(year, month);
+diff --git a/icu4c/source/tools/escapesrc/Makefile b/icu4c/source/tools/escapesrc/Makefile
+new file mode 100644
+index 00000000000..57b31e27369
+--- /dev/null
++++ b/icu4c/source/tools/escapesrc/Makefile
+@@ -0,0 +1,112 @@
++## Makefile.in for ICU - tools/escapesrc
++## Copyright (C) 2016 and later: Unicode, Inc. and others.
++## License & terms of use: http://www.unicode.org/copyright.html
++## Copyright (c) 1999-2011, International Business Machines Corporation and
++## others. All Rights Reserved.
++## Steven R. Loomis
++
++# To avoid recursion
++SKIP_ESCAPING=YES
++
++## Source directory information
++srcdir = .
++top_srcdir = ../..
++
++top_builddir = ../..
++
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = tools/escapesrc
++
++TARGET_STUB_NAME = escapesrc
++
++SECTION = 8
++
++#MAN_FILES = $(TARGET_STUB_NAME).$(SECTION)
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(MAN_FILES) ./output-*.cpp
++
++## Target information
++TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++
++CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
++#LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC)
++LIBS += $(DEFAULT_LIBS) $(LIB_M)
++
++OBJECTS = escapesrc.o
++
++DEPS = $(OBJECTS:.o=.d)
++
++## List of phony targets
++.PHONY : all all-local install install-local clean clean-local	\
++distclean distclean-local dist dist-local check check-local install-man
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local
++install: install-local
++clean: clean-local
++distclean : distclean-local
++dist: dist-local
++check: all check-local
++
++all-local: $(TARGET) $(MAN_FILES)
++
++install-local: all-local install-man
++	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++
++install-man: $(MAN_FILES)
++#	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
++#	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
++
++
++dist-local:
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	$(RMV) $(TARGET) $(OBJECTS)
++
++distclean-local: clean-local
++	$(RMV) Makefile
++
++check-local: all-local
++	@echo Testing test-nochange.cpp
++	@$(INVOKE) $(TARGET) $(srcdir)/test-nochange.cpp ./output-nochange.cpp
++	@-diff -I '#line.*' $(srcdir)/test-nochange.cpp ./output-nochange.cpp || (echo >&2 'warning: diff failed or not found' ; true)
++	@echo Testing test-simple.cpp
++	@$(INVOKE) $(TARGET) $(srcdir)/test-simple.cpp ./output-simple.cpp
++	@-diff -I '#line.*' $(srcdir)/expect-simple.cpp ./output-simple.cpp   || (echo >&2 'warning: diff failed or not found' ; true)
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(TARGET) : $(OBJECTS)
++	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
++	$(POST_BUILD_STEP)
++
++
++%.$(SECTION): $(srcdir)/%.$(SECTION).in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++# depends on ICU being built
++gen-table: tblgen$(EXEEXT)
++	$(INVOKE) ./tblgen$(EXEEXT) > $(srcdir)/cptbl.h
++
++tblgen$(EXEEXT): tblgen.o
++	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS) $(LIBICUUC)
++
++ifeq (,$(MAKECMDGOALS))
++-include $(DEPS)
++else
++ifneq ($(patsubst %clean,,$(MAKECMDGOALS)),)
++-include $(DEPS)
++endif
++endif
++
+diff --git a/icu4c/source/tools/escapesrc/escapesrc.d b/icu4c/source/tools/escapesrc/escapesrc.d
+new file mode 100644
+index 00000000000..efb6b21f761
+--- /dev/null
++++ b/icu4c/source/tools/escapesrc/escapesrc.d
+@@ -0,0 +1,8 @@
++escapesrc.o escapesrc.d : escapesrc.cpp ../../common/unicode/utf8.h \
++  ../../common/unicode/umachine.h ../../common/unicode/ptypes.h \
++  ../../common/unicode/platform.h ../../common/unicode/uconfig.h \
++  ../../common/unicode/uvernum.h ../../common/unicode/urename.h \
++  ../../common/unicode/utf.h ../../common/unicode/utf16.h \
++  ../../common/unicode/utf_old.h ../../common/utf_impl.cpp \
++  ../../common/unicode/utypes.h ../../common/unicode/uversion.h \
++  ../../common/uassert.h cptbl.h
+diff --git a/install/include/unicode/alphaindex.h b/install/include/unicode/alphaindex.h
+new file mode 100644
+index 00000000000..1442f754e46
+--- /dev/null
++++ b/install/include/unicode/alphaindex.h
+@@ -0,0 +1,755 @@
++// © 2016 and later: Unicode, Inc. and others.
++// License & terms of use: http://www.unicode.org/copyright.html
++/*
++*******************************************************************************
++*
++*   Copyright (C) 2011-2014 International Business Machines
++*   Corporation and others.  All Rights Reserved.
++*
++*******************************************************************************
++*/
++
++#ifndef INDEXCHARS_H
++#define INDEXCHARS_H
++
++#include "unicode/utypes.h"
++#include "unicode/uobject.h"
++#include "unicode/locid.h"
++#include "unicode/unistr.h"
++
++#if !UCONFIG_NO_COLLATION
++
++/**
++ * \file
++ * \brief C++ API: Index Characters
++ */
++
++U_CDECL_BEGIN
++
++/**
++ * Constants for Alphabetic Index Label Types.
++ * The form of these enum constants anticipates having a plain C API
++ * for Alphabetic Indexes that will also use them.
++ * @stable ICU 4.8
++ */
++typedef enum UAlphabeticIndexLabelType {
++    /**
++     *  Normal Label, typically the starting letter of the names
++     *  in the bucket with this label.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_NORMAL    = 0,
++
++    /**
++     * Undeflow Label.  The bucket with this label contains names
++     * in scripts that sort before any of the bucket labels in this index.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_UNDERFLOW = 1,
++
++    /**
++     * Inflow Label.  The bucket with this label contains names
++     * in scripts that sort between two of the bucket labels in this index.
++     * Inflow labels are created when an index contains normal labels for
++     * multiple scripts, and skips other scripts that sort between some of the
++     * included scripts.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_INFLOW    = 2,
++
++    /**
++     * Overflow Label. Te bucket with this label contains names in scripts
++     * that sort after all of the bucket labels in this index.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_OVERFLOW  = 3
++} UAlphabeticIndexLabelType;
++
++
++struct UHashtable;
++U_CDECL_END
++
++U_NAMESPACE_BEGIN
++
++// Forward Declarations
++
++class BucketList;
++class Collator;
++class RuleBasedCollator;
++class StringEnumeration;
++class UnicodeSet;
++class UVector;
++
++/**
++ * AlphabeticIndex supports the creation of a UI index appropriate for a given language.
++ * It can support either direct use, or use with a client that doesn't support localized collation.
++ * The following is an example of what an index might look like in a UI:
++ * 
++ * <pre>
++ *  <b>... A B C D E F G H I J K L M N O P Q R S T U V W X Y Z  ...</b>
++ *
++ *  <b>A</b>
++ *     Addison
++ *     Albertson
++ *     Azensky
++ *  <b>B</b>
++ *     Baker
++ *  ...
++ * </pre>
++ *
++ * The class can generate a list of labels for use as a UI "index", that is, a list of
++ * clickable characters (or character sequences) that allow the user to see a segment
++ * (bucket) of a larger "target" list. That is, each label corresponds to a bucket in
++ * the target list, where everything in the bucket is greater than or equal to the character
++ * (according to the locale's collation). Strings can be added to the index;
++ * they will be in sorted order in the right bucket.
++ * <p>
++ * The class also supports having buckets for strings before the first (underflow),
++ * after the last (overflow), and between scripts (inflow). For example, if the index
++ * is constructed with labels for Russian and English, Greek characters would fall
++ * into an inflow bucket between the other two scripts.
++ * <p>
++ * The AlphabeticIndex class is not intended for public subclassing.
++ *
++ * <p><em>Note:</em> If you expect to have a lot of ASCII or Latin characters
++ * as well as characters from the user's language,
++ * then it is a good idea to call addLabels(Locale::getEnglish(), status).</p>
++ *
++ * <h2>Direct Use</h2>
++ * <p>The following shows an example of building an index directly.
++ *  The "show..." methods below are just to illustrate usage.
++ *
++ * <pre>
++ * // Create a simple index.  "Item" is assumed to be an application
++ * // defined type that the application's UI and other processing knows about,
++ * //  and that has a name.
++ *
++ * UErrorCode status = U_ZERO_ERROR;
++ * AlphabeticIndex index = new AlphabeticIndex(desiredLocale, status);
++ * index->addLabels(additionalLocale, status);
++ * for (Item *item in some source of Items ) {
++ *     index->addRecord(item->name(), item, status);
++ * }
++ * ...
++ * // Show index at top. We could skip or gray out empty buckets
++ *
++ * while (index->nextBucket(status)) {
++ *     if (showAll || index->getBucketRecordCount() != 0) {
++ *         showLabelAtTop(UI, index->getBucketLabel());
++ *     }
++ * }
++ *  ...
++ * // Show the buckets with their contents, skipping empty buckets
++ *
++ * index->resetBucketIterator(status);
++ * while (index->nextBucket(status)) {
++ *    if (index->getBucketRecordCount() != 0) {
++ *        showLabelInList(UI, index->getBucketLabel());
++ *        while (index->nextRecord(status)) {
++ *            showIndexedItem(UI, static_cast<Item *>(index->getRecordData()))
++ * </pre>
++ *
++ * The caller can build different UIs using this class.
++ * For example, an index character could be omitted or grayed-out
++ * if its bucket is empty. Small buckets could also be combined based on size, such as:
++ *
++ * <pre>
++ * <b>... A-F G-N O-Z ...</b>
++ * </pre>
++ *
++ * <h2>Client Support</h2>
++ * <p>Callers can also use the AlphabeticIndex::ImmutableIndex, or the AlphabeticIndex itself,
++ * to support sorting on a client that doesn't support AlphabeticIndex functionality.
++ *
++ * <p>The ImmutableIndex is both immutable and thread-safe.
++ * The corresponding AlphabeticIndex methods are not thread-safe because
++ * they "lazily" build the index buckets.
++ * <ul>
++ * <li>ImmutableIndex.getBucket(index) provides random access to all
++ *     buckets and their labels and label types.
++ * <li>The AlphabeticIndex bucket iterator or ImmutableIndex.getBucket(0..getBucketCount-1)
++ *     can be used to get a list of the labels,
++ *     such as "...", "A", "B",..., and send that list to the client.
++ * <li>When the client has a new name, it sends that name to the server.
++ * The server needs to call the following methods,
++ * and communicate the bucketIndex and collationKey back to the client.
++ *
++ * <pre>
++ * int32_t bucketIndex = index.getBucketIndex(name, status);
++ * const UnicodeString &label = immutableIndex.getBucket(bucketIndex)->getLabel();  // optional
++ * int32_t skLength = collator.getSortKey(name, sk, skCapacity);
++ * </pre>
++ *
++ * <li>The client would put the name (and associated information) into its bucket for bucketIndex. The sort key sk is a
++ * sequence of bytes that can be compared with a binary compare, and produce the right localized result.</li>
++ * </ul>
++ *
++ * @stable ICU 4.8
++ */
++class U_I18N_API AlphabeticIndex: public UObject {
++public:
++     /**
++      * An index "bucket" with a label string and type.
++      * It is referenced by getBucketIndex(),
++      * and returned by ImmutableIndex.getBucket().
++      *
++      * The Bucket class is not intended for public subclassing.
++      * @stable ICU 51
++      */
++     class U_I18N_API Bucket : public UObject {
++     public:
++        /**
++         * Destructor.
++         * @stable ICU 51
++         */
++        virtual ~Bucket();
++
++        /**
++         * Returns the label string.
++         *
++         * @return the label string for the bucket
++         * @stable ICU 51
++         */
++        const UnicodeString &getLabel() const { return label_; }
++        /**
++         * Returns whether this bucket is a normal, underflow, overflow, or inflow bucket.
++         *
++         * @return the bucket label type
++         * @stable ICU 51
++         */
++        UAlphabeticIndexLabelType getLabelType() const { return labelType_; }
++
++     private:
++        friend class AlphabeticIndex;
++        friend class BucketList;
++
++        UnicodeString label_;
++        UnicodeString lowerBoundary_;
++        UAlphabeticIndexLabelType labelType_;
++        Bucket *displayBucket_;
++        int32_t displayIndex_;
++        UVector *records_;  // Records are owned by the inputList_ vector.
++
++        Bucket(const UnicodeString &label,   // Parameter strings are copied.
++               const UnicodeString &lowerBoundary,
++               UAlphabeticIndexLabelType type);
++     };
++
++    /**
++     * Immutable, thread-safe version of AlphabeticIndex.
++     * This class provides thread-safe methods for bucketing,
++     * and random access to buckets and their properties,
++     * but does not offer adding records to the index.
++     *
++     * The ImmutableIndex class is not intended for public subclassing.
++     *
++     * @stable ICU 51
++     */
++    class U_I18N_API ImmutableIndex : public UObject {
++    public:
++        /**
++         * Destructor.
++         * @stable ICU 51
++         */
++        virtual ~ImmutableIndex();
++
++        /**
++         * Returns the number of index buckets and labels, including underflow/inflow/overflow.
++         *
++         * @return the number of index buckets
++         * @stable ICU 51
++         */
++        int32_t getBucketCount() const;
++
++        /**
++         * Finds the index bucket for the given name and returns the number of that bucket.
++         * Use getBucket() to get the bucket's properties.
++         *
++         * @param name the string to be sorted into an index bucket
++         * @return the bucket number for the name
++         * @stable ICU 51
++         */
++        int32_t getBucketIndex(const UnicodeString &name, UErrorCode &errorCode) const;
++
++        /**
++         * Returns the index-th bucket. Returns NULL if the index is out of range.
++         *
++         * @param index bucket number
++         * @return the index-th bucket
++         * @stable ICU 51
++         */
++        const Bucket *getBucket(int32_t index) const;
++
++    private:
++        friend class AlphabeticIndex;
++
++        ImmutableIndex(BucketList *bucketList, Collator *collatorPrimaryOnly)
++                : buckets_(bucketList), collatorPrimaryOnly_(collatorPrimaryOnly) {}
++
++        BucketList *buckets_;
++        Collator *collatorPrimaryOnly_;
++    };
++
++    /**
++     * Construct an AlphabeticIndex object for the specified locale.  If the locale's
++     * data does not include index characters, a set of them will be
++     * synthesized based on the locale's exemplar characters.  The locale
++     * determines the sorting order for both the index characters and the
++     * user item names appearing under each Index character.
++     *
++     * @param locale the desired locale.
++     * @param status Error code, will be set with the reason if the construction
++     *               of the AlphabeticIndex object fails.
++     * @stable ICU 4.8
++     */
++     AlphabeticIndex(const Locale &locale, UErrorCode &status);
++
++   /** 
++     * Construct an AlphabeticIndex that uses a specific collator.
++     * 
++     * The index will be created with no labels; the addLabels() function must be called
++     * after creation to add the desired labels to the index.
++     * 
++     * The index adopts the collator, and is responsible for deleting it. 
++     * The caller should make no further use of the collator after creating the index.
++     * 
++     * @param collator The collator to use to order the contents of this index.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @stable ICU 51
++     */
++    AlphabeticIndex(RuleBasedCollator *collator, UErrorCode &status);
++
++    /**
++     * Add Labels to this Index.  The labels are additions to those
++     * that are already in the index; they do not replace the existing
++     * ones.
++     * @param additions The additional characters to add to the index, such as A-Z.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @return this, for chaining
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &addLabels(const UnicodeSet &additions, UErrorCode &status);
++
++    /**
++     * Add the index characters from a Locale to the index.  The labels
++     * are added to those that are already in the index; they do not replace the
++     * existing index characters.  The collation order for this index is not
++     * changed; it remains that of the locale that was originally specified
++     * when creating this Index.
++     *
++     * @param locale The locale whose index characters are to be added.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @return this, for chaining
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &addLabels(const Locale &locale, UErrorCode &status);
++
++     /**
++      * Destructor
++      * @stable ICU 4.8
++      */
++    virtual ~AlphabeticIndex();
++
++    /**
++     * Builds an immutable, thread-safe version of this instance, without data records.
++     *
++     * @return an immutable index instance
++     * @stable ICU 51
++     */
++    ImmutableIndex *buildImmutableIndex(UErrorCode &errorCode);
++
++    /**
++     * Get the Collator that establishes the ordering of the items in this index.
++     * Ownership of the collator remains with the AlphabeticIndex instance.
++     *
++     * The returned collator is a reference to the internal collator used by this
++     * index.  It may be safely used to compare the names of items or to get
++     * sort keys for names.  However if any ...+is the hexadecimal value of the Unicode codepoint.
++.TP
++.B escape-xml-dec
++Replace the missing characters with a string of the format
++.BR &#\fInnnn\fP; ,
++where
++.I nnnn
++is the decimal value of the Unicode codepoint.
++.TP
++.B escape-unicode
++Replace the missing characters with a string of the format
++.BR {U+\fIhhhh\fP} ,
++where
++.I hhhh
++is the hexadecimal value of the Unicode codepoint.
++That hexadecimal string is of variable length and can use from 4 to
++6 digits.
++This is the format universally used to denote a Unicode codepoint in
++the literature, delimited by curly braces for easy recognition of those
++substitutions in the output.
++.SH EXAMPLES
++Convert data from a given
++.I encoding
++to the platform encoding:
++
++.RS 4
++.B \fR$ \fPuconv \-f \fIencoding\fP
++.RE
++.PP
++Check if a
++.I file
++contains valid data for a given
++.IR encoding :
++
++.RS 4
++.B \fR$ \fPuconv \-f \fIencoding\fP \-c \fIfile\fP >/dev/null
++.RE
++.PP
++Convert a UTF-8
++.I file
++to a given
++.I encoding
++and ensure that the resulting text is good for any version of HTML:
++
++.RS 4
++.B \fR$ \fPuconv \-f utf-8 \-t \fIencoding\fP \e
++.br
++.B "    \-\-callback escape-xml-dec \fIfile\fP"
++.RE
++.PP
++Display the names of the Unicode code points in a UTF-file:
++
++.RS 4
++.B \fR$ \fPuconv \-f utf-8 \-x any-name \fIfile\fP
++.RE
++.PP
++Print the name of a Unicode code point whose value is known (\fBU+30AB\fP
++in this example):
++
++.RS 4
++.B \fR$ \fPecho '\eu30ab' | uconv \-x 'hex-any; any-name'; echo
++.br
++{KATAKANA LETTER KA}{LINE FEED}
++.br
++$ 
++.RE
++
++(The names are delimited by curly braces.
++Also, the name of the line terminator is also displayed.)
++.PP
++Normalize UTF-8 data using Unicode NFKC, remove all control characters,
++and map Katakana to Hiragana:
++
++.RS 4
++.B \fR$ \fPuconv \-f utf-8 \-t utf-8 \e
++.br
++.B "      \-x '::nfkc; [:Cc:] >; ::katakana-hiragana;'"
++.SH CAVEATS AND BUGS
++.B uconv
++does report errors as occurring at the first invalid byte
++encountered. This may be confusing to users of GNU
++.BR iconv (1),
++which reports errors as occurring at the first byte of an invalid
++sequence. For multi-byte character sets or encodings, this means that
++.BR uconv
++error positions may be at a later offset in the input stream than
++would be the case with GNU
++.BR iconv (1).
++.PP
++The reporting of error positions when a transliterator is used may be
++inaccurate or unavailable, in which case
++.BR uconv
++will report the offset in the output stream at which the error
++occurred.
++.SH AUTHORS
++Jonas Utterstroem
++.br
++Yves Arrouye
++.SH VERSION
++60.1
++.SH COPYRIGHT
++Copyright (C) 2000-2005 IBM, Inc. and others.
++.SH SEE ALSO
++.BR iconv (1)
+diff --git a/install/share/man/man8/genccode.8 b/install/share/man/man8/genccode.8
+new file mode 100644
+index 00000000000..5f5ef4507b3
+--- /dev/null
++++ b/install/share/man/man8/genccode.8
+@@ -0,0 +1,108 @@
++.\" Hey, Emacs! This is -*-nroff-*- you know...
++.\"
++.\" genccode.8: manual page for the gennames utility
++.\"
++.\" Copyright (C) 2016 and later: Unicode, Inc. and others.
++.\" License & terms of use: http://www.unicode.org/copyright.html
++.\" Copyright (C) 2003-2004 IBM, Inc. and others.
++.\"
++.TH GENCCODE 8 "11 March 2004" "ICU MANPAGE" "ICU 60.1 Manual"
++.SH NAME
++.B genccode
++\- generate C or platform specific assembly code from an ICU data file.
++.SH SYNOPSIS
++.B genccode
++[
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++]
++[
++.BI "\-a\fP, \fB\-\-assembly" " name"
++]
++[
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++]
++[
++.BI "\-n\fP, \fB\-\-name" " name"
++]
++[
++.BI "\-e\fP, \fB\-\-entrypoint" " name"
++]
++[
++.BI "\-f\fP, \fB\-\-filename" " name"
++]
++[
++.IR filename " .\|.\|."
++]
++.SH DESCRIPTION
++.B genccode
++reads each of the supplied
++.I filename
++and writes out a C file containing a compilable definition of the data in
++the data file.
++The C file name is made by taking the base name of the data
++.IR filename ,
++replacing dots by underscores, and adding a
++.I .c
++file extension.
++.PP
++If the \fB-a\fP option is used, platform specific assembly
++code is generated instead of C code.
++Most C compilers will accept both C and assembly files.
++Instead of writing a filename with a
++.I .c
++file extension, a filename with a
++.I .s
++will be written instead.
++.PP
++If
++.B genccode
++is called with no
++.I filename
++it terminates gracefully.
++.SH OPTIONS
++.TP
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++Print help about usage and exit.
++.TP
++.BI "\-a\fP, \fB\-\-assembly" " name"
++Output assembly code instead of C code.
++Use \fB-h\fP to see the list of available types of assembly to generate and
++to specify for this option.
++.TP
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++Set the destination directory to
++.IR destination .
++The default destination directory is the current directory.
++.TP
++.BI "\-n\fP, \fB\-\-name" " name"
++Set the data name to
++.I name
++instead of the default. This name is also used as the base name of the
++output. The default name is made of the
++.I icudt
++prefix, followed by a two-digit version number corresponding to
++the current version of the ICU release, and a single letter indicating
++the endianness of the data (the letter
++.I b
++indicated big endian data, and the letter
++.I l
++indicates little endian ones).
++.TP
++.BI "\-f\fP, \fB\-\-filename" " name"
++Normally, an ICU data file such as mydata.icu will be turned into mydata_icu.c and mydata_icu.o.
++However, if this parameter was set to "somedata", the output files will be somedata.o and 
++somedata.c, respectively.
++.TP
++.BI "\-e\fP, \fB\-\-entrypoint" " name"
++Set the data entry point (used for linking against the data in a
++shared library form) to
++.IR name .
++The default entry point name is made of the data (set by the
++.BI "\-n\fP, \fB\-\-name"
++option) followed by an underscore and the type of the data (set by the
++.BI "\-t\fP, \fB\-\-type"
++option).
++.SH VERSION
++60.1
++.SH COPYRIGHT
++Copyright (C) 2000-2004 IBM, Inc. and others.
+diff --git a/install/share/man/man8/gencmn.8 b/install/share/man/man8/gencmn.8
+new file mode 100644
+index 00000000000..a00ee8a61fa
+--- /dev/null
++++ b/install/share/man/man8/gencmn.8
+@@ -0,0 +1,131 @@
++.\" Hey, Emacs! This is -*-nroff-*- you know...
++.\"
++.\" gencmn.8: manual page for the gencmn utility
++.\"
++.\" Copyright (C) 2016 and later: Unicode, Inc. and others.
++.\" License & terms of use: http://www.unicode.org/copyright.html
++.\" Copyright (C) 2000-2001 IBM, Inc. and others.
++.\"
++.\" Manual page by Yves Arrouye <yves@realnames.com>.
++.\"
++.TH GENCMN 8 "5 November 2001" "ICU MANPAGE" "ICU 60.1 Manual"
++.SH NAME
++.B gencmn
++\- generate an ICU memory-mappable data file
++.SH SYNOPSIS
++.B gencmn
++[
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++]
++[
++.BR "\-v\fP, \fB\-\-verbose"
++]
++[
++.BR "\-c\fP, \fB\-\-copyright"
++|
++.BI "\-C\fP, \fB\-\-comment" " comment"
++]
++[
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++]
++[
++.BI "\-n\fP, \fB\-\-name" " name"
++]
++[
++.BI "\-t\fP, \fB\-\-type" " fileext"
++]
++[
++.BI "\-S\fP, \fB\-\-source"
++]
++[
++.BI "\-e\fP, \fB\-\-entrypoint" " name"
++]
++.I maxsize
++[
++.I listfilename
++]
++.SH DESCRIPTION
++.B gencmn
++takes a set of files and packages them as an ICU memory-mappable data
++file. The resulting data file can then be used directly by ICU.
++.PP
++.B gencmn
++reads a list of files to be packaged from either the
++supplied
++.I listfilename
++file, or from its standard output. It packages all the files from
++the list that are not bigger than
++.I maxsize
++bytes, except if
++.I maxsize
++is 0, which indicates that there is no size limit on files.
++.SH OPTIONS
++.TP
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++Print help about usage and exit.
++.TP
++.BR "\-v\fP, \fB\-\-verbose"
++Display extra informative messages during execution.
++.TP
++.BR \-c\fP, \fB\-\-copyright
++Include the ICU copyright notice in the resulting data.
++.TP
++.BI "\-C\fP, \fB\-\-comment" " comment"
++Include the specified
++.I comment
++in the resulting data instead of the ICU copyright notice. 
++.TP
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++Set the destination directory to
++.IR destination .
++The default destination directory is specified by the environment variable
++.BR ICU_DATA .
++.TP
++.BI "\-n\fP, \fB\-\-name" " name"
++Set the data name to
++.I name
++instead of the default. This name is also used as the base name of the
++output. The default name is made of the
++.I icudt
++prefix, followed by a two-digit version number corresponding to
++the current version of the ICU release, and a single letter indicating
++the endianness of the data (the letter
++.I b
++indicated big endian data, and the letter
++.I l
++indicates little endian ones).
++.TP
++.BI "\-t\fP, \fB\-\-type" " type"
++Use
++.I type
++as the type of the data. This type is also used as the extension of
++the generated data file. The default type ie
++.IR dat .
++.TP
++.BI "\-S\fP, \fB\-\-source"
++Write a C source file with the table of contents of the data.
++.TP
++.BI "\-e\fP, \fB\-\-entrypoint" " name"
++Set the data entry point (used for linking against the data in a
++shared library form) to
++.IR name .
++The default entry point name is made of the data (set by the
++.BI "\-n\fP, \fB\-\-name"
++option) followed by an underscore and the type of the data (set by the
++.BI "\-t\fP, \fB\-\-type"
++option).
++.SH ENVIRONMENT
++.TP 10
++.B ICU_DATA
++Specifies the directory containing ICU data. Defaults to
++.BR ${prefix}/share/icu/60.1/ .
++Some tools in ICU depend on the presence of the trailing slash. It is thus
++important to make sure that it is present if
++.B ICU_DATA
++is set.
++.SH VERSION
++60.1
++.SH COPYRIGHT
++Copyright (C) 2000-2001 IBM, Inc. and others.
++.SH SEE ALSO
++.BR decmn (8)
+diff --git a/install/share/man/man8/gensprep.8 b/install/share/man/man8/gensprep.8
+new file mode 100644
+index 00000000000..9ab6a6acaa5
+--- /dev/null
++++ b/install/share/man/man8/gensprep.8
+@@ -0,0 +1,104 @@
++.\" Hey, Emacs! This is -*-nroff-*- you know...
++.\"
++.\" gensprep.8: manual page for the gensprep utility
++.\"
++.\" Copyright (C) 2016 and later: Unicode, Inc. and others.
++.\" License & terms of use: http://www.unicode.org/copyright.html
++.\" Copyright (C) 2003 IBM, Inc. and others.
++.\"
++.TH gensprep 8 "18 March 2003" "ICU MANPAGE" "ICU 60.1 Manual"
++.SH NAME
++.B gensprep
++\- compile StringPrep data from files filtered by filterRFC3454.pl 
++.SH SYNOPSIS
++.B gensprep
++[
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++]
++[
++.BR "\-v\fP, \fB\-\-verbose"
++]
++[
++.BI "\-c\fP, \fB\-\-copyright"
++]
++[
++.BI "\-s\fP, \fB\-\-sourcedir" " source"
++]
++[
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++]
++.SH DESCRIPTION
++.B gensprep
++reads filtered RFC 3454 files and compiles their
++information into a binary form.
++The resulting file,
++.BR <name>.icu ,
++can then be read directly by ICU, or used by
++.BR pkgdata (8)
++for incorporation into a larger archive or library.
++.LP
++The files read by
++.B gensprep
++are described in the
++.B FILES
++section. 
++.SH OPTIONS
++.TP
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++Print help about usage and exit.
++.TP
++.BR "\-v\fP, \fB\-\-verbose"
++Display extra informative messages during execution.
++.TP
++.BI "\-c\fP, \fB\-\-copyright"
++Include a copyright notice into the binary data.
++.TP
++.BI "\-s\fP, \fB\-\-sourcedir" " source"
++Set the source directory to
++.IR source .
++The default source directory is specified by the environment variable
++.BR ICU_DATA .
++.TP
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++Set the destination directory to
++.IR destination .
++The default destination directory is specified by the environment variable
++.BR ICU_DATA .
++.SH ENVIRONMENT
++.TP 10
++.B ICU_DATA
++Specifies the directory containing ICU data. Defaults to
++.BR ${prefix}/share/icu/60.1/ .
++Some tools in ICU depend on the presence of the trailing slash. It is thus
++important to make sure that it is present if
++.B ICU_DATA
++is set.
++.SH FILES
++The following files are read by
++.B gensprep
++and are looked for in the
++.I source
++/misc for rfc3454_*.txt files and in 
++.I source
++/unidata for NormalizationCorrections.txt.
++.TP 20
++.B rfc3453_A_1.txt 
++Contains the list of unassigned codepoints in Unicode version 3.2.0.\|.\|.. 
++.TP
++.B rfc3454_B_1.txt
++Contains the list of code points that are commonly mapped to nothing.\|.\|..
++.TP
++.B rfc3454_B_2.txt
++Contains the list of mappings for casefolding of  code points when Normalization form NFKC is specified.\|.\|..
++.TP
++.B rfc3454_C_X.txt
++Contains the list of code points that are prohibited for IDNA.
++.TP
++.B NormalizationCorrections.txt
++Contains the list of code points whose normalization has changed since Unicode Version 3.2.0. 
++.SH VERSION
++60.1
++.SH COPYRIGHT
++Copyright (C) 2000-2002 IBM, Inc. and others.
++.SH SEE ALSO
++.BR pkgdata (8)
+diff --git a/install/share/man/man8/icupkg.8 b/install/share/man/man8/icupkg.8
+new file mode 100644
+index 00000000000..104980efd8c
+--- /dev/null
++++ b/install/share/man/man8/icupkg.8
+@@ -0,0 +1,206 @@
++.\" Hey, Emacs! This is -*-nroff-*- you know...
++.\"
++.\" icupkg.8: manual page for the icupkg utility
++.\"
++.\" Copyright (C) 2016 and later: Unicode, Inc. and others.
++.\" License & terms of use: http://www.unicode.org/copyright.html
++.\" Copyright (C) 2000-2006 IBM, Inc. and others.
++.\"
++.TH ICUPKG 8 "18 August 2006" "ICU MANPAGE" "ICU 60.1 Manual"
++.SH NAME
++.B icupkg
++\- extract or modify an ICU
++.B .dat
++archive
++.SH SYNOPSIS
++.B icupkg
++[
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++]
++[
++.BR "\-tl\fP, \fB\-\-type" " l"
++|
++.BR "\-tb\fP, \fB\-\-type" " b"
++|
++.BR "\-te\fP, \fB\-\-type" " e"
++]
++[
++.BR "\-c\fP, \fB\-\-copyright"
++|
++.BI "\-C\fP, \fB\-\-comment" " comment"
++]
++[
++.BI "\-a\fP, \fB\-\-add" " list"
++]
++[
++.BI "\-r\fP, \fB\-\-remove" " list"
++]
++[
++.BI "\-x\fP, \fB\-\-extract" " list"
++]
++[
++.BI "\-l\fP, \fB\-\-list"
++]
++[
++.BI "\-s\fP, \fB\-\-sourcedir" " source"
++]
++[
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++]
++[
++.BI "\-w\fP, \fB\-\-writepkg"
++]
++[
++.BI "\-m\fP, \fB\-\-matchmode" " mode"
++]
++.IR infilename
++[
++.BI "outfilename"
++]
++.SH DESCRIPTION
++.B icupkg
++reads the input ICU
++.B .dat
++package file, modify it according to the options,
++swap it to the desired platform properties (charset & endianness),
++and optionally write the resulting ICU
++.B .dat
++package to the output file.
++Items are removed, then added, then extracted and listed.
++An ICU
++.B .dat
++package is written if items are removed or added,
++or if the input and output filenames differ,
++or if the
++.BR "\-w\fP, \fB\-\-writepkg"
++option is set.
++.PP
++If the input filename is "new" then an empty package is created.
++If the output filename is missing, then it is automatically generated
++from the input filename. If the input filename ends with an l, b, or e
++matching its platform properties, then the output filename will
++contain the letter from the
++.BI "\-t\fP, \fB\-\-type"
++option.
++.PP
++This tool can also be used to just swap a single ICU data file, replacing the
++former icuswap tool. For this mode, provide the infilename (and optional
++outfilename) for a non-package ICU data file.
++Allowed options include
++.BI "\-t\fP, \fB\-w\fP, \fB\-s\fP"
++and
++.BI \-d
++.
++The filenames can be absolute, or relative to the source/dest dir paths.
++Other options are not allowed in this mode.
++.SH OPTIONS
++.TP
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++Print help about usage and exit.
++.TP
++.BI "\-tl\fP, \fB\-\-type" " l"
++Output for little-endian/ASCII charset family.
++The output type defaults to the input type.
++.TP
++.BI "\-tb\fP, \fB\-\-type" " b"
++Output for big-endian/ASCII charset family.
++The output type defaults to the input type.
++.TP
++.BI "\-te\fP, \fB\-\-type" " e"
++Output for big-endian/EBCDIC charset family.
++The output type defaults to the input type.
++.TP
++.BR \-c\fP, \fB\-\-copyright
++Include the ICU copyright notice in the resulting data.
++.TP
++.BI "\-C\fP, \fB\-\-comment" " comment"
++Include the specified
++.I comment
++in the resulting data instead of the ICU copyright notice. 
++.TP
++.BI "\-a\fP, \fB\-\-add" " list"
++Add items from the
++.I list
++to the package. The list can be a single filename with a
++.B .txt
++file extension containing a list of item filenames, or an ICU
++.B .dat
++package filename.
++.TP
++.BI "\-r\fP, \fB\-\-remove" " list"
++Remove items from the
++.I list
++from the package. The list can be a single filename with a
++.B .txt
++file extension containing a list of item filenames, or an ICU
++.B .dat
++package filename.
++.TP
++.BI "\-x\fP, \fB\-\-extract" " list"
++Extract items from the
++.I list
++from the package. The list can be a single filename with a
++.B .txt
++file extension containing a list of item filenames, or an ICU
++.B .dat
++package filename.
++.TP
++.BI "\-m\fP, \fB\-\-matchmode" " mode"
++Set the matching mode for item names with wildcards.
++.TP
++.BI "\-s\fP, \fB\-\-sourcedir" " source"
++Set the source directory to
++.IR source .
++The default source directory is the current directory.
++.TP
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++Set the destination directory to
++.IR destination .
++The default destination directory is the current directory.
++.TP
++.BI "\-l\fP, \fB\-\-list"
++List the package items to stdout (after modifying the package).
++.SH LIST FILE SYNTAX
++Items are listed on one or more lines and separated by whitespace (space+tab).
++Comments begin with
++.B #
++and are ignored. Empty lines are ignored. Lines where the first non-whitespace
++character is one of "%&'()*+,-./:;<=>?_ are also ignored
++to reserve for future syntax.
++.PP
++Items for removal or extraction may contain a single 
++.B *
++wildcard character. The 
++.B *
++matches zero or more characters. If
++.BI "\-m\fP, \fB\-\-matchmode" " noslash"
++is set, then the
++.B *
++character does not match the
++.B /
++character.
++.PP
++Items must be listed relative to the package, and the
++.B "\fB\-\-sourcedir"
++or the
++.B "\fB\-\-destdir"
++path will be prepended. The paths are only prepended to item
++filenames while adding or extracting items, not to ICU .dat package or list
++filenames.
++.PP
++Paths may contain
++.B /
++instead of the platform's file separator character and are converted as
++appropriate.
++.SH AUTHORS
++Markus Scherer
++.br
++George Rhoten
++.SH VERSION
++1.0
++.SH COPYRIGHT
++Copyright (C) 2006 IBM, Inc. and others.
++.SH SEE ALSO
++.BR pkgdata (1)
++.BR genrb (1)
++
+diff --git a/reproduce_bug.cpp b/reproduce_bug.cpp
+new file mode 100644
+index 00000000000..25e9c538bf8
+--- /dev/null
++++ b/reproduce_bug.cpp
+@@ -0,0 +1,44 @@
++#include "unicode/calendar.h"
++#include "unicode/locid.h"
++#include "unicode/ucal.h"
++#include <iostream>
++
++using namespace icu;
++
++int main() {
++  const char *localeID = "ar@calendar=islamic-civil";
++  UErrorCode status = U_ZERO_ERROR;
++  Calendar *cal = Calendar::createInstance(Locale(localeID), status);
++  if (U_FAILURE(status)) {
++    std::cerr << "FAIL: Calendar::createInstance for localeID " << localeID
++              << ": " << u_errorName(status) << std::endl;
++  } else {
++    int32_t maxMonth = cal->getMaximum(UCAL_MONTH);
++    int32_t maxDayOfMonth = cal->getMaximum(UCAL_DATE);
++    int32_t jd, year, month, dayOfMonth;
++    for (jd = 73530872; jd <= 73530876;
++         jd++) { // year 202002, int32_t overflow if jd >= 73530874
++      status = U_ZERO_ERROR;
++      cal->clear();
++      cal->set(UCAL_JULIAN_DAY, jd);
++      year = cal->get(UCAL_YEAR, status);
++      month = cal->get(UCAL_MONTH, status);
++      dayOfMonth = cal->get(UCAL_DATE, status);
++      if (U_FAILURE(status)) {
++        std::cerr << "FAIL: Calendar->get YEAR/MONTH/DATE for localeID "
++                  << localeID << ", julianDay " << jd << ", status "
++                  << u_errorName(status) << std::endl;
++      } else if (month > maxMonth || dayOfMonth > maxDayOfMonth) {
++        std::cerr << "FAIL: localeID " << localeID << ", julianDay " << jd
++                  << "; got year " << year << "; maxMonth " << maxMonth
++                  << ", got month " << month << "; maxDayOfMonth "
++                  << maxDayOfMonth << ", got dayOfMonth " << dayOfMonth
++                  << std::endl;
++      }
++    }
++    delete cal;
++  }
++
++  std::cout << "Script completed successfully, no errors." << std::endl;
++  return 0;
++}

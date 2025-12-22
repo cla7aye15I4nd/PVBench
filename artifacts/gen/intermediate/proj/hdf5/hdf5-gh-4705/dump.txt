@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+6|H5Lget_info2|return == -1|Invalid loc_id (datatype instead of file/group), should return error gracefully

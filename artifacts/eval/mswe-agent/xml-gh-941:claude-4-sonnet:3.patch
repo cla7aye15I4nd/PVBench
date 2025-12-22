@@ -1,0 +1,42 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ec7961f..87231784 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -64,3 +64,12 @@ Makefile.in
+ /m4/lt*.m4
+ /py-compile
+ /stamp-h1
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/shell.c b/shell.c
+index 8ecc05b9..89c55e32 100644
+--- a/shell.c
++++ b/shell.c
+@@ -1127,9 +1127,7 @@ xmllintShell(xmlDoc *doc, const char *filename, FILE * output)
+             cur++;
+         i = 0;
+         while ((*cur != ' ') && (*cur != '\t') &&
+-               (*cur != '\n') && (*cur != '\r')) {
+-            if (*cur == 0)
+-                break;
++               (*cur != '\n') && (*cur != '\r') && (*cur != '\0') && (i < 99)) {
+             command[i++] = *cur++;
+         }
+         command[i] = 0;
+@@ -1142,7 +1140,7 @@ xmllintShell(xmlDoc *doc, const char *filename, FILE * output)
+         while ((*cur == ' ') || (*cur == '\t'))
+             cur++;
+         i = 0;
+-        while ((*cur != '\n') && (*cur != '\r') && (*cur != 0)) {
++        while ((*cur != '\n') && (*cur != '\r') && (*cur != 0) && (i < 399)) {
+             if (*cur == 0)
+                 break;
+             arg[i++] = *cur++;

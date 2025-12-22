@@ -1,0 +1,32 @@
+
+diff --git a/.gitignore b/.gitignore
+index 596e0f3af6a..8d4234061fa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -172,3 +172,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/asan_test b/asan_test
+new file mode 100755
+index 00000000000..64743494deb
+Binary files /dev/null and b/asan_test differ
+diff --git a/asan_test.c b/asan_test.c
+new file mode 100644
+index 00000000000..ae1d6bebb87
+--- /dev/null
++++ b/asan_test.c
+@@ -0,0 +1,7 @@
++#include <stdio.h>
++
++int main() {
++    int *p = NULL;
++    printf("%d\n", *p); // Deliberate NULL dereference
++    return 0;
++}

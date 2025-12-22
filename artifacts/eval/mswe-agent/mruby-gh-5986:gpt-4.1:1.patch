@@ -1,0 +1,46 @@
+
+diff --git a/.gitignore b/.gitignore
+index c2918f31a..6bf18697a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -32,3 +32,13 @@ compile_flags.txt
+ cscope.files
+ cscope.out
+ tags
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/asan.log b/asan.log
+new file mode 100644
+index 000000000..e69de29bb
+diff --git a/src/string.c b/src/string.c
+index 1bd3f6f8f..7b02ea23d 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2950,6 +2950,13 @@ str_bytesplice(mrb_state *mrb, mrb_value str, mrb_int idx1, mrb_int len1, mrb_va
+   if (RSTR_LEN(s) < idx1 || RSTRING_LEN(replace) < idx2) {
+     mrb_raise(mrb, E_INDEX_ERROR, "index out of string");
+   }
++  /* Prevent integer overflow in idx1+len1 and idx2+len2 */
++  if ((len1 > 0 && idx1 > MRB_INT_MAX - len1) || (len1 < 0 && idx1 < MRB_INT_MIN - len1)) {
++    mrb_raise(mrb, E_INDEX_ERROR, "index+len1 overflow");
++  }
++  if ((len2 > 0 && idx2 > MRB_INT_MAX - len2) || (len2 < 0 && idx2 < MRB_INT_MIN - len2)) {
++    mrb_raise(mrb, E_INDEX_ERROR, "index+len2 overflow");
++  }
+   if (RSTR_LEN(s) <= idx1+len1) {
+     len1 = RSTR_LEN(s) - idx1;
+   }
+diff --git a/ubsan.log b/ubsan.log
+new file mode 100644
+index 000000000..e69de29bb
+diff --git a/ubsan_after_fix.log b/ubsan_after_fix.log
+new file mode 100644
+index 000000000..e69de29bb

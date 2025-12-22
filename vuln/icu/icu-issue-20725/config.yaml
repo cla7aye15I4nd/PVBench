@@ -1,0 +1,14 @@
+id: icu-issue-20725
+project: icu
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+binary: poc
+trigger_commit: ed268e77e3e5f747e441a95e36844ca31529353c
+patch:
+  commit: 0eed48038b1c443f0f2d458f7f42e7155598db27
+  date: '2020-08-10T14:59:38-07:00'
+reference:
+- https://github.com/unicode-org/icu
+- https://unicode-org.atlassian.net/browse/ICU-20725
+- https://github.com/unicode-org/icu/commit/ed268e77e3e5f747e441a95e36844ca31529353c
+- https://github.com/unicode-org/icu/commit/0eed48038b1c443f0f2d458f7f42e7155598db27

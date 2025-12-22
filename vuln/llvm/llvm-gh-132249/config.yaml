@@ -1,0 +1,14 @@
+id: llvm-gh-132249
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: NULL Pointer Dereference
+trigger_commit: 749c20b3e0b88792c10d7709874f3ae374e8170e
+binary: clang
+patch:
+  commit: fb7135ec5239a45b43fae6206f7409fd77c50b9f
+  date: '2025-04-03T09:11:27+08:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/132249
+- https://github.com/llvm/llvm-project/commit/749c20b3e0b88792c10d7709874f3ae374e8170e
+- https://github.com/llvm/llvm-project/commit/fb7135ec5239a45b43fae6206f7409fd77c50b9f

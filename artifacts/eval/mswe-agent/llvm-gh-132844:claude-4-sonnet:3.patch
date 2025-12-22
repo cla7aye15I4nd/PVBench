@@ -1,0 +1,102 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp b/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp
+index bf4964263429..ba377cfaff0e 100644
+--- a/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp
++++ b/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp
+@@ -17736,7 +17736,8 @@ template <class MatchContextClass> SDValue DAGCombiner::visitFMA(SDNode *N) {
+   if (!TLI.isFNegFree(VT))
+     if (SDValue Neg = TLI.getCheaperNegatedExpression(
+             SDValue(N, 0), DAG, LegalOperations, ForCodeSize))
+-      return matcher.getNode(ISD::FNEG, DL, VT, Neg);
++      if (Neg.getNode() && Neg.getOpcode() != ISD::DELETED_NODE)
++        return matcher.getNode(ISD::FNEG, DL, VT, Neg);
+   return SDValue();
+ }
+ 
+diff --git a/llvm/lib/Target/X86/X86ISelLowering.cpp b/llvm/lib/Target/X86/X86ISelLowering.cpp
+index 2b5f9e995161..9788484bc977 100644
+--- a/llvm/lib/Target/X86/X86ISelLowering.cpp
++++ b/llvm/lib/Target/X86/X86ISelLowering.cpp
+@@ -54529,9 +54529,14 @@ SDValue X86TargetLowering::getNegatedExpression(SDValue Op, SelectionDAG &DAG,
+     // This is always negatible for free but we might be able to remove some
+     // extra operand negations as well.
+     SmallVector<SDValue, 4> NewOps(Op.getNumOperands(), SDValue());
+-    for (int i = 0; i != 3; ++i)
+-      NewOps[i] = getCheaperNegatedExpression(
++
++    for (int i = 0; i != 3; ++i) {
++      SDValue NegOp = getCheaperNegatedExpression(
+           Op.getOperand(i), DAG, LegalOperations, ForCodeSize, Depth + 1);
++      // Only use the negated operand if it's valid and not deleted
++      if (NegOp.getNode() && NegOp.getOpcode() != ISD::DELETED_NODE)
++        NewOps[i] = NegOp;
++    }
+ 
+     bool NegA = !!NewOps[0];
+     bool NegB = !!NewOps[1];
+@@ -54543,8 +54548,20 @@ SDValue X86TargetLowering::getNegatedExpression(SDValue Op, SelectionDAG &DAG,
+ 
+     // Fill in the non-negated ops with the original values.
+     for (int i = 0, e = Op.getNumOperands(); i != e; ++i)
+-      if (!NewOps[i])
+-        NewOps[i] = Op.getOperand(i);
++      if (!NewOps[i]) {
++        SDValue OrigOp = Op.getOperand(i);
++        // Check if the original operand is valid and not deleted
++        if (!OrigOp.getNode() || OrigOp.getOpcode() == ISD::DELETED_NODE)
++          return SDValue(); // Cannot proceed with deleted operands
++        NewOps[i] = OrigOp;
++      }
++    
++    // Final validation: ensure all operands are valid before creating the node
++    for (const SDValue &Operand : NewOps) {
++      if (!Operand.getNode() || Operand.getOpcode() == ISD::DELETED_NODE)
++        return SDValue(); // Cannot proceed with deleted operands
++    }
++    
+     return DAG.getNode(NewOpc, SDLoc(Op), VT, NewOps);
+   }
+   case X86ISD::FRCP:
+diff --git a/reproduce_issue.sh b/reproduce_issue.sh
+new file mode 100755
+index 000000000000..372d09ef4bb3
+--- /dev/null
++++ b/reproduce_issue.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++./build/bin/llc /home/poc/0.bin -o -
+diff --git a/test_fix.sh b/test_fix.sh
+new file mode 100755
+index 000000000000..8c92e14bba78
+--- /dev/null
++++ b/test_fix.sh
+@@ -0,0 +1,10 @@
++#!/bin/bash -eu
++echo "Testing the fix..."
++./build/bin/llc /home/poc/0.bin -o - > /dev/null 2>&1
++if [ $? -eq 0 ]; then
++    echo "SUCCESS: The fix works! No more assertion failure."
++else
++    echo "FAILURE: The issue still exists."
++    exit 1
++fi
++echo "Script completed successfully, no errors."

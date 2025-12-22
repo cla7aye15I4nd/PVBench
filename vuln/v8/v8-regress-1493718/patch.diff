@@ -1,0 +1,12 @@
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 155e8003340..7d3099cb379 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -487,6 +487,7 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+       MessageTemplate::kMustBePositive,
+       MessageTemplate::kNotIterable,
+       MessageTemplate::kNotTypedArray,
++      MessageTemplate::kProxyNonObject,
+       MessageTemplate::kProxyPrivate,
+       MessageTemplate::kProxyRevoked,
+       MessageTemplate::kProxyTrapReturnedFalsishFor,

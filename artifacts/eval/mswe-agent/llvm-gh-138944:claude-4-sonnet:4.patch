@@ -1,0 +1,38 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/llvm/lib/Target/X86/X86ISelLowering.cpp b/llvm/lib/Target/X86/X86ISelLowering.cpp
+index f04603867a58..e516b1c0cd8a 100644
+--- a/llvm/lib/Target/X86/X86ISelLowering.cpp
++++ b/llvm/lib/Target/X86/X86ISelLowering.cpp
+@@ -54745,6 +54745,13 @@ SDValue X86TargetLowering::getNegatedExpression(SDValue Op, SelectionDAG &DAG,
+     for (int i = 0, e = Op.getNumOperands(); i != e; ++i)
+       if (!NewOps[i])
+         NewOps[i] = Op.getOperand(i);
++    
++    // Validate that all operands are still valid (not deleted nodes)
++    for (const SDValue &Operand : NewOps) {
++      if (!Operand || Operand.getOpcode() == ISD::DELETED_NODE)
++        return SDValue();
++    }
++    
+     return DAG.getNode(NewOpc, SDLoc(Op), VT, NewOps);
+   }
+   case X86ISD::FRCP:

@@ -1,0 +1,14 @@
+id: php-gh-15552
+project: php
+sanitizer: LeakAddressSanitizer
+type: Integer Overflow
+trigger_commit: 93021c635d2291b5ec50aa02d4d0956d502b714a
+binary: php
+patch:
+  commit: 08841bf79c8fe4dba42dcd7f180cb82a079cf9aa
+  date: '2024-09-01T17:24:17+02:00'
+reference:
+- https://github.com/php/php-src.git
+- https://github.com/php/php-src/issues/15552
+- https://github.com/php/php-src/commit/93021c635d2291b5ec50aa02d4d0956d502b714a
+- https://github.com/php/php-src/commit/08841bf79c8fe4dba42dcd7f180cb82a079cf9aa

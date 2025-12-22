@@ -1,0 +1,183 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 18dc2859357..ccba45e0f97 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -355,6 +355,7 @@ future_schedule_callbacks(asyncio_state *state, FutureObj *fut)
+     if (fut->fut_callback0 != NULL) {
+         /* There's a 1st callback */
+ 
++        Py_INCREF((PyObject *)fut);  /* Keep fut alive during callback */
+         int ret = call_soon(state,
+             fut->fut_loop, fut->fut_callback0,
+             (PyObject *)fut, fut->fut_context0);
+@@ -364,6 +365,7 @@ future_schedule_callbacks(asyncio_state *state, FutureObj *fut)
+         if (ret) {
+             /* If an error occurs in pure-Python implementation,
+                all callbacks are cleared. */
++            Py_DECREF((PyObject *)fut);  /* Undo the INCREF since callback won't run */
+             Py_CLEAR(fut->fut_callbacks);
+             return ret;
+         }
+@@ -390,7 +392,9 @@ future_schedule_callbacks(asyncio_state *state, FutureObj *fut)
+         PyObject *cb = PyTuple_GET_ITEM(cb_tup, 0);
+         PyObject *ctx = PyTuple_GET_ITEM(cb_tup, 1);
+ 
++        Py_INCREF((PyObject *)fut);  /* Keep fut alive during callback */
+         if (call_soon(state, fut->fut_loop, cb, (PyObject *)fut, ctx)) {
++            Py_DECREF((PyObject *)fut);  /* Undo the INCREF since callback won't run */
+             Py_DECREF(callbacks);
+             return -1;
+         }
+diff --git a/aggressive_test.py b/aggressive_test.py
+new file mode 100644
+index 00000000000..4a146b0d097
+--- /dev/null
++++ b/aggressive_test.py
+@@ -0,0 +1,64 @@
++import asyncio
++import gc
++import weakref
++
++async def test_use_after_free_aggressive():
++    """Aggressive test to trigger use-after-free in Future callbacks"""
++    
++    # Set up eager task factory
++    loop = asyncio.get_event_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    futures_created = []
++    callbacks_executed = []
++    
++    def create_future_with_callback():
++        fut = asyncio.Future()
++        
++        # Create a weak reference to track when the future is deallocated
++        weak_fut = weakref.ref(fut, lambda x: print("Future deallocated"))
++        futures_created.append(weak_fut)
++        
++        def callback(future):
++            callbacks_executed.append(True)
++            print(f"Callback executed for future: {id(future)}")
++            # Try to access the future's result
++            try:
++                result = future.result()
++                print(f"Future result: {result}")
++            except Exception as e:
++                print(f"Error accessing future result: {e}")
++        
++        fut.add_done_callback(callback)
++        fut.set_result(f"result_{len(futures_created)}")
++        
++        return fut
++    
++    # Create multiple futures rapidly
++    for i in range(100):
++        fut = create_future_with_callback()
++        # Immediately delete the reference to try to trigger deallocation
++        del fut
++        
++        # Force garbage collection
++        if i % 10 == 0:
++            gc.collect()
++        
++        # Let the event loop run briefly
++        await asyncio.sleep(0.001)
++    
++    # Final garbage collection
++    gc.collect()
++    await asyncio.sleep(0.1)  # Let all callbacks finish
++    
++    print(f"Created {len(futures_created)} futures")
++    print(f"Executed {len(callbacks_executed)} callbacks")
++    
++    # Check how many futures were deallocated
++    deallocated = sum(1 for weak_ref in futures_created if weak_ref() is None)
++    print(f"Deallocated {deallocated} futures")
++    
++    print("Aggressive test completed successfully")
++
++if __name__ == "__main__":
++    asyncio.run(test_use_after_free_aggressive())
+diff --git a/poc.py b/poc.py
+new file mode 100644
+index 00000000000..8f5473a6272
+--- /dev/null
++++ b/poc.py
+@@ -0,0 +1,15 @@
++import asyncio
++
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++
++    async def foo(): ...
++
++    task = asyncio.create_task(foo())
++    await task
++    print(task.get_coro())
++
++
++asyncio.run(main())
+\ No newline at end of file
+diff --git a/test_fix.py b/test_fix.py
+new file mode 100644
+index 00000000000..8fff53f481f
+--- /dev/null
++++ b/test_fix.py
+@@ -0,0 +1,40 @@
++import asyncio
++import gc
++
++async def test_use_after_free():
++    """Test case to trigger the use-after-free bug"""
++    
++    # Create a future and set up callbacks
++    fut = asyncio.Future()
++    
++    # Add a callback that will be scheduled
++    def callback(future):
++        print(f"Callback called with future: {future}")
++        # Try to access the future object
++        print(f"Future result: {future.result()}")
++    
++    fut.add_done_callback(callback)
++    
++    # Set the result, which should schedule the callback
++    fut.set_result("test_result")
++    
++    # Force garbage collection to try to trigger use-after-free
++    gc.collect()
++    
++    # Let the event loop run to execute the callback
++    await asyncio.sleep(0.01)
++    
++    print("Test completed successfully")
++
++async def main():
++    # Set up eager task factory as in the original POC
++    loop = asyncio.get_event_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    # Run the test
++    await test_use_after_free()
++    
++    print("All tests passed")
++
++if __name__ == "__main__":
++    asyncio.run(main())

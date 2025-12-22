@@ -1,0 +1,28 @@
+diff --git a/NEWS b/NEWS
+index de78eabdad..d492c97618 100644
+--- a/NEWS
++++ b/NEWS
+@@ -51,6 +51,10 @@ PHP                                                                        NEWS
+   . Fixed bug GH-16181 (phpdbg: exit in exception handler reports fatal error).
+     (cmb)
+ 
++- Reflection:
++  . Fixed bug GH-16187 (Assertion failure in ext/reflection/php_reflection.c).
++    (DanielEScherzer)
++
+ - SimpleXML:
+   . Fixed bug GH-15837 (Segmentation fault in ext/simplexml/simplexml.c).
+     (nielsdos)
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f24b00a285..3faf8ed786 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -477,7 +477,7 @@ static void _class_string(smart_str *str, zend_class_entry *ce, zval *obj, char
+ 
+ 		count = 0;
+ 		if (properties && zend_hash_num_elements(properties)) {
+-			ZEND_HASH_MAP_FOREACH_STR_KEY(properties, prop_name) {
++			ZEND_HASH_FOREACH_STR_KEY(properties, prop_name) {
+ 				if (prop_name && ZSTR_LEN(prop_name) && ZSTR_VAL(prop_name)[0]) { /* skip all private and protected properties */
+ 					if (!zend_hash_exists(&ce->properties_info, prop_name)) {
+ 						count++;

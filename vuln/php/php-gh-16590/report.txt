@@ -1,0 +1,103 @@
+==302696==ERROR: AddressSanitizer: heap-use-after-free on address 0x50600002db68 at pc 0x55b78f648719 bp 0x7ffeb6862c50 sp 0x7ffeb6862c48
+READ of size 4 at 0x50600002db68 thread T0
+    #0 0x55b78f648718 in ps_srlzr_encode_php /php-gh-16590/build/ext/session/session.c:1063:2
+    #1 0x55b78f667837 in php_session_encode /php-gh-16590/build/ext/session/session.c:258:10
+    #2 0x55b78f66b25e in zif_session_encode /php-gh-16590/build/ext/session/session.c:2584:8
+    #3 0x55b79042c9c1 in ZEND_DO_ICALL_SPEC_RETVAL_USED_HANDLER /php-gh-16590/build/Zend/zend_vm_execute.h:1351:2
+    #4 0x55b79013bb3c in execute_ex /php-gh-16590/build/Zend/zend_vm_execute.h:58554:7
+    #5 0x55b79013d287 in zend_execute /php-gh-16590/build/Zend/zend_vm_execute.h:64206:2
+    #6 0x55b7907d77b0 in zend_execute_script /php-gh-16590/build/Zend/zend.c:1934:3
+    #7 0x55b78fbf240d in php_execute_script_ex /php-gh-16590/build/main/main.c:2574:13
+    #8 0x55b78fbf2898 in php_execute_script /php-gh-16590/build/main/main.c:2614:9
+    #9 0x55b7907dfdf1 in do_cli /php-gh-16590/build/sapi/cli/php_cli.c:935:5
+    #10 0x55b7907ddd5b in main /php-gh-16590/build/sapi/cli/php_cli.c:1310:18
+    #11 0x7effd836a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x7effd836a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x55b78ec033a4 in _start (/php-gh-16590/build/sapi/cli/php+0x4033a4) (BuildId: 3787d1902aff121c01b209052cc10e277dbb7ba5)
+
+0x50600002db68 is located 8 bytes inside of 56-byte region [0x50600002db60,0x50600002db98)
+freed by thread T0 here:
+    #0 0x55b78ec9df5a in free (/php-gh-16590/build/sapi/cli/php+0x49df5a) (BuildId: 3787d1902aff121c01b209052cc10e277dbb7ba5)
+    #1 0x55b78ff3b638 in tracked_free /php-gh-16590/build/Zend/zend_alloc.c:2987:2
+    #2 0x55b78ff229a9 in _efree_56 /php-gh-16590/build/Zend/zend_alloc.c:2707:1
+    #3 0x55b7905f5c2c in zend_array_destroy /php-gh-16590/build/Zend/zend_hash.c:1866:2
+    #4 0x55b7907b1c69 in rc_dtor_func /php-gh-16590/build/Zend/zend_variables.c:57:2
+    #5 0x55b7901962a7 in zend_assign_to_variable /php-gh-16590/build/Zend/zend_execute.h:179:4
+    #6 0x55b7901962a7 in ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_UNUSED_HANDLER /php-gh-16590/build/Zend/zend_vm_execute.h:25228:11
+    #7 0x55b79013bb3c in execute_ex /php-gh-16590/build/Zend/zend_vm_execute.h:58554:7
+    #8 0x55b79010f1b0 in zend_call_function /php-gh-16590/build/Zend/zend_execute_API.c:996:3
+    #9 0x55b790110c80 in zend_call_known_function /php-gh-16590/build/Zend/zend_execute_API.c:1090:23
+    #10 0x55b78fb52ced in zend_call_known_instance_method /php-gh-16590/build/Zend/zend_API.h:860:2
+    #11 0x55b78fb52ced in zend_call_known_instance_method_with_0_params /php-gh-16590/build/Zend/zend_API.h:866:2
+    #12 0x55b78fb52ced in php_var_serialize_call_magic_serialize /php-gh-16590/build/ext/standard/var.c:850:2
+    #13 0x55b78fb450b5 in php_var_serialize_intern /php-gh-16590/build/ext/standard/var.c:1147:10
+    #14 0x55b78fb3f891 in php_var_serialize /php-gh-16590/build/ext/standard/var.c:1321:2
+    #15 0x55b78f64927b in ps_srlzr_encode_php /php-gh-16590/build/ext/session/session.c:1063:2
+    #16 0x55b78f667837 in php_session_encode /php-gh-16590/build/ext/session/session.c:258:10
+    #17 0x55b78f66b25e in zif_session_encode /php-gh-16590/build/ext/session/session.c:2584:8
+    #18 0x55b79042c9c1 in ZEND_DO_ICALL_SPEC_RETVAL_USED_HANDLER /php-gh-16590/build/Zend/zend_vm_execute.h:1351:2
+    #19 0x55b79013bb3c in execute_ex /php-gh-16590/build/Zend/zend_vm_execute.h:58554:7
+    #20 0x55b79013d287 in zend_execute /php-gh-16590/build/Zend/zend_vm_execute.h:64206:2
+    #21 0x55b7907d77b0 in zend_execute_script /php-gh-16590/build/Zend/zend.c:1934:3
+    #22 0x55b78fbf240d in php_execute_script_ex /php-gh-16590/build/main/main.c:2574:13
+    #23 0x55b78fbf2898 in php_execute_script /php-gh-16590/build/main/main.c:2614:9
+    #24 0x55b7907dfdf1 in do_cli /php-gh-16590/build/sapi/cli/php_cli.c:935:5
+    #25 0x55b7907ddd5b in main /php-gh-16590/build/sapi/cli/php_cli.c:1310:18
+    #26 0x7effd836a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #27 0x7effd836a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #28 0x55b78ec033a4 in _start (/php-gh-16590/build/sapi/cli/php+0x4033a4) (BuildId: 3787d1902aff121c01b209052cc10e277dbb7ba5)
+
+previously allocated by thread T0 here:
+    #0 0x55b78ec9e1f3 in malloc (/php-gh-16590/build/sapi/cli/php+0x49e1f3) (BuildId: 3787d1902aff121c01b209052cc10e277dbb7ba5)
+    #1 0x55b78ff0ede0 in tracked_malloc /php-gh-16590/build/Zend/zend_alloc.c:2968:14
+    #2 0x55b78ff17c38 in _emalloc_56 /php-gh-16590/build/Zend/zend_alloc.c:2659:1
+    #3 0x55b7905b254f in _zend_new_array_0 /php-gh-16590/build/Zend/zend_hash.c:284:18
+    #4 0x55b78f672eaf in php_session_track_init /php-gh-16590/build/ext/session/session.c:246:2
+    #5 0x55b78f652f5a in php_session_initialize /php-gh-16590/build/ext/session/session.c:466:2
+    #6 0x55b78f65204c in php_session_start /php-gh-16590/build/ext/session/session.c:1702:6
+    #7 0x55b78f66c953 in zif_session_start /php-gh-16590/build/ext/session/session.c:2692:2
+    #8 0x55b79042b904 in ZEND_DO_ICALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-16590/build/Zend/zend_vm_execute.h:1287:2
+    #9 0x55b79013bb3c in execute_ex /php-gh-16590/build/Zend/zend_vm_execute.h:58554:7
+    #10 0x55b79013d287 in zend_execute /php-gh-16590/build/Zend/zend_vm_execute.h:64206:2
+    #11 0x55b7907d77b0 in zend_execute_script /php-gh-16590/build/Zend/zend.c:1934:3
+    #12 0x55b78fbf240d in php_execute_script_ex /php-gh-16590/build/main/main.c:2574:13
+    #13 0x55b78fbf2898 in php_execute_script /php-gh-16590/build/main/main.c:2614:9
+    #14 0x55b7907dfdf1 in do_cli /php-gh-16590/build/sapi/cli/php_cli.c:935:5
+    #15 0x55b7907ddd5b in main /php-gh-16590/build/sapi/cli/php_cli.c:1310:18
+    #16 0x7effd836a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x7effd836a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x55b78ec033a4 in _start (/php-gh-16590/build/sapi/cli/php+0x4033a4) (BuildId: 3787d1902aff121c01b209052cc10e277dbb7ba5)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /php-gh-16590/build/ext/session/session.c:1063:2 in ps_srlzr_encode_php
+Shadow bytes around the buggy address:
+  0x50600002d880: 00 00 00 fa fa fa fa fa 00 00 00 00 00 00 00 fa
+  0x50600002d900: fa fa fa fa 00 00 00 00 00 00 00 fa fa fa fa fa
+  0x50600002d980: fd fd fd fd fd fd fd fd fa fa fa fa 00 00 00 00
+  0x50600002da00: 00 00 00 00 fa fa fa fa fd fd fd fd fd fd fd fd
+  0x50600002da80: fa fa fa fa fd fd fd fd fd fd fd fd fa fa fa fa
+=>0x50600002db00: fd fd fd fd fd fd fd fd fa fa fa fa fd[fd]fd fd
+  0x50600002db80: fd fd fd fa fa fa fa fa fd fd fd fd fd fd fd fa
+  0x50600002dc00: fa fa fa fa 00 00 00 00 00 00 00 00 fa fa fa fa
+  0x50600002dc80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50600002dd00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50600002dd80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==302696==ABORTING

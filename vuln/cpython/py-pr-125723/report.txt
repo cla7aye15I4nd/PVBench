@@ -1,0 +1,45 @@
+==2237104==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x5555559e23e0 bp 0x7fffffff0470 sp 0x7fffffff0430 T0)
+==2237104==The signal is caused by a READ memory access.
+==2237104==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x5555559e23e0 in Py_INCREF /tmp/py-pr-125723/build/./Include/refcount.h:275:34
+    #1 0x5555559e23e0 in _Py_NewRef /tmp/py-pr-125723/build/./Include/refcount.h:518:5
+    #2 0x5555559e58e9 in framelocalsproxy_getitem /tmp/py-pr-125723/build/Objects/frameobject.c:139:16
+    #3 0x55555590a94c in PyObject_GetItem /tmp/py-pr-125723/build/Objects/abstract.c:158:26
+    #4 0x555555a440a5 in dict_merge /tmp/py-pr-125723/build/Objects/dictobject.c:3933:21
+    #5 0x555555a43a7e in PyDict_Update /tmp/py-pr-125723/build/Objects/dictobject.c:3968:12
+    #6 0x5555559de690 in framelocalsproxy_repr /tmp/py-pr-125723/build/Objects/frameobject.c:426:9
+    #7 0x555555a8d9e2 in PyObject_Repr /tmp/py-pr-125723/build/Objects/object.c:767:11
+    #8 0x555555b9da2d in PyUnicodeWriter_WriteRepr /tmp/py-pr-125723/build/Objects/unicodeobject.c:13939:22
+    #9 0x555555a539e8 in dict_repr_lock_held /tmp/py-pr-125723/build/Objects/dictobject.c:3340:13
+    #10 0x555555a46ad4 in dict_repr /tmp/py-pr-125723/build/Objects/dictobject.c:3369:11
+    #11 0x555555b06a31 in object_str /tmp/py-pr-125723/build/Objects/typeobject.c:6644:12
+    #12 0x555555a8d6cd in PyObject_Str /tmp/py-pr-125723/build/Objects/object.c:816:11
+    #13 0x5555559ccacc in PyFile_WriteObject /tmp/py-pr-125723/build/Objects/fileobject.c:117:17
+    #14 0x555555d62a1f in builtin_print_impl /tmp/py-pr-125723/build/Python/bltinmodule.c:2215:15
+    #15 0x555555d5b604 in builtin_print /tmp/py-pr-125723/build/Python/clinic/bltinmodule.c.h:985:20
+    #16 0x555555a7ea53 in cfunction_vectorcall_FASTCALL_KEYWORDS /tmp/py-pr-125723/build/Objects/methodobject.c:452:24
+    #17 0x55555596815f in _PyObject_VectorcallTstate /tmp/py-pr-125723/build/./Include/internal/pycore_call.h:167:11
+    #18 0x555555969dc9 in PyObject_Vectorcall /tmp/py-pr-125723/build/Objects/call.c:327:12
+    #19 0x555555d74869 in _PyEval_EvalFrameDefault /tmp/py-pr-125723/build/Python/generated_cases.c.h:1025:35
+    #20 0x555555d6b111 in _PyEval_EvalFrame /tmp/py-pr-125723/build/./Include/internal/pycore_ceval.h:116:16
+    #21 0x555555d6af9c in _PyEval_Vector /tmp/py-pr-125723/build/Python/ceval.c:1921:12
+    #22 0x555555d6a940 in PyEval_EvalCode /tmp/py-pr-125723/build/Python/ceval.c:660:21
+    #23 0x555555f4ad33 in run_eval_code_obj /tmp/py-pr-125723/build/Python/pythonrun.c:1338:9
+    #24 0x555555f4a9fd in run_mod /tmp/py-pr-125723/build/Python/pythonrun.c:1423:19
+    #25 0x555555f45c32 in pyrun_file /tmp/py-pr-125723/build/Python/pythonrun.c:1256:15
+    #26 0x555555f439fd in _PyRun_SimpleFileObject /tmp/py-pr-125723/build/Python/pythonrun.c:491:13
+    #27 0x555555f43168 in _PyRun_AnyFileObject /tmp/py-pr-125723/build/Python/pythonrun.c:78:15
+    #28 0x555555fe1826 in pymain_run_file_obj /tmp/py-pr-125723/build/Modules/main.c:410:15
+    #29 0x555555fe04bc in pymain_run_file /tmp/py-pr-125723/build/Modules/main.c:429:15
+    #30 0x555555fddf3f in pymain_run_python /tmp/py-pr-125723/build/Modules/main.c:697:21
+    #31 0x555555fdd258 in Py_RunMain /tmp/py-pr-125723/build/Modules/main.c:776:5
+    #32 0x555555fde388 in pymain_main /tmp/py-pr-125723/build/Modules/main.c:806:12
+    #33 0x555555fde497 in Py_BytesMain /tmp/py-pr-125723/build/Modules/main.c:830:12
+    #34 0x5555557cd511 in main /tmp/py-pr-125723/build/./Programs/python.c:15:12
+    #35 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #36 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #37 0x5555556f4104 in _start (/tmp/py-pr-125723/build/python+0x1a0104) (BuildId: ad27a0bad5293e561c10fdf292fe690970b16ae9)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/py-pr-125723/build/./Include/refcount.h:275:34 in Py_INCREF
+==2237104==ABORTING

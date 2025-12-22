@@ -1,0 +1,47 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..d15699bb7cb 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -555,13 +555,15 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
++					/* Do cleanup operations before calling destructor */
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+ 					if (spl_array_is_object(intern)) {
+ 						spl_array_skip_protected(intern, ht);
+ 					}
++					/* Now call destructor - object might be freed after this */
++					zval_ptr_dtor(data);
+ 				}
+ 			} else {
+ 				zend_hash_del(ht, key.key);
+@@ -576,7 +578,6 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
+ } /* }}} */
+-
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+ {
+ 	spl_array_unset_dimension_ex(1, object, offset);

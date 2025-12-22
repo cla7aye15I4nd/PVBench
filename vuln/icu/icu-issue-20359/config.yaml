@@ -1,0 +1,14 @@
+id: icu-issue-20359
+project: icu
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+binary: poc
+trigger_commit: 3166381f88f55054f42133406dbbe357885e5273
+patch:
+  commit: e559b30309d7d76ceda0246e2802a15c2a01004f
+  date: '2019-03-07T10:31:30-08:00'
+reference:
+- https://github.com/unicode-org/icu
+- https://unicode-org.atlassian.net/browse/ICU-20359
+- https://github.com/unicode-org/icu/commit/3166381f88f55054f42133406dbbe357885e5273
+- https://github.com/unicode-org/icu/commit/e559b30309d7d76ceda0246e2802a15c2a01004f

@@ -1,0 +1,270 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index d6b4065e130..79255116fd3 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -134,8 +134,27 @@ framelocalsproxy_getitem(PyObject *self, PyObject *key)
+         return NULL;
+     }
+     if (i >= 0) {
+-        PyObject *value = framelocalsproxy_getval(frame->f_frame, co, i);
+-        assert(value != NULL);
++        _PyStackRef *fast = _PyFrame_GetLocalsArray(frame->f_frame);
++        _PyLocals_Kind kind = _PyLocals_GetKind(co->co_localspluskinds, i);
++        
++        PyObject *value = PyStackRef_AsPyObjectBorrow(fast[i]);
++        if (value == NULL) {
++            PyErr_Format(PyExc_KeyError, "local variable '%R' is not defined", key);
++            return NULL;
++        }
++        
++        if (kind == CO_FAST_FREE || kind & CO_FAST_CELL) {
++            // Handle cell objects safely by getting a strong reference
++            assert(PyCell_Check(value));
++            PyObject *cell_value = PyCell_GetRef((PyCellObject *)value);
++            if (cell_value == NULL) {
++                PyErr_Format(PyExc_KeyError, "local variable '%R' is not defined", key);
++                return NULL;
++            }
++            return cell_value;  // PyCell_GetRef already returns a strong reference
++        }
++        
++        // For non-cell values, return a new reference
+         return Py_NewRef(value);
+     }
+ 
+diff --git a/final_test.py b/final_test.py
+new file mode 100644
+index 00000000000..477955876a9
+--- /dev/null
++++ b/final_test.py
+@@ -0,0 +1,22 @@
++import asyncio
++
++async def test():
++    # This is the exact code from the original POC
++    loop = asyncio.get_event_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    task = asyncio.create_task(asyncio.sleep(0))
++    coro = task.get_coro()
++    
++    # This should trigger the framelocalsproxy_repr code path
++    print(coro)
++    
++    # Also test accessing frame locals directly
++    if coro and coro.cr_frame:
++        frame_locals = coro.cr_frame.f_locals
++        print(f"Frame locals: {frame_locals}")
++    
++    print("Test completed successfully - no crash!")
++
++if __name__ == "__main__":
++    asyncio.run(test())
+diff --git a/reproduce_crash.py b/reproduce_crash.py
+new file mode 100644
+index 00000000000..650e056d88e
+--- /dev/null
++++ b/reproduce_crash.py
+@@ -0,0 +1,60 @@
++import asyncio
++import gc
++import weakref
++
++class TestObject:
++    def __init__(self, name):
++        self.name = name
++    
++    def __repr__(self):
++        return f"TestObject({self.name})"
++
++async def problematic_coro():
++    # Create local variables that might be freed
++    local_obj = TestObject("local")
++    
++    # Create a weak reference to track when it's deleted
++    weak_ref = weakref.ref(local_obj)
++    
++    # Create a task
++    task = asyncio.create_task(asyncio.sleep(0))
++    
++    # Get the coroutine from the task
++    coro = task.get_coro()
++    
++    # Delete the local reference
++    del local_obj
++    
++    # Force garbage collection
++    gc.collect()
++    
++    # Try to access frame locals which might trigger the crash
++    if coro and coro.cr_frame:
++        try:
++            # This should trigger framelocalsproxy_repr -> PyDict_Update -> framelocalsproxy_getitem
++            print("Frame locals:", coro.cr_frame.f_locals)
++        except Exception as e:
++            print(f"Exception: {e}")
++    
++    # Check if object was deleted
++    if weak_ref() is None:
++        print("Object was garbage collected")
++    else:
++        print("Object still exists")
++
++async def main():
++    # Set eager task factory as in the original POC
++    loop = asyncio.get_event_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    # Run multiple times to increase chance of triggering the bug
++    for i in range(100):
++        try:
++            await problematic_coro()
++            gc.collect()  # Force GC between iterations
++        except Exception as e:
++            print(f"Iteration {i}: Exception: {e}")
++            break
++
++if __name__ == "__main__":
++    asyncio.run(main())
+diff --git a/test_crash.py b/test_crash.py
+new file mode 100644
+index 00000000000..6b608310343
+--- /dev/null
++++ b/test_crash.py
+@@ -0,0 +1,33 @@
++import asyncio
++import gc
++
++async def test_coro():
++    # Create some local variables
++    local_var = "test"
++    
++    # Create a task that might cause frame locals to be accessed
++    task = asyncio.create_task(asyncio.sleep(0))
++    
++    # Try to access the coroutine from the task
++    coro = task.get_coro()
++    
++    # Force garbage collection to potentially free objects
++    gc.collect()
++    
++    # Try to print the frame locals which might trigger the crash
++    frame = coro.cr_frame
++    if frame:
++        print(frame.f_locals)
++    
++    return local_var
++
++async def main():
++    # Set eager task factory as in the original POC
++    asyncio.get_event_loop().set_task_factory(asyncio.eager_task_factory)
++    
++    # Run the test coroutine
++    result = await test_coro()
++    print(f"Result: {result}")
++
++if __name__ == "__main__":
++    asyncio.run(main())
+diff --git a/test_normal_functionality.py b/test_normal_functionality.py
+new file mode 100644
+index 00000000000..2ea32c0b372
+--- /dev/null
++++ b/test_normal_functionality.py
+@@ -0,0 +1,82 @@
++import asyncio
++import sys
++
++def test_basic_frame_locals():
++    """Test basic frame locals access"""
++    def inner_func():
++        local_var = "test_value"
++        frame = sys._getframe()
++        return frame.f_locals
++    
++    locals_dict = inner_func()
++    assert 'local_var' in locals_dict
++    assert locals_dict['local_var'] == "test_value"
++    print("✓ Basic frame locals test passed")
++
++def test_cell_variables():
++    """Test cell variables (closures)"""
++    def outer_func():
++        closure_var = "closure_value"
++        
++        def inner_func():
++            nonlocal closure_var
++            frame = sys._getframe()
++            return frame.f_locals, closure_var
++        
++        return inner_func
++    
++    inner = outer_func()
++    locals_dict, value = inner()
++    # Cell variables should be accessible
++    print(f"✓ Cell variables test passed: {value}")
++
++async def test_async_frame_locals():
++    """Test frame locals in async context"""
++    async_local = "async_value"
++    
++    # Create a task
++    task = asyncio.create_task(asyncio.sleep(0))
++    
++    # Get the coroutine frame
++    coro = task.get_coro()
++    if coro and coro.cr_frame:
++        frame_locals = coro.cr_frame.f_locals
++        print(f"✓ Async frame locals test passed: found {len(frame_locals)} locals")
++    
++    # Test current frame
++    current_frame = sys._getframe()
++    current_locals = current_frame.f_locals
++    assert 'async_local' in current_locals
++    assert current_locals['async_local'] == "async_value"
++    print("✓ Current async frame locals test passed")
++
++def test_frame_locals_repr():
++    """Test frame locals repr (which triggered the original bug)"""
++    def inner_func():
++        local_var = "repr_test"
++        frame = sys._getframe()
++        # This should trigger framelocalsproxy_repr
++        repr_str = repr(frame.f_locals)
++        return repr_str
++    
++    result = inner_func()
++    assert "'local_var': 'repr_test'" in result
++    print("✓ Frame locals repr test passed")
++
++async def main():
++    print("Testing normal frame locals functionality...")
++    
++    test_basic_frame_locals()
++    test_cell_variables()
++    test_frame_locals_repr()
++    
++    # Set eager task factory as in the original POC
++    loop = asyncio.get_event_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    await test_async_frame_locals()
++    
++    print("All tests passed! ✓")
++
++if __name__ == "__main__":
++    asyncio.run(main())

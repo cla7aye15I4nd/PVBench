@@ -1,0 +1,168 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 18dc2859357..b8d6d4785b0 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -387,25 +387,29 @@ future_schedule_callbacks(asyncio_state *state, FutureObj *fut)
+     for (Py_ssize_t i = 0; i < n; i++) {
+         assert(PyList_GET_SIZE(callbacks) == n);
+         PyObject *cb_tup = PyList_GET_ITEM(callbacks, i);
++        Py_INCREF(cb_tup);
+         PyObject *cb = PyTuple_GET_ITEM(cb_tup, 0);
+         PyObject *ctx = PyTuple_GET_ITEM(cb_tup, 1);
+ 
+         if (call_soon(state, fut->fut_loop, cb, (PyObject *)fut, ctx)) {
++            Py_DECREF(cb_tup);
+             Py_DECREF(callbacks);
+             return -1;
+         }
+-    }
++        Py_DECREF(cb_tup);
+     Py_DECREF(callbacks);
+     return 0;
+ }
+ 
+ 
++
++
++
+ static int
+ future_init(FutureObj *fut, PyObject *loop)
+ {
+     PyObject *res;
+     int is_true;
+-
+     Py_CLEAR(fut->fut_loop);
+     Py_CLEAR(fut->fut_callback0);
+     Py_CLEAR(fut->fut_context0);
+@@ -459,7 +463,8 @@ future_init(FutureObj *fut, PyObject *loop)
+     return 0;
+ }
+ 
+-static PyObject *
++static int
++
+ future_set_result(asyncio_state *state, FutureObj *fut, PyObject *res)
+ {
+     if (future_ensure_alive(fut)) {
+@@ -482,8 +487,9 @@ future_set_result(asyncio_state *state, FutureObj *fut, PyObject *res)
+ }
+ 
+ static PyObject *
++
++
+ future_set_exception(asyncio_state *state, FutureObj *fut, PyObject *exc)
+-{
+     PyObject *exc_val = NULL;
+ 
+     if (fut->fut_state != STATE_PENDING) {
+@@ -545,11 +551,10 @@ future_set_exception(asyncio_state *state, FutureObj *fut, PyObject *exc)
+ 
+     fut->fut_log_tb = 1;
+     Py_RETURN_NONE;
+-}
+-
+ static PyObject *
++
++
+ create_cancelled_error(asyncio_state *state, FutureObj *fut)
+-{
+     PyObject *exc;
+     if (fut->fut_cancelled_exc != NULL) {
+         /* transfer ownership */
+@@ -567,8 +572,9 @@ create_cancelled_error(asyncio_state *state, FutureObj *fut)
+ }
+ 
+ static void
++
++
+ future_set_cancelled_error(asyncio_state *state, FutureObj *fut)
+-{
+     PyObject *exc = create_cancelled_error(state, fut);
+     if (exc == NULL) {
+         return;
+@@ -578,6 +584,7 @@ future_set_cancelled_error(asyncio_state *state, FutureObj *fut)
+ }
+ 
+ static int
++
+ future_get_result(asyncio_state *state, FutureObj *fut, PyObject **result)
+ {
+     if (fut->fut_state == STATE_CANCELLED) {
+@@ -610,8 +617,9 @@ future_get_result(asyncio_state *state, FutureObj *fut, PyObject **result)
+ }
+ 
+ static PyObject *
++
+ future_add_done_callback(asyncio_state *state, FutureObj *fut, PyObject *arg,
+-                         PyObject *ctx)
++                        PyObject *ctx)
+ {
+     if (!future_is_alive(fut)) {
+         PyErr_SetString(PyExc_RuntimeError, "uninitialized Future object");
+@@ -3389,7 +3397,6 @@ _asyncio__enter_task_impl(PyObject *module, PyObject *loop, PyObject *task)
+     Py_RETURN_NONE;
+ }
+ 
+-
+ /*[clinic input]
+ _asyncio._leave_task
+ 
+@@ -3414,7 +3421,6 @@ _asyncio__leave_task_impl(PyObject *module, PyObject *loop, PyObject *task)
+     Py_RETURN_NONE;
+ }
+ 
+-
+ /*[clinic input]
+ _asyncio._swap_current_task
+ 
+@@ -3435,7 +3441,6 @@ _asyncio__swap_current_task_impl(PyObject *module, PyObject *loop,
+     return swap_current_task(get_asyncio_state(module), loop, task);
+ }
+ 
+-
+ /*[clinic input]
+ _asyncio.current_task
+ 
+@@ -3468,6 +3473,27 @@ _asyncio_current_task_impl(PyObject *module, PyObject *loop)
+     }
+     return ret;
+ }
++/*[clinic end generated code: output=fe15ac331a7f981a input=58910f61a5627112]*/
++{
++    PyObject *ret;
++    asyncio_state *state = get_asyncio_state(module);
++
++    if (loop == Py_None) {
++        loop = _asyncio_get_running_loop_impl(module);
++        if (loop == NULL) {
++            return NULL;
++        }
++    } else {
++        Py_INCREF(loop);
++    }
++
++    int rc = PyDict_GetItemRef(state->current_tasks, loop, &ret);
++    Py_DECREF(loop);
++    if (rc == 0) {
++        Py_RETURN_NONE;
++    }
++    return ret;
++}
+ 
+ 
+ /*********************** Module **************************/

@@ -1,0 +1,11 @@
+diff --git a/test/intl/regress-1427932.js b/test/intl/regress-1427932.js
+new file mode 100644
+index 00000000000..889015e111e
+--- /dev/null
++++ b/test/intl/regress-1427932.js
+@@ -0,0 +1,5 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++assertThrows(() => Intl.DateTimeFormat("de-u-22300-true-x-true"), RangeError);

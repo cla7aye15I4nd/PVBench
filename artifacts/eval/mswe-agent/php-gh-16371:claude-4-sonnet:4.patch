@@ -1,0 +1,51 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_types.h b/Zend/zend_types.h
+index e6505d8b62a..6eeb19f3883 100644
+--- a/Zend/zend_types.h
++++ b/Zend/zend_types.h
+@@ -535,8 +535,8 @@ typedef union {
+ #define ZEND_PROPERTY_INFO_SOURCE_IS_LIST(list) ((list) & 0x1)
+ 
+ struct _zend_reference {
+-	zend_refcounted_h              gc;
+-	zval                           val;
++	zend_refcounted_h gc;
++	zval              val;
+ 	zend_property_info_source_list sources;
+ };
+ 
+diff --git a/Zend/zend_weakrefs.c b/Zend/zend_weakrefs.c
+index 3f2e517f3fe..63b0a4bc9e4 100644
+--- a/Zend/zend_weakrefs.c
++++ b/Zend/zend_weakrefs.c
+@@ -534,7 +534,12 @@ static void zend_weakmap_iterator_get_current_key(zend_object_iterator *obj_iter
+ 		ZEND_ASSERT(0 && "Must have integer key");
+ 	}
+ 
+-	ZVAL_OBJ_COPY(key, zend_weakref_key_to_object(num_key));
++	zend_object *obj = zend_weakref_key_to_object(num_key);
++	if (obj) {
++		ZVAL_OBJ_COPY(key, obj);
++	} else {
++		ZVAL_NULL(key);
++	}
+ }
+ 
+ static void zend_weakmap_iterator_move_forward(zend_object_iterator *obj_iter)

@@ -1,0 +1,40 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/search.c b/src/search.c
+index 01c143f69..31fd23cb5 100644
+--- a/src/search.c
++++ b/src/search.c
+@@ -1549,9 +1549,15 @@ do_search(
+ 			    vim_free(msgbuf);
+ 			    msgbuf = r;
+ 			    // move reversed text to beginning of buffer
+-			    while (*r != NUL && *r == ' ')
+-				r++;
+-			    pat_len = msgbuf + msgbuflen - r;
++                            // move r forward, but not past the end of the buffer
++                            char_u *end = msgbuf + msgbuflen;
++                            while (r < end && *r != NUL && *r == ' ')
++                                r++;
++                            pat_len = msgbuf + msgbuflen - r;
++                            if (pat_len > msgbuflen)
++                                pat_len = msgbuflen;
++                            if ((ssize_t)pat_len < 0)
++                                pat_len = 0;
+ 			    mch_memmove(msgbuf, r, pat_len);
+ 			    // overwrite old text
+ 			    if ((size_t)(r - msgbuf) >= pat_len)

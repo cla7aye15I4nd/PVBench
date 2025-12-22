@@ -1,0 +1,248 @@
+diff --git a/test/CMakeTests.cmake b/test/CMakeTests.cmake
+index 5f0d3860f0..5d2f30bb18 100644
+--- a/test/CMakeTests.cmake
++++ b/test/CMakeTests.cmake
+@@ -183,6 +183,7 @@ endforeach ()
+ set (HDF5_REFERENCE_TEST_FILES
+     aggr.h5
+     bad_compound.h5
++    bad_offset.h5
+     be_data.h5
+     be_extlink1.h5
+     be_extlink2.h5
+@@ -1336,6 +1337,7 @@ if (HDF5_BUILD_GENERATORS)
+ 
+   # generator executables
+   set (H5_GENERATORS
++      gen_bad_offset
+       gen_bad_ohdr
+       gen_bogus
+       gen_cross
+diff --git a/test/Makefile.am b/test/Makefile.am
+index f64b6d87ef..53dbf0d486 100644
+--- a/test/Makefile.am
++++ b/test/Makefile.am
+@@ -94,7 +94,7 @@ endif
+ BUILD_ALL_PROGS=gen_bad_ohdr gen_bogus gen_cross gen_deflate gen_filters gen_new_array \
+     gen_new_fill gen_new_group gen_new_mtime gen_new_super gen_noencoder \
+     gen_nullspace gen_udlinks space_overflow gen_filespace gen_specmetaread \
+-    gen_sizes_lheap gen_file_image gen_plist
++    gen_sizes_lheap gen_file_image gen_plist gen_bad_offset
+ 
+ if BUILD_ALL_CONDITIONAL
+   noinst_PROGRAMS=$(BUILD_ALL_PROGS)
+diff --git a/test/bad_offset.h5 b/test/bad_offset.h5
+new file mode 100644
+index 0000000000000000000000000000000000000000..6500ffe5f0e8f93a1edfc85837b4ddb977c5bbe8
+GIT binary patch
+literal 3312
+zcmeHJyH3ME5M0{{m;h3sLR2YJ@v10^6eCv<0R>c~AV7s9VuZv8pwQ(rDETBhDER}p
+z$Bc`U43cG}1bmUa>)pNEz0KU5pW^QRa$~(AdW50Wq-j(>J~2L)tcCCN_n~-@W5{RU
+zDxT<{$QtY`Sl^91If^1tkzAh=)8w^owKffv{8t@_qfSq6_yxN*FG}A7E@3WR<l#3C
+zY^rPE@+bVhFWC4u%qzXnYQd@Q0P%Z@D#@~A;D^Ou-6nU#9nFMx#B>yt#|MX9Pq8|2
+zx3&2FLLuBO;54hl!8_|GPlN8WJj_DAcH?##Fe5UL2YT~%14Eo|%L9^okIl$-t1^G7
+z11=BnyiI@~rscWgJx6;{X?egC=4%7DSsn++Mf3did7jK!ZbswSQT8!V-?v(Csz%pL
+zGg{_ZSDn{(-}g;uh%e&6BQx4)6RaMq_@{L6#^b}8$b_z`l;+;r78xa%>3MQ9V3C_}
+b7<+o3ICkq+_ua*4kam>QG)Kuk151`)9r=tw
+
+literal 0
+HcmV?d00001
+
+diff --git a/test/gen_bad_offset.c b/test/gen_bad_offset.c
+new file mode 100644
+index 0000000000..2be4af1f3b
+--- /dev/null
++++ b/test/gen_bad_offset.c
+@@ -0,0 +1,112 @@
++/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
++ * Copyright by The HDF Group.                                               *
++ * Copyright by the Board of Trustees of the University of Illinois.         *
++ * All rights reserved.                                                      *
++ *                                                                           *
++ * This file is part of HDF5.  The full HDF5 copyright notice, including     *
++ * terms governing use, modification, and redistribution, is contained in    *
++ * the COPYING file, which can be found at the root of the source code       *
++ * distribution tree, or in https://support.hdfgroup.org/ftp/HDF5/releases.  *
++ * If you do not have access to either file, you may request a copy from     *
++ * help@hdfgroup.org.                                                        *
++ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
++
++/*
++ * Purpose:	Generate an HDF5 file for testing H5FFV-10216
++ */
++#include "h5test.h"
++
++#define TESTFILE    "bad_offset.h5"
++#define GRP1        "group1"
++#define GRP2        "group2"
++#define DSET        "dsetA"
++#define SOFT1       "soft_one"
++#define SOFT2       "soft_two"
++
++
++
++/*-------------------------------------------------------------------------
++ * Function:	main
++ *              Generate an HDF5 file with groups, datasets and symbolic links. 
++ *
++ *              After this file is generated, write bad offset values to 
++ *              the heap at 3 locations in the file:
++ *              (A) Open the file:
++ *                  fd = HDopen(TESTFILE, O_RDWR, 0663);
++ *              (B) Position the file at:
++ *                  (1) HDlseek(fd, (HDoff_t)880, SEEK_SET);
++ *                      "/group1/group2": replace heap offset "8" by bad offset
++ *                  (2) HDlseek(fd, (HDoff_t)1512, SEEK_SET);
++ *                      "/dsetA": replace name offset into private heap "72" by bad offset 
++ *                  (3) HDlseek(fd, (HDoff_t)1616, SEEK_SET);
++ *                      /soft_one: replace link value offset in the scratch pad "32" by bad offset
++ *              (C) Write the bad offset value to the file:
++ *                  write(fd, &val, sizeof(val));
++ *
++ *              Note: if the groups/datasets/symbolic links are changed in the file,
++ *              the above locations need to be adjusted accordingly.
++ *
++ * Return:      EXIT_SUCCESS/EXIT_FAILURE
++ *
++ *-------------------------------------------------------------------------
++ */
++int
++main(void)
++{
++    hid_t       fid = -1, gid1 = -1, gid2 = -1; /* File and group IDs */
++    hid_t       did = -1, sid = -1;             /* Dataset and dataspace IDs */
++
++    /* Create the test file */
++    if((fid = H5Fcreate(TESTFILE, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT)) < 0)
++        FAIL_STACK_ERROR
++
++    /* Create two groups */
++    if((gid1 = H5Gcreate2(fid, GRP1, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0)
++        FAIL_STACK_ERROR
++    if((gid2 = H5Gcreate2(gid1, GRP2, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0)
++        FAIL_STACK_ERROR
++
++    /* Close the groups */
++    if(H5Gclose(gid1) < 0)
++        FAIL_STACK_ERROR
++    if(H5Gclose(gid2) < 0)
++        FAIL_STACK_ERROR
++
++    /* Create soft links to the groups */
++    if(H5Lcreate_soft("/group1", fid, SOFT1, H5P_DEFAULT, H5P_DEFAULT) < 0)
++        FAIL_STACK_ERROR
++    if(H5Lcreate_soft("/group1/group2", fid, SOFT2, H5P_DEFAULT, H5P_DEFAULT) < 0)
++        FAIL_STACK_ERROR
++
++    /* Create a dataset */
++    if((sid = H5Screate(H5S_SCALAR)) < 0)
++        FAIL_STACK_ERROR
++    if((did = H5Dcreate2(fid, DSET, H5T_NATIVE_INT, sid, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) <  0)
++        FAIL_STACK_ERROR
++
++    /* Close the dataset */
++    if(H5Dclose(did) < 0)
++        FAIL_STACK_ERROR
++
++    /* Close the dataspace */
++    if(H5Sclose(sid) < 0)
++        FAIL_STACK_ERROR
++
++    /* Close the file */
++    if(H5Fclose(fid) < 0)
++        FAIL_STACK_ERROR
++
++    return EXIT_SUCCESS;
++
++error:
++    H5E_BEGIN_TRY {
++        H5Gclose(gid1);
++        H5Gclose(gid2);
++        H5Dclose(did);
++        H5Sclose(sid);
++        H5Fclose(fid);
++    } H5E_END_TRY;
++
++    return EXIT_FAILURE;
++} /* end main() */
++
+diff --git a/test/tmisc.c b/test/tmisc.c
+index 708ca9bd91..242e55a292 100644
+--- a/test/tmisc.c
++++ b/test/tmisc.c
+@@ -318,6 +318,11 @@ typedef struct
+ #define MISC31_PROPNAME         "misc31_prop"
+ #define MISC31_DTYPENAME        "dtype"
+ 
++/* Definitions for misc. test #33 */
++/* Note that this test file is generated by "gen_bad_offset.c" */
++/* and bad offset values are written to that file for testing */
++#define MISC33_FILE             "bad_offset.h5"
++
+ /****************************************************************
+ **
+ **  test_misc1(): test unlinking a dataset from a group and immediately
+@@ -5472,6 +5477,55 @@ test_misc32(void)
+     
+ } /* end test_misc32() */
+ 
++/****************************************************************
++**
++**  test_misc33(): Test for H5FFV-10216
++**      --verify that H5HL_offset_into() returns error if the
++**        input parameter "offset" exceeds heap data block size.
++**      --case (1), (2), (3) are scenarios that will traverse to the
++**        the 3 locations in the file having bad offset values to
++**        the heap.  (See description in gen_bad_offset.c)
++**
++****************************************************************/
++static void
++test_misc33(void)
++{
++    hid_t   fid = -1;   /* File ID */
++    const char *testfile = H5_get_srcdir_filename(MISC33_FILE); /* Corrected test file name */
++    H5O_info_t oinfo;   /* Structure for object metadata information */
++    herr_t  ret;        /* Generic return value */
++
++    /* Output message about test being performed */
++    MESSAGE(5, ("Testing that bad offset into the heap returns error"));
++
++    /* Open the test file */
++    fid = H5Fopen(testfile, H5F_ACC_RDWR, H5P_DEFAULT);
++    CHECK(fid, FAIL, "H5Fopen");
++
++    /* Case (1) */
++    H5E_BEGIN_TRY {
++        ret = H5Oget_info_by_name(fid, "/soft_two", &oinfo, H5P_DEFAULT);
++    } H5E_END_TRY;
++    VERIFY(ret, FAIL, "H5Oget_info_by_name");
++
++    /* Case (2) */
++    H5E_BEGIN_TRY {
++        ret = H5Oget_info_by_name(fid, "/dsetA", &oinfo, H5P_DEFAULT);
++    } H5E_END_TRY;
++    VERIFY(ret, FAIL, "H5Oget_info_by_name");
++
++    /* Case (3) */
++    H5E_BEGIN_TRY {
++        ret = H5Oget_info_by_name(fid, "/soft_one", &oinfo, H5P_DEFAULT);
++    } H5E_END_TRY;
++    VERIFY(ret, FAIL, "H5Oget_info_by_name");
++
++    /* Close the file */
++    ret = H5Fclose(fid);
++    CHECK(fid, FAIL, "H5Fclose");
++
++} /* end test_misc33() */
++
+ 
+ /****************************************************************
+ **
+@@ -5520,6 +5574,7 @@ test_misc(void)
+     test_misc30();      /* Exercise local heap loading bug where free lists were getting dropped */
+     test_misc31();      /* Test Reentering library through deprecated routines after H5close() */
+     test_misc32();      /* Test filter memory allocation functions */
++    test_misc33();      /* ??? */
+ 
+ } /* test_misc() */
+ 

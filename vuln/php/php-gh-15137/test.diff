@@ -1,0 +1,17 @@
+diff --git a/ext/dom/tests/gh15137.phpt b/ext/dom/tests/gh15137.phpt
+new file mode 100644
+index 0000000000..c5ce1aca75
+--- /dev/null
++++ b/ext/dom/tests/gh15137.phpt
+@@ -0,0 +1,11 @@
++--TEST--
++GH-15137: Unexpected null pointer in Zend/zend_smart_str.h
++--EXTENSIONS--
++dom
++--FILE--
++<?php
++var_dump(new DOMText()->wholeText);
++?>
++--EXPECT--
++string(0) ""
++

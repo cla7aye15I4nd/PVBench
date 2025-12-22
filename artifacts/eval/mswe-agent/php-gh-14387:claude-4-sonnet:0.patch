@@ -1,0 +1,272 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_builtin_functions.c b/Zend/zend_builtin_functions.c
+index 72cb07decbd..35175fa23fe 100644
+--- a/Zend/zend_builtin_functions.c
++++ b/Zend/zend_builtin_functions.c
+@@ -1744,14 +1744,16 @@ ZEND_API void zend_fetch_debug_backtrace(zval *return_value, int skip_last, int
+ 
+ 		if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type)) {
+ 			filename = prev->func->op_array.filename;
+-			if (prev->opline->opcode == ZEND_HANDLE_EXCEPTION) {
++			if (prev->opline && prev->opline->opcode == ZEND_HANDLE_EXCEPTION) {
+ 				if (EG(opline_before_exception)) {
+ 					lineno = EG(opline_before_exception)->lineno;
+ 				} else {
+ 					lineno = prev->func->op_array.line_end;
+ 				}
+-			} else {
++			} else if (prev->opline) {
+ 				lineno = prev->opline->lineno;
++			} else {
++				lineno = prev->func->op_array.line_start;
+ 			}
+ 			ZVAL_STR_COPY(&tmp, filename);
+ 			_zend_hash_append_ex(stack_frame, ZSTR_KNOWN(ZEND_STR_FILE), &tmp, 1);
+@@ -1778,11 +1780,16 @@ ZEND_API void zend_fetch_debug_backtrace(zval *return_value, int skip_last, int
+ 				if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type)) {
+ 					ZVAL_STR_COPY(&tmp, prev->func->op_array.filename);
+ 					_zend_hash_append_ex(stack_frame, ZSTR_KNOWN(ZEND_STR_FILE), &tmp, 1);
+-					ZVAL_LONG(&tmp, prev->opline->lineno);
++					if (prev->opline) {
++						ZVAL_LONG(&tmp, prev->opline->lineno);
++					} else {
++						ZVAL_LONG(&tmp, prev->func->op_array.line_start);
++					}
+ 					_zend_hash_append_ex(stack_frame, ZSTR_KNOWN(ZEND_STR_LINE), &tmp, 1);
+ 					break;
+ 				}
+ 				prev_call = prev;
++
+ 			}
+ 			filename = NULL;
+ 		}
+@@ -1828,7 +1835,7 @@ ZEND_API void zend_fetch_debug_backtrace(zval *return_value, int skip_last, int
+ 			bool build_filename_arg = 1;
+ 			zend_string *pseudo_function_name;
+ 			uint32_t include_kind = 0;
+-			if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type) && prev->opline->opcode == ZEND_INCLUDE_OR_EVAL) {
++			if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type) && prev->opline && prev->opline->opcode == ZEND_INCLUDE_OR_EVAL) {
+ 				include_kind = prev->opline->extended_value;
+ 			}
+ 
+@@ -1888,7 +1895,7 @@ ZEND_API void zend_fetch_debug_backtrace(zval *return_value, int skip_last, int
+ 		 && prev
+ 		 && prev->func
+ 		 && ZEND_USER_CODE(prev->func->common.type)
+-		 && prev->opline->opcode == ZEND_INCLUDE_OR_EVAL) {
++		 && prev->opline && prev->opline->opcode == ZEND_INCLUDE_OR_EVAL) {
+ 			fake_frame = 1;
+ 		} else {
+ 			fake_frame = 0;
+diff --git a/comprehensive_test.php b/comprehensive_test.php
+new file mode 100644
+index 00000000000..5642cabfd6f
+--- /dev/null
++++ b/comprehensive_test.php
+@@ -0,0 +1,58 @@
++<?php
++// Test 1: Basic debug_backtrace
++function test1() {
++    echo "Test 1: Basic debug_backtrace\n";
++    $bt = debug_backtrace();
++    echo "Backtrace has " . count($bt) . " frames\n";
++}
++
++// Test 2: Debug backtrace with generators
++function test2() {
++    echo "Test 2: Debug backtrace with generators\n";
++    $gen = (function() {
++        yield 1;
++        $bt = debug_backtrace();
++        echo "Generator backtrace has " . count($bt) . " frames\n";
++        yield 2;
++    })();
++    
++    $gen->current();
++    $gen->next();
++}
++
++// Test 3: Debug backtrace during exception handling
++function test3() {
++    echo "Test 3: Debug backtrace during exception handling\n";
++    try {
++        throw new Exception("Test exception");
++    } catch (Exception $e) {
++        $bt = debug_backtrace();
++        echo "Exception backtrace has " . count($bt) . " frames\n";
++    }
++}
++
++// Test 4: Debug backtrace with generator exceptions
++function test4() {
++    echo "Test 4: Debug backtrace with generator exceptions\n";
++    $gen = (function() {
++        yield 1;
++        throw new Exception("Generator exception");
++    })();
++    
++    try {
++        $gen->current();
++        $gen->next();
++    } catch (Exception $e) {
++        $bt = debug_backtrace();
++        echo "Generator exception backtrace has " . count($bt) . " frames\n";
++    }
++}
++
++// Run all tests
++test1();
++test2();
++test3();
++test4();
++
++echo "All tests completed successfully!\n";
++?>
+diff --git a/fix_summary.md b/fix_summary.md
+new file mode 100644
+index 00000000000..1cfcc05b1eb
+--- /dev/null
++++ b/fix_summary.md
+@@ -0,0 +1,67 @@
++# Fix for AddressSanitizer SEGV in zend_fetch_debug_backtrace
++
++## Issue Description
++The original issue was an AddressSanitizer SEGV error in `zend_fetch_debug_backtrace` at line 1745 in `Zend/zend_builtin_functions.c`. The error occurred because the code was accessing `prev->opline` without checking if it was NULL after calling `zend_generator_check_placeholder_frame(prev)`.
++
++## Root Cause
++After line 1736 where `prev = zend_generator_check_placeholder_frame(prev)` is called, the returned `prev` pointer might have a NULL `opline` field. However, the code was accessing `prev->opline->opcode` and `prev->opline->lineno` without proper NULL checks at multiple locations:
++
++1. Line 1747: `prev->opline->opcode == ZEND_HANDLE_EXCEPTION`
++2. Line 1754: `prev->opline->lineno`
++3. Line 1783: `prev->opline->lineno`
++4. Line 1838: `prev->opline->opcode == ZEND_INCLUDE_OR_EVAL`
++5. Line 1898: `prev->opline->opcode == ZEND_INCLUDE_OR_EVAL`
++
++## Fix Applied
++Added NULL checks for `prev->opline` before accessing its members:
++
++### Location 1 (Lines 1747-1756):
++```c
++if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type)) {
++    filename = prev->func->op_array.filename;
++    if (prev->opline && prev->opline->opcode == ZEND_HANDLE_EXCEPTION) {
++        if (EG(opline_before_exception)) {
++            lineno = EG(opline_before_exception)->lineno;
++        } else {
++            lineno = prev->func->op_array.line_end;
++        }
++    } else if (prev->opline) {
++        lineno = prev->opline->lineno;
++    } else {
++        lineno = prev->func->op_array.line_start;
++    }
++```
++
++### Location 2 (Lines 1783-1787):
++```c
++if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type)) {
++    ZVAL_STR_COPY(&tmp, prev->func->op_array.filename);
++    _zend_hash_append_ex(stack_frame, ZSTR_KNOWN(ZEND_STR_FILE), &tmp, 1);
++    if (prev->opline) {
++        ZVAL_LONG(&tmp, prev->opline->lineno);
++    } else {
++        ZVAL_LONG(&tmp, prev->func->op_array.line_start);
++    }
++    _zend_hash_append_ex(stack_frame, ZSTR_KNOWN(ZEND_STR_LINE), &tmp, 1);
++    break;
++}
++```
++
++### Location 3 (Line 1838):
++```c
++if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type) && prev->opline && prev->opline->opcode == ZEND_INCLUDE_OR_EVAL) {
++```
++
++### Location 4 (Line 1898):
++```c
++&& prev->opline && prev->opline->opcode == ZEND_INCLUDE_OR_EVAL) {
++```
++
++## Testing
++- Created comprehensive test cases covering various debug backtrace scenarios
++- Verified that all tests pass without crashes
++- Confirmed that basic PHP functionality remains intact
++- The fix prevents NULL pointer dereferences while maintaining correct functionality
++
++## Result
++The fix successfully prevents the AddressSanitizer SEGV error in `zend_fetch_debug_backtrace` by adding proper NULL checks before accessing `prev->opline` members. When `prev->opline` is NULL, the code now falls back to using appropriate default values from the function's op_array.
+diff --git a/test_backtrace.php b/test_backtrace.php
+new file mode 100644
+index 00000000000..1ad6df6d6a2
+--- /dev/null
++++ b/test_backtrace.php
+@@ -0,0 +1,18 @@
++<?php
++function test() {
++    $gen = (function() {
++        yield 1;
++        throw new Exception("Test exception");
++    })();
++    
++    try {
++        $gen->current();
++        $gen->throw(new Exception("Another exception"));
++    } catch (Exception $e) {
++        // This should trigger debug_backtrace
++        debug_backtrace();
++    }
++}
++
++test();
++?>
+diff --git a/test_debug_backtrace.php b/test_debug_backtrace.php
+new file mode 100644
+index 00000000000..d4ca1577a31
+--- /dev/null
++++ b/test_debug_backtrace.php
+@@ -0,0 +1,28 @@
++<?php
++function createGenerator() {
++    yield 1;
++    throw new Exception("Generator exception");
++}
++
++function testBacktrace() {
++    $gen = createGenerator();
++    
++    try {
++        $gen->current();
++        $gen->throw(new Exception("Thrown into generator"));
++    } catch (Exception $e) {
++        // This should trigger debug_backtrace during exception handling
++        $backtrace = debug_backtrace();
++        echo "Backtrace captured successfully\n";
++        return $backtrace;
++    }
++}
++
++// Test the function
++try {
++    testBacktrace();
++    echo "Test completed successfully\n";
++} catch (Exception $e) {
++    echo "Exception caught: " . $e->getMessage() . "\n";
++}
++?>

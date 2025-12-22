@@ -1,0 +1,37 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/pngimage.cpp b/src/pngimage.cpp
+index 4ccec39d8..3d889c17d 100644
+--- a/src/pngimage.cpp
++++ b/src/pngimage.cpp
+@@ -467,7 +467,12 @@ namespace Exiv2 {
+                             break;
+                          }
+                     }
+-                    profileName_ = std::string(reinterpret_cast<char *>(chunkData.pData_), iccOffset-1);
++                    // Ensure we don't read beyond the buffer bounds
++                    uint32_t profileNameLength = (iccOffset > 0) ? iccOffset - 1 : 0;
++                    if (profileNameLength > chunkLength) {
++                        profileNameLength = chunkLength;
++                    }
++                    profileName_ = std::string(reinterpret_cast<char *>(chunkData.pData_), profileNameLength);
+                     ++iccOffset; // +1 = 'compressed' flag
+                     enforce(iccOffset <= chunkLength, Exiv2::kerCorruptedMetadata);
+ 

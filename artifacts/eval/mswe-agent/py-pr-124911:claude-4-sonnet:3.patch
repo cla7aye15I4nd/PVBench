@@ -1,0 +1,39 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index 743b9e37fbc..8a9926180ce 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3255,10 +3255,17 @@ _curses_initscr_impl(PyObject *module)
+     PyCursesWindowObject *winobj;
+ 
+     if (initialised) {
+-        wrefresh(stdscr);
+-        return (PyObject *)PyCursesWindow_New(stdscr, NULL);
++        if (stdscr != NULL) {
++            wrefresh(stdscr);
++            return (PyObject *)PyCursesWindow_New(stdscr, NULL);
++        } else {
++            /* stdscr is NULL but initialised is TRUE - this shouldn't happen
++               but let's handle it gracefully by reinitializing */
++            initialised = FALSE;
++        }
+     }
+ 
++
+     win = initscr();
+ 
+     if (win == NULL) {

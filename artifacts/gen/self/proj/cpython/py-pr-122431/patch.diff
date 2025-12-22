@@ -1,0 +1,24 @@
+diff --git a/Misc/NEWS.d/next/Library/2024-07-30-11-37-40.gh-issue-122431.lAzVtu.rst b/Misc/NEWS.d/next/Library/2024-07-30-11-37-40.gh-issue-122431.lAzVtu.rst
+new file mode 100644
+index 00000000000..16ad75792ae
+--- /dev/null
++++ b/Misc/NEWS.d/next/Library/2024-07-30-11-37-40.gh-issue-122431.lAzVtu.rst
+@@ -0,0 +1 @@
++:func:`readline.append_history_file` now raises a :exc:`ValueError` when given a negative value.
+diff --git a/Modules/readline.c b/Modules/readline.c
+index 35655c70a46..7d1f703f7db 100644
+--- a/Modules/readline.c
++++ b/Modules/readline.c
+@@ -351,6 +351,12 @@ readline_append_history_file_impl(PyObject *module, int nelements,
+                                   PyObject *filename_obj)
+ /*[clinic end generated code: output=5df06fc9da56e4e4 input=784b774db3a4b7c5]*/
+ {
++    if (nelements < 0)
++    {
++        PyErr_SetString(PyExc_ValueError, "nelements must be positive");
++        return NULL;
++    }
++
+     PyObject *filename_bytes;
+     const char *filename;
+     int err;

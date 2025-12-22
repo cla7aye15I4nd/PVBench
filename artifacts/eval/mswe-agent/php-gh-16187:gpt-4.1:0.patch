@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f24b00a2857..fffff4e464c 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -476,7 +476,7 @@ static void _class_string(smart_str *str, zend_class_entry *ce, zval *obj, char
+ 		smart_str prop_str = {0};
+ 
+ 		count = 0;
+-		if (properties && zend_hash_num_elements(properties)) {
++		if (properties && zend_hash_num_elements(properties) && ce && &ce->properties_info) {
+ 			ZEND_HASH_MAP_FOREACH_STR_KEY(properties, prop_name) {
+ 				if (prop_name && ZSTR_LEN(prop_name) && ZSTR_VAL(prop_name)[0]) { /* skip all private and protected properties */
+ 					if (!zend_hash_exists(&ce->properties_info, prop_name)) {

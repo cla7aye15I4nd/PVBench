@@ -1,0 +1,47 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/pngimage.cpp b/src/pngimage.cpp
+index 4ccec39d8..b84ed6ec3 100644
+--- a/src/pngimage.cpp
++++ b/src/pngimage.cpp
+@@ -462,11 +462,23 @@ namespace Exiv2 {
+                 } else if (chunkType == "iCCP") {
+                     // The ICC profile name can vary from 1-79 characters.
+                     uint32_t iccOffset = 0;
++                    
++                    // Check if chunk has any data
++                    if (chunkLength == 0) {
++                        throw Exiv2::Error(kerCorruptedMetadata);
++                    }
++                    
+                     while (iccOffset < 80 && iccOffset < chunkLength) {
+                          if (chunkData.pData_[iccOffset++] ==  0x00) {
+                             break;
+                          }
+                     }
++                    
++                    // Ensure we found a null terminator and have valid offset
++                    if (iccOffset == 0 || iccOffset > chunkLength) {
++                        throw Exiv2::Error(kerCorruptedMetadata);
++                    }
++                    
+                     profileName_ = std::string(reinterpret_cast<char *>(chunkData.pData_), iccOffset-1);
+                     ++iccOffset; // +1 = 'compressed' flag
+                     enforce(iccOffset <= chunkLength, Exiv2::kerCorruptedMetadata);

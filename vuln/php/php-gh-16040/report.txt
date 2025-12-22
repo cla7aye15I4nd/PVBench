@@ -1,0 +1,97 @@
+==2962633==ERROR: AddressSanitizer: heap-use-after-free on address 0x504000042020 at pc 0x563b45102401 bp 0x7ffe0a80a9f0 sp 0x7ffe0a80a9e8
+READ of size 8 at 0x504000042020 thread T0
+    #0 0x563b45102400 in zend_std_read_property /php-gh-16040/build/Zend/zend_object_handlers.c:829:7
+    #1 0x563b44d3d4aa in ZEND_FETCH_OBJ_R_SPEC_CV_CONST_INLINE_HANDLER /php-gh-16040/build/Zend/zend_vm_execute.h:42993:12
+    #2 0x563b44d3d4aa in ZEND_FETCH_OBJ_R_SPEC_CV_CONST_HANDLER /php-gh-16040/build/Zend/zend_vm_execute.h:43022:2
+    #3 0x563b44b35b2c in execute_ex /php-gh-16040/build/Zend/zend_vm_execute.h:58486:7
+    #4 0x563b44b373c7 in zend_execute /php-gh-16040/build/Zend/zend_vm_execute.h:64138:2
+    #5 0x563b451ce2d0 in zend_execute_script /php-gh-16040/build/Zend/zend.c:1928:3
+    #6 0x563b445ed27d in php_execute_script_ex /php-gh-16040/build/main/main.c:2574:13
+    #7 0x563b445ed708 in php_execute_script /php-gh-16040/build/main/main.c:2614:9
+    #8 0x563b451d6911 in do_cli /php-gh-16040/build/sapi/cli/php_cli.c:935:5
+    #9 0x563b451d487b in main /php-gh-16040/build/sapi/cli/php_cli.c:1309:18
+    #10 0x7f6f86f211c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7f6f86f2128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x563b436033a4 in _start (/php-gh-16040/build/sapi/cli/php+0x4033a4) (BuildId: 5c0302a174d44c776343f5baa8a8a7e7a6cf757e)
+
+0x504000042020 is located 16 bytes inside of 40-byte region [0x504000042010,0x504000042038)
+freed by thread T0 here:
+    #0 0x563b4369df5a in free (/php-gh-16040/build/sapi/cli/php+0x49df5a) (BuildId: 5c0302a174d44c776343f5baa8a8a7e7a6cf757e)
+    #1 0x563b44935e78 in tracked_free /php-gh-16040/build/Zend/zend_alloc.c:2987:2
+    #2 0x563b4492560a in _efree /php-gh-16040/build/Zend/zend_alloc.c:2747:3
+    #3 0x563b45122309 in zend_objects_store_del /php-gh-16040/build/Zend/zend_objects_API.c:198:3
+    #4 0x563b451a88d9 in rc_dtor_func /php-gh-16040/build/Zend/zend_variables.c:57:2
+    #5 0x563b44b903e7 in zend_assign_to_variable /php-gh-16040/build/Zend/zend_execute.h:178:4
+    #6 0x563b44b903e7 in ZEND_ASSIGN_SPEC_VAR_CONST_RETVAL_UNUSED_HANDLER /php-gh-16040/build/Zend/zend_vm_execute.h:25177:11
+    #7 0x563b44b35b2c in execute_ex /php-gh-16040/build/Zend/zend_vm_execute.h:58486:7
+    #8 0x563b44b092f0 in zend_call_function /php-gh-16040/build/Zend/zend_execute_API.c:996:3
+    #9 0x563b44b0adc0 in zend_call_known_function /php-gh-16040/build/Zend/zend_execute_API.c:1090:23
+    #10 0x563b45103d7d in zend_call_known_instance_method /php-gh-16040/build/Zend/zend_API.h:860:2
+    #11 0x563b45103d7d in zend_call_known_instance_method_with_0_params /php-gh-16040/build/Zend/zend_API.h:866:2
+    #12 0x563b45103d7d in zend_call_get_hook /php-gh-16040/build/Zend/zend_object_handlers.c:698:2
+    #13 0x563b45101faf in zend_std_read_property /php-gh-16040/build/Zend/zend_object_handlers.c:811:8
+    #14 0x563b44d3d4aa in ZEND_FETCH_OBJ_R_SPEC_CV_CONST_INLINE_HANDLER /php-gh-16040/build/Zend/zend_vm_execute.h:42993:12
+    #15 0x563b44d3d4aa in ZEND_FETCH_OBJ_R_SPEC_CV_CONST_HANDLER /php-gh-16040/build/Zend/zend_vm_execute.h:43022:2
+    #16 0x563b44b35b2c in execute_ex /php-gh-16040/build/Zend/zend_vm_execute.h:58486:7
+    #17 0x563b44b373c7 in zend_execute /php-gh-16040/build/Zend/zend_vm_execute.h:64138:2
+    #18 0x563b451ce2d0 in zend_execute_script /php-gh-16040/build/Zend/zend.c:1928:3
+    #19 0x563b445ed27d in php_execute_script_ex /php-gh-16040/build/main/main.c:2574:13
+    #20 0x563b445ed708 in php_execute_script /php-gh-16040/build/main/main.c:2614:9
+    #21 0x563b451d6911 in do_cli /php-gh-16040/build/sapi/cli/php_cli.c:935:5
+    #22 0x563b451d487b in main /php-gh-16040/build/sapi/cli/php_cli.c:1309:18
+    #23 0x7f6f86f211c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #24 0x7f6f86f2128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #25 0x563b436033a4 in _start (/php-gh-16040/build/sapi/cli/php+0x4033a4) (BuildId: 5c0302a174d44c776343f5baa8a8a7e7a6cf757e)
+
+previously allocated by thread T0 here:
+    #0 0x563b4369e1f3 in malloc (/php-gh-16040/build/sapi/cli/php+0x49e1f3) (BuildId: 5c0302a174d44c776343f5baa8a8a7e7a6cf757e)
+    #1 0x563b44909620 in tracked_malloc /php-gh-16040/build/Zend/zend_alloc.c:2968:14
+    #2 0x563b44924e86 in _emalloc /php-gh-16040/build/Zend/zend_alloc.c:2737:10
+    #3 0x563b4512492f in zend_objects_new /php-gh-16040/build/Zend/zend_objects.c:210:24
+    #4 0x563b4494a694 in _object_and_properties_init /php-gh-16040/build/Zend/zend_API.c:1823:22
+    #5 0x563b4494a694 in object_init_ex /php-gh-16040/build/Zend/zend_API.c:1846:9
+    #6 0x563b44cd7658 in ZEND_NEW_SPEC_CONST_UNUSED_HANDLER /php-gh-16040/build/Zend/zend_vm_execute.h:10895:6
+    #7 0x563b44b35b2c in execute_ex /php-gh-16040/build/Zend/zend_vm_execute.h:58486:7
+    #8 0x563b44b373c7 in zend_execute /php-gh-16040/build/Zend/zend_vm_execute.h:64138:2
+    #9 0x563b451ce2d0 in zend_execute_script /php-gh-16040/build/Zend/zend.c:1928:3
+    #10 0x563b445ed27d in php_execute_script_ex /php-gh-16040/build/main/main.c:2574:13
+    #11 0x563b445ed708 in php_execute_script /php-gh-16040/build/main/main.c:2614:9
+    #12 0x563b451d6911 in do_cli /php-gh-16040/build/sapi/cli/php_cli.c:935:5
+    #13 0x563b451d487b in main /php-gh-16040/build/sapi/cli/php_cli.c:1309:18
+    #14 0x7f6f86f211c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x7f6f86f2128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #16 0x563b436033a4 in _start (/php-gh-16040/build/sapi/cli/php+0x4033a4) (BuildId: 5c0302a174d44c776343f5baa8a8a7e7a6cf757e)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /php-gh-16040/build/Zend/zend_object_handlers.c:829:7 in zend_std_read_property
+Shadow bytes around the buggy address:
+  0x504000041d80: fa fa 00 00 00 00 00 fa fa fa 00 00 00 00 00 fa
+  0x504000041e00: fa fa 00 00 00 00 00 fa fa fa 00 00 00 00 00 fa
+  0x504000041e80: fa fa 00 00 00 00 00 fa fa fa 00 00 00 00 00 00
+  0x504000041f00: fa fa 00 00 00 00 00 fa fa fa fd fd fd fd fd fa
+  0x504000041f80: fa fa 00 00 00 00 00 fa fa fa 00 00 00 00 00 fa
+=>0x504000042000: fa fa fd fd[fd]fd fd fa fa fa fa fa fa fa fa fa
+  0x504000042080: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000042100: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000042180: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000042200: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000042280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==2962633==ABORTING

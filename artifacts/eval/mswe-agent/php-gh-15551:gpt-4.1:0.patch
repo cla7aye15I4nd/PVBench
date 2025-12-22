@@ -1,0 +1,45 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/dom_iterators.c b/ext/dom/dom_iterators.c
+index 866cb5a07e9..795ccbe038f 100644
+--- a/ext/dom/dom_iterators.c
++++ b/ext/dom/dom_iterators.c
+@@ -185,10 +185,18 @@ static void php_dom_iterator_move_forward(zend_object_iterator *iter) /* {{{ */
+ 
+ 	php_dom_iterator *iterator = (php_dom_iterator *)iter;
+ 
+-	object = &iterator->intern.data;
+-	nnmap = Z_DOMOBJ_P(object);
+-	objmap = (dom_nnodemap_object *)nnmap->ptr;
+-
++    object = &iterator->intern.data;
++    if (object == NULL) {
++        goto err;
++    }
++    nnmap = Z_DOMOBJ_P(object);
++    if (nnmap == NULL) {
++        goto err;
++    }
++    objmap = (dom_nnodemap_object *)nnmap->ptr;
++    if (objmap == NULL) {
++        goto err;
++    }
+ 	intern = Z_DOMOBJ_P(&iterator->curobj);
+ 
+ 	if (intern != NULL && intern->ptr != NULL) {

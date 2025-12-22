@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/standard/scanf.c b/ext/standard/scanf.c
+index 78ecc1642cf..7edb36d3da3 100644
+--- a/ext/standard/scanf.c
++++ b/ext/standard/scanf.c
+@@ -489,7 +489,7 @@ PHPAPI int ValidateFormat(char *format, int numVars, int *totalSubs)
+ 				 */
+ 				value = nspace;
+ 				if (xpgSize) {
+-					nspace = xpgSize;
++					nspace = xpgSize + 1;  /* Ensure buffer is large enough for objIndex */
+ 				} else {
+ 					nspace += STATIC_LIST_SIZE;
+ 				}

@@ -1,0 +1,59 @@
+
+diff --git a/.gitignore b/.gitignore
+index fa8fbb49d9d..d9670c75cbc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,3 +126,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/build.sh b/build.sh
+new file mode 100755
+index 00000000000..06bd6139fc4
+--- /dev/null
++++ b/build.sh
+@@ -0,0 +1,13 @@
++#!/bin/bash -eu
++
++gn gen out/debug_asan --args='
++    is_debug=true
++    is_asan=true
++    is_lsan=true
++    v8_enable_backtrace=true
++    is_component_build=false
++    symbol_level=2
++'
++
++ninja -C out/debug_asan -j16 d8
++test -f out/debug_asan/d8
+diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
+index 72d12dd4dfe..8c6d499e896 100644
+--- a/src/compiler/js-native-context-specialization.cc
++++ b/src/compiler/js-native-context-specialization.cc
+@@ -2974,11 +2974,13 @@ JSNativeContextSpecialization::BuildPropertyLoad(
+         graph()->NewNode(simplified()->LoadField(AccessBuilder::ForCellValue()),
+                          cell, effect, control);
+   } else if (access_info.IsStringLength()) {
+-    DCHECK_EQ(receiver, lookup_start_object);
+-    value = graph()->NewNode(simplified()->StringLength(), receiver);
++    // Use lookup_start_object instead of receiver for string length access
++    // to handle cases where receiver != lookup_start_object (e.g., super access)
++    value = graph()->NewNode(simplified()->StringLength(), lookup_start_object);
+   } else if (access_info.IsStringWrapperLength()) {
+-    DCHECK_EQ(receiver, lookup_start_object);
+-    value = graph()->NewNode(simplified()->StringWrapperLength(), receiver);
++    // Use lookup_start_object instead of receiver for string wrapper length access
++    // to handle cases where receiver != lookup_start_object (e.g., super access)
++    value = graph()->NewNode(simplified()->StringWrapperLength(), lookup_start_object);
+   } else {
+     DCHECK(access_info.IsDataField() || access_info.IsFastDataConstant() ||
+            access_info.IsDictionaryProtoDataConstant());

@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/arraymodule.c b/Modules/arraymodule.c
+index b80c964f20d..c839a7a958d 100644
+--- a/Modules/arraymodule.c
++++ b/Modules/arraymodule.c
+@@ -3092,12 +3092,13 @@ array_arrayiterator___setstate__(arrayiterobject *self, PyObject *state)
+         return NULL;
+     if (index < 0)
+         index = 0;
+-    else if (index > Py_SIZE(self->ao))
++    else if (self->ao != NULL && index > Py_SIZE(self->ao))
+         index = Py_SIZE(self->ao); /* iterator exhausted */
+     self->index = index;
+     Py_RETURN_NONE;
+ }
+ 
++
+ static PyMethodDef arrayiter_methods[] = {
+     ARRAY_ARRAYITERATOR___REDUCE___METHODDEF
+     ARRAY_ARRAYITERATOR___SETSTATE___METHODDEF

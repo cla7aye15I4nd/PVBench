@@ -1,0 +1,70 @@
+diff --git a/result/schematron/zvon16_0.err b/result/schematron/zvon16_0.err
+new file mode 100644
+index 00000000..452bcc13
+--- /dev/null
++++ b/result/schematron/zvon16_0.err
+@@ -0,0 +1,3 @@
++XPath error : Unregistered function: falae
++./test/schematron/zvon16_0.xml:2: element book: schematron error : /library/book line 2: Book 
++./test/schematron/zvon16_0.xml fails to validate
+diff --git a/runtest.c b/runtest.c
+index a53a4a33..49519aef 100644
+--- a/runtest.c
++++ b/runtest.c
+@@ -3904,6 +3904,9 @@ schematronTest(const char *filename,
+     size_t i;
+     char count = 0;
+ 
++    /* Redirect XPath errors */
++    xmlSetStructuredErrorFunc(NULL, testStructuredErrorHandler);
++
+     pctxt = xmlSchematronNewParserCtxt(filename);
+     schematron = xmlSchematronParse(pctxt);
+     xmlSchematronFreeParserCtxt(pctxt);
+@@ -3917,8 +3920,8 @@ schematronTest(const char *filename,
+      */
+     len = strlen(base);
+     if ((len > 499) || (len < 5)) {
+-        xmlSchematronFree(schematron);
+-	return(-1);
++        ret = -1;
++        goto done;
+     }
+     len -= 4; /* remove trailing .sct */
+     memcpy(prefix, base, len);
+@@ -3958,8 +3961,10 @@ schematronTest(const char *filename,
+         }
+     }
+     globfree(&globbuf);
+-    xmlSchematronFree(schematron);
+ 
++done:
++    xmlSchematronFree(schematron);
++    xmlSetStructuredErrorFunc(NULL, NULL);
+     return(ret);
+ }
+ #endif /* LIBXML_SCHEMATRON_ENABLED */
+diff --git a/test/schematron/zvon16.sct b/test/schematron/zvon16.sct
+new file mode 100644
+index 00000000..f03848aa
+--- /dev/null
++++ b/test/schematron/zvon16.sct
+@@ -0,0 +1,7 @@
++<sch:schema xmlns:sch="http://purl.oclc.org/dsdl/schematron">
++	<sch:pattern id="TestPattern">
++		<sch:rule context="book">
++			<sch:report test="not(@available)">Book <sch:value-of select="falae()"/> test</sch:report>
++		</sch:rule>
++	</sch:pattern>
++</sch:schema>
+diff --git a/test/schematron/zvon16_0.xml b/test/schematron/zvon16_0.xml
+new file mode 100644
+index 00000000..551e2d65
+--- /dev/null
++++ b/test/schematron/zvon16_0.xml
+@@ -0,0 +1,5 @@
++<library>
++	<book title="Test Book" id="bk101">
++		<author>Test Author</author>
++	</book>
++</library>

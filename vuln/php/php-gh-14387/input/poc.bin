@@ -1,0 +1,20 @@
+<?php
+
+function prime(Generator $generator) {
+	$generator->valid();
+}
+
+$g = (function () {
+	yield from [null, new class {
+		function __destruct() {
+			// Trigger a stack walk, hitting a bad frame.
+			throw new Exception;
+		}
+	}];
+})();
+
+prime($g);
+
+$g->throw(new Error);
+
+?>

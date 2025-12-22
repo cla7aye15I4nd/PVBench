@@ -1,0 +1,176 @@
+# HDF5 API Documentation Guide
+
+## Return Types and Error Handling
+
+### hid_t - Identifier Type
+- Used for file IDs, property list IDs, dataspace IDs, dataset IDs, etc.
+- Returns >= 0 for valid identifiers
+- Returns < 0 (typically -1 or H5I_INVALID_HID) on failure
+
+### herr_t - Error Return Type
+- Returns >= 0 on success
+- Returns < 0 (typically -1) on failure
+
+## File Operations (H5F)
+
+### H5Fopen
+```c
+hid_t H5Fopen(const char *filename, unsigned flags, hid_t fapl_id)
+```
+- Opens an existing HDF5 file
+- Returns: file identifier (hid_t) on success, negative on failure
+- flags: H5F_ACC_RDONLY (read-only), H5F_ACC_RDWR (read-write)
+- fapl_id: file access property list, use H5P_DEFAULT for defaults
+
+### H5Fcreate
+```c
+hid_t H5Fcreate(const char *filename, unsigned flags, hid_t fcpl_id, hid_t fapl_id)
+```
+- Creates a new HDF5 file
+- Returns: file identifier on success, negative on failure
+
+### H5Fclose
+```c
+herr_t H5Fclose(hid_t file_id)
+```
+- Closes an HDF5 file
+- Returns: >= 0 on success, < 0 on failure
+
+## Property List Operations (H5P)
+
+### H5Pcreate
+```c
+hid_t H5Pcreate(hid_t cls_id)
+```
+- Creates a new property list
+- cls_id: H5P_FILE_ACCESS, H5P_FILE_CREATE, H5P_DATASET_CREATE, etc.
+- Returns: property list identifier on success, negative on failure
+
+### H5Pclose
+```c
+herr_t H5Pclose(hid_t plist_id)
+```
+- Closes a property list
+- Returns: >= 0 on success, < 0 on failure
+
+### H5Pset_fapl_core
+```c
+herr_t H5Pset_fapl_core(hid_t fapl_id, size_t increment, hbool_t backing_store)
+```
+- Sets up use of the core file driver
+- Returns: >= 0 on success, < 0 on failure
+
+### H5Pset_mdc_log_options
+```c
+herr_t H5Pset_mdc_log_options(hid_t plist_id, hbool_t is_enabled, const char *location, hbool_t start_on_access)
+```
+- Sets metadata cache logging options
+- Returns: >= 0 on success, < 0 on failure
+
+## Object Operations (H5O)
+
+### H5Oget_info_by_name
+```c
+herr_t H5Oget_info_by_name(hid_t loc_id, const char *name, H5O_info2_t *oinfo, unsigned fields, hid_t lapl_id)
+```
+- **IMPORTANT**: This function requires 5 arguments, not 4!
+- The `H5Oget_info_by_name` macro expands to `H5Oget_info_by_name3` which requires:
+  - loc_id: File or group identifier
+  - name: Path to the object
+  - oinfo: Pointer to H5O_info2_t structure (note: H5O_info2_t, not H5O_info_t)
+  - fields: Flags specifying which fields to fill (use H5O_INFO_ALL for all fields)
+  - lapl_id: Link access property list (use H5P_DEFAULT for default)
+- Returns: >= 0 on success, < 0 on failure (e.g., object not found)
+- Note: Returns -1 when object doesn't exist or link is broken
+
+#### Fields parameter values:
+- `H5O_INFO_BASIC` - Fill in basic info (type, reference count, etc.)
+- `H5O_INFO_TIME` - Fill in time info
+- `H5O_INFO_NUM_ATTRS` - Fill in number of attributes
+- `H5O_INFO_ALL` - Fill in all available info
+
+#### Correct usage example:
+```c
+H5O_info2_t oinfo;
+herr_t ret = H5Oget_info_by_name(file, "/group", &oinfo, H5O_INFO_ALL, H5P_DEFAULT);
+assert(ret >= 0);
+```
+
+## Dataspace Operations (H5S)
+
+### H5Screate_simple
+```c
+hid_t H5Screate_simple(int rank, const hsize_t *dims, const hsize_t *maxdims)
+```
+- Creates a simple dataspace
+- Returns: dataspace identifier on success, negative on failure
+
+### H5Sselect_hyperslab
+```c
+herr_t H5Sselect_hyperslab(hid_t space_id, H5S_seloper_t op, const hsize_t *start, const hsize_t *stride, const hsize_t *count, const hsize_t *block)
+```
+- Selects a hyperslab region
+- op: H5S_SELECT_SET, H5S_SELECT_OR, H5S_SELECT_AND, etc.
+- Returns: >= 0 on success, < 0 on failure
+
+### H5Scombine_select
+```c
+hid_t H5Scombine_select(hid_t space1_id, H5S_seloper_t op, hid_t space2_id)
+```
+- Combines two dataspace selections
+- Returns: new dataspace identifier on success, negative on failure
+
+### H5Sclose
+```c
+herr_t H5Sclose(hid_t space_id)
+```
+- Closes a dataspace
+- Returns: >= 0 on success, < 0 on failure
+
+## Error Handling Macros
+
+### H5E_BEGIN_TRY / H5E_END_TRY
+```c
+H5E_BEGIN_TRY {
+    // HDF5 calls here - error output is suppressed
+    ret = H5Oget_info_by_name(fid, "/path", &oinfo, H5P_DEFAULT);
+} H5E_END_TRY;
+```
+- Suppresses HDF5 error messages within the block
+- Used when errors are expected (e.g., testing for non-existent objects)
+- Return values should still be captured and checked
+
+## Common Assertion Patterns
+
+```c
+// File open - expect success
+hid_t fid = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+assert(fid >= 0);  // or assert(fid != -1);
+
+// File close
+herr_t ret = H5Fclose(fid);
+assert(ret >= 0);
+
+// Property list
+hid_t plist = H5Pcreate(H5P_FILE_ACCESS);
+assert(plist >= 0);
+assert(H5Pset_fapl_core(plist, 0, 0) >= 0);
+assert(H5Pclose(plist) >= 0);
+
+// Object info - MUST use 5 arguments with H5O_info2_t
+H5O_info2_t oinfo;
+herr_t info_ret = H5Oget_info_by_name(fid, "/existing_group", &oinfo, H5O_INFO_ALL, H5P_DEFAULT);
+assert(info_ret >= 0);
+
+// Expected failure in H5E_BEGIN_TRY block - still uses 5 arguments
+herr_t ret;
+H5E_BEGIN_TRY {
+    ret = H5Oget_info_by_name(fid, "/nonexistent", &oinfo, H5O_INFO_ALL, H5P_DEFAULT);
+} H5E_END_TRY;
+assert(ret == -1);  // Expected to fail
+
+// Dataspace operations
+hid_t space = H5Screate_simple(1, dims, NULL);
+assert(space >= 0);  // or assert(space != -1);
+assert(H5Sclose(space) >= 0);  // or assert(H5Sclose(space) != -1);
+```

@@ -1,0 +1,38 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/pdo_sqlite/sqlite_driver.c b/ext/pdo_sqlite/sqlite_driver.c
+index 2f494c2ddb8..a06a27317ff 100644
+--- a/ext/pdo_sqlite/sqlite_driver.c
++++ b/ext/pdo_sqlite/sqlite_driver.c
+@@ -435,6 +435,7 @@ static int do_callback(struct pdo_sqlite_fci *fc, zval *cb,
+ 
+ 		if (agg_context) {
+ 			zval_ptr_dtor(&agg_context->val);
++			ZVAL_UNDEF(&agg_context->val);
+ 		}
+ 	} else {
+ 		/* we're stepping in an aggregate; the return value goes into
+@@ -442,6 +443,7 @@ static int do_callback(struct pdo_sqlite_fci *fc, zval *cb,
+ 		if (agg_context) {
+ 			if (Z_ISUNDEF(retval)) {
+ 				zval_ptr_dtor(&agg_context->val);
++				ZVAL_UNDEF(&agg_context->val);
+ 				return FAILURE;
+ 			}
+ 			zval_ptr_dtor(Z_REFVAL(agg_context->val));

@@ -1,0 +1,45 @@
+llc: /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp:7789: llvm::SDValue llvm::SelectionDAG::getNode(unsigned int, const llvm::SDLoc&, llvm::EVT, llvm::SDValue, llvm::SDValue, llvm::SDValue, llvm::SDNodeFlags): Assertion `N1.getOpcode() != ISD::DELETED_NODE && N2.getOpcode() != ISD::DELETED_NODE && N3.getOpcode() != ISD::DELETED_NODE && "Operand is DELETED_NODE!"' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ./build/bin/llc /testcases/llvm-gh-138944/input/poc.ll
+1.	Running pass 'Function Pass Manager' on module '/testcases/llvm-gh-138944/input/poc.ll'.
+2.	Running pass 'X86 DAG->DAG Instruction Selection' on function '@_Z3foo4fVec'
+ #0 0x0000555558629d40 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-138944/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x000055555862a1c9 PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-138944/build/llvm/lib/Support/Unix/Signals.inc:888:1
+ #2 0x0000555558627505 llvm::sys::RunSignalHandlers() /tmp/llvm-gh-138944/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x00005555586295c2 SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-138944/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x00005555582f990b llvm::SelectionDAG::getNode(unsigned int, llvm::SDLoc const&, llvm::EVT, llvm::SDValue, llvm::SDValue, llvm::SDValue, llvm::SDNodeFlags) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp:7794:3
+#11 0x000055555830d2a3 llvm::SelectionDAG::getNode(unsigned int, llvm::SDLoc const&, llvm::EVT, llvm::ArrayRef<llvm::SDValue>, llvm::SDNodeFlags) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp:10407:25
+#12 0x000055555830d069 llvm::SelectionDAG::getNode(unsigned int, llvm::SDLoc const&, llvm::EVT, llvm::ArrayRef<llvm::SDValue>) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp:10397:17
+#13 0x00005555562072c6 llvm::X86TargetLowering::getNegatedExpression(llvm::SDValue, llvm::SelectionDAG&, bool, bool, llvm::TargetLoweringBase::NegatibleCost&, unsigned int) const /tmp/llvm-gh-138944/build/llvm/lib/Target/X86/X86ISelLowering.cpp:54748:0
+#14 0x0000555556261a26 llvm::TargetLowering::getCheaperOrNeutralNegatedExpression(llvm::SDValue, llvm::SelectionDAG&, bool, bool, llvm::TargetLoweringBase::NegatibleCost, unsigned int) const /tmp/llvm-gh-138944/build/llvm/include/llvm/CodeGen/TargetLowering.h:4553:29
+#15 0x0000555556261b47 llvm::TargetLowering::getCheaperNegatedExpression(llvm::SDValue, llvm::SelectionDAG&, bool, bool, unsigned int) const /tmp/llvm-gh-138944/build/llvm/include/llvm/CodeGen/TargetLowering.h:4571:48
+#16 0x0000555558175341 llvm::SDValue (anonymous namespace)::DAGCombiner::visitFMA<llvm::EmptyMatchContext>(llvm::SDNode*) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:17894:54
+#17 0x00005555580b74d6 (anonymous namespace)::DAGCombiner::visit(llvm::SDNode*) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:1940:69
+#18 0x00005555580b7a7d (anonymous namespace)::DAGCombiner::combine(llvm::SDNode*) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:2029:15
+#19 0x00005555580b6ae9 (anonymous namespace)::DAGCombiner::Run(llvm::CombineLevel) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:1797:25
+#20 0x0000555558171b52 llvm::SelectionDAG::Combine(llvm::CombineLevel, llvm::BatchAAResults*, llvm::CodeGenOptLevel) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:29533:3
+#21 0x000055555835bad6 llvm::SelectionDAGISel::CodeGenAndEmitDAG() /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:1098:3
+#22 0x000055555835a20f llvm::SelectionDAGISel::SelectBasicBlock(llvm::ilist_iterator_w_bits<llvm::ilist_detail::node_options<llvm::Instruction, true, false, void, true, llvm::BasicBlock>, false, true>, llvm::ilist_iterator_w_bits<llvm::ilist_detail::node_options<llvm::Instruction, true, false, void, true, llvm::BasicBlock>, false, true>, bool&) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:877:1
+#23 0x00005555583603cf llvm::SelectionDAGISel::SelectAllBasicBlocks(llvm::Function const&) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:1906:33
+#24 0x000055555835889f llvm::SelectionDAGISel::runOnMachineFunction(llvm::MachineFunction&) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:615:7
+#25 0x000055555601ee33 (anonymous namespace)::X86DAGToDAGISel::runOnMachineFunction(llvm::MachineFunction&) /tmp/llvm-gh-138944/build/llvm/lib/Target/X86/X86ISelDAGToDAG.cpp:188:0
+#26 0x00005555583575f6 llvm::SelectionDAGISelLegacy::runOnMachineFunction(llvm::MachineFunction&) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:374:40
+#27 0x0000555556e2d5f1 llvm::MachineFunctionPass::runOnFunction(llvm::Function&) /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/MachineFunctionPass.cpp:108:30
+#28 0x000055555778c228 llvm::FPPassManager::runOnFunction(llvm::Function&) /tmp/llvm-gh-138944/build/llvm/lib/IR/LegacyPassManager.cpp:1406:20
+#29 0x000055555778c4fe llvm::FPPassManager::runOnModule(llvm::Module&) /tmp/llvm-gh-138944/build/llvm/lib/IR/LegacyPassManager.cpp:1452:13
+#30 0x000055555778c95f (anonymous namespace)::MPPassManager::runOnModule(llvm::Module&) /tmp/llvm-gh-138944/build/llvm/lib/IR/LegacyPassManager.cpp:1521:20
+#31 0x00005555577878b3 llvm::legacy::PassManagerImpl::run(llvm::Module&) /tmp/llvm-gh-138944/build/llvm/lib/IR/LegacyPassManager.cpp:539:13
+#32 0x000055555778d255 llvm::legacy::PassManager::run(llvm::Module&) /tmp/llvm-gh-138944/build/llvm/lib/IR/LegacyPassManager.cpp:1649:1
+#33 0x0000555555dc6f18 compileModule(char**, llvm::LLVMContext&) /tmp/llvm-gh-138944/build/llvm/tools/llc/llc.cpp:755:34
+#34 0x0000555555dc44e5 main /tmp/llvm-gh-138944/build/llvm/tools/llc/llc.cpp:400:35
+#35 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#36 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#37 0x0000555555dc2fa5 _start (./build/bin/llc+0x86efa5)
+/testcases/llvm-gh-138944/exp.sh: line 2: 303917 Aborted                 ./build/bin/llc $1

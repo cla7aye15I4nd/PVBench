@@ -1,0 +1,27 @@
+diff --git a/clang/docs/ReleaseNotes.rst b/clang/docs/ReleaseNotes.rst
+index e8e67e14f007..a8f5f40d8fef 100644
+--- a/clang/docs/ReleaseNotes.rst
++++ b/clang/docs/ReleaseNotes.rst
+@@ -905,6 +905,8 @@ OpenMP Support
+ - Added support 'no_openmp_constructs' assumption clause.
+ - Added support for 'self_maps' in map and requirement clause.
+ - Added support for 'omp stripe' directive.
++- Fixed a crashing bug with ``omp unroll partial`` if the argument to
++  ``partial`` was an invalid expression. (#GH139267)
+ - Fixed a crashing bug with ``omp tile sizes`` if the argument to ``sizes`` was
+   an invalid expression. (#GH139073)
+ - Fixed a crashing bug with ``omp distribute dist_schedule`` if the argument to
+diff --git a/clang/lib/Sema/SemaOpenMP.cpp b/clang/lib/Sema/SemaOpenMP.cpp
+index 50211c5cf3ed..15d568fcb9cc 100644
+--- a/clang/lib/Sema/SemaOpenMP.cpp
++++ b/clang/lib/Sema/SemaOpenMP.cpp
+@@ -14912,7 +14912,8 @@ StmtResult SemaOpenMP::ActOnOpenMPUnrollDirective(ArrayRef<OMPClause *> Clauses,
+   // Determine the unroll factor.
+   uint64_t Factor;
+   SourceLocation FactorLoc;
+-  if (Expr *FactorVal = PartialClause->getFactor()) {
++  if (Expr *FactorVal = PartialClause->getFactor();
++      FactorVal && !FactorVal->containsErrors()) {
+     Factor = FactorVal->getIntegerConstantExpr(Context)->getZExtValue();
+     FactorLoc = FactorVal->getExprLoc();
+   } else {

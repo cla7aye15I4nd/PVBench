@@ -1,0 +1,31 @@
+diff --git a/clang/docs/ReleaseNotes.rst b/clang/docs/ReleaseNotes.rst
+index e362ec595a3b..257c4696de40 100644
+--- a/clang/docs/ReleaseNotes.rst
++++ b/clang/docs/ReleaseNotes.rst
+@@ -920,6 +920,8 @@ OpenMP Support
+   ``partial`` was an invalid expression. (#GH139267)
+ - Fixed a crashing bug with ``omp tile sizes`` if the argument to ``sizes`` was
+   an invalid expression. (#GH139073)
++- Fixed a crashing bug with ``omp simd collapse`` if the argument to
++  ``collapse`` was an invalid expression. (#GH138493)
+ - Fixed a crashing bug with ``omp distribute dist_schedule`` if the argument to
+   ``dist_schedule`` was not strictly positive. (#GH139266)
+ 
+diff --git a/clang/lib/Sema/SemaOpenMP.cpp b/clang/lib/Sema/SemaOpenMP.cpp
+index 15d568fcb9cc..9d02594afd55 100644
+--- a/clang/lib/Sema/SemaOpenMP.cpp
++++ b/clang/lib/Sema/SemaOpenMP.cpp
+@@ -9648,6 +9648,13 @@ checkOpenMPLoop(OpenMPDirectiveKind DKind, Expr *CollapseLoopCountExpr,
+                 DSAStackTy &DSA,
+                 SemaOpenMP::VarsWithInheritedDSAType &VarsWithImplicitDSA,
+                 OMPLoopBasedDirective::HelperExprs &Built) {
++  // If either of the loop expressions exist and contain errors, we bail out
++  // early because diagnostics have already been emitted and we can't reliably
++  // check more about the loop.
++  if ((CollapseLoopCountExpr && CollapseLoopCountExpr->containsErrors()) ||
++      (OrderedLoopCountExpr && OrderedLoopCountExpr->containsErrors()))
++    return 0;
++
+   unsigned NestedLoopCount = 1;
+   bool SupportsNonPerfectlyNested = (SemaRef.LangOpts.OpenMP >= 50) &&
+                                     !isOpenMPLoopTransformationDirective(DKind);

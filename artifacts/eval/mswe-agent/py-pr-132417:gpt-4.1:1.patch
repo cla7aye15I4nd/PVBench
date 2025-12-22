@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 596e0f3af6a..8d4234061fa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -172,3 +172,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_ctypes/callproc.c b/Modules/_ctypes/callproc.c
+index 352487ed964..c193ce0452d 100644
+--- a/Modules/_ctypes/callproc.c
++++ b/Modules/_ctypes/callproc.c
+@@ -1038,7 +1038,9 @@ static PyObject *GetResult(ctypes_state *st,
+     v = PyObject_CallOneArg(checker, retval);
+     if (v == NULL)
+         _PyTraceback_Add("GetResult", "_ctypes/callproc.c", __LINE__-2);
+-    Py_DECREF(retval);
++    if (retval != NULL) {
++        Py_DECREF(retval);
++    }
+     return v;
+ }
+ 

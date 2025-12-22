@@ -1,0 +1,14 @@
+id: hermes-commit-29018f8
+project: hermes
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+binary: hermes
+trigger_commit: 528af7a86fc04325c9e15c9f05f38108546e802d
+patch:
+  commit: 29018f800c60023a679304f10ed5ac99a1701f8a
+  date: '2022-08-12T17:26:12-07:00'
+reference:
+- https://github.com/facebook/hermes
+- https://github.com/facebook/hermes/issues/None
+- https://github.com/facebook/hermes/commit/528af7a86fc04325c9e15c9f05f38108546e802d
+- https://github.com/facebook/hermes/commit/29018f800c60023a679304f10ed5ac99a1701f8a

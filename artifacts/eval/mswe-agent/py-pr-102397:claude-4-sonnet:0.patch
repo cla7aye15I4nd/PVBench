@@ -1,0 +1,42 @@
+
+diff --git a/.gitignore b/.gitignore
+index d42e111666f..6df96840d41 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -151,3 +151,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
+index 60a8067fc8c..5c9cdd75062 100644
+--- a/Modules/signalmodule.c
++++ b/Modules/signalmodule.c
+@@ -178,15 +178,17 @@ get_signal_state(PyObject *module)
+ }
+ 
+ 
+-static inline int
++static int
+ compare_handler(PyObject *func, PyObject *dfl_ign_handler)
+ {
+-    assert(PyLong_CheckExact(dfl_ign_handler));
+-    if (!PyLong_CheckExact(func)) {
++    if (func == NULL) {
+         return 0;
+     }
+-    // Assume that comparison of two PyLong objects will never fail.
+-    return PyObject_RichCompareBool(func, dfl_ign_handler, Py_EQ) == 1;
++    if (PyLong_CheckExact(func)) {
++        // Assume that comparison of two PyLong objects will never fail.
++        return PyObject_RichCompareBool(func, dfl_ign_handler, Py_EQ) == 1;
++    }
++    return func == dfl_ign_handler;
+ }
+ 
+ #ifdef HAVE_SETITIMER

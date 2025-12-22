@@ -1,0 +1,27 @@
+diff --git a/NEWS b/NEWS
+index 703795dfa1..bcff2820de 100644
+--- a/NEWS
++++ b/NEWS
+@@ -29,6 +29,9 @@ PHP                                                                        NEWS
+   . Fixed bug GH-10495 (feof on OpenSSL stream hangs indefinitely).
+     (Jakub Zelenka)
+ 
++- PDO SQLite:
++  . Fix GH-13984 (Buffer size is now checked before memcmp). (Saki Takamachi)
++
+ - Phar:
+   . Fixed bug GH-13836 (Renaming a file in a Phar to an already existing
+     filename causes a NULL pointer dereference). (nielsdos)
+diff --git a/ext/pdo_sqlite/sqlite_driver.c b/ext/pdo_sqlite/sqlite_driver.c
+index de5170a35a..2f494c2ddb 100644
+--- a/ext/pdo_sqlite/sqlite_driver.c
++++ b/ext/pdo_sqlite/sqlite_driver.c
+@@ -751,7 +751,7 @@ static char *make_filename_safe(const char *filename)
+ 		}
+ 		return estrdup(filename);
+ 	}
+-	if (*filename && memcmp(filename, ":memory:", sizeof(":memory:"))) {
++	if (*filename && strcmp(filename, ":memory:")) {
+ 		char *fullpath = expand_filepath(filename, NULL);
+ 
+ 		if (!fullpath) {

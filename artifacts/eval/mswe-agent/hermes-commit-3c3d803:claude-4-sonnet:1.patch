@@ -1,0 +1,52 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+index 034612427..79fb9b750 100644
+--- a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
++++ b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+@@ -6,6 +6,7 @@
+  */
+ 
+ #include "SerialExecutor.h"
++#include <stdexcept>
+ 
+ namespace facebook {
+ namespace hermes {
+diff --git a/reproduce_issue.sh b/reproduce_issue.sh
+new file mode 100755
+index 000000000..ef0db4c73
+--- /dev/null
++++ b/reproduce_issue.sh
+@@ -0,0 +1,6 @@
++#!/bin/bash -eu
++export CXXFLAGS="-include stdexcept ${CXXFLAGS:-}"
++CFLAGS="-fsanitize=address" CXXFLAGS="-fsanitize=address" LDFLAGS="-fsanitize=address" cmake -S . -B build -G Ninja
++cmake --build build -j 16
++test -f build/bin/hermes
++echo "Build completed successfully"
+diff --git a/run_test.sh b/run_test.sh
+new file mode 100755
+index 000000000..faaafc3bc
+--- /dev/null
++++ b/run_test.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++./build/bin/hermes -O /home/poc/0.bin

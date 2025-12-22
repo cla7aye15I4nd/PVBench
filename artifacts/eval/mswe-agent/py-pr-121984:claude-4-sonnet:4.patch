@@ -1,0 +1,131 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 5cf9eba243b..c4e565b417c 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -54,6 +54,8 @@ typedef struct {
+     double externalTimerUnit;
+     int tool_id;
+     PyObject* missing;
++    ProfilerContext *initializingContext;  /* Context currently being initialized */
++    int flushing;  /* Flag to prevent reentrancy in flush_unmatched */
+ } ProfilerObject;
+ 
+ #define POF_ENABLED     0x001
+@@ -307,7 +309,23 @@ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+         if (subentry)
+             ++subentry->recursionLevel;
+     }
++    
++    /* Mark this context as being initialized to prevent flush_unmatched from being called */
++    pObj->initializingContext = self;
++    
++    /* Get the timer value - this can potentially trigger profiler_disable() */
+     self->t0 = call_timer(pObj);
++    
++    /* Check if profiler was disabled during timer call and flush is needed */
++    int need_flush = !(pObj->flags & POF_ENABLED) && pObj->currentProfilerContext;
++    
++    /* Clear the initializing flag */
++    pObj->initializingContext = NULL;
++    
++    /* If profiler was disabled during initialization, flush now */
++    if (need_flush) {
++        flush_unmatched(pObj);
++    }
+ }
+ 
+ static void
+@@ -755,6 +773,13 @@ profiler_enable(ProfilerObject *self, PyObject *args, PyObject *kwds)
+ static void
+ flush_unmatched(ProfilerObject *pObj)
+ {
++    /* Prevent reentrancy - if we're already flushing, don't do it again */
++    if (pObj->flushing) {
++        return;
++    }
++    
++    pObj->flushing = 1;
++    
+     while (pObj->currentProfilerContext) {
+         ProfilerContext *pContext = pObj->currentProfilerContext;
+         ProfilerEntry *profEntry= pContext->ctxEntry;
+@@ -762,10 +787,14 @@ flush_unmatched(ProfilerObject *pObj)
+             Stop(pObj, pContext, profEntry);
+         else
+             pObj->currentProfilerContext = pContext->previous;
+-        if (pContext)
++        
++        /* Don't free the context if it's currently being initialized */
++        if (pContext && pContext != pObj->initializingContext) {
+             PyMem_Free(pContext);
++        }
+     }
+-
++    
++    pObj->flushing = 0;
+ }
+ 
+ PyDoc_STRVAR(disable_doc, "\
+@@ -812,7 +841,13 @@ profiler_disable(ProfilerObject *self, PyObject* noarg)
+         Py_DECREF(monitoring);
+ 
+         self->flags &= ~POF_ENABLED;
+-        flush_unmatched(self);
++        
++        /* Only call flush_unmatched if we're not in the middle of initializing a context */
++        if (!self->initializingContext) {
++            flush_unmatched(self);
++        }
++        /* If we are initializing a context, the flush will be deferred until
++           initContext completes */
+     }
+ 
+     if (pending_exception(self)) {
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..57a2ee7b13a
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,27 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++
++def test_function():
++    # Simple function to profile
++    for i in range(1000):
++        pass
++
++def main():
++    # Create a profiler
++    profiler = cProfile.Profile()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Call the test function
++    test_function()
++    
++    # Disable profiling - this should trigger the bug
++    profiler.disable()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()

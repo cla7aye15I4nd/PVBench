@@ -1,0 +1,32 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_builtin_functions.c b/Zend/zend_builtin_functions.c
+index 245552d0946..e5d2e97ec54 100644
+--- a/Zend/zend_builtin_functions.c
++++ b/Zend/zend_builtin_functions.c
+@@ -731,7 +731,8 @@ static void add_class_vars(zend_class_entry *scope, zend_class_entry *ce, bool s
+ 		if (statics && (prop_info->flags & ZEND_ACC_STATIC) != 0) {
+ 			prop = &ce->default_static_members_table[prop_info->offset];
+ 			ZVAL_DEINDIRECT(prop);
+-		} else if (!statics && (prop_info->flags & ZEND_ACC_STATIC) == 0) {
++
++		} else if (!statics && (prop_info->flags & ZEND_ACC_STATIC) == 0 && default_properties_table) {
+ 			prop = &default_properties_table[OBJ_PROP_TO_NUM(prop_info->offset)];
+ 		}
+ 		if (!prop) {

@@ -1,0 +1,34 @@
+diff --git a/result/XPath/tests/chaptersbase b/result/XPath/tests/chaptersbase
+index e023bf01..fd021d8a 100644
+--- a/result/XPath/tests/chaptersbase
++++ b/result/XPath/tests/chaptersbase
+@@ -123,3 +123,18 @@ Set contains 5 nodes:
+ 3  ELEMENT p
+ 4  ELEMENT p
+ 5  ELEMENT p
++
++========================
++Expression: //p[0 div 0]
++Object is a Node Set :
++Set contains 0 nodes:
++
++========================
++Expression: //p[100000000000000000000]
++Object is a Node Set :
++Set contains 0 nodes:
++
++========================
++Expression: //p[-100000000000000000000]
++Object is a Node Set :
++Set contains 0 nodes:
+diff --git a/test/XPath/tests/chaptersbase b/test/XPath/tests/chaptersbase
+index 17638f73..f8fbe2a8 100644
+--- a/test/XPath/tests/chaptersbase
++++ b/test/XPath/tests/chaptersbase
+@@ -8,3 +8,6 @@
+ /descendant::title
+ /descendant::p/ancestor::chapter
+ //p[1]
++//p[0 div 0]
++//p[100000000000000000000]
++//p[-100000000000000000000]

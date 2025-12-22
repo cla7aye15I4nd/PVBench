@@ -1,0 +1,25 @@
+
+diff --git a/.gclient b/.gclient
+new file mode 100644
+index 00000000000..9ad4b2e87bd
+--- /dev/null
++++ b/.gclient
+@@ -0,0 +1 @@
++solutions = []
+diff --git a/.gitignore b/.gitignore
+index d35b588ef65..29d98592a37 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib

@@ -1,0 +1,133 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..db376b2cec6 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -482,10 +482,13 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Recursive modification of ArrayObject is prohibited");
+ 		return;
+ 	}
+ 
++	/* Prevent recursive calls during destruction */
++	intern->nApplyCount++;
++
+ 	Z_TRY_ADDREF_P(value);
+ 
+ 	uint32_t refcount = 0;
+@@ -497,15 +500,16 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 		if (refcount) {
+ 			spl_array_set_refcount(intern->is_child, ht, refcount);
+ 		}
++		intern->nApplyCount--;
+ 		return;
+ 	}
+ 
+ 	if (get_hash_key(&key, intern, offset) == FAILURE) {
+ 		zend_type_error("Illegal offset type");
+ 		zval_ptr_dtor(value);
++		intern->nApplyCount--;
+ 		return;
+ 	}
+-
+ 	ht = spl_array_get_hash_table(intern);
+ 	refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 	if (key.key) {
+@@ -518,6 +522,7 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++	intern->nApplyCount--;
+ } /* }}} */
+ 
+ static void spl_array_write_dimension(zend_object *object, zval *offset, zval *value) /* {{{ */
+@@ -532,17 +537,23 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	spl_hash_key key;
+ 
+ 	if (check_inherited && intern->fptr_offset_del) {
++		intern->nApplyCount++;
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
++		intern->nApplyCount--;
+ 		return;
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Recursive modification of ArrayObject is prohibited");
+ 		return;
+ 	}
+ 
++	/* Prevent recursive calls during destruction */
++	intern->nApplyCount++;
++
+ 	if (get_hash_key(&key, intern, offset) == FAILURE) {
+ 		zend_type_error("Illegal offset type in unset");
++		intern->nApplyCount--;
+ 		return;
+ 	}
+ 
+@@ -575,6 +586,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++	intern->nApplyCount--;
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+@@ -1050,6 +1062,11 @@ static HashTable *spl_array_it_get_gc(zend_object_iterator *iter, zval **table,
+ 
+ /* {{{ spl_array_set_array */
+ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *array, zend_long ar_flags, bool just_array) {
++	/* Prevent recursive calls during destruction */
++	if (intern->nApplyCount > 0) {
++		return;
++	}
++	intern->nApplyCount++;
+ 	/* Handled by ZPP prior to this, or for __unserialize() before passing to here */
+ 	ZEND_ASSERT(Z_TYPE_P(array) == IS_ARRAY || Z_TYPE_P(array) == IS_OBJECT);
+ 	if (Z_TYPE_P(array) == IS_ARRAY) {
+@@ -1089,6 +1106,7 @@ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *ar
+ 				zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0,
+ 					"Overloaded object of type %s is not compatible with %s",
+ 					ZSTR_VAL(Z_OBJCE_P(array)->name), ZSTR_VAL(intern->std.ce->name));
++				intern->nApplyCount--;
+ 				return;
+ 			}
+ 			zval_ptr_dtor(&intern->array);
+@@ -1102,6 +1120,7 @@ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *ar
+ 		zend_hash_iterator_del(intern->ht_iter);
+ 		intern->ht_iter = (uint32_t)-1;
+ 	}
++	intern->nApplyCount--;
+ }
+ /* }}} */
+ 
+@@ -1253,7 +1272,7 @@ PHP_METHOD(ArrayObject, exchangeArray)
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Recursive modification of ArrayObject is prohibited");
+ 		RETURN_THROWS();
+ 	}
+ 

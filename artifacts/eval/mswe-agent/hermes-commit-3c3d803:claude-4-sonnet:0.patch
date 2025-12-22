@@ -1,0 +1,43 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/lib/Regex/Executor.cpp b/lib/Regex/Executor.cpp
+index fb73b8e56..2e04b7fea 100644
+--- a/lib/Regex/Executor.cpp
++++ b/lib/Regex/Executor.cpp
+@@ -396,10 +396,18 @@ struct Context {
+   /// Traits used for canonicalization.
+   Traits traits_;
+ 
++  /// The remaining number of times we will attempt to backtrack.
++  /// This is effectively a timeout on the regexp execution.
+   /// The remaining number of times we will attempt to backtrack.
+   /// This is effectively a timeout on the regexp execution.
+   uint32_t backtracksRemaining_ = kBacktrackLimit;
+ 
++  /// The maximum recursion depth for match() calls to prevent stack overflow.
++  static constexpr uint32_t kMaxRecursionDepth = 1000;
++
++  /// The current recursion depth for match() calls.
++  uint32_t recursionDepth_ = 0;
++
+   Context(
+       llvh::ArrayRef<uint8_t> bytecodeStream,
+       constants::MatchFlagType flags,

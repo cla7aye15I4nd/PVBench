@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+25|cal->add(UCAL_ERA, -1426056846, status)|U_FAILURE(status)|Should return failure

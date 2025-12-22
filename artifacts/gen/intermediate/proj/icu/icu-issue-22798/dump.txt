@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+20|MessageFormat msg(pattern, status)|status == U_INDEX_OUTOFBOUNDS_ERROR|Deep nested choice should cause error but not crash

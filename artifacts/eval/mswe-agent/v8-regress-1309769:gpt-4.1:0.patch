@@ -1,0 +1,62 @@
+
+diff --git a/.gitignore b/.gitignore
+index a42d2c859ba..c80e69e5a6f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -109,3 +109,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/compiler/simplified-lowering-verifier.cc b/src/compiler/simplified-lowering-verifier.cc
+index 25f177883f9..099c02b03e6 100644
+--- a/src/compiler/simplified-lowering-verifier.cc
++++ b/src/compiler/simplified-lowering-verifier.cc
+@@ -166,17 +166,28 @@ void SimplifiedLoweringVerifier::VisitNode(Node* node,
+         // Number x Number -> Number
+         output_type = op_typer.NumberAdd(left_type, right_type);
+       } else {
+-        // Invalid type combination.
+-        std::ostringstream left_str, right_str;
+-        left_type.PrintTo(left_str);
+-        right_type.PrintTo(right_str);
+-        FATAL(
+-            "SimplifiedLoweringVerifierError: invalid combination of input "
+-            "types "
+-            "%s and %s for node #%d:%s",
+-            left_str.str().c_str(), right_str.str().c_str(), node->id(),
+-            node->op()->mnemonic());
+-      }
++        // Allow Range types that are subtypes of Number or BigInt.
++        if ((left_type.IsRange() && (right_type.Is(Type::Number()) || right_type.Is(Type::BigInt())) &&
++             left_type.Is(right_type)) ||
++            (right_type.IsRange() && (left_type.Is(Type::Number()) || left_type.Is(Type::BigInt())) &&
++             right_type.Is(left_type))) {
++          if (left_type.IsRange()) {
++            output_type = op_typer.NumberAdd(left_type, right_type);
++          } else {
++            output_type = op_typer.NumberAdd(left_type, right_type);
++          }
++        } else {
++          // Invalid type combination.
++          std::ostringstream left_str, right_str;
++          left_type.PrintTo(left_str);
++          right_type.PrintTo(right_str);
++          FATAL(
++              "SimplifiedLoweringVerifierError: invalid combination of input "
++              "types "
++              "%s and %s for node #%d:%s",
++              left_str.str().c_str(), right_str.str().c_str(), node->id(),
++              node->op()->mnemonic());
++        }
+ 
+       Truncation output_trunc = LeastGeneralTruncation(InputTruncation(node, 0),
+                                                        InputTruncation(node, 1),

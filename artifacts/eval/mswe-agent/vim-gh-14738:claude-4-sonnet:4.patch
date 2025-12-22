@@ -1,0 +1,200 @@
+
+diff --git a/.gitignore b/.gitignore
+index 241e96eaf..6bdb4f440 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -117,3 +117,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/xxd/xxd.c b/src/xxd/xxd.c
+index cf8b4ea6a..7f30c8ac6 100644
+--- a/src/xxd/xxd.c
++++ b/src/xxd/xxd.c
+@@ -241,17 +241,17 @@ char hexxa[] = "0123456789abcdef0123456789ABCDEF", *hexx = hexxa;
+ #define CONDITIONAL_CAPITALIZE(c) (capitalize ? toupper((unsigned char)(c)) : (c))
+ 
+ #define COLOR_PROLOGUE \
+-l[c++] = '\033'; \
+-l[c++] = '['; \
+-l[c++] = '1'; \
+-l[c++] = ';'; \
+-l[c++] = '3';
++if (c < LLEN) l[c++] = '\033'; \
++if (c < LLEN) l[c++] = '['; \
++if (c < LLEN) l[c++] = '1'; \
++if (c < LLEN) l[c++] = ';'; \
++if (c < LLEN) l[c++] = '3';
+ 
+ #define COLOR_EPILOGUE \
+-l[c++] = '\033'; \
+-l[c++] = '['; \
+-l[c++] = '0'; \
+-l[c++] = 'm';
++if (c < LLEN) l[c++] = '\033'; \
++if (c < LLEN) l[c++] = '['; \
++if (c < LLEN) l[c++] = '0'; \
++if (c < LLEN) l[c++] = 'm';
+ #define COLOR_RED '1'
+ #define COLOR_GREEN '2'
+ #define COLOR_YELLOW '3'
+@@ -604,37 +604,37 @@ begin_coloring_char (char *l, int *c, int e, int ebcdic)
+           (e >= 208 && e <= 217) || (e >= 226 && e <= 233) ||
+           (e >= 240 && e <= 249) || (e == 189) || (e == 64) ||
+           (e == 173) || (e == 224) )
+-        l[(*c)++] = COLOR_GREEN;
+-
+-      else if (e == 37 || e == 13 || e == 5)
+-        l[(*c)++] = COLOR_YELLOW;
+-      else if (e == 0)
+-        l[(*c)++] = COLOR_WHITE;
+-      else if (e == 255)
+-        l[(*c)++] = COLOR_BLUE;
+-      else
+-        l[(*c)++] = COLOR_RED;
+-    }
+-  else  /* ASCII */
+-    {
+-      #if defined(__MVS__) && __CHARSET_LIB == 0
+-      if (e >= 64)
+-        l[(*c)++] = COLOR_GREEN;
+-      #else
+-      if (e > 31 && e < 127)
+-        l[(*c)++] = COLOR_GREEN;
+-      #endif
+-
+-      else if (e == 9 || e == 10 || e == 13)
+-        l[(*c)++] = COLOR_YELLOW;
+-      else if (e == 0)
+-        l[(*c)++] = COLOR_WHITE;
+-      else if (e == 255)
+-        l[(*c)++] = COLOR_BLUE;
+-      else
+-        l[(*c)++] = COLOR_RED;
+-    }
+-  l[(*c)++] = 'm';
++      if (*c < LLEN) l[(*c)++] = COLOR_GREEN;
++
++    else if (e == 37 || e == 13 || e == 5)
++      if (*c < LLEN) l[(*c)++] = COLOR_YELLOW;
++    else if (e == 0)
++      if (*c < LLEN) l[(*c)++] = COLOR_WHITE;
++    else if (e == 255)
++      if (*c < LLEN) l[(*c)++] = COLOR_BLUE;
++    else
++      if (*c < LLEN) l[(*c)++] = COLOR_RED;
++  }
++else  /* ASCII */
++  {
++    #if defined(__MVS__) && __CHARSET_LIB == 0
++    if (e >= 64)
++      if (*c < LLEN) l[(*c)++] = COLOR_GREEN;
++    #else
++    if (e > 31 && e < 127)
++      if (*c < LLEN) l[(*c)++] = COLOR_GREEN;
++    #endif
++
++    else if (e == 9 || e == 10 || e == 13)
++      if (*c < LLEN) l[(*c)++] = COLOR_YELLOW;
++    else if (e == 0)
++      if (*c < LLEN) l[(*c)++] = COLOR_WHITE;
++    else if (e == 255)
++      if (*c < LLEN) l[(*c)++] = COLOR_BLUE;
++    else
++      if (*c < LLEN) l[(*c)++] = COLOR_RED;
++  }
++if (*c < LLEN) l[(*c)++] = 'm';
+ }
+ 
+   static int
+@@ -1102,20 +1102,20 @@ main(int argc, char *argv[])
+           begin_coloring_char(l,&c,e,ebcdic);
+ #if defined(__MVS__) && __CHARSET_LIB == 0
+           if (e >= 64)
+-            l[c++] = e;
++            if (c < LLEN) l[c++] = e;
+           else
+-            l[c++] = '.';
++            if (c < LLEN) l[c++] = '.';
+ #else
+           if (ebcdic)
+             e = (e < 64) ? '.' : etoa64[e-64];
+-          l[c++] = (e > 31 && e < 127) ? e : '.';
++          if (c < LLEN) l[c++] = (e > 31 && e < 127) ? e : '.';
+ #endif
+           COLOR_EPILOGUE
+           n++;
+           if (++p == cols)
+             {
+-              l[c++] = '\n';
+-              l[c++] = '\0';
++              if (c < LLEN) l[c++] = '\n';
++              if (c < LLEN) l[c++] = '\0';
+               xxdline(fpo, l, autoskip ? nonzero : 1);
+               nonzero = 0;
+               p = 0;
+@@ -1127,7 +1127,7 @@ main(int argc, char *argv[])
+             e = (e < 64) ? '.' : etoa64[e-64];
+ 
+           c += addrlen + 3 + p;
+-          l[c++] =
++          if (c < LLEN) l[c++] =
+ #if defined(__MVS__) && __CHARSET_LIB == 0
+               (e >= 64)
+ #else
+@@ -1137,8 +1137,8 @@ main(int argc, char *argv[])
+           n++;
+           if (++p == cols)
+             {
+-              l[c++] = '\n';
+-              l[c] = '\0';
++              if (c < LLEN) l[c++] = '\n';
++              if (c < LLEN) l[c] = '\0';
+               xxdline(fpo, l, autoskip ? nonzero : 1);
+               nonzero = 0;
+               p = 0;
+@@ -1147,8 +1147,8 @@ main(int argc, char *argv[])
+     }
+   if (p)
+     {
+-      l[c++] = '\n';
+-      l[c] = '\0';
++      if (c < LLEN) l[c++] = '\n';
++      if (c < LLEN) l[c] = '\0';
+       if (color)
+         {
+           c++;
+@@ -1164,9 +1164,9 @@ main(int argc, char *argv[])
+               for (i = 0; i < fill;i++)
+                 {
+                   COLOR_PROLOGUE
+-                  l[c++] = COLOR_RED;
+-                  l[c++] = 'm';
+-                  l[c++] = ' '; /* empty space */
++                  if (c < LLEN) l[c++] = COLOR_RED;
++                  if (c < LLEN) l[c++] = 'm';
++                  if (c < LLEN) l[c++] = ' '; /* empty space */
+                   COLOR_EPILOGUE
+                   x++;
+                   p++;
+@@ -1182,9 +1182,9 @@ main(int argc, char *argv[])
+               for (i = cols - p; i > 0;i--)
+                 {
+                   COLOR_PROLOGUE
+-                  l[c++] = COLOR_RED;
+-                  l[c++] = 'm';
+-                  l[c++] = ' '; /* empty space */
++                  if (c < LLEN) l[c++] = COLOR_RED;
++                  if (c < LLEN) l[c++] = 'm';
++                  if (c < LLEN) l[c++] = ' '; /* empty space */
+                   COLOR_EPILOGUE
+                 }
+             }

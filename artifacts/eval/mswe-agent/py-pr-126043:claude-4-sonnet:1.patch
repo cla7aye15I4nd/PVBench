@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 18dc2859357..c733e9e355f 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -3134,7 +3134,10 @@ task_eager_start(asyncio_state *state, TaskObj *task)
+         }
+     } else {
+         // This seems to really help performance on pyperformance benchmarks
+-        Py_CLEAR(task->task_coro);
++        // Don't clear the coroutine immediately for eager tasks to avoid use-after-free
++        // when callbacks scheduled by future_set_result try to access it later.
++        // The coroutine will be cleared when the task is garbage collected.
++        // Py_CLEAR(task->task_coro);
+     }
+ 
+     return retval;

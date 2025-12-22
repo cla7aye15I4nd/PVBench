@@ -1,0 +1,93 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ba8d67d9..8556f202b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,3 +24,14 @@ test/ApplePlatformsIntegrationTestApp/Podfile.lock
+ test/ApplePlatformsIntegrationTestApp/Pods
+ test/ApplePlatformsIntegrationTestApp/**/xcuserdata
+ test/ApplePlatformsIntegrationTestApp/ApplePlatformsIntegrationTestApp.xcworkspace
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/Support/SHA1.h b/include/hermes/Support/SHA1.h
+index 48f70b538..4263d50c5 100644
+--- a/include/hermes/Support/SHA1.h
++++ b/include/hermes/Support/SHA1.h
+@@ -10,7 +10,7 @@
+ 
+ #include <array>
+ #include <string>
+-
++#include <cstdint>
+ namespace hermes {
+ 
+ constexpr size_t SHA1_NUM_BYTES = 20;
+diff --git a/include/hermes/VM/JSCallableProxy.h b/include/hermes/VM/JSCallableProxy.h
+index 5aab5d3de..151fcf678 100644
+--- a/include/hermes/VM/JSCallableProxy.h
++++ b/include/hermes/VM/JSCallableProxy.h
+@@ -37,10 +37,7 @@ class JSCallableProxy : public NativeFunction {
+       Handle<JSObject> target,
+       Handle<JSObject> handler);
+ 
+-  bool isConstructor(Runtime *runtime) {
+-    return vm::isConstructor(
+-        runtime, vmcast_or_null<Callable>(slots_.target.get(runtime)));
+-  }
++  bool isConstructor(Runtime *runtime);
+ 
+ #ifdef HERMESVM_SERIALIZE
+   explicit JSCallableProxy(Deserializer &d);
+diff --git a/lib/VM/JSCallableProxy.cpp b/lib/VM/JSCallableProxy.cpp
+index 60ad53439..596a80548 100644
+--- a/lib/VM/JSCallableProxy.cpp
++++ b/lib/VM/JSCallableProxy.cpp
+@@ -209,6 +209,25 @@ CallResult<PseudoHandle<JSObject>> JSCallableProxy::_newObjectImpl(
+       runtime,
+       protoHandle);
+ }
+-
++bool JSCallableProxy::isConstructor(Runtime *runtime) {
++    // Recursion guard: if the target is also a JSCallableProxy, do not recurse infinitely.
++    auto *targetCallable = dyn_vmcast<Callable>(slots_.target.get(runtime));
++    if (!targetCallable) {
++        return false;
++    }
++    // If the target is this proxy itself, prevent infinite recursion.
++    if (targetCallable == this) {
++        return false;
++    }
++    // If the target is another JSCallableProxy, check for cycles.
++    auto *targetProxy = dyn_vmcast<JSCallableProxy>(targetCallable);
++    if (targetProxy) {
++        // Optional: could use a static thread_local set to track visited proxies for more complex cycles.
++        // For now, just break the chain to avoid stack overflow.
++        return false;
++    }
++    // Otherwise, delegate to the normal isConstructor logic.
++    return vm::isConstructor(runtime, targetCallable);
++}
+ } // namespace vm
+ } // namespace hermes
+diff --git a/public/hermes/Public/DebuggerTypes.h b/public/hermes/Public/DebuggerTypes.h
+index 191a81d1a..d23575823 100644
+--- a/public/hermes/Public/DebuggerTypes.h
++++ b/public/hermes/Public/DebuggerTypes.h
+@@ -10,7 +10,7 @@
+ 
+ #include <string>
+ #include <vector>
+-
++#include <cstdint>
+ namespace hermes {
+ namespace vm {
+ class Debugger;

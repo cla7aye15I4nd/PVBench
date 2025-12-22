@@ -1,0 +1,52 @@
+
+diff --git a/.gitignore b/.gitignore
+index d42e111666f..6df96840d41 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -151,3 +151,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/Setup b/Modules/Setup
+index d3647ecb995..dfe140569ba 100644
+--- a/Modules/Setup
++++ b/Modules/Setup
+@@ -144,7 +144,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+ #_pickle _pickle.c
+ #_queue _queuemodule.c
+ #_random _randommodule.c
+-#_socket socketmodule.c
++_socket socketmodule.c
+ #_statistics _statisticsmodule.c
+ #_struct _struct.c
+ #_typing _typingmodule.c
+diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
+index 60a8067fc8c..6d1b3d7636a 100644
+--- a/Modules/signalmodule.c
++++ b/Modules/signalmodule.c
+@@ -178,10 +178,16 @@ get_signal_state(PyObject *module)
+ }
+ 
+ 
+-static inline int
+-compare_handler(PyObject *func, PyObject *dfl_ign_handler)
++
++static inline int compare_handler(PyObject *func, PyObject *dfl_ign_handler)
++
+ {
+-    assert(PyLong_CheckExact(dfl_ign_handler));
++    if (func == NULL || dfl_ign_handler == NULL) {
++        return 0;
++    }
++    if (!PyLong_CheckExact(dfl_ign_handler)) {
++        return 0;
++    }
+     if (!PyLong_CheckExact(func)) {
+         return 0;
+     }

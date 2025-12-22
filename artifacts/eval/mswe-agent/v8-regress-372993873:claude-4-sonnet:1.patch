@@ -1,0 +1,206 @@
+
+diff --git a/.gitignore b/.gitignore
+index 9142623efa8..926f616c81e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -124,3 +124,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index 7fb660a1774..40f22d9c271 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -2107,16 +2107,16 @@ void WebAssemblyExceptionImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+ 
+   if (!info.IsConstructCall()) {
+     thrower.TypeError("WebAssembly.Exception must be invoked with 'new'");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   if (!info[0]->IsObject()) {
+     thrower.TypeError("Argument 0 must be a WebAssembly tag");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   i::DirectHandle<i::Object> arg0 = Utils::OpenDirectHandle(*info[0]);
+   if (!IsWasmTagObject(i::Cast<i::HeapObject>(*arg0))) {
+     thrower.TypeError("Argument 0 must be a WebAssembly tag");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   auto tag_object = i::Cast<i::WasmTagObject>(arg0);
+   i::DirectHandle<i::WasmExceptionTag> tag(
+@@ -2124,7 +2124,7 @@ void WebAssemblyExceptionImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+   auto js_tag = i::Cast<i::WasmTagObject>(i_isolate->context()->wasm_js_tag());
+   if (*tag == js_tag->tag()) {
+     thrower.TypeError("Argument 0 cannot be WebAssembly.JSTag");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   uint32_t size = GetEncodedSize(tag_object);
+   i::Handle<i::WasmExceptionPackage> runtime_exception =
+@@ -2143,7 +2143,7 @@ void WebAssemblyExceptionImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+   // Third argument: optional ExceptionOption ({traceStack: <bool>}).
+   if (!info[2]->IsNullOrUndefined() && !info[2]->IsObject()) {
+     thrower.TypeError("Argument 2 is not an object");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   if (info[2]->IsObject()) {
+     Local<Context> context = isolate->GetCurrentContext();
+@@ -2236,11 +2236,11 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& info) {
+ 
+   if (!info.IsConstructCall()) {
+     thrower.TypeError("WebAssembly.Function must be invoked with 'new'");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   if (!info[0]->IsObject()) {
+     thrower.TypeError("Argument 0 must be a function type");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   Local<Object> function_type = Local<Object>::Cast(info[0]);
+   Local<Context> context = isolate->GetCurrentContext();
+@@ -2254,17 +2254,17 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& info) {
+   if (!parameters_maybe.ToLocal(&parameters_value) ||
+       !parameters_value->IsObject()) {
+     thrower.TypeError("Argument 0 must be a function type with 'parameters'");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   Local<Object> parameters = parameters_value.As<Object>();
+   uint32_t parameters_len = GetIterableLength(i_isolate, context, parameters);
+   if (parameters_len == i::kMaxUInt32) {
+     thrower.TypeError("Argument 0 contains parameters without 'length'");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   if (parameters_len > i::wasm::kV8MaxWasmFunctionParams) {
+     thrower.TypeError("Argument 0 contains too many parameters");
+-    return;
++    return js_api_scope.AssertException();
+   }
+ 
+   // Load the 'results' property of the function type.
+@@ -2275,17 +2275,17 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& info) {
+   }
+   if (!results_value->IsObject()) {
+     thrower.TypeError("Argument 0 must be a function type with 'results'");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   Local<Object> results = results_value.As<Object>();
+   uint32_t results_len = GetIterableLength(i_isolate, context, results);
+   if (results_len == i::kMaxUInt32) {
+     thrower.TypeError("Argument 0 contains results without 'length'");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   if (results_len > i::wasm::kV8MaxWasmFunctionReturns) {
+     thrower.TypeError("Argument 0 contains too many results");
+-    return;
++    return js_api_scope.AssertException();
+   }
+ 
+   // Decode the function type and construct a signature.
+@@ -2295,12 +2295,12 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& info) {
+     MaybeLocal<Value> maybe = parameters->Get(context, i);
+     std::optional<i::wasm::ValueType> maybe_type =
+         GetValueType(isolate, maybe, context, enabled_features);
+-    if (!maybe_type) return;
++    if (!maybe_type) return js_api_scope.AssertException();
+     i::wasm::ValueType type = *maybe_type;
+     if (type == i::wasm::kWasmVoid) {
+       thrower.TypeError(
+           "Argument 0 parameter type at index #%u must be a value type", i);
+-      return;
++      return js_api_scope.AssertException();
+     }
+     builder.AddParam(type);
+   }
+@@ -2313,14 +2313,14 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& info) {
+     if (type == i::wasm::kWasmVoid) {
+       thrower.TypeError(
+           "Argument 0 result type at index #%u must be a value type", i);
+-      return;
++      return js_api_scope.AssertException();
+     }
+     builder.AddReturn(type);
+   }
+ 
+   if (!info[1]->IsObject()) {
+     thrower.TypeError("Argument 1 must be a function");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   const i::wasm::FunctionSig* sig = builder.Get();
+   i::wasm::Suspend suspend = i::wasm::kNoSuspend;
+@@ -2333,7 +2333,7 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& info) {
+     DCHECK(i::IsCallable(*callable));
+   } else if (!i::IsCallable(*callable)) {
+     thrower.TypeError("Argument 1 must be a function");
+-    return;
++    return js_api_scope.AssertException();
+   }
+ 
+   i::Handle<i::JSFunction> result =
+@@ -2349,14 +2349,14 @@ void WebAssemblyPromising(const v8::FunctionCallbackInfo<v8::Value>& info) {
+ 
+   if (!info[0]->IsFunction()) {
+     thrower.TypeError("Argument 0 must be a function");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   i::DirectHandle<i::JSReceiver> callable =
+       Utils::OpenDirectHandle(*info[0].As<Function>());
+ 
+   if (!i::WasmExportedFunction::IsWasmExportedFunction(*callable)) {
+     thrower.TypeError("Argument 0 must be a WebAssembly exported function");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   auto wasm_exported_function = i::Cast<i::WasmExportedFunction>(*callable);
+   i::DirectHandle<i::WasmExportedFunctionData> data(
+@@ -2364,7 +2364,7 @@ void WebAssemblyPromising(const v8::FunctionCallbackInfo<v8::Value>& info) {
+       i_isolate);
+   if (data->instance_data()->module_object()->is_asm_js()) {
+     thrower.TypeError("Argument 0 must be a WebAssembly exported function");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   i::Handle<i::JSFunction> result =
+       NewPromisingWasmExportedFunction(i_isolate, data, thrower);
+@@ -2380,11 +2380,11 @@ void WebAssemblySuspendingImpl(
+ 
+   if (!info.IsConstructCall()) {
+     thrower.TypeError("WebAssembly.Suspending must be invoked with 'new'");
+-    return;
++    return js_api_scope.AssertException();
+   }
+   if (!info[0]->IsFunction()) {
+     thrower.TypeError("Argument 0 must be a function");
+-    return;
++    return js_api_scope.AssertException();
+   }
+ 
+   i::DirectHandle<i::JSReceiver> callable =
+@@ -2393,7 +2393,7 @@ void WebAssemblySuspendingImpl(
+   if (i::WasmExportedFunction::IsWasmExportedFunction(*callable) ||
+       i::WasmJSFunction::IsWasmJSFunction(*callable)) {
+     thrower.TypeError("Argument 0 must not be a WebAssembly function");
+-    return;
++    return js_api_scope.AssertException();
+   }
+ 
+   i::Handle<i::WasmSuspendingObject> result =

@@ -1,0 +1,73 @@
+==12649==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x531000010810 at pc 0x5f330198d356 bp 0x7ffe90f71240 sp 0x7ffe90f70a00
+READ of size 73661 at 0x531000010810 thread T0
+    #0 0x5f330198d355 in __asan_memcpy (/tmp/xml-commit-a820dbe/build/xmllint+0x135355) (BuildId: ffbdfd2de7ecb64b1956715b9c5b6bf5e6aa1a59)
+    #1 0x5f3301e13d58 in xmlDictAddString /tmp/xml-commit-a820dbe/build/dict.c:285:5
+    #2 0x5f3301e12ec1 in xmlDictLookup /tmp/xml-commit-a820dbe/build/dict.c:926:11
+    #3 0x5f3301b759e0 in htmlParseNameComplex /tmp/xml-commit-a820dbe/build/HTMLparser.c:2517:12
+    #4 0x5f3301b53fbd in htmlParseName /tmp/xml-commit-a820dbe/build/HTMLparser.c:2483:12
+    #5 0x5f3301b53112 in htmlParseEntityRef /tmp/xml-commit-a820dbe/build/HTMLparser.c:2682:16
+    #6 0x5f3301b8445c in htmlParseReference /tmp/xml-commit-a820dbe/build/HTMLparser.c:4044:8
+    #7 0x5f3301b5f1d7 in htmlParseContentInternal /tmp/xml-commit-a820dbe/build/HTMLparser.c:4619:3
+    #8 0x5f3301b613b5 in htmlParseDocument /tmp/xml-commit-a820dbe/build/HTMLparser.c:4769:5
+    #9 0x5f3301b74195 in htmlDoRead /tmp/xml-commit-a820dbe/build/HTMLparser.c:6741:5
+    #10 0x5f3301b743bd in htmlReadFile /tmp/xml-commit-a820dbe/build/HTMLparser.c:6799:13
+    #11 0x5f33019d6742 in parseAndPrintFile /tmp/xml-commit-a820dbe/build/xmllint.c:2255:8
+    #12 0x5f33019d2b2e in main /tmp/xml-commit-a820dbe/build/xmllint.c:3767:7
+    #13 0x78acd83611c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x78acd836128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x5f33018f4654 in _start (/tmp/xml-commit-a820dbe/build/xmllint+0x9c654) (BuildId: ffbdfd2de7ecb64b1956715b9c5b6bf5e6aa1a59)
+
+0x531000010810 is located 0 bytes after 65552-byte region [0x531000000800,0x531000010810)
+allocated by thread T0 here:
+    #0 0x5f330198f8c0 in realloc (/tmp/xml-commit-a820dbe/build/xmllint+0x1378c0) (BuildId: ffbdfd2de7ecb64b1956715b9c5b6bf5e6aa1a59)
+    #1 0x5f3301c86160 in xmlBufGrowInternal /tmp/xml-commit-a820dbe/build/buf.c:486:23
+    #2 0x5f3301c856f0 in xmlBufGrow /tmp/xml-commit-a820dbe/build/buf.c:515:11
+    #3 0x5f3301b04361 in xmlParserInputBufferGrow /tmp/xml-commit-a820dbe/build/xmlIO.c:3326:9
+    #4 0x5f33019fea33 in xmlParserInputGrow /tmp/xml-commit-a820dbe/build/parserInternals.c:320:8
+    #5 0x5f3301b755a4 in htmlParseNameComplex /tmp/xml-commit-a820dbe/build/HTMLparser.c:2511:6
+    #6 0x5f3301b53fbd in htmlParseName /tmp/xml-commit-a820dbe/build/HTMLparser.c:2483:12
+    #7 0x5f3301b53112 in htmlParseEntityRef /tmp/xml-commit-a820dbe/build/HTMLparser.c:2682:16
+    #8 0x5f3301b8445c in htmlParseReference /tmp/xml-commit-a820dbe/build/HTMLparser.c:4044:8
+    #9 0x5f3301b5f1d7 in htmlParseContentInternal /tmp/xml-commit-a820dbe/build/HTMLparser.c:4619:3
+    #10 0x5f3301b613b5 in htmlParseDocument /tmp/xml-commit-a820dbe/build/HTMLparser.c:4769:5
+    #11 0x5f3301b74195 in htmlDoRead /tmp/xml-commit-a820dbe/build/HTMLparser.c:6741:5
+    #12 0x5f3301b743bd in htmlReadFile /tmp/xml-commit-a820dbe/build/HTMLparser.c:6799:13
+    #13 0x5f33019d6742 in parseAndPrintFile /tmp/xml-commit-a820dbe/build/xmllint.c:2255:8
+    #14 0x5f33019d2b2e in main /tmp/xml-commit-a820dbe/build/xmllint.c:3767:7
+    #15 0x78acd83611c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #16 0x78acd836128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x5f33018f4654 in _start (/tmp/xml-commit-a820dbe/build/xmllint+0x9c654) (BuildId: ffbdfd2de7ecb64b1956715b9c5b6bf5e6aa1a59)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow (/tmp/xml-commit-a820dbe/build/xmllint+0x135355) (BuildId: ffbdfd2de7ecb64b1956715b9c5b6bf5e6aa1a59) in __asan_memcpy
+Shadow bytes around the buggy address:
+  0x531000010580: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x531000010600: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x531000010680: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x531000010700: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x531000010780: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x531000010800: 00 00[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x531000010880: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x531000010900: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x531000010980: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x531000010a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x531000010a80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12649==ABORTING

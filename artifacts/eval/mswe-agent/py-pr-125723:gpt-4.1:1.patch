@@ -1,0 +1,172 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Include/cpython/frameobject.h b/Include/cpython/frameobject.h
+index dbbfbb5105b..253860624ee 100644
+--- a/Include/cpython/frameobject.h
++++ b/Include/cpython/frameobject.h
+@@ -32,4 +32,4 @@ PyAPI_FUNC(void) PyFrame_FastToLocals(PyFrameObject *);
+ typedef struct {
+     PyObject_HEAD
+     PyFrameObject* frame;
+-} PyFrameLocalsProxyObject;
++    PyObject *weakreflist;
+diff --git a/Include/internal/pycore_frame.h b/Include/internal/pycore_frame.h
+index 14dc91e5429..1529f25c2df 100644
+--- a/Include/internal/pycore_frame.h
++++ b/Include/internal/pycore_frame.h
+@@ -18,10 +18,7 @@ extern "C" {
+  * structs. */
+ 
+ 
+-struct _frame {
+-    PyObject_HEAD
+-    PyFrameObject *f_back;      /* previous frame, or NULL */
+-    struct _PyInterpreterFrame *f_frame; /* points to the frame data */
++
+     PyObject *f_trace;          /* Trace function */
+     int f_lineno;               /* Current line number. Only valid if non-zero */
+     char f_trace_lines;         /* Emit per-line trace events? */
+@@ -32,9 +29,9 @@ struct _frame {
+        is stored here */
+     PyObject *f_locals_cache;
+     /* The frame data, if this frame object owns the frame */
+-    PyObject *_f_frame_data[1];
+-};
++    PyObject *f_locals_proxies; /* List of weakrefs to PyFrameLocalsProxyObject */
+ 
++};
+ extern PyFrameObject* _PyFrame_New_NoTrack(PyCodeObject *code);
+ 
+ 
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index d6b4065e130..4884bda2e8d 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -7,17 +7,17 @@
+ #include "pycore_function.h"      // _PyFunction_FromConstructor()
+ #include "pycore_moduleobject.h"  // _PyModule_GetDict()
+ #include "pycore_modsupport.h"    // _PyArg_CheckPositional()
+-#include "pycore_object.h"        // _PyObject_GC_UNTRACK()
++#define OFF(x) offsetof(PyFrameObject, x)
+ #include "pycore_cell.h"          // PyCell_GetRef() PyCell_SetTakeRef()
+ #include "pycore_opcode_metadata.h" // _PyOpcode_Deopt, _PyOpcode_Caches
+ 
+ 
+-#include "frameobject.h"          // PyFrameObject
+-#include "pycore_frame.h"
+-#include "opcode.h"               // EXTENDED_ARG
+-
+ 
+-#define OFF(x) offsetof(PyFrameObject, x)
++typedef struct {
++    PyObject_HEAD
++    PyFrameObject* frame;
++    PyObject *weakreflist;
++} PyFrameLocalsProxyObject;
+ 
+ 
+ // Returns borrowed reference or NULL
+@@ -37,7 +37,7 @@ framelocalsproxy_getval(_PyInterpreterFrame *frame, PyCodeObject *co, int i)
+     if (kind == CO_FAST_FREE || kind & CO_FAST_CELL) {
+         // The cell was set when the frame was created from
+         // the function's closure.
+-        assert(PyCell_Check(value));
++
+         cell = value;
+     }
+ 
+@@ -348,7 +348,25 @@ framelocalsproxy_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+     }
+ 
+     ((PyFrameLocalsProxyObject*)self)->frame = (PyFrameObject*)Py_NewRef(frame);
+-
++    // Add weakref to self in frame->f_locals_proxies
++    if (frame->f_locals_proxies == NULL) {
++        frame->f_locals_proxies = PyList_New(0);
++        if (frame->f_locals_proxies == NULL) {
++            Py_DECREF(self);
++            return NULL;
++        }
++    }
++    PyObject *weakref = PyWeakref_NewRef((PyObject *)self, NULL);
++    if (weakref == NULL) {
++        Py_DECREF(self);
++        return NULL;
++    }
++    if (PyList_Append(frame->f_locals_proxies, weakref) < 0) {
++        Py_DECREF(weakref);
++        Py_DECREF(self);
++        return NULL;
++    }
++    Py_DECREF(weakref);
+     return (PyObject *)self;
+ }
+ 
+@@ -819,6 +837,7 @@ PyTypeObject PyFrameLocalsProxy_Type = {
+     PyVarObject_HEAD_INIT(&PyType_Type, 0)
+     .tp_name = "FrameLocalsProxy",
+     .tp_basicsize = sizeof(PyFrameLocalsProxyObject),
++    .tp_weaklistoffset = offsetof(PyFrameLocalsProxyObject, weakreflist),
+     .tp_dealloc = (destructor)framelocalsproxy_dealloc,
+     .tp_repr = &framelocalsproxy_repr,
+     .tp_as_number = &framelocalsproxy_as_number,
+@@ -1719,7 +1738,18 @@ frame_dealloc(PyFrameObject *f)
+     Py_CLEAR(f->f_back);
+     Py_CLEAR(f->f_trace);
+     Py_CLEAR(f->f_extra_locals);
+-    Py_CLEAR(f->f_locals_cache);
++    // Clear frame pointer in all proxies
++    if (f->f_locals_proxies != NULL) {
++        Py_ssize_t n = PyList_GET_SIZE(f->f_locals_proxies);
++        for (Py_ssize_t i = 0; i < n; i++) {
++            PyObject *weakref = PyList_GET_ITEM(f->f_locals_proxies, i);
++            PyObject *proxy = PyWeakref_GetObject(weakref);
++            if (proxy != Py_None && Py_TYPE(proxy) == &PyFrameLocalsProxy_Type) {
++                ((PyFrameLocalsProxyObject*)proxy)->frame = NULL;
++            }
++        }
++        Py_CLEAR(f->f_locals_proxies);
++    }
+     PyObject_GC_Del(f);
+     Py_TRASHCAN_END;
+ }
+@@ -1884,6 +1914,7 @@ _PyFrame_New_NoTrack(PyCodeObject *code)
+     f->f_lineno = 0;
+     f->f_extra_locals = NULL;
+     f->f_locals_cache = NULL;
++    f->f_locals_proxies = NULL;
+     return f;
+ }
+ 
+diff --git a/asan_test b/asan_test
+new file mode 100755
+index 00000000000..d5fb091cc98
+Binary files /dev/null and b/asan_test differ
+diff --git a/asan_test.c b/asan_test.c
+new file mode 100644
+index 00000000000..3b4642a8c20
+--- /dev/null
++++ b/asan_test.c
+@@ -0,0 +1,9 @@
++#include <stdio.h>
++#include <stdlib.h>
++
++int main() {
++    int *x = malloc(sizeof(int));
++    free(x);
++    printf("%d\\n", *x); // Use after free
++    return 0;
++}

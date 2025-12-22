@@ -1,0 +1,107 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_builtin_functions.c b/Zend/zend_builtin_functions.c
+index 72cb07decbd..8974d06a11a 100644
+--- a/Zend/zend_builtin_functions.c
++++ b/Zend/zend_builtin_functions.c
+@@ -1734,6 +1734,11 @@ ZEND_API void zend_fetch_debug_backtrace(zval *return_value, int skip_last, int
+ 			}
+ 		} else if (UNEXPECTED((ZEND_CALL_INFO(call) & ZEND_CALL_GENERATOR) != 0)) {
+ 			prev = zend_generator_check_placeholder_frame(prev);
++			/* Validate that prev is still valid after placeholder frame check */
++			if (!prev) {
++				call = call->prev_execute_data;
++				continue;
++			}
+ 		}
+ 
+ 		frameno++;
+diff --git a/Zend/zend_generators.c b/Zend/zend_generators.c
+index b5693741859..d9101cf36ae 100644
+--- a/Zend/zend_generators.c
++++ b/Zend/zend_generators.c
+@@ -437,6 +437,9 @@ static ZEND_COLD zend_function *zend_generator_get_constructor(zend_object *obje
+ 
+ ZEND_API zend_execute_data *zend_generator_check_placeholder_frame(zend_execute_data *ptr)
+ {
++	if (!ptr) {
++		return ptr;
++	}
+ 	if (!ptr->func && Z_TYPE(ptr->This) == IS_OBJECT) {
+ 		if (Z_OBJCE(ptr->This) == zend_ce_generator) {
+ 			zend_generator *generator = (zend_generator *) Z_OBJ(ptr->This);
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..33e0d5bff81 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -163,6 +163,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+ 
+ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
+ {
++	uint32_t handle;
++	
+ 	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+ 
+ 	/* GC might have released this object already. */
+@@ -170,6 +172,24 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 		return;
+ 	}
+ 
++	/* Use a static flag to prevent recursive calls */
++	static bool in_delete = false;
++	if (in_delete) {
++		return;
++	}
++	in_delete = true;
++
++	/* Get handle first before any other checks */
++	handle = object->handle;
++	
++	/* Check if object is already marked as invalid in the store */
++	if (UNEXPECTED(handle >= EG(objects_store).size || 
++	               !IS_OBJ_VALID(EG(objects_store).object_buckets[handle]) ||
++	               EG(objects_store).object_buckets[handle] != object)) {
++		in_delete = false;
++		return;
++	}
++
+ 	/*	Make sure we hold a reference count during the destructor call
+ 		otherwise, when the destructor ends the storage might be freed
+ 		when the refcount reaches 0 a second time
+@@ -188,7 +208,6 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 	}
+ 
+ 	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+ 		void *ptr;
+ 
+ 		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+@@ -200,9 +219,10 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 			object->handlers->free_obj(object);
+ 		}
+ 		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+ 		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++		efree(ptr);
+ 	}
++	
++	in_delete = false;
+ }
+ /* }}} */

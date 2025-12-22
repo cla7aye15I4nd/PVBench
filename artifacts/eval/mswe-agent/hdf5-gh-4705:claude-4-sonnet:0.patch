@@ -1,0 +1,851 @@
+
+diff --git a/.gitignore b/.gitignore
+index d6b8b714dc..20a5dca7fa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -45,3 +45,14 @@ src/H5version.h
+ /.classpath
+ /CMakeUserPresets.json
+ HDF5Examples/CMakeUserPresets.json
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/fix_summary.md b/fix_summary.md
+new file mode 100644
+index 0000000000..c6fadf2428
+--- /dev/null
++++ b/fix_summary.md
+@@ -0,0 +1,40 @@
++# Fix for NULL Pointer Dereference in H5VL_set_vol_wrapper
++
++## Problem
++The issue was a NULL pointer dereference in `H5VL_set_vol_wrapper` function in `src/H5VLint.c` at line 2245. The crash occurred when:
++
++1. Invalid input was passed to `H5Lget_info2()` - specifically a datatype ID instead of a location ID
++2. This resulted in a VOL object with a NULL `connector` field
++3. The code had an assertion `assert(vol_obj->connector)` but in release builds, assertions are often disabled
++4. The code then tried to access `vol_obj->connector->cls->wrap_cls.get_wrap_ctx` causing a segmentation fault
++
++## Root Cause
++The POC code called `H5Lget_info2(H5Tcopy(H5T_NATIVE_INT), argv[1], &linfo, H5P_DEFAULT)` where the first parameter should be a file/group ID, not a datatype ID. This improper usage led to an invalid VOL object being passed down the call chain.
++
++## Solution
++Replaced the assertion with a proper error check in `H5VL_set_vol_wrapper` function:
++
++**Before:**
++```c
++assert(vol_obj->connector);
++```
++
++**After:**
++```c
++if (NULL == vol_obj->connector)
++    HGOTO_ERROR(H5E_VOL, H5E_BADVALUE, FAIL, "VOL object has no connector");
++```
++
++## Result
++- The NULL pointer dereference crash is eliminated
++- Invalid input now returns a proper error message instead of crashing
++- Normal HDF5 operations continue to work correctly
++- The program gracefully handles the error condition and continues execution
++
++## Files Modified
++- `src/H5VLint.c` - Added NULL check for `vol_obj->connector` at line 2242
++
++## Testing
++- Reproduced the original crash using the provided POC
++- Verified the fix eliminates the crash and returns proper error
++- Confirmed normal HDF5 operations still work correctly
+diff --git a/install/cmake/hdf5-config-version.cmake b/install/cmake/hdf5-config-version.cmake
+new file mode 100644
+index 0000000000..1de56f387e
+--- /dev/null
++++ b/install/cmake/hdf5-config-version.cmake
+@@ -0,0 +1,85 @@
++# This is a basic version file for the Config-mode of find_package().
++# It is used by write_basic_package_version_file() as input file for configure_file()
++# to create a version-file which can be installed along a config.cmake file.
++#
++# The created file sets PACKAGE_VERSION_EXACT if the current version string and
++# the requested version string are exactly the same and it sets
++# PACKAGE_VERSION_COMPATIBLE if the current version is >= requested version,
++# but only if the requested major and minor versions are the same as the current
++# one.
++# The variable CVF_VERSION must be set before calling configure_file().
++
++
++set(PACKAGE_VERSION "1.15.0")
++
++if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)
++  set(PACKAGE_VERSION_COMPATIBLE FALSE)
++else()
++
++  if("1.15.0" MATCHES "^([0-9]+)\\.([0-9]+)")
++    set(CVF_VERSION_MAJOR "${CMAKE_MATCH_1}")
++    set(CVF_VERSION_MINOR "${CMAKE_MATCH_2}")
++
++    if(NOT CVF_VERSION_MAJOR VERSION_EQUAL 0)
++      string(REGEX REPLACE "^0+" "" CVF_VERSION_MAJOR "${CVF_VERSION_MAJOR}")
++    endif()
++    if(NOT CVF_VERSION_MINOR VERSION_EQUAL 0)
++      string(REGEX REPLACE "^0+" "" CVF_VERSION_MINOR "${CVF_VERSION_MINOR}")
++    endif()
++  else()
++    set(CVF_VERSION_MAJOR "1.15.0")
++    set(CVF_VERSION_MINOR "")
++  endif()
++
++  if(PACKAGE_FIND_VERSION_RANGE)
++    # both endpoints of the range must have the expected major and minor versions
++    math (EXPR CVF_VERSION_MINOR_NEXT "${CVF_VERSION_MINOR} + 1")
++    if (NOT (PACKAGE_FIND_VERSION_MIN_MAJOR STREQUAL CVF_VERSION_MAJOR
++          AND PACKAGE_FIND_VERSION_MIN_MINOR STREQUAL CVF_VERSION_MINOR)
++        OR ((PACKAGE_FIND_VERSION_RANGE_MAX STREQUAL "INCLUDE"
++            AND NOT (PACKAGE_FIND_VERSION_MAX_MAJOR STREQUAL CVF_VERSION_MAJOR
++              AND PACKAGE_FIND_VERSION_MAX_MINOR STREQUAL CVF_VERSION_MINOR))
++          OR (PACKAGE_FIND_VERSION_RANGE_MAX STREQUAL "EXCLUDE"
++            AND NOT PACKAGE_FIND_VERSION_MAX VERSION_LESS_EQUAL ${CVF_VERSION_MAJOR}.${CVF_VERSION_MINOR_NEXT})))
++      set(PACKAGE_VERSION_COMPATIBLE FALSE)
++    elseif(PACKAGE_FIND_VERSION_MIN_MAJOR STREQUAL CVF_VERSION_MAJOR
++        AND PACKAGE_FIND_VERSION_MIN_MINOR STREQUAL CVF_VERSION_MINOR
++        AND ((PACKAGE_FIND_VERSION_RANGE_MAX STREQUAL "INCLUDE" AND PACKAGE_VERSION VERSION_LESS_EQUAL PACKAGE_FIND_VERSION_MAX)
++        OR (PACKAGE_FIND_VERSION_RANGE_MAX STREQUAL "EXCLUDE" AND PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION_MAX)))
++      set(PACKAGE_VERSION_COMPATIBLE TRUE)
++    else()
++      set(PACKAGE_VERSION_COMPATIBLE FALSE)
++    endif()
++  else()
++    if(NOT PACKAGE_FIND_VERSION_MAJOR VERSION_EQUAL 0)
++      string(REGEX REPLACE "^0+" "" PACKAGE_FIND_VERSION_MAJOR "${PACKAGE_FIND_VERSION_MAJOR}")
++    endif()
++    if(NOT PACKAGE_FIND_VERSION_MINOR VERSION_EQUAL 0)
++      string(REGEX REPLACE "^0+" "" PACKAGE_FIND_VERSION_MINOR "${PACKAGE_FIND_VERSION_MINOR}")
++    endif()
++
++    if((PACKAGE_FIND_VERSION_MAJOR STREQUAL CVF_VERSION_MAJOR) AND
++        (PACKAGE_FIND_VERSION_MINOR STREQUAL CVF_VERSION_MINOR))
++      set(PACKAGE_VERSION_COMPATIBLE TRUE)
++    else()
++      set(PACKAGE_VERSION_COMPATIBLE FALSE)
++    endif()
++
++    if(PACKAGE_FIND_VERSION STREQUAL PACKAGE_VERSION)
++      set(PACKAGE_VERSION_EXACT TRUE)
++    endif()
++  endif()
++endif()
++
++
++# if the installed or the using project don't have CMAKE_SIZEOF_VOID_P set, ignore it:
++if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "" OR "8" STREQUAL "")
++  return()
++endif()
++
++# check that the installed version has the same 32/64bit-ness as the one which is currently searching:
++if(NOT CMAKE_SIZEOF_VOID_P STREQUAL "8")
++  math(EXPR installedBits "8 * 8")
++  set(PACKAGE_VERSION "${PACKAGE_VERSION} (${installedBits}bit)")
++  set(PACKAGE_VERSION_UNSUITABLE TRUE)
++endif()
+diff --git a/install/cmake/hdf5-config.cmake b/install/cmake/hdf5-config.cmake
+new file mode 100644
+index 0000000000..49e0506871
+--- /dev/null
++++ b/install/cmake/hdf5-config.cmake
+@@ -0,0 +1,268 @@
++#
++# Copyright by The HDF Group.
++# All rights reserved.
++#
++# This file is part of HDF5.  The full HDF5 copyright notice, including
++# terms governing use, modification, and redistribution, is contained in
++# the COPYING file, which can be found at the root of the source code
++# distribution tree, or in https://www.hdfgroup.org/licenses.
++# If you do not have access to either file, you may request a copy from
++# help@hdfgroup.org.
++#
++#-----------------------------------------------------------------------------
++# HDF5 Config file for compiling against hdf5 build/install directory
++#-----------------------------------------------------------------------------
++
++####### Expanded from @PACKAGE_INIT@ by configure_package_config_file() #######
++####### Any changes to this file will be overwritten by the next CMake run ####
++####### The input file was hdf5-config.cmake.in                            ########
++
++get_filename_component(PACKAGE_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/../" ABSOLUTE)
++
++macro(set_and_check _var _file)
++  set(${_var} "${_file}")
++  if(NOT EXISTS "${_file}")
++    message(FATAL_ERROR "File or directory ${_file} referenced by variable ${_var} does not exist !")
++  endif()
++endmacro()
++
++macro(check_required_components _NAME)
++  foreach(comp ${${_NAME}_FIND_COMPONENTS})
++    if(NOT ${_NAME}_${comp}_FOUND)
++      if(${_NAME}_FIND_REQUIRED_${comp})
++        set(${_NAME}_FOUND FALSE)
++      endif()
++    endif()
++  endforeach()
++endmacro()
++
++####################################################################################
++
++string(TOUPPER hdf5 HDF5_PACKAGE_NAME)
++
++set (${HDF5_PACKAGE_NAME}_VALID_COMPONENTS
++    static
++    shared
++    C
++    CXX
++    Fortran
++    HL
++    CXX_HL
++    Fortran_HL
++    Java
++    Tools
++)
++
++set (${HDF5_PACKAGE_NAME}_BUILD_MODE       Release)
++
++#-----------------------------------------------------------------------------
++# User Options
++#-----------------------------------------------------------------------------
++# Languages:
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_BUILD_FORTRAN        OFF)
++set (${HDF5_PACKAGE_NAME}_BUILD_CPP_LIB        OFF)
++set (${HDF5_PACKAGE_NAME}_BUILD_JAVA           OFF)
++set (${HDF5_PACKAGE_NAME}_INSTALL_MOD_FORTRAN "")
++#-----------------------------------------------------------------------------
++# Features:
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_BUILD_HL_LIB          ON)
++set (${HDF5_PACKAGE_NAME}_BUILD_SHARED_LIBS     YES)
++set (${HDF5_PACKAGE_NAME}_BUILD_STATIC_LIBS     YES)
++set (${HDF5_PACKAGE_NAME}_ENABLE_THREADS        ON)
++set (${HDF5_PACKAGE_NAME}_ENABLE_THREADSAFE     OFF)
++set (${HDF5_PACKAGE_NAME}_ENABLE_PARALLEL       OFF)
++set (${HDF5_PACKAGE_NAME}_DEFAULT_API_VERSION  "v116")
++set (${HDF5_PACKAGE_NAME}_ENABLE_DEPRECATED_SYMBOLS ON)
++set (${HDF5_PACKAGE_NAME}_BUILD_DIMENSION_SCALES_WITH_NEW_REF )
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_BUILD_TOOLS           ON)
++set (${HDF5_PACKAGE_NAME}_BUILD_HL_GIF_TOOLS    OFF)
++set (${HDF5_PACKAGE_NAME}_BUILD_STATIC_TOOLS    OFF)
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_ENABLE_NONSTANDARD_FEATURE_FLOAT16 ON)
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_ENABLE_Z_LIB_SUPPORT  ON)
++set (${HDF5_PACKAGE_NAME}_ENABLE_SZIP_SUPPORT   OFF)
++set (${HDF5_PACKAGE_NAME}_ENABLE_SZIP_ENCODING  ON)
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_ENABLE_MAP_API        OFF)
++set (${HDF5_PACKAGE_NAME}_ENABLE_DIRECT_VFD     OFF)
++set (${HDF5_PACKAGE_NAME}_ENABLE_MIRROR_VFD     OFF)
++set (${HDF5_PACKAGE_NAME}_ENABLE_ROS3_VFD       OFF)
++set (${HDF5_PACKAGE_NAME}_ENABLE_HDFS_VFD       OFF)
++set (${HDF5_PACKAGE_NAME}_ENABLE_SUBFILING_VFD  OFF)
++set (${HDF5_PACKAGE_NAME}_ENABLE_PLUGIN_SUPPORT OFF)
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_PACKAGE_EXTLIBS       OFF)
++set (${HDF5_PACKAGE_NAME}_EXPORT_LIBRARIES      hdf5-static;hdf5-shared;hdf5_tools-static;hdf5_tools-shared;hdf5_hl-static;hdf5_hl-shared)
++set (${HDF5_PACKAGE_NAME}_ARCHITECTURE         "")
++set (${HDF5_PACKAGE_NAME}_TOOLSET              "")
++
++#-----------------------------------------------------------------------------
++# Dependencies
++#-----------------------------------------------------------------------------
++if (${HDF5_PACKAGE_NAME}_ENABLE_PARALLEL)
++  set (${HDF5_PACKAGE_NAME}_MPI_C_INCLUDE_PATH "")
++  set (${HDF5_PACKAGE_NAME}_MPI_C_LIBRARIES    "")
++  if (${HDF5_PACKAGE_NAME}_BUILD_FORTRAN)
++    set (${HDF5_PACKAGE_NAME}_MPI_Fortran_INCLUDE_PATH "")
++    set (${HDF5_PACKAGE_NAME}_MPI_Fortran_LIBRARIES    "")
++  endif ()
++  set (${HDF5_PACKAGE_NAME}_PARALLEL_FILTERED_WRITES )
++  set (${HDF5_PACKAGE_NAME}_LARGE_PARALLEL_IO        )
++
++  find_package(MPI QUIET REQUIRED)
++endif ()
++
++if (${HDF5_PACKAGE_NAME}_ENABLE_THREADSAFE OR ${HDF5_PACKAGE_NAME}_ENABLE_SUBFILING_VFD)
++  set(THREADS_PREFER_PTHREAD_FLAG ON)
++  find_package(Threads QUIET REQUIRED)
++endif ()
++
++if (${HDF5_PACKAGE_NAME}_BUILD_JAVA)
++  set (${HDF5_PACKAGE_NAME}_JAVA_INCLUDE_DIRS
++      ${PACKAGE_PREFIX_DIR}/lib/jarhdf5-1.15.0.jar
++      ${PACKAGE_PREFIX_DIR}/lib/slf4j-api-2.0.6.jar
++      ${PACKAGE_PREFIX_DIR}/lib/slf4j-nop-2.0.6.jar
++  )
++endif ()
++
++#-----------------------------------------------------------------------------
++# Directories
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_INCLUDE_DIR "${PACKAGE_PREFIX_DIR}/include" "${${HDF5_PACKAGE_NAME}_MPI_C_INCLUDE_DIRS}")
++
++set (${HDF5_PACKAGE_NAME}_SHARE_DIR "${PACKAGE_PREFIX_DIR}/cmake")
++set_and_check (${HDF5_PACKAGE_NAME}_BUILD_DIR "${PACKAGE_PREFIX_DIR}")
++
++if (${HDF5_PACKAGE_NAME}_BUILD_CPP_LIB)
++  set (${HDF5_PACKAGE_NAME}_INCLUDE_DIR_CPP "${PACKAGE_PREFIX_DIR}/include")
++endif ()
++
++if (${HDF5_PACKAGE_NAME}_BUILD_HL_LIB)
++  set (${HDF5_PACKAGE_NAME}_INCLUDE_DIR_HL "${PACKAGE_PREFIX_DIR}/include")
++endif ()
++
++if (${HDF5_PACKAGE_NAME}_BUILD_HL_LIB AND ${HDF5_PACKAGE_NAME}_BUILD_CPP_LIB)
++  set (${HDF5_PACKAGE_NAME}_INCLUDE_DIR_HL_CPP "${PACKAGE_PREFIX_DIR}/include")
++endif ()
++
++if (${HDF5_PACKAGE_NAME}_BUILD_TOOLS)
++  set (${HDF5_PACKAGE_NAME}_INCLUDE_DIR_TOOLS "${PACKAGE_PREFIX_DIR}/include")
++  set_and_check (${HDF5_PACKAGE_NAME}_TOOLS_DIR "${PACKAGE_PREFIX_DIR}/bin")
++endif ()
++
++#-----------------------------------------------------------------------------
++# Version Strings
++#-----------------------------------------------------------------------------
++set (${HDF5_PACKAGE_NAME}_VERSION_STRING 1.15.0)
++set (${HDF5_PACKAGE_NAME}_VERSION_MAJOR  1.15)
++set (${HDF5_PACKAGE_NAME}_VERSION_MINOR  0)
++
++#-----------------------------------------------------------------------------
++# Don't include targets if this file is being picked up by another
++# project which has already built hdf5 as a subproject
++#-----------------------------------------------------------------------------
++if (NOT TARGET "hdf5")
++  if (${HDF5_PACKAGE_NAME}_ENABLE_Z_LIB_SUPPORT AND ${HDF5_PACKAGE_NAME}_PACKAGE_EXTLIBS)
++    include (${PACKAGE_PREFIX_DIR}/cmake/-targets.cmake)
++  endif ()
++  if (${HDF5_PACKAGE_NAME}_ENABLE_SZIP_SUPPORT AND ${HDF5_PACKAGE_NAME}_PACKAGE_EXTLIBS)
++    include (${PACKAGE_PREFIX_DIR}/cmake/-targets.cmake)
++  endif ()
++  include (${PACKAGE_PREFIX_DIR}/cmake/hdf5-targets.cmake)
++endif ()
++
++# Handle default component(static) :
++if (NOT ${HDF5_PACKAGE_NAME}_FIND_COMPONENTS)
++  if (${HDF5_PACKAGE_NAME}_BUILD_STATIC_LIBS)
++    set (${HDF5_PACKAGE_NAME}_LIB_TYPE)
++    set (${HDF5_PACKAGE_NAME}_FIND_COMPONENTS C HL static)
++    set (${HDF5_PACKAGE_NAME}_FIND_REQUIRED_static_C true)
++  else ()
++    set (${HDF5_PACKAGE_NAME}_LIB_TYPE)
++    set (${HDF5_PACKAGE_NAME}_FIND_COMPONENTS C HL shared)
++    set (${HDF5_PACKAGE_NAME}_FIND_REQUIRED_shared_C true)
++  endif ()
++endif ()
++
++# Handle requested components:
++list (REMOVE_DUPLICATES ${HDF5_PACKAGE_NAME}_FIND_COMPONENTS)
++foreach (comp IN LISTS ${HDF5_PACKAGE_NAME}_FIND_COMPONENTS)
++  if (comp STREQUAL "shared")
++    list (REMOVE_ITEM ${HDF5_PACKAGE_NAME}_FIND_COMPONENTS ${comp})
++    set (${HDF5_PACKAGE_NAME}_LIB_TYPE ${${HDF5_PACKAGE_NAME}_LIB_TYPE} ${comp})
++
++    if (${HDF5_PACKAGE_NAME}_BUILD_FORTRAN AND ${HDF5_PACKAGE_NAME}_INSTALL_MOD_FORTRAN STREQUAL "SHARED")
+...s
++==============
++
++ -  When building with the NAG Fortran compiler using the Autotools and libtool
++    2.4.2 or earlier, the -shared flag will be missing '-Wl,', which will cause
++    compilation to fail. This is due to a bug in libtool that was fixed in 2012
++    and released in 2.4.4 in 2014.
++
++ -  When the library detects and builds in support for the _Float16 datatype, an
++    issue has been observed on at least one MacOS 14 system where the library
++    fails to initialize due to not being able to detect the byte order of the
++    _Float16 type (https://github.com/HDFGroup/hdf5/issues/4310):
++
++        #5: H5Tinit_float.c line 308 in H5T__fix_order(): failed to detect byte order
++        major: Datatype
++        minor: Unable to initialize object
++
++    If this issue is encountered, support for the _Float16 type can be disabled
++    with a configuration option:
++
++        CMake:      HDF5_ENABLE_NONSTANDARD_FEATURE_FLOAT16=OFF
++        Autotools:  --disable-nonstandard-feature-float16
++
++ -  When HDF5 is compiled with NVHPC versions 23.5 - 23.9 (additional versions may
++    also be applicable) and with -O2 (or higher) and -DNDEBUG, test failures occur
++    in the following tests:
++
++        H5PLUGIN-filter_plugin
++        H5TEST-flush2
++        H5TEST-testhdf5-base
++        MPI_TEST_t_filters_parallel
++
++    Sporadic failures (even with lower -O levels):
++        Java JUnit-TestH5Pfapl
++        Java JUnit-TestH5D
++
++    Also, NVHPC will fail to compile the test/tselect.c test file with a compiler
++    error of 'use of undefined value' when the optimization level is -O2 or higher.
++
++    This is confirmed to be a bug in the nvc compiler that has been fixed as of
++    23.11. If you are using an affected version of the NVidia compiler, the
++    work-around is to set the optimization level to -O1.
++
++    https://forums.developer.nvidia.com/t/hdf5-no-longer-compiles-with-nv-23-9/269045
++
++ -  CMake files do not behave correctly with paths containing spaces.
++    Do not use spaces in paths because the required escaping for handling spaces
++    results in very complex and fragile build files.
++
++ -  At present, metadata cache images may not be generated by parallel
++    applications.  Parallel applications can read files with metadata cache
++    images, but since this is a collective operation, a deadlock is possible
++    if one or more processes do not participate.
++
++ -  The subsetting option in ph5diff currently will fail and should be avoided.
++    The subsetting option works correctly in serial h5diff.
++
++ -  Flang Fortran compilation will fail (last check version 17) due to not yet
++    implemented: (1) derived type argument passed by value (H5VLff.F90),
++    and (2) support for REAL with KIND = 2 in intrinsic SPACING used in testing.
++
++ -  Fortran tests HDF5_1_8.F90 and HDF5_F03.F90 will fail with Cray compilers
++    greater than version 16.0 due to a compiler bug. The latest version verified
++    as failing was version 17.0.
++
++ -  Several tests currently fail on certain platforms:
++        MPI_TEST-t_bigio fails with spectrum-mpi on ppc64le platforms.
++
++        MPI_TEST-t_subfiling_vfd and MPI_TEST_EXAMPLES-ph5_subfiling fail with
++        cray-mpich on theta and with XL compilers on ppc64le platforms.
++
++        MPI_TEST_testphdf5_tldsc fails with cray-mpich 7.7 on cori and theta.
++
++ -  File space may not be released when overwriting or deleting certain nested
++    variable length or reference types.
++
++ -  Known problems in previous releases can be found in the HISTORY*.txt files
++    in the HDF5 source. Please report any new problems found to
++    help@hdfgroup.org.
++
++
++CMake vs. Autotools installations
++=================================
++While both build systems produce similar results, there are differences.
++Each system produces the same set of folders on Linux (only CMake works
++on standard Windows); bin, include, lib and share. Autotools places the
++COPYING and RELEASE.txt file in the root folder, CMake places them in
++the share folder.
++
++The bin folder contains the tools and the build scripts. Additionally, CMake
++creates dynamic versions of the tools with the suffix "-shared". Autotools
++installs one set of tools depending on the "--enable-shared" configuration
++option.
++  build scripts
++  -------------
++  Autotools: h5c++, h5cc, h5fc
++  CMake: h5c++, h5cc, h5hlc++, h5hlcc
++
++The include folder holds the header files and the fortran mod files. CMake
++places the fortran mod files into separate shared and static subfolders,
++while Autotools places one set of mod files into the include folder. Because
++CMake produces a tools library, the header files for tools will appear in
++the include folder.
++
++The lib folder contains the library files, and CMake adds the pkgconfig
++subfolder with the hdf5*.pc files used by the bin/build scripts created by
++the CMake build. CMake separates the C interface code from the fortran code by
++creating C-stub libraries for each Fortran library. In addition, only CMake
++installs the tools library. The names of the szip libraries are different
++between the build systems.
++
++The share folder will have the most differences because CMake builds include
++a number of CMake specific files for support of CMake's find_package and support
++for the HDF5 Examples CMake project.
++
++The issues with the gif tool are:
++    HDFFV-10592 CVE-2018-17433
++    HDFFV-10593 CVE-2018-17436
++    HDFFV-11048 CVE-2020-10809
++These CVE issues have not yet been addressed and are avoided by not building
++the gif tool by default. Enable building the High-Level tools with these options:
++    autotools:   --enable-hlgiftools
++    cmake:       HDF5_BUILD_HL_GIF_TOOLS=ON
+diff --git a/install/share/USING_HDF5_CMake.txt b/install/share/USING_HDF5_CMake.txt
+new file mode 100644
+index 0000000000..8b78e7d2db
+--- /dev/null
++++ b/install/share/USING_HDF5_CMake.txt
+@@ -0,0 +1,250 @@
++************************************************************************
++* Build and Install HDF5 Applications with CMake                       *
++************************************************************************
++
++Notes: This short instruction is written for users who want to quickly
++       build HDF5 applications using the CMake tools. Users can adapt
++       these instructions for their own applications. For more information,
++       see the "Minimum C Project Files for CMake" section.
++
++       More information about using CMake can be found at the KitWare
++       site, www.cmake.org.
++
++       CMake uses the command line; however, the visual CMake tool is
++       available for the configuration step. The steps are similar for
++       all of the operating systems supported by CMake.
++
++       NOTES:
++         1. Using CMake for building and using HDF5 is under active
++            development. While we have attempted to provide error-free
++            files, please understand that development with CMake has not
++            been extensively tested outside of HDF. The CMake specific
++            files may change before the next release.
++
++         2. CMake for HDF5 development should be usable on any system
++            where CMake is supported. Please send us any comments on how
++            CMake support can be improved on any system.
++
++         3. See the appendix at the bottom of this file for an example
++            of using a ctest script for building and testing. See
++            INSTALL_CMake.txt for more information.
++
++         4. See https://cmake.org/cmake/help/latest/command/find_package.html
++            for more information on the CMake "Config Mode Search Procedure".
++
++
++========================================================================
++I. Preconditions
++========================================================================
++
++   1. We suggest you obtain the latest CMake for your platform from the Kitware
++      web site. The HDF5 1.15.x product requires a minimum CMake version
++      of 3.18. If you are using VS2022, the minimum CMake version is 3.21.
++
++   2. You have installed the HDF5 library built with CMake, by executing
++      the HDF Install Utility (the *.msi file in the binary package for
++      Windows or the *.sh on Linux). You can obtain pre-built binaries
++      from The HDF Group's website at www.hdfgroup.org.
++
++   3. Set the HDF5_ROOT CMake variable, -DHDF5_ROOT=<install_path>
++      or environment variable, set(ENV{HDF5_ROOT} "<install_path>")
++      to the installed location of HDF5.
++         On Windows:
++            HDF5_ROOT=C:/Program Files/HDF_Group/HDF5/1.15.x/
++         On unix:
++            HDF5_ROOT=<install root folder>/HDF_Group/HDF5/1.15.x/
++
++      If you are using shared libraries, you may need to add to the path
++      environment variable. Set the path environment variable to the
++      installed location of the library files for HDF5.
++         On Windows (*.dll):
++            PATH=%PATH%;C:/Program Files/HDF_Group/HDF5/1.15.x/bin
++         On unix (*.so):
++            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<install root folder>/HDF_Group/HDF5/1.15.x/lib
++
++      If you are using filter plugin libraries, you will need to set the
++      HDF5_PLUGIN_PATH environment variable.
++         On Windows:
++            HDF5_PLUGIN_PATH=C:/Program Files/HDF_Group/HDF5/1.15.x/lib/plugin
++         On unix:
++            HDF5_PLUGIN_PATH=<install root folder>/HDF_Group/HDF5/1.15.x/lib/plugin
++
++      (Note there are no quote characters used on Windows and all platforms
++      use forward slashes)
++
++   4. Created separate source and build directories.
++      (CMake commands are executed in the build directory)
++
++   5. Created a CMakeLists.txt file(s) for your source. See Section III
++      below.
++
++
++
++========================================================================
++II. Building HDF5 Applications with CMake
++========================================================================
++
++Go through these steps to build HDF5 applications with CMake.
++   (The application must support building with CMake.)
++
++   1. Run CMake
++   2. Configure the cache settings
++   3. Build HDF5 Applications
++   4. Test HDF5 Applications
++
++These steps are described in more detail below.
++   1. Run CMake
++
++      The visual CMake executable is named "cmake-gui.exe" on Windows and should be
++      available in your Start menu. For Linux, UNIX, and Mac users the
++      executable is named "cmake-gui" and can be found where CMake was
++      installed.
++
++      Specify the source and build directories. Make the build and source
++      directories different. For example on Windows, if the source is at
++      c:\MyHDFstuff\hdf5, then use c:\MyHDFstuff\hdf5\build or
++      c:\MyHDFstuff\build\hdf5 for the build directory.
++
++      PREFERRED:
++        Users can perform the configuration step without using the visual
++        cmake-gui program. The following is an example command line
++        configuration step executed within the build directory:
++
++        cmake -G "<generator>"  [-D<options>]  <sourcepath>
++
++        Where <generator> is
++            * MinGW Makefiles
++            * NMake Makefiles
++            * Unix Makefiles
++            * Visual Studio 15 2017
++            * Visual Studio 15 2017 Win64
++            * Visual Studio 16 2019
++            * ... in addition VS2019 will need to set the "-A" option,
++            * ... [Win32, x64, ARM, ARM64]
++            * Visual Studio 17 2022
++            * ... in addition VS2022 will need to set the "-A" option,
++            * ... [Win32, x64, ARM, ARM64]
++
++        <options> is:
++            * BUILD_TESTING:BOOL=ON
++            * BUILD_SHARED_LIBS:BOOL=[ON | OFF]
++
++   2. Configure the cache settings
++
++      2.1  Visual CMake users, click the Configure button. If this is the first time you are
++           running cmake-gui in this directory, you will be prompted for the
++           generator you wish to use (for example on Windows, Visual Studio 16 2019).
++           CMake will read in the CMakeLists.txt files from the source directory and
++           display options for the HDF5 project. After the first configure you
++           can adjust the cache settings and/or specify locations of other programs.
++
++           Any conflicts or new values will be highlighted by the configure
++           process in red. Once you are happy with all the settings and there are no
++           more values in red, click the Generate button to produce the appropriate
++           build files.
++
++           On Windows, if you are using a Visual Studio generator, the solution and
++           project files will be created in the build folder.
++
++           On linux, if you are using the Unix Makefiles generator, the Makefiles will
++           be created in the build folder.
++
++      2.2  Alternative command line example on Windows in c:\MyHDFstuff\hdf5\build directory:
++
++           cmake -G "Visual Studio 16 2019" -A "x64" -DBUILD_TESTING:BOOL=ON ..
++
++   3. Build HDF5 Applications
++
++      On Windows, you can build HDF5 applications using either the Visual Studio Environment
++      or the command line. The command line is normally used on linux, Unix, and Mac.
++
++      To build from the command line, navigate to your build directory and
++      execute the following:
++
++              cmake --build . --config {Debug | Release}
++
++      NOTE: "--config {Debug | Release}" may be optional on your platform. We
++            recommend choosing either Debug or Release on Windows. If you are
++            using the pre-built binaries from HDF, use Release.
++
++      3.1  If you wish to use the Visual Studio environment, open the solution
++           file in your build directory. Be sure to select either Debug or
++           Release and build the solution.
++
++   4. Test HDF5 Applications
++
++      To test the build, navigate to your build directory and execute:
++
++              ctest . -C {Debug | Release}
++
++      NOTE: "-C {Debug | Release}" may be optional on your platform. We
++            recommend choosing either Debug or Release to match the build
++            step on Windows.
++
++   5. The files that support building with CMake are all of the files in the
++      config/cmake folder, the CMakeLists.txt files in each source folder, and
++      CTestConfig.cmake. CTestConfig.cmake is specific to the internal testing
++      performed by The HDF Group. It should be altered for the user's
++      installation and needs. The cacheinit.cmake file settings are used by
++      The HDF Group for daily testing. It should be altered/ignored for the user's
++      installation and needs.
++
++
++
++========================================================================
++III. Minimum C Project Files for CMake
++========================================================================
++
++Given the preconditions in section I, create a CMakeLists.txt file at the
++source root. Include the following text in the file:
++
++##########################################################
++cmake_minimum_required (VERSION 3.18)
++project (HDF5MyApp C)
++
++set (LIB_TYPE STATIC) # or SHARED
++string(TOLOWER ${LIB_TYPE} SEARCH_TYPE)
++
++find_package (HDF5 NAMES hdf5 COMPONENTS C ${SEARCH_TYPE})
++# find_package (HDF5) # Find non-cmake built HDF5
++set_directory_properties(PROPERTIES INCLUDE_DIRECTORIES "${HDF5_INCLUDE_DIR}")
++set (LINK_LIBS ${LINK_LIBS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
++
++set (example hdf_example)
++
++add_executable (${example} ${PROJECT_SOURCE_DIR}/${example}.c)
++target_link_libraries (${example} ${LINK_LIBS})
++
++enable_testing ()
++include (CTest)
++
++add_test (NAME test_example COMMAND ${example})
++##########################################################
++
++
++
++========================================================================
++IV. APPENDIX
++========================================================================
++
++Below is an example of a ctest script that can be used to build the examples.
++Adjust the values as necessary. Note that the defaults can be entered on the
++command line and the build folder is created as a sub-folder. Windows should
++adjust the forward slash to double backslashes, except for the HDF_DIR
++environment variable.
++
++NOTE: this file is available in the HDF5 repository, for more information see:
++    https://github.com/HDFGroup/hdf5/blob/develop/release_docs/USING_CMake_Examples.txt
++
++           ctest -S HDF5_Examples.cmake -C Release -V -O test.log
++
++Also available at the HDF web site is a CMake application framework template.
++You can quickly add files to the framework and execute the script to compile
++your application with an installed HDF5 binary.
++
++
++========================================================================
++For further assistance, send email to help@hdfgroup.org
++========================================================================
++
++
+diff --git a/poc b/poc
+new file mode 100755
+index 0000000000..692004f15e
+Binary files /dev/null and b/poc differ
+diff --git a/poc.c b/poc.c
+new file mode 100644
+index 0000000000..09fb9b3cb1
+--- /dev/null
++++ b/poc.c
+@@ -0,0 +1,17 @@
++#include "hdf5.h"
++#include <stdio.h>
++
++int main(int argc, char **argv)
++{
++    if (argc < 2) {
++        printf("Usage: %s <file>\n", argv[0]);
++        return 1;
++    }
++
++    H5L_info2_t linfo;
++    herr_t status = H5Lget_info2(H5Tcopy(H5T_NATIVE_INT), argv[1], &linfo, H5P_DEFAULT);
++    printf("status: %d\n", status);
++    printf("linfo.cset: %d\n", linfo.cset);
++
++    return 0;
++}
+diff --git a/src/H5VLint.c b/src/H5VLint.c
+index a40d64e3ac..ec12cc2b72 100644
+--- a/src/H5VLint.c
++++ b/src/H5VLint.c
+@@ -2239,10 +2239,11 @@ H5VL_set_vol_wrapper(const H5VL_object_t *vol_obj)
+ 
+         /* Sanity checks */
+         assert(vol_obj->data);
+-        assert(vol_obj->connector);
+-
+-        /* Check if the connector can create a wrap context */
+-        if (vol_obj->connector->cls->wrap_cls.get_wrap_ctx) {
++        if (NULL == vol_obj->connector)
++            HGOTO_ERROR(H5E_VOL, H5E_BADVALUE, FAIL, "VOL object has no connector");
++        
++        /* Check if the connector and its class are valid, and if it can create a wrap context */
++        if (vol_obj->connector->cls && vol_obj->connector->cls->wrap_cls.get_wrap_ctx) {
+             /* Sanity check */
+             assert(vol_obj->connector->cls->wrap_cls.free_wrap_ctx);
+ 
+diff --git a/test.h5 b/test.h5
+new file mode 100644
+index 0000000000..82daee09f5
+Binary files /dev/null and b/test.h5 differ
+diff --git a/test_fix.sh b/test_fix.sh
+new file mode 100755
+index 0000000000..e1d77a50dd
+--- /dev/null
++++ b/test_fix.sh
+@@ -0,0 +1,13 @@
++#!/bin/bash
++
++echo "Testing the NULL pointer dereference fix..."
++echo "Running POC with invalid input (should not crash):"
++
++# Run the POC program - it should not crash and should return an error
++./poc /home/poc/0.bin
++
++echo ""
++echo "Exit code: $?"
++echo ""
++echo "If you see error messages above instead of a crash, the fix is working!"
++echo "The program should return status -1 and continue execution instead of segfaulting."
+diff --git a/test_normal b/test_normal
+new file mode 100755
+index 0000000000..d879851b9c
+Binary files /dev/null and b/test_normal differ
+diff --git a/test_normal.c b/test_normal.c
+new file mode 100644
+index 0000000000..c3867b5fc6
+--- /dev/null
++++ b/test_normal.c
+@@ -0,0 +1,31 @@
++#include "hdf5.h"
++#include <stdio.h>
++
++int main()
++{
++    hid_t file_id;
++    herr_t status;
++    
++    printf("Testing normal HDF5 operations...\n");
++    
++    // Create a simple HDF5 file
++    file_id = H5Fcreate("test.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
++    if (file_id < 0) {
++        printf("Failed to create file\n");
++        return 1;
++    }
++    
++    printf("File created successfully\n");
++    
++    // Close the file
++    status = H5Fclose(file_id);
++    if (status < 0) {
++        printf("Failed to close file\n");
++        return 1;
++    }
++    
++    printf("File closed successfully\n");
++    printf("Normal HDF5 operations work correctly!\n");
++    
++    return 0;
++}

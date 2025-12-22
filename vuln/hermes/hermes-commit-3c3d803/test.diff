@@ -1,0 +1,37 @@
+diff --git a/test/hermes/regress-regexp-native-overflow.js b/test/hermes/regress-regexp-native-overflow.js
+new file mode 100644
+index 000000000..082ee1da9
+--- /dev/null
++++ b/test/hermes/regress-regexp-native-overflow.js
+@@ -0,0 +1,17 @@
++/**
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++// RUN: %hermes -O %s | %FileCheck --match-full-lines %s
++
++// Check Regex doesn't crash due to recursing too many times in native code.
++
++try {
++  var res = new RegExp("(?=".repeat(100000) + "A" + ")".repeat(100000)).exec('b');
++} catch (e) {
++  print(e);
++  // CHECK: RangeError: Maximum regex stack depth reached
++}
+diff --git a/utils/testsuite/testsuite_skiplist.py b/utils/testsuite/testsuite_skiplist.py
+index f1ce1ec81..5a696d0d0 100644
+--- a/utils/testsuite/testsuite_skiplist.py
++++ b/utils/testsuite/testsuite_skiplist.py
+@@ -1885,6 +1885,9 @@ PERMANENT_SKIP_LIST = [
+     "mjsunit/regress/regress-585775.js",
+     "test262/test/annexB/built-ins/RegExp/prototype/compile/",
+     "test262/test/annexB/built-ins/RegExp/prototype/flags/order-after-compile",
++    # Tests long regexes that exceed our regex stack limit
++    "mjsunit/regress/regress-231.js",
++    "mjsunit/third_party/regexp-pcre/regexp-pcre.js",
+     # annexB
+     "mjsunit/es6/string-html.js",
+     "mjsunit/function-names.js",

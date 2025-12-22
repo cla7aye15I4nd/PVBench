@@ -1,0 +1,14 @@
+id: vim-gh-17362
+project: vim
+sanitizer: AddressSanitizer
+type: Double Free
+binary: vim
+trigger_commit: 9ff1e598e8ee373b5623219ed38ad49470ec7938
+patch:
+  commit: 9772025d24e939fd84b85748ce35c26874c05775
+  date: '2025-05-23T17:39:44+02:00'
+reference:
+- https://github.com/vim/vim
+- https://github.com/vim/vim/issues/17362
+- https://github.com/vim/vim/commit/9ff1e598e8ee373b5623219ed38ad49470ec7938
+- https://github.com/vim/vim/commit/9772025d24e939fd84b85748ce35c26874c05775

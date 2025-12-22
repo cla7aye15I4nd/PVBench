@@ -1,0 +1,305 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 5cf9eba243b..36f6361163e 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -42,6 +42,7 @@ typedef struct _ProfilerContext {
+     PyTime_t subt;
+     struct _ProfilerContext *previous;
+     ProfilerEntry *ctxEntry;
++    int marked_for_deletion;  /* Flag to mark context for deferred deletion */
+ } ProfilerContext;
+ 
+ typedef struct {
+@@ -60,6 +61,8 @@ typedef struct {
+ #define POF_SUBCALLS    0x002
+ #define POF_BUILTINS    0x004
+ #define POF_NOMEMORY    0x100
++#define POF_IN_CALLBACK 0x200
++#define POF_NEED_FLUSH  0x400
+ 
+ /*[clinic input]
+ module _lsprof
+@@ -114,11 +117,33 @@ static PyTime_t CallExternalTimer(ProfilerObject *pObj)
+     return result;
+ }
+ 
++/* Forward declaration */
++static void flush_unmatched(ProfilerObject *pObj);
++
+ static inline PyTime_t
+ call_timer(ProfilerObject *pObj)
+ {
+     if (pObj->externalTimer != NULL) {
+-        return CallExternalTimer(pObj);
++        /* Set flag to prevent re-entrant calls during timer callback */
++        int was_in_callback = pObj->flags & POF_IN_CALLBACK;
++        if (was_in_callback) {
++            /* Already in a callback, avoid re-entrance */
++            PyTime_t t;
++            (void)PyTime_PerfCounterRaw(&t);
++            return t;
++        }
++        
++        pObj->flags |= POF_IN_CALLBACK;
++        PyTime_t result = CallExternalTimer(pObj);
++        pObj->flags &= ~POF_IN_CALLBACK;
++        
++        /* Check if we need to flush after exiting callback */
++        if (pObj->flags & POF_NEED_FLUSH) {
++            pObj->flags &= ~POF_NEED_FLUSH;
++            flush_unmatched(pObj);
++        }
++        
++        return result;
+     }
+     else {
+         PyTime_t t;
+@@ -128,6 +153,7 @@ call_timer(ProfilerObject *pObj)
+ }
+ 
+ 
++
+ /*** ProfilerObject ***/
+ 
+ static PyObject *
+@@ -278,9 +304,10 @@ static void clearEntries(ProfilerObject *pObj)
+     RotatingTree_Enum(pObj->profilerEntries, freeEntry, NULL);
+     pObj->profilerEntries = EMPTY_ROTATING_TREE;
+     /* release the memory hold by the ProfilerContexts */
+-    if (pObj->currentProfilerContext) {
+-        PyMem_Free(pObj->currentProfilerContext);
+-        pObj->currentProfilerContext = NULL;
++    while (pObj->currentProfilerContext) {
++        ProfilerContext *c = pObj->currentProfilerContext;
++        pObj->currentProfilerContext = c->previous;
++        PyMem_Free(c);
+     }
+     while (pObj->freelistProfilerContext) {
+         ProfilerContext *c = pObj->freelistProfilerContext;
+@@ -296,6 +323,7 @@ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+     self->ctxEntry = entry;
+     self->subt = 0;
+     self->previous = pObj->currentProfilerContext;
++    self->marked_for_deletion = 0;  /* Initialize the deletion flag */
+     pObj->currentProfilerContext = self;
+     ++entry->recursionLevel;
+     if ((pObj->flags & POF_SUBCALLS) && self->previous) {
+@@ -393,6 +421,15 @@ ptrace_leave_call(PyObject *self, void *key)
+     pContext = pObj->currentProfilerContext;
+     if (pContext == NULL)
+         return;
++    
++    /* Check if this context was marked for deletion */
++    if (pContext->marked_for_deletion) {
++        /* Context was marked for deletion, just remove it from the stack and free it */
++        pObj->currentProfilerContext = pContext->previous;
++        PyMem_Free(pContext);
++        return;
++    }
++    
+     profEntry = getEntry(pObj, key);
+     if (profEntry) {
+         Stop(pObj, pContext, profEntry);
+@@ -762,10 +799,11 @@ flush_unmatched(ProfilerObject *pObj)
+             Stop(pObj, pContext, profEntry);
+         else
+             pObj->currentProfilerContext = pContext->previous;
+-        if (pContext)
+-            PyMem_Free(pContext);
++        if (pContext) {
++            /* Mark for deletion instead of immediately freeing */
++            pContext->marked_for_deletion = 1;
++        }
+     }
+-
+ }
+ 
+ PyDoc_STRVAR(disable_doc, "\
+@@ -812,7 +850,14 @@ profiler_disable(ProfilerObject *self, PyObject* noarg)
+         Py_DECREF(monitoring);
+ 
+         self->flags &= ~POF_ENABLED;
+-        flush_unmatched(self);
++        
++        /* Only flush if we're not in a callback to prevent use-after-free */
++        if (!(self->flags & POF_IN_CALLBACK)) {
++            flush_unmatched(self);
++        } else {
++            /* Mark that we need to flush when it's safe */
++            self->flags |= POF_NEED_FLUSH;
++        }
+     }
+ 
+     if (pending_exception(self)) {
+diff --git a/reproduce_specific.py b/reproduce_specific.py
+new file mode 100644
+index 00000000000..646541038fc
+--- /dev/null
++++ b/reproduce_specific.py
+@@ -0,0 +1,35 @@
++import cProfile
++import sys
++
++class MaliciousTimer:
++    def __init__(self):
++        self.call_count = 0
++        self.profiler = None
++    
++    def set_profiler(self, profiler):
++        self.profiler = profiler
++    
++    def __call__(self):
++        self.call_count += 1
++        # On the second call, disable the profiler to trigger use-after-free
++        if self.call_count == 2 and self.profiler:
++            self.profiler.disable()
++        return 0.0
++
++def test_function():
++    pass
++
++# Create timer
++timer = MaliciousTimer()
++
++# Create profiler with custom timer
++pr = cProfile.Profile(timer=timer)
++timer.set_profiler(pr)
++
++# Enable profiling
++pr.enable()
++
++# This should trigger the use-after-free
++test_function()
++
++print("Test completed")
+diff --git a/reproduce_uaf.py b/reproduce_uaf.py
+new file mode 100644
+index 00000000000..27ea68097ba
+--- /dev/null
++++ b/reproduce_uaf.py
+@@ -0,0 +1,30 @@
++import cProfile
++import sys
++
++def test_function():
++    # Simple function to profile
++    for i in range(100):
++        pass
++
++# Create profiler
++pr = cProfile.Profile()
++
++# Enable profiling
++pr.enable()
++
++# Call a function
++test_function()
++
++# Disable profiling - this should trigger flush_unmatched
++pr.disable()
++
++# Enable again - this might trigger the use-after-free
++pr.enable()
++
++# Call function again
++test_function()
++
++# Disable again
++pr.disable()
++
++print("Test completed")
+diff --git a/test_profile.py b/test_profile.py
+new file mode 100644
+index 00000000000..98b57bda9a6
+--- /dev/null
++++ b/test_profile.py
+@@ -0,0 +1,12 @@
++import cProfile
++import sys
++
++# Enable profiling
++pr = cProfile.Profile()
++pr.enable()
++
++# Execute the POC code
++exec(open('/home/poc/0.bin').read())
++
++# Disable profiling
++pr.disable()
+diff --git a/test_profiler_fix.py b/test_profiler_fix.py
+new file mode 100644
+index 00000000000..913dc4bfc8e
+--- /dev/null
++++ b/test_profiler_fix.py
+@@ -0,0 +1,56 @@
++import cProfile
++import sys
++
++class ReentrantTimer:
++    def __init__(self):
++        self.call_count = 0
++        self.profiler = None
++    
++    def set_profiler(self, profiler):
++        self.profiler = profiler
++    
++    def __call__(self):
++        self.call_count += 1
++        print(f"Timer called {self.call_count} times")
++        
++        # On the second call, disable the profiler to trigger potential use-after-free
++        if self.call_count == 2 and self.profiler:
++            print("Disabling profiler from timer callback")
++            self.profiler.disable()
++        
++        # On the third call, re-enable to test the fix
++        elif self.call_count == 3 and self.profiler:
++            print("Re-enabling profiler from timer callback")
++            self.profiler.enable()
++            
++        return 0.0
++
++def recursive_function(depth):
++    if depth <= 0:
++        return 1
++    return recursive_function(depth - 1) + recursive_function(depth - 1)
++
++def test_function():
++    # This will trigger multiple profiler events
++    result = recursive_function(5)
++    return result
++
++# Create timer
++timer = ReentrantTimer()
++
++# Create profiler with custom timer
++pr = cProfile.Profile(timer=timer)
++timer.set_profiler(pr)
++
++print("Starting profiler test...")
++
++# Enable profiling
++pr.enable()
++
++# This should trigger the timer callbacks and potential use-after-free
++result = test_function()
++
++# Disable profiling
++pr.disable()
++
++print(f"Test completed successfully! Result: {result}")

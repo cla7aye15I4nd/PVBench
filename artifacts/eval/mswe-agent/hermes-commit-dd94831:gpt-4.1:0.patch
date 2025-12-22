@@ -1,0 +1,68 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ba8d67d9..8556f202b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,3 +24,14 @@ test/ApplePlatformsIntegrationTestApp/Podfile.lock
+ test/ApplePlatformsIntegrationTestApp/Pods
+ test/ApplePlatformsIntegrationTestApp/**/xcuserdata
+ test/ApplePlatformsIntegrationTestApp/ApplePlatformsIntegrationTestApp.xcworkspace
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/Support/SHA1.h b/include/hermes/Support/SHA1.h
+index 48f70b538..4263d50c5 100644
+--- a/include/hermes/Support/SHA1.h
++++ b/include/hermes/Support/SHA1.h
+@@ -10,7 +10,7 @@
+ 
+ #include <array>
+ #include <string>
+-
++#include <cstdint>
+ namespace hermes {
+ 
+ constexpr size_t SHA1_NUM_BYTES = 20;
+diff --git a/include/hermes/VM/JSCallableProxy.h b/include/hermes/VM/JSCallableProxy.h
+index 5aab5d3de..777d9181e 100644
+--- a/include/hermes/VM/JSCallableProxy.h
++++ b/include/hermes/VM/JSCallableProxy.h
+@@ -38,8 +38,16 @@ class JSCallableProxy : public NativeFunction {
+       Handle<JSObject> handler);
+ 
+   bool isConstructor(Runtime *runtime) {
+-    return vm::isConstructor(
++    // Recursion guard to prevent stack overflow on proxy cycles.
++    static thread_local int recursionDepth = 0;
++    if (++recursionDepth > 16) {
++      --recursionDepth;
++      return false;
++    }
++    bool result = vm::isConstructor(
+         runtime, vmcast_or_null<Callable>(slots_.target.get(runtime)));
++    --recursionDepth;
++    return result;
+   }
+ 
+ #ifdef HERMESVM_SERIALIZE
+diff --git a/public/hermes/Public/DebuggerTypes.h b/public/hermes/Public/DebuggerTypes.h
+index 191a81d1a..d23575823 100644
+--- a/public/hermes/Public/DebuggerTypes.h
++++ b/public/hermes/Public/DebuggerTypes.h
+@@ -10,7 +10,7 @@
+ 
+ #include <string>
+ #include <vector>
+-
++#include <cstdint>
+ namespace hermes {
+ namespace vm {
+ class Debugger;

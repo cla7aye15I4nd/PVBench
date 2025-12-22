@@ -1,0 +1,50 @@
+
+diff --git a/.gclient b/.gclient
+new file mode 100644
+index 00000000000..a8725fe3dc3
+--- /dev/null
++++ b/.gclient
+@@ -0,0 +1,9 @@
++solutions = [
++  {
++    "name": "v8",
++    "url": "https://chromium.googlesource.com/v8/v8.git",
++    "deps_file": "DEPS",
++    "managed": False,
++    "custom_deps": {},
++  },
++]
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
+index da1e5936256..cbf73f46aab 100644
+--- a/src/objects/lookup-inl.h
++++ b/src/objects/lookup-inl.h
+@@ -103,10 +103,9 @@ LookupIterator::LookupIterator(Isolate* isolate, Handle<Object> receiver,
+     if (!check_prototype_chain() && !IsJSTypedArray(*lookup_start_object)) {
+       uint32_t array_index;
+       DCHECK(!name_->AsArrayIndex(&array_index));
+-    } else {
+-      size_t integer_index;
+-      DCHECK(!name_->AsIntegerIndex(&integer_index));
+     }
++    // When looking at the prototype chain or dealing with typed arrays,
++    // integer index names are allowed, so we don't need to assert against them.
+ #endif  // DEBUG
+     Start<false>();
+   }

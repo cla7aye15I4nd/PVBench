@@ -1,0 +1,14 @@
+id: simdjson-issue-1273
+project: simdjson
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: fuzz_ondemand
+trigger_commit: 265db2e533d4cdc8f7548717b911a92b6a7c9ec9
+patch:
+  commit: 0b82f071157db9848f45dd8cf07ced05c8eb8022
+  date: '2020-11-01T18:27:21+01:00'
+reference:
+- https://github.com/simdjson/simdjson
+- https://github.com/simdjson/simdjson/issues/1273
+- https://github.com/simdjson/simdjson/commit/265db2e533d4cdc8f7548717b911a92b6a7c9ec9
+- https://github.com/simdjson/simdjson/commit/0b82f071157db9848f45dd8cf07ced05c8eb8022

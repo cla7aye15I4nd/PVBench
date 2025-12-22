@@ -1,0 +1,48 @@
+
+diff --git a/.gitignore b/.gitignore
+index dddf28da016..efa3374de86 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -158,3 +158,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_sre/sre.c b/Modules/_sre/sre.c
+index 3f11916f9e1..af4a271b205 100644
+--- a/Modules/_sre/sre.c
++++ b/Modules/_sre/sre.c
+@@ -2775,6 +2775,9 @@ pattern_scanner(_sremodulestate *module_state,
+ static int
+ template_traverse(TemplateObject *self, visitproc visit, void *arg)
+ {
++    if (Py_SIZE(self) == 0) {
++        return 0;
++    }
+     Py_VISIT(Py_TYPE(self));
+     Py_VISIT(self->literal);
+     for (Py_ssize_t i = 0, n = Py_SIZE(self); i < n; i++) {
+@@ -2786,6 +2789,10 @@ template_traverse(TemplateObject *self, visitproc visit, void *arg)
+ static int
+ template_clear(TemplateObject *self)
+ {
++    if (Py_SIZE(self) == 0) {
++        Py_CLEAR(self->literal);
++        return 0;
++    }
+     Py_CLEAR(self->literal);
+     for (Py_ssize_t i = 0, n = Py_SIZE(self); i < n; i++) {
+         Py_CLEAR(self->items[i].literal);
+@@ -2793,6 +2800,7 @@ template_clear(TemplateObject *self)
+     return 0;
+ }
+ 
++
+ static void
+ template_dealloc(TemplateObject *self)
+ {

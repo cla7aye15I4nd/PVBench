@@ -1,0 +1,49 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/document.c b/ext/dom/document.c
+index 9650d090290..e650b26785b 100644
+--- a/ext/dom/document.c
++++ b/ext/dom/document.c
+@@ -1623,7 +1623,7 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 	if (nodep != NULL) {
+ 		/* Dump contents of Node */
+ 		DOM_GET_OBJ(node, nodep, xmlNodePtr, nodeobj);
+-		if (node->doc != docp) {
++		if (docp && node->doc != docp) {
+ 			php_dom_throw_error(WRONG_DOCUMENT_ERR, dom_get_strict_error(intern->document));
+ 			RETURN_FALSE;
+ 		}
+@@ -1632,7 +1632,7 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 		 * w.r.t. the implicit return in DOM_GET_OBJ). */
+ 		old_xml_save_no_empty_tags = xmlSaveNoEmptyTags;
+ 		xmlSaveNoEmptyTags = (options & LIBXML_SAVE_NOEMPTYTAG) ? 1 : 0;
+-		res = intern->document->handlers->dump_node_to_str(docp, node, format, (const char *) docp->encoding);
++		res = docp ? intern->document->handlers->dump_node_to_str(docp, node, format, (const char *) docp->encoding) : NULL;
+ 		xmlSaveNoEmptyTags = old_xml_save_no_empty_tags;
+ 	} else {
+ 		int converted_options = XML_SAVE_AS_XML;
+@@ -1646,7 +1646,7 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 		/* Save libxml2 global, override its value, and restore after saving. */
+ 		old_xml_save_no_empty_tags = xmlSaveNoEmptyTags;
+ 		xmlSaveNoEmptyTags = (options & LIBXML_SAVE_NOEMPTYTAG) ? 1 : 0;
+-		res = intern->document->handlers->dump_doc_to_str(docp, converted_options, (const char *) docp->encoding);
++		res = docp ? intern->document->handlers->dump_doc_to_str(docp, converted_options, (const char *) docp->encoding) : NULL;
+ 		xmlSaveNoEmptyTags = old_xml_save_no_empty_tags;
+ 	}
+ 

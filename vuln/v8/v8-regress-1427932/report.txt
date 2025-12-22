@@ -1,0 +1,19 @@
+#
+# Fatal error in ../../src/objects/intl-objects.cc, line 453
+# Debug check failed: U_SUCCESS(status).
+#
+#
+#
+#FailureMessage Object: 0x7f1fd9104860
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x57) [0x558c6bb293c7]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x558c7176d0a3]
+    out/debug_asan/d8(+0x7fb9d9a) [0x558c7176ad9a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x27f) [0x558c7172889f]
+    out/debug_asan/d8(+0x7f7680f) [0x558c7172780f]
+    out/debug_asan/d8(v8::internal::Intl::ResolveLocale(v8::internal::Isolate*, std::Cr::set<std::Cr::basic_string<char, std::Cr::char_traits<char>, std::Cr::allocator<char>>, std::Cr::less<std::Cr::basic_string<char, std::Cr::char_traits<char>, std::Cr::allocator<char>>>, std::Cr::allocator<std::Cr::basic_string<char, std::Cr::char_traits<char>, std::Cr::allocator<char>>>> const&, std::Cr::vector<std::Cr::basic_string<char, std::Cr::char_traits<char>, std::Cr::allocator<char>>, std::Cr::allocator<std::Cr::basic_string<char, std::Cr::char_traits<char>, std::Cr::allocator<char>>>> const&, v8::internal::Intl::MatcherOption, std::Cr::set<std::Cr::basic_string<char, std::Cr::char_traits<char>, std::Cr::allocator<char>>, std::Cr::less<std::Cr::basic_string<char, std::Cr::char_traits<char>, std::Cr::allocator<char>>>, std::Cr::allocator<std::Cr::basic_string<char, std::Cr::char_traits<char>, std::Cr::allocator<char>>>> const&)+0x3f05) [0x558c6d4ec6b5]
+    out/debug_asan/d8(v8::internal::JSDateTimeFormat::New(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Map>, v8::internal::Handle<v8::internal::Object>, v8::internal::Handle<v8::internal::Object>, char const*)+0x997) [0x558c6d52d837]
+    out/debug_asan/d8(+0x2896224) [0x558c6c047224]
+    out/debug_asan/d8(v8::internal::Builtin_DateTimeFormatConstructor(int, unsigned long*, v8::internal::Isolate*)+0x231) [0x558c6c046361]
+    out/debug_asan/d8(+0x76f7ebd) [0x558c70ea8ebd]

@@ -1,0 +1,36 @@
+
+diff --git a/.gitignore b/.gitignore
+index 24208ddbb..e3bfbe6e6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -31,3 +31,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ # VS Code and Visual Studio
+ .vs
+ .vscode
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/reproduce_bug.sh b/reproduce_bug.sh
+new file mode 100755
+index 000000000..928cd1132
+--- /dev/null
++++ b/reproduce_bug.sh
+@@ -0,0 +1,10 @@
++#!/bin/bash -eu
++
++# First, let's try to reproduce with the POC file
++echo "Testing with POC file..."
++build/bin/hermes -dump-ast /home/poc/0.bin
++
++# Also try the script mentioned in the issue
++echo "Testing with generated input..."
++echo "a" "?b:a"{1..10000} | build/bin/hermes -dump-ast -
++echo "a" "?b"{1..10000} | build/bin/hermes -dump-ast -

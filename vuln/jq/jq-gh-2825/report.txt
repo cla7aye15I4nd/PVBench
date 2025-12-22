@@ -1,0 +1,24 @@
+==20175==ERROR: AddressSanitizer: SEGV on unknown address 0x563c3cb01267 (pc 0x563c94c4482a bp 0x0000a7db3747 sp 0x7fff17528ae0 T0)
+==20175==The signal is caused by a READ memory access.
+    #0 0x563c94c4482a in decUnitCompare /repo/src/decNumber/decNumber.c:6257:23
+    #1 0x563c94c449c5 in decCompare /repo/src/decNumber/decNumber.c:6209:11
+    #2 0x563c94c48528 in decCompareOp.isra.0 /repo/src/decNumber/decNumber.c:6090:18
+    #3 0x563c94c48fd7 in decNumberCompare /repo/src/decNumber/decNumber.c:858:3
+    #4 0x563c94c2f9aa in jvp_number_cmp /repo/src/jv.c:751:5
+    #5 0x563c94c32b14 in jvp_number_equal /repo/src/jv.c:776:10
+    #6 0x563c94c32b14 in jv_equal /repo/src/jv.c:1922:11
+    #7 0x563c94c5469c in binop_notequal /tmp/jq-gh-2825/build/src/builtin.c:435:19
+    #8 0x563c94c4f6bc in constant_fold /repo/src/parser.y:220:19
+    #9 0x563c94c4f6bc in gen_binop /repo/src/parser.y:234:18
+    #10 0x563c94c50fa7 in yyparse /repo/src/parser.y:462:17
+    #11 0x563c94c5344f in jq_parse /repo/src/parser.y:995:3
+    #12 0x563c94c42239 in load_program /repo/src/linker.c:407:13
+    #13 0x563c94c2bd34 in jq_compile_args /repo/src/execute.c:1249:17
+    #14 0x563c94b4e760 in main /repo/src/main.c:680:16
+    #15 0x7fa4c69a01c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #16 0x7fa4c69a028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x563c94b4f324 in _start (/tmp/jq-gh-2825/build/jq+0x48324) (BuildId: 753e6f145e7c7d4b5009bfe343f7e2ec6b9f870b)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /repo/src/decNumber/decNumber.c:6257:23 in decUnitCompare
+==20175==ABORTING

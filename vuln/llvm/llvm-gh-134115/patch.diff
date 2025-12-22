@@ -1,0 +1,20 @@
+diff --git a/llvm/lib/Transforms/IPO/FunctionAttrs.cpp b/llvm/lib/Transforms/IPO/FunctionAttrs.cpp
+index bbfed2ac2c09..74e8a849803d 100644
+--- a/llvm/lib/Transforms/IPO/FunctionAttrs.cpp
++++ b/llvm/lib/Transforms/IPO/FunctionAttrs.cpp
+@@ -661,8 +661,13 @@ ArgumentAccessInfo getArgumentAccessInfo(const Instruction *I,
+     auto TypeSize = DL.getTypeStoreSize(Ty);
+     if (!TypeSize.isScalable() && Offset) {
+       int64_t Size = TypeSize.getFixedValue();
+-      return ConstantRange(APInt(64, *Offset, true),
+-                           APInt(64, *Offset + Size, true));
++      APInt Low(64, *Offset, true);
++      bool Overflow;
++      APInt High = Low.sadd_ov(APInt(64, Size, true), Overflow);
++      // Bail if the range overflows signed 64-bit int.
++      if (Overflow)
++        return std::nullopt;
++      return ConstantRange(Low, High);
+     }
+     return std::nullopt;
+   };

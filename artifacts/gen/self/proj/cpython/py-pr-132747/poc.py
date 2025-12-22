@@ -1,0 +1,1 @@
+import _io, sys; _io._TextIOBase.detach.__get__(sys.stderr)

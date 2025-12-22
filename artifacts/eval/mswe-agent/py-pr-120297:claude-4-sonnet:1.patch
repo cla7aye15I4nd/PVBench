@@ -1,0 +1,297 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 5cf9eba243b..a26a380a200 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -762,12 +762,25 @@ flush_unmatched(ProfilerObject *pObj)
+             Stop(pObj, pContext, profEntry);
+         else
+             pObj->currentProfilerContext = pContext->previous;
++        /* Don't add to free list, just free directly since we're flushing */
+         if (pContext)
+             PyMem_Free(pContext);
+     }
+-
+ }
+ 
++static void
++flush_unmatched_and_free_list(ProfilerObject *pObj)
++{
++    /* First flush unmatched contexts */
++    flush_unmatched(pObj);
++    
++    /* Also clear the free list to prevent use-after-free */
++    while (pObj->freelistProfilerContext) {
++        ProfilerContext *pContext = pObj->freelistProfilerContext;
++        pObj->freelistProfilerContext = pContext->previous;
++        PyMem_Free(pContext);
++    }
++}
+ PyDoc_STRVAR(disable_doc, "\
+ disable()\n\
+ \n\
+@@ -852,7 +865,7 @@ profiler_dealloc(ProfilerObject *op)
+         }
+     }
+ 
+-    flush_unmatched(op);
++    flush_unmatched_and_free_list(op);
+     clearEntries(op);
+     Py_XDECREF(op->externalTimer);
+     PyTypeObject *tp = Py_TYPE(op);
+diff --git a/test_comprehensive.py b/test_comprehensive.py
+new file mode 100644
+index 00000000000..50669e4e073
+--- /dev/null
++++ b/test_comprehensive.py
+@@ -0,0 +1,89 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++import gc
++
++def test_profiler_lifecycle():
++    """Test the complete profiler lifecycle to ensure no use-after-free"""
++    
++    def dummy_function():
++        return sum(range(100))
++    
++    # Test 1: Basic enable/disable cycle
++    profiler = cProfile.Profile()
++    profiler.enable()
++    dummy_function()
++    profiler.disable()
++    print("Test 1: Basic enable/disable - PASSED")
++    
++    # Test 2: Multiple enable/disable cycles
++    for i in range(10):
++        profiler.enable()
++        dummy_function()
++        profiler.disable()
++    print("Test 2: Multiple enable/disable cycles - PASSED")
++    
++    # Test 3: Nested function calls
++    def nested_func1():
++        return dummy_function()
++    
++    def nested_func2():
++        return nested_func1() + nested_func1()
++    
++    profiler.enable()
++    for i in range(5):
++        nested_func2()
++    profiler.disable()
++    print("Test 3: Nested function calls - PASSED")
++    
++    # Test 4: Force garbage collection to trigger deallocation
++    del profiler
++    gc.collect()
++    print("Test 4: Profiler deallocation - PASSED")
++    
++    # Test 5: Create new profiler after deallocation
++    new_profiler = cProfile.Profile()
++    new_profiler.enable()
++    dummy_function()
++    new_profiler.disable()
++    del new_profiler
++    gc.collect()
++    print("Test 5: New profiler after deallocation - PASSED")
++    
++    print("All profiler lifecycle tests completed successfully!")
++
++def test_multiple_profilers():
++    """Test multiple profiler instances"""
++    profilers = []
++    
++    # Create multiple profilers
++    for i in range(5):
++        p = cProfile.Profile()
++        profilers.append(p)
++    
++    # Enable all profilers
++    for p in profilers:
++        p.enable()
++    
++    # Do some work
++    def work_function():
++        return sum(range(50))
++    
++    for i in range(10):
++        work_function()
++    
++    # Disable all profilers
++    for p in profilers:
++        p.disable()
++    
++    # Clean up
++    del profilers
++    gc.collect()
++    
++    print("Multiple profilers test completed successfully!")
++
++if __name__ == "__main__":
++    test_profiler_lifecycle()
++    test_multiple_profilers()
++    print("All comprehensive tests completed successfully!")
+diff --git a/test_lsprof.py b/test_lsprof.py
+new file mode 100644
+index 00000000000..7050761491b
+--- /dev/null
++++ b/test_lsprof.py
+@@ -0,0 +1,39 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++
++def test_function():
++    """A simple test function to profile"""
++    result = 0
++    for i in range(1000):
++        result += i * i
++    return result
++
++def nested_function():
++    """A nested function call"""
++    return test_function() + test_function()
++
++def main():
++    # Create a profiler instance
++    profiler = cProfile.Profile()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Call some functions to generate profile data
++    for i in range(10):
++        nested_function()
++    
++    # Disable profiling - this should trigger flush_unmatched
++    profiler.disable()
++    
++    # Try to enable/disable again to potentially trigger the use-after-free
++    profiler.enable()
++    test_function()
++    profiler.disable()
++    
++    print("Profiling test completed")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..2b4e1326672
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,22 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++
++# Try to reproduce the use-after-free issue
++def test_profiler():
++    profiler = cProfile.Profile()
++    profiler.enable()
++    
++    # Some dummy function calls to trigger profiling
++    def dummy_func():
++        return sum(range(100))
++    
++    for i in range(10):
++        dummy_func()
++    
++    profiler.disable()
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    test_profiler()
+diff --git a/test_use_after_free.py b/test_use_after_free.py
+new file mode 100644
+index 00000000000..dc7e26085d5
+--- /dev/null
++++ b/test_use_after_free.py
+@@ -0,0 +1,68 @@
++#!/usr/bin/env python3
++
++import cProfile
++import threading
++import time
++
++def test_concurrent_profiling():
++    """Test that tries to reproduce the use-after-free scenario"""
++    
++    def worker_function():
++        """Function to be profiled"""
++        result = 0
++        for i in range(1000):
++            result += i * i
++        return result
++    
++    def profiling_thread():
++        """Thread that enables/disables profiling rapidly"""
++        profiler = cProfile.Profile()
++        for i in range(100):
++            profiler.enable()
++            worker_function()
++            profiler.disable()
++            # Small delay to allow context switching
++            time.sleep(0.001)
++    
++    # Create multiple threads to increase chance of race condition
++    threads = []
++    for i in range(5):
++        t = threading.Thread(target=profiling_thread)
++        threads.append(t)
++        t.start()
++    
++    # Wait for all threads to complete
++    for t in threads:
++        t.join()
++    
++    print("Concurrent profiling test completed successfully")
++
++def test_nested_profiling():
++    """Test nested profiling scenarios"""
++    profiler = cProfile.Profile()
++    
++    def nested_func1():
++        return sum(range(100))
++    
++    def nested_func2():
++        return nested_func1() + nested_func1()
++    
++    def nested_func3():
++        return nested_func2() + nested_func2()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Create deep call stack
++    for i in range(50):
++        nested_func3()
++    
++    # Disable profiling - this should trigger flush_unmatched
++    profiler.disable()
++    
++    print("Nested profiling test completed successfully")
++
++if __name__ == "__main__":
++    test_nested_profiling()
++    test_concurrent_profiling()
++    print("All tests completed successfully")

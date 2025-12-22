@@ -1,0 +1,20 @@
+diff --git a/ext/dom/tests/gh16149.phpt b/ext/dom/tests/gh16149.phpt
+new file mode 100644
+index 0000000000..c6e1140e75
+--- /dev/null
++++ b/ext/dom/tests/gh16149.phpt
+@@ -0,0 +1,14 @@
++--TEST--
++GH-16149 (Null pointer dereference in DOMElement->getAttributeNames())
++--EXTENSIONS--
++dom
++--FILE--
++<?php
++$element = new DOMElement("b", null, "a");
++var_dump($element->getAttributeNames());
++?>
++--EXPECT--
++array(1) {
++  [0]=>
++  string(5) "xmlns"
++}

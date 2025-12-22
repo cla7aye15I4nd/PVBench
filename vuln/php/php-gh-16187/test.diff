@@ -1,0 +1,20 @@
+diff --git a/ext/reflection/tests/gh16187.phpt b/ext/reflection/tests/gh16187.phpt
+new file mode 100644
+index 0000000000..64aec52de9
+--- /dev/null
++++ b/ext/reflection/tests/gh16187.phpt
+@@ -0,0 +1,14 @@
++--TEST--
++GH-16187 (ReflectionClass::__toString() with unpacked properties)
++--EXTENSIONS--
++simplexml
++--FILE--
++<?php
++$xml = '<form name="test"></form>';
++$simplexml = simplexml_load_string($xml);
++$reflector = new ReflectionObject($simplexml['name']);
++$reflector->__toString();
++?>
++DONE
++--EXPECT--
++DONE

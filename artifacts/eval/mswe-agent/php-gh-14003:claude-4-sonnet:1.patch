@@ -1,0 +1,128 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..ba5cd41b919 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -163,6 +163,12 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+ 
+ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
+ {
++	uint32_t handle;
++	void *ptr;
++	zend_object_handlers *handlers;
++	bool destructor_called;
++	bool free_called;
++	
+ 	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+ 
+ 	/* GC might have released this object already. */
+@@ -170,39 +176,57 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 		return;
+ 	}
+ 
++	/* Store object information before potential free */
++	handle = object->handle;
++	handlers = object->handlers;
++	ptr = ((char*)object) - handlers->offset;
++	destructor_called = (OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED);
++	free_called = (OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED);
++
+ 	/*	Make sure we hold a reference count during the destructor call
+ 		otherwise, when the destructor ends the storage might be freed
+ 		when the refcount reaches 0 a second time
+ 	 */
+-	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
++	if (!destructor_called) {
+ 		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+ 
+-		if (object->handlers->dtor_obj != zend_objects_destroy_object
++		if (handlers->dtor_obj != zend_objects_destroy_object
+ 				|| object->ce->destructor) {
++			uint32_t refcount;
+ 			zend_fiber_switch_block();
+ 			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->dtor_obj(object);
+-			GC_DELREF(object);
++			handlers->dtor_obj(object);
++			refcount = GC_DELREF(object);
+ 			zend_fiber_switch_unblock();
++			
++			/* If refcount is 0, object might be freed, so don't access it */
++			if (refcount == 0) {
++				ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
++				/* Check if the object has already been processed by a recursive call */
++				if (IS_OBJ_VALID(EG(objects_store).object_buckets[handle])) {
++					/* Object hasn't been processed yet, so we need to clean it up */
++					EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(EG(objects_store).object_buckets[handle]);
++					efree(ptr);
++					ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++				}
++				/* If bucket is already invalid, the recursive call handled cleanup */
++			}
++			return;
+ 		}
+ 	}
+ 
+-	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+-		void *ptr;
+-
+-		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
+-		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+-		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++	/* If we reach here, the object is still valid and no destructor was called */
++	/* Since no destructor was called, we know the object is still valid */
++	ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
++	ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
++	EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
++	if (!free_called) {
++		GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++		GC_SET_REFCOUNT(object, 1);
++		handlers->free_obj(object);
+ 	}
++	GC_REMOVE_FROM_BUFFER(object);
++	efree(ptr);
++	ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
+ }
+ /* }}} */
+diff --git a/run_poc.sh b/run_poc.sh
+new file mode 100755
+index 00000000000..f87f5f114ca
+--- /dev/null
++++ b/run_poc.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++USE_TRACKED_ALLOC=1 USE_ZEND_ALLOC=0 sapi/cli/php -f $1
+diff --git a/test_simple.php b/test_simple.php
+new file mode 100644
+index 00000000000..8b137891791
+--- /dev/null
++++ b/test_simple.php
+@@ -0,0 +1 @@
++

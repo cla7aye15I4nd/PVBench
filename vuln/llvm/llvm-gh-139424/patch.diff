@@ -1,0 +1,16 @@
+diff --git a/clang/lib/Parse/ParseOpenMP.cpp b/clang/lib/Parse/ParseOpenMP.cpp
+index 6f64cadc00af..c409409602e7 100644
+--- a/clang/lib/Parse/ParseOpenMP.cpp
++++ b/clang/lib/Parse/ParseOpenMP.cpp
+@@ -2613,6 +2613,11 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
+     Diag(Tok, diag::err_omp_unknown_directive);
+     return StmtError();
+   }
++  if (DKind == OMPD_workshare) {
++    // "workshare" is an executable, Fortran-only directive. Treat it
++    // as unknown.
++    DKind = OMPD_unknown;
++  }
+ 
+   StmtResult Directive = StmtError();
+ 

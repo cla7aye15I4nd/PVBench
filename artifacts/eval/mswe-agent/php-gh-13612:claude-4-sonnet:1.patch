@@ -1,0 +1,141 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..d1355c61640 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -320,7 +320,7 @@ static zval *spl_array_get_dimension_ptr(int check_inherited, spl_array_object *
+ 	}
+ 
+ 	if ((type == BP_VAR_W || type == BP_VAR_RW) && intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return &EG(error_zval);
+ 	}
+ 
+@@ -482,7 +482,7 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return;
+ 	}
+ 
+@@ -537,12 +537,16 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during unset is prohibited");
+ 		return;
+ 	}
+ 
++	/* Increment nApplyCount to prevent modifications during unset operation */
++	intern->nApplyCount++;
++
+ 	if (get_hash_key(&key, intern, offset) == FAILURE) {
+ 		zend_type_error("Illegal offset type in unset");
++		intern->nApplyCount--;
+ 		return;
+ 	}
+ 
+@@ -575,6 +579,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++
++	/* Decrement nApplyCount to restore state */
++	intern->nApplyCount--;
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+@@ -1253,7 +1260,7 @@ PHP_METHOD(ArrayObject, exchangeArray)
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		RETURN_THROWS();
+ 	}
+ 
+@@ -1658,7 +1665,7 @@ PHP_METHOD(ArrayObject, unserialize)
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		RETURN_THROWS();
+ 	}
+ 
+diff --git a/normal_test.php b/normal_test.php
+new file mode 100644
+index 00000000000..ce7ce2ffdad
+--- /dev/null
++++ b/normal_test.php
+@@ -0,0 +1,21 @@
++<?php
++
++// Test normal ArrayObject operations to ensure they still work
++$arr = new ArrayObject(['a' => 1, 'b' => 2, 'c' => 3]);
++
++echo "Original array:\n";
++var_dump($arr);
++
++// Test normal unset
++unset($arr['b']);
++echo "\nAfter unset(\$arr['b']):\n";
++var_dump($arr);
++
++// Test normal exchangeArray
++$arr->exchangeArray(['x' => 10, 'y' => 20]);
++echo "\nAfter exchangeArray:\n";
++var_dump($arr);
++
++echo "\nNormal operations completed successfully!\n";
++
++?>
+diff --git a/test_case.php b/test_case.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/test_case.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>

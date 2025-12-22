@@ -1,0 +1,176 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_builtin_functions.c b/Zend/zend_builtin_functions.c
+index 72cb07decbd..2d4d3ec6a26 100644
+--- a/Zend/zend_builtin_functions.c
++++ b/Zend/zend_builtin_functions.c
+@@ -1742,7 +1742,7 @@ ZEND_API void zend_fetch_debug_backtrace(zval *return_value, int skip_last, int
+ 		stack_frame = zend_new_array(8);
+ 		zend_hash_real_init_mixed(stack_frame);
+ 
+-		if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type)) {
++		if (prev && prev->func && prev->opline && ZEND_USER_CODE(prev->func->common.type)) {
+ 			filename = prev->func->op_array.filename;
+ 			if (prev->opline->opcode == ZEND_HANDLE_EXCEPTION) {
+ 				if (EG(opline_before_exception)) {
+@@ -1775,7 +1775,7 @@ ZEND_API void zend_fetch_debug_backtrace(zval *return_value, int skip_last, int
+ 				}
+ 
+ 				prev = prev_call->prev_execute_data;
+-				if (prev && prev->func && ZEND_USER_CODE(prev->func->common.type)) {
++				if (prev && prev->func && prev->opline && ZEND_USER_CODE(prev->func->common.type)) {
+ 					ZVAL_STR_COPY(&tmp, prev->func->op_array.filename);
+ 					_zend_hash_append_ex(stack_frame, ZSTR_KNOWN(ZEND_STR_FILE), &tmp, 1);
+ 					ZVAL_LONG(&tmp, prev->opline->lineno);
+diff --git a/Zend/zend_generators.c b/Zend/zend_generators.c
+index b5693741859..5deee424e28 100644
+--- a/Zend/zend_generators.c
++++ b/Zend/zend_generators.c
+@@ -437,18 +437,32 @@ static ZEND_COLD zend_function *zend_generator_get_constructor(zend_object *obje
+ 
+ ZEND_API zend_execute_data *zend_generator_check_placeholder_frame(zend_execute_data *ptr)
+ {
+-	if (!ptr->func && Z_TYPE(ptr->This) == IS_OBJECT) {
+-		if (Z_OBJCE(ptr->This) == zend_ce_generator) {
+-			zend_generator *generator = (zend_generator *) Z_OBJ(ptr->This);
+-			zend_execute_data *prev = ptr->prev_execute_data;
+-			ZEND_ASSERT(generator->node.parent && "Placeholder only used with delegation");
+-			while (generator->node.parent->node.parent) {
+-				generator->execute_data->prev_execute_data = prev;
+-				prev = generator->execute_data;
+-				generator = generator->node.parent;
++	if (!ptr || !ptr->func) {
++		if (ptr && Z_TYPE(ptr->This) == IS_OBJECT) {
++			if (Z_OBJCE(ptr->This) == zend_ce_generator) {
++				zend_generator *generator = (zend_generator *) Z_OBJ(ptr->This);
++				/* Check if generator is still valid before accessing its members */
++				if (generator && generator->std.gc.refcount > 0 && generator->node.parent) {
++					zend_execute_data *prev = ptr->prev_execute_data;
++					ZEND_ASSERT(generator->node.parent && "Placeholder only used with delegation");
++					while (generator->node.parent && generator->node.parent->node.parent) {
++						if (!generator->execute_data || generator->execute_data->prev_execute_data == NULL) {
++							break;
++						}
++						generator->execute_data->prev_execute_data = prev;
++						prev = generator->execute_data;
++						generator = generator->node.parent;
++						/* Additional safety check to prevent infinite loops */
++						if (!generator || generator->std.gc.refcount == 0) {
++							break;
++						}
++					}
++					if (generator && generator->execute_data) {
++						generator->execute_data->prev_execute_data = prev;
++						ptr = generator->execute_data;
++					}
++				}
+ 			}
+-			generator->execute_data->prev_execute_data = prev;
+-			ptr = generator->execute_data;
+ 		}
+ 	}
+ 	return ptr;
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..55bad90f3fd 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -165,11 +165,14 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ {
+ 	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+ 
+-	/* GC might have released this object already. */
+-	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
++	/* Check if object is already being deleted or has been freed */
++	if (UNEXPECTED(!object || GC_TYPE(object) == IS_NULL || (OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED))) {
+ 		return;
+ 	}
+ 
++	/* Set the free flag immediately to prevent recursive calls */
++	GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++
+ 	/*	Make sure we hold a reference count during the destructor call
+ 		otherwise, when the destructor ends the storage might be freed
+ 		when the refcount reaches 0 a second time
+@@ -194,11 +197,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+ 		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+ 		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
++		GC_SET_REFCOUNT(object, 1);
++		object->handlers->free_obj(object);
+ 		ptr = ((char*)object) - object->handlers->offset;
+ 		GC_REMOVE_FROM_BUFFER(object);
+ 		efree(ptr);
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..7dbd7331aae 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -531,13 +531,21 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	spl_array_object *intern = spl_array_from_obj(object);
+ 	spl_hash_key key;
+ 
+-	if (check_inherited && intern->fptr_offset_del) {
+-		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
++	/* Check if object is being destroyed to prevent use-after-free */
++	if (UNEXPECTED(!object || (OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED))) {
+ 		return;
+ 	}
+ 
++	/* Prevent recursive calls during unset operations */
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during unset is prohibited");
++		return;
++	}
++
++	if (check_inherited && intern->fptr_offset_del) {
++		intern->nApplyCount++;
++		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
++		intern->nApplyCount--;
+ 		return;
+ 	}
+ 
+@@ -547,6 +555,13 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	ht = spl_array_get_hash_table(intern);
++	if (UNEXPECTED(!ht)) {
++		return;
++	}
++	
++	/* Increment apply count to prevent recursive calls */
++	intern->nApplyCount++;
++	
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
+ 	if (key.key) {
+@@ -575,6 +590,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++	
++	/* Decrement apply count */
++	intern->nApplyCount--;
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */

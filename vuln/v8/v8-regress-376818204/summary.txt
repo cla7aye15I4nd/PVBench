@@ -1,0 +1,35 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/compiler/js-native-context-specialization.cc, line 2980
+# Debug check failed: receiver == lookup_start_object (0x7dc1f84128a0 vs. 0x7dc1f84155a0).
+#
+#
+#
+#FailureMessage Object: 0x7b31f7582460
+==== C stack trace ===============================
+
+    out/debug_asan/d8(___interceptor_backtrace+0x46) [0x5622018b4536]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x562208d400a3]
+    out/debug_asan/d8(+0xad3f4ba) [0x562208d3e4ba]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x562208d0b3e0]
+    out/debug_asan/d8(+0xad0b41f) [0x562208d0a41f]
+    out/debug_asan/d8(v8::internal::compiler::JSNativeContextSpecialization::BuildPropertyLoad(v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::NameRef, v8::internal::ZoneVector<v8::internal::compiler::Node*>*, v8::internal::compiler::PropertyAccessInfo const&)+0x87b) [0x562206111c0b]
+    out/debug_asan/d8(v8::internal::compiler::JSNativeContextSpecialization::BuildPropertyAccess(v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::NameRef, v8::internal::ZoneVector<v8::internal::compiler::Node*>*, v8::internal::compiler::PropertyAccessInfo const&, v8::internal::compiler::AccessMode)+0x11b) [0x562206104f6b]
+    out/debug_asan/d8(v8::internal::compiler::JSNativeContextSpecialization::ReduceNamedAccess(v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::NamedAccessFeedback const&, v8::internal::compiler::AccessMode, v8::internal::compiler::Node*)+0x2b50) [0x5622061023d0]
+    out/debug_asan/d8(v8::internal::compiler::JSNativeContextSpecialization::ReducePropertyAccess(v8::internal::compiler::Node*, v8::internal::compiler::Node*, v8::internal::compiler::OptionalRef<v8::internal::compiler::NameRef>, v8::internal::compiler::Node*, v8::internal::compiler::FeedbackSource const&, v8::internal::compiler::AccessMode)+0x51c) [0x56220610575c]
+    out/debug_asan/d8(v8::internal::compiler::JSNativeContextSpecialization::ReduceJSLoadNamedFromSuper(v8::internal::compiler::Node*)+0x230) [0x5622060f34e0]
+    out/debug_asan/d8(v8::internal::compiler::GraphReducer::Reduce(v8::internal::compiler::Node*)+0x38c) [0x562205ed18ac]
+    out/debug_asan/d8(v8::internal::compiler::GraphReducer::ReduceTop()+0x425) [0x562205ed0fc5]
+    out/debug_asan/d8(v8::internal::compiler::GraphReducer::ReduceNode(v8::internal::compiler::Node*)+0xe8) [0x562205ed06b8]
+    out/debug_asan/d8(v8::internal::compiler::InliningPhase::Run(v8::internal::compiler::TFPipelineData*, v8::internal::Zone*)+0xa15) [0x5622063380d5]
+    out/debug_asan/d8(auto v8::internal::compiler::PipelineImpl::Run<v8::internal::compiler::InliningPhase>()+0x164) [0x562206278cd4]
+    out/debug_asan/d8(v8::internal::compiler::PipelineImpl::CreateGraph()+0x2ea) [0x56220626cc4a]
+    out/debug_asan/d8(v8::internal::compiler::PipelineCompilationJob::ExecuteJobImpl(v8::internal::RuntimeCallStats*, v8::internal::LocalIsolate*)+0x2ef) [0x56220626beff]
+    out/debug_asan/d8(v8::internal::OptimizedCompilationJob::ExecuteJob(v8::internal::RuntimeCallStats*, v8::internal::LocalIsolate*)+0x1a4) [0x562201fa03a4]
+    out/debug_asan/d8(+0x3fe92c5) [0x562201fe82c5]
+    out/debug_asan/d8(+0x3fc2c7f) [0x562201fc1c7f]
+    out/debug_asan/d8(v8::internal::Compiler::CompileOptimized(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSFunction>, v8::internal::ConcurrencyMode, v8::internal::CodeKind)+0x2c0) [0x562201fc5ff0]
+    out/debug_asan/d8(+0x5c957da) [0x562203c947da]
+    out/debug_asan/d8(v8::internal::Runtime_CompileOptimized(int, unsigned long*, v8::internal::Isolate*)+0x1da) [0x562203c93d2a]
+    out/debug_asan/d8(+0xa3904bd) [0x56220838f4bd]

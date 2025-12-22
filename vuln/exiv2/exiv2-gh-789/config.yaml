@@ -1,0 +1,14 @@
+id: exiv2-gh-789
+project: exiv2
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: exiv2
+trigger_commit: f05d100579effd7459fd0715b26239d4cd2c9bcc
+patch:
+  commit: 8cd95e221889e41e9cc153e2cfb5a7b41c7bc7a4
+  date: '2019-05-06T06:27:10+02:00'
+reference:
+- https://github.com/Exiv2/exiv2
+- https://github.com/Exiv2/exiv2/issues/789
+- https://github.com/Exiv2/exiv2/commit/f05d100579effd7459fd0715b26239d4cd2c9bcc
+- https://github.com/Exiv2/exiv2/commit/8cd95e221889e41e9cc153e2cfb5a7b41c7bc7a4

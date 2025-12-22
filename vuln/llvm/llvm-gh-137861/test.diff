@@ -1,0 +1,39 @@
+diff --git a/clang/test/Parser/gh137861.cpp b/clang/test/Parser/gh137861.cpp
+new file mode 100644
+index 000000000000..9354aef91965
+--- /dev/null
++++ b/clang/test/Parser/gh137861.cpp
+@@ -0,0 +1,33 @@
++// RUN: %clang_cc1 %s -verify 
++
++void foo() {
++  // expected-error@+1{{an attribute list cannot appear here}}
++__attribute__((aligned(64)))
++#pragma clang attribute push(__attribute__((uninitialized)), apply_to = any(variable(is_local)))
++{
++  int f;
++}
++#pragma clang attribute pop
++}
++
++void foo2() {
++  // expected-error@+1{{an attribute list cannot appear here}}
++__attribute__((aligned(64)))
++#pragma clang __debug dump foo
++}
++
++void foo3() {
++  // expected-error@+1{{an attribute list cannot appear here}}
++  [[nodiscard]]
++#pragma clang attribute push(__attribute__((uninitialized)), apply_to = any(variable(is_local)))
++{
++  int f;
++}
++#pragma clang attribute pop
++}
++
++void foo4() {
++  // expected-error@+1{{an attribute list cannot appear here}}
++  [[nodiscard]]
++#pragma clang __debug dump foo
++}

@@ -1,0 +1,200 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 05e79915ba7..a5b100faee6 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2509,7 +2509,10 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
+-    return Py_NewRef(self->task_coro);
++    if (self->task_coro) {
++        return Py_NewRef(self->task_coro);
++    }
++    Py_RETURN_NONE;
+ }
+ 
+ /*[clinic input]
+diff --git a/final_test.py b/final_test.py
+new file mode 100644
+index 00000000000..7dc73bc2163
+--- /dev/null
++++ b/final_test.py
+@@ -0,0 +1,59 @@
++import asyncio
++
++async def sync_coro():
++    """A coroutine that completes synchronously"""
++    return "sync_done"
++
++async def async_coro():
++    """A coroutine that completes asynchronously"""
++    await asyncio.sleep(0.01)
++    return "async_done"
++
++async def test_sync_completion():
++    """Test the case where task_coro gets cleared (original bug scenario)"""
++    print("=== Testing synchronous completion (original bug scenario) ===")
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    task = asyncio.create_task(sync_coro())
++    result = await task
++    print(f"Task result: {result}")
++    
++    # This would have crashed before the fix
++    coro = task.get_coro()
++    print(f"get_coro() after completion: {coro}")
++    
++    if coro is None:
++        print("✓ SUCCESS: get_coro() correctly returned None (no crash)")
++    else:
++        print(f"✓ INFO: get_coro() returned {type(coro).__name__} (still valid)")
++
++async def test_async_completion():
++    """Test the case where task_coro might still be available"""
++    print("\n=== Testing asynchronous completion ===")
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    task = asyncio.create_task(async_coro())
++    
++    # Get coro before completion
++    coro_before = task.get_coro()
++    print(f"get_coro() before completion: {type(coro_before).__name__ if coro_before else None}")
++    
++    result = await task
++    print(f"Task result: {result}")
++    
++    # Get coro after completion
++    coro_after = task.get_coro()
++    print(f"get_coro() after completion: {type(coro_after).__name__ if coro_after else None}")
++    
++    print("✓ SUCCESS: No crashes in async completion scenario")
++
++async def main():
++    print("Testing fix for use-after-free in task.get_coro()")
++    await test_sync_completion()
++    await test_async_completion()
++    print("\n🎉 All tests completed successfully! The fix works correctly.")
++
++if __name__ == "__main__":
++    asyncio.run(main())
+diff --git a/test_fix.py b/test_fix.py
+new file mode 100644
+index 00000000000..b1ed9045873
+--- /dev/null
++++ b/test_fix.py
+@@ -0,0 +1,26 @@
++import asyncio
++
++async def test_coro():
++    print("Coroutine running")
++    return "result"
++
++async def main():
++    # Create a task
++    task = asyncio.create_task(test_coro())
++    
++    # Get the coroutine before completion
++    coro_before = task.get_coro()
++    print(f"Coroutine before completion: {coro_before}")
++    
++    # Wait for task to complete
++    result = await task
++    print(f"Task result: {result}")
++    
++    # Try to get the coroutine after completion - this should return None now
++    coro_after = task.get_coro()
++    print(f"Coroutine after completion: {coro_after}")
++    
++    print("Test completed successfully!")
++
++if __name__ == "__main__":
++    asyncio.run(main())
+diff --git a/test_normal_case.py b/test_normal_case.py
+new file mode 100644
+index 00000000000..1e2c6e4ea75
+--- /dev/null
++++ b/test_normal_case.py
+@@ -0,0 +1,32 @@
++import asyncio
++
++async def slow_coro():
++    await asyncio.sleep(0.1)
++    return "done"
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    # Create a task that will take some time
++    task = asyncio.create_task(slow_coro())
++    
++    # Get the coroutine before completion - this should still work
++    coro = task.get_coro()
++    print(f"Coroutine before completion: {coro}")
++    
++    if coro is not None:
++        print("SUCCESS: get_coro() correctly returned the coroutine object")
++    else:
++        print("ERROR: get_coro() unexpectedly returned None")
++    
++    # Wait for completion
++    result = await task
++    print(f"Task result: {result}")
++    
++    # Get coroutine after completion - should be None
++    coro_after = task.get_coro()
++    print(f"Coroutine after completion: {coro_after}")
++
++if __name__ == "__main__":
++    asyncio.run(main())
+diff --git a/test_specific.py b/test_specific.py
+new file mode 100644
+index 00000000000..144565425c2
+--- /dev/null
++++ b/test_specific.py
+@@ -0,0 +1,28 @@
++import asyncio
++
++async def simple_coro():
++    return "done"
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    # Create a task
++    task = asyncio.create_task(simple_coro())
++    
++    # Wait for it to complete
++    result = await task
++    print(f"Task result: {result}")
++    
++    # Now try to get the coroutine - this should return None without crashing
++    # This is the scenario that would have caused the use-after-free crash
++    coro = task.get_coro()
++    print(f"Coroutine after completion: {coro}")
++    
++    if coro is None:
++        print("SUCCESS: get_coro() correctly returned None after task completion")
++    else:
++        print(f"UNEXPECTED: get_coro() returned {coro} instead of None")
++
++if __name__ == "__main__":
++    asyncio.run(main())

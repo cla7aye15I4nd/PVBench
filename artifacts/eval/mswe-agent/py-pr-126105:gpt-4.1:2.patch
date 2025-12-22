@@ -1,0 +1,32 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Include/object.h b/Include/object.h
+index 3876d8449af..7a191ae5baf 100644
+--- a/Include/object.h
++++ b/Include/object.h
+@@ -253,8 +253,10 @@ PyAPI_FUNC(PyTypeObject*) Py_TYPE(PyObject *ob);
+     // Stable ABI implements Py_TYPE() as a function call
+     // on limited C API version 3.14 and newer.
+ #else
+-    static inline PyTypeObject* _Py_TYPE(PyObject *ob)
+-    {
++    static inline PyTypeObject* _Py_TYPE(PyObject *ob) {
++        if (ob == NULL) {
++            return NULL;
++        }
+         return ob->ob_type;
+     }
+     #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000

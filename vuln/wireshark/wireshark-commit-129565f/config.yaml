@@ -1,0 +1,14 @@
+id: wireshark-commit-129565f
+project: wireshark
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: dftest
+trigger_commit: 10e9024c12ba35fcd213f8b8aa6d68ef9dd802c2
+patch:
+  commit: 129565f0efb8587d44c0c7f6c262ac72a88d7aab
+  date: '2024-12-01T23:21:17+00:00'
+reference:
+- https://github.com/wireshark/wireshark
+- https://gitlab.com/wireshark/wireshark/-/merge_requests/18298
+- https://github.com/wireshark/wireshark/commit/10e9024c12ba35fcd213f8b8aa6d68ef9dd802c2
+- https://github.com/wireshark/wireshark/commit/129565f0efb8587d44c0c7f6c262ac72a88d7aab

@@ -1,0 +1,11 @@
+diff --git a/test/intl/regress-386857213.js b/test/intl/regress-386857213.js
+new file mode 100644
+index 00000000000..fec35fcc4bb
+--- /dev/null
++++ b/test/intl/regress-386857213.js
+@@ -0,0 +1,5 @@
++// Copyright 2025 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++assertThrows(() => new Intl.DateTimeFormat("en", {timeZone: "+09:"}), RangeError);

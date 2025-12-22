@@ -1,0 +1,14 @@
+id: wabt-gh-2398
+project: wabt
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: wasm-interp
+trigger_commit: c6853eb4857908072fd1d7c28dffb1d2613a0ee6
+patch:
+  commit: 874caa4433e51013132c0f3d6ca479b759a6f23f
+  date: '2024-09-18T11:35:55-07:00'
+reference:
+- https://github.com/WebAssembly/wabt
+- https://github.com/WebAssembly/wabt/issues/2398
+- https://github.com/WebAssembly/wabt/commit/c6853eb4857908072fd1d7c28dffb1d2613a0ee6
+- https://github.com/WebAssembly/wabt/commit/874caa4433e51013132c0f3d6ca479b759a6f23f

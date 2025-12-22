@@ -1,0 +1,96 @@
+
+diff --git a/.gitignore b/.gitignore
+index ad751e89..ce29de49 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -125,3 +125,12 @@ xstc/Makefile
+ xstc/Makefile.in
+ xstc/Tests
+ xstc/xsts-*.tar.gz
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/xpath.c b/xpath.c
+index 5e3bb9ff..e5162a6b 100644
+--- a/xpath.c
++++ b/xpath.c
+@@ -9187,8 +9187,17 @@ xmlXPathSubstringFunction(xmlXPathParserContextPtr ctxt, int nargs) {
+          * First we go to integer form, rounding up
+ 	 * and checking for special cases
+          */
+-        i = (int) in;
+-        if (((double)i)+0.5 <= in) i++;
++        /*
++         * Safely convert double to int with bounds checking
++         */
++        if (in > INT_MAX) {
++            i = INT_MAX;
++        } else if (in < INT_MIN) {
++            i = INT_MIN;
++        } else {
++            i = (int) in;
++            if (((double)i)+0.5 <= in) i++;
++        }
+ 
+ 	if (xmlXPathIsInf(le) == 1) {
+ 	    l = m;
+@@ -9198,20 +9207,47 @@ xmlXPathSubstringFunction(xmlXPathParserContextPtr ctxt, int nargs) {
+ 	else if (xmlXPathIsInf(le) == -1 || le < 0.0)
+ 	    l = 0;
+ 	else {
+-	    l = (int) le;
+-	    if (((double)l)+0.5 <= le) l++;
++	    if (le > INT_MAX) {
++	        l = INT_MAX;
++	    } else if (le < INT_MIN) {
++	        l = INT_MIN;
++	    } else {
++	        l = (int) le;
++	        if (((double)l)+0.5 <= le) l++;
++	    }
+ 	}
+ 
+-	/* Now we normalize inidices */
+-        i -= 1;
+-        l += i;
++	/* Now we normalize indices */
++        /* Safely handle i -= 1 to avoid underflow */
++        if (i > INT_MIN) {
++            i -= 1;
++        } else {
++            i = INT_MIN;
++        }
++        
++        /* Safely handle l += i to avoid overflow */
++        if (i > 0 && l > INT_MAX - i) {
++            l = INT_MAX;
++        } else if (i < 0 && l < INT_MIN - i) {
++            l = INT_MIN;
++        } else {
++            l += i;
++        }
++        
+         if (i < 0)
+             i = 0;
+         if (l > m)
+             l = m;
+ 
+         /* number of chars to copy */
+-        l -= i;
++        /* Safely handle l -= i to avoid underflow */
++        if (i > 0 && l < INT_MIN + i) {
++            l = INT_MIN;
++        } else if (i < 0 && l > INT_MAX + i) {
++            l = INT_MAX;
++        } else {
++            l -= i;
++        }
+ 
+         ret = xmlUTF8Strsub(str->stringval, i, l);
+     }

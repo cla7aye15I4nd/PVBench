@@ -1,0 +1,41 @@
+diff --git a/NEWS b/NEWS
+index 019f4a79a6..780e43cf6d 100644
+--- a/NEWS
++++ b/NEWS
+@@ -2,6 +2,10 @@ PHP                                                                        NEWS
+ |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ ?? ??? ????, PHP 8.2.18
+ 
++- Core:
++  . Fixed bug GH-13612 (Corrupted memory in destructor with weak references).
++    (nielsdos)
++
+ - Gettext:
+   - Fixed sigabrt raised with dcgettext/dcngettext calls with gettext 0.22.5
+     with category set to LC_ALL. (David Carlier)
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index b09ce3b990..aeaecac539 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -47,6 +47,10 @@ ZEND_API void zend_object_std_dtor(zend_object *object)
+ {
+ 	zval *p, *end;
+ 
++	if (UNEXPECTED(GC_FLAGS(object) & IS_OBJ_WEAKLY_REFERENCED)) {
++		zend_weakrefs_notify(object);
++	}
++
+ 	if (object->properties) {
+ 		if (EXPECTED(!(GC_FLAGS(object->properties) & IS_ARRAY_IMMUTABLE))) {
+ 			if (EXPECTED(GC_DELREF(object->properties) == 0)
+@@ -85,10 +89,6 @@ ZEND_API void zend_object_std_dtor(zend_object *object)
+ 			FREE_HASHTABLE(guards);
+ 		}
+ 	}
+-
+-	if (UNEXPECTED(GC_FLAGS(object) & IS_OBJ_WEAKLY_REFERENCED)) {
+-		zend_weakrefs_notify(object);
+-	}
+ }
+ 
+ ZEND_API void zend_objects_destroy_object(zend_object *object)

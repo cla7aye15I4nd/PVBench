@@ -1,0 +1,44 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/Python-ast.c b/Python/Python-ast.c
+index 38d74b48d23..49ab982e968 100644
+--- a/Python/Python-ast.c
++++ b/Python/Python-ast.c
+@@ -5076,16 +5076,20 @@ static int
+ ast_type_init(PyObject *self, PyObject *args, PyObject *kw)
+ {
+     struct ast_state *state = get_ast_state();
+-    if (state == NULL) {
+-        return -1;
+-    }
+-
+     Py_ssize_t i, numfields = 0;
+     int res = -1;
+     PyObject *key, *value, *fields, *attributes = NULL, *remaining_fields = NULL;
++    if (self == NULL) {
++        PyErr_SetString(PyExc_TypeError, "ast_type_init: self is NULL");
++        return -1;
++    }
++    if (state == NULL) {
++        return -1;
++    }
+     if (PyObject_GetOptionalAttr((PyObject*)Py_TYPE(self), state->_fields, &fields) < 0) {
+         goto cleanup;
+     }
++
+     if (fields) {
+         numfields = PySequence_Size(fields);
+         if (numfields == -1) {

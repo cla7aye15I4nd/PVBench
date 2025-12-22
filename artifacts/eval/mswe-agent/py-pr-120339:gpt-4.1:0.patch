@@ -1,0 +1,147 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 05e79915ba7..4fea6c1b40b 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2509,42 +2509,18 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
+-    return Py_NewRef(self->task_coro);
+-}
++    if (self->task_coro) {
++        return Py_NewRef(self->task_coro);
++    } else {
++        Py_RETURN_NONE;
++    }
+ 
+ /*[clinic input]
+-_asyncio.Task.get_context
+-[clinic start generated code]*/
+ 
+-static PyObject *
+-_asyncio_Task_get_context_impl(TaskObj *self)
+-/*[clinic end generated code: output=6996f53d3dc01aef input=87c0b209b8fceeeb]*/
+-{
+-    return Py_NewRef(self->task_context);
+-}
++_asyncio.Task.get_context -> object
+ 
+-/*[clinic input]
+-_asyncio.Task.get_name
+ [clinic start generated code]*/
+ 
+-static PyObject *
+-_asyncio_Task_get_name_impl(TaskObj *self)
+-/*[clinic end generated code: output=0ecf1570c3b37a8f input=a4a6595d12f4f0f8]*/
+-{
+-    if (self->task_name) {
+-        if (PyLong_CheckExact(self->task_name)) {
+-            PyObject *name = PyUnicode_FromFormat("Task-%S", self->task_name);
+-            if (name == NULL) {
+-                return NULL;
+-            }
+-            Py_SETREF(self->task_name, name);
+-        }
+-        return Py_NewRef(self->task_name);
+-    }
+-
+-    Py_RETURN_NONE;
+-}
+-
+ /*[clinic input]
+ _asyncio.Task.set_name
+ 
+@@ -2552,25 +2528,11 @@ _asyncio.Task.set_name
+     /
+ [clinic start generated code]*/
+ 
+-static PyObject *
+-_asyncio_Task_set_name(TaskObj *self, PyObject *value)
+-/*[clinic end generated code: output=138a8d51e32057d6 input=a8359b6e65f8fd31]*/
+-{
+-    if (!PyUnicode_CheckExact(value)) {
+-        value = PyObject_Str(value);
+-        if (value == NULL) {
+-            return NULL;
+-        }
+-    } else {
+-        Py_INCREF(value);
+-    }
+ 
+-    Py_XSETREF(self->task_name, value);
+-    Py_RETURN_NONE;
+-}
+ 
+ static void
+-TaskObj_finalize(TaskObj *task)
++
++static void TaskObj_finalize(TaskObj *task)
+ {
+     PyObject *context;
+     PyObject *message = NULL;
+@@ -2630,7 +2592,7 @@ TaskObj_finalize(TaskObj *task)
+     FutureObj_finalize((FutureObj*)task);
+ }
+ 
+-static void TaskObj_dealloc(PyObject *);  /* Needs Task_CheckExact */
++
+ 
+ static PyMethodDef TaskType_methods[] = {
+     _ASYNCIO_FUTURE_RESULT_METHODDEF
+@@ -2699,6 +2661,7 @@ static PyType_Spec Task_spec = {
+ };
+ 
+ static void
++
+ TaskObj_dealloc(PyObject *self)
+ {
+     TaskObj *task = (TaskObj *)self;
+diff --git a/Modules/clinic/_asynciomodule.c.h b/Modules/clinic/_asynciomodule.c.h
+index 860d55cb3bb..2713fa9558a 100644
+--- a/Modules/clinic/_asynciomodule.c.h
++++ b/Modules/clinic/_asynciomodule.c.h
+@@ -915,23 +915,6 @@ _asyncio_Task_get_context(TaskObj *self, PyObject *Py_UNUSED(ignored))
+     return _asyncio_Task_get_context_impl(self);
+ }
+ 
+-PyDoc_STRVAR(_asyncio_Task_get_name__doc__,
+-"get_name($self, /)\n"
+-"--\n"
+-"\n");
+-
+-#define _ASYNCIO_TASK_GET_NAME_METHODDEF    \
+-    {"get_name", (PyCFunction)_asyncio_Task_get_name, METH_NOARGS, _asyncio_Task_get_name__doc__},
+-
+-static PyObject *
+-_asyncio_Task_get_name_impl(TaskObj *self);
+-
+-static PyObject *
+-_asyncio_Task_get_name(TaskObj *self, PyObject *Py_UNUSED(ignored))
+-{
+-    return _asyncio_Task_get_name_impl(self);
+-}
+-
+ PyDoc_STRVAR(_asyncio_Task_set_name__doc__,
+ "set_name($self, value, /)\n"
+ "--\n"
+@@ -1487,4 +1470,4 @@ skip_optional_pos:
+ exit:
+     return return_value;
+ }
+-/*[clinic end generated code: output=127ba6153250d769 input=a9049054013a1b77]*/
++/*[clinic end generated code: output=28e24d16f2aa9091 input=a9049054013a1b77]*/

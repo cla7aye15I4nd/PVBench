@@ -1,0 +1,17 @@
+==1222==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000008 (pc 0x78907fedc7e7 bp 0x7ffeb5250650 sp 0x7ffeb52501a0 T0)
+==1222==The signal is caused by a READ memory access.
+==1222==Hint: address points to the zero page.
+    #0 0x78907fedc7e6 in Exiv2::QuickTimeVideo::userDataDecoder(unsigned long) /tmp/exiv2-commit-459910c/build/src/quicktimevideo.cpp:833
+    #1 0x78907fed44bf in Exiv2::QuickTimeVideo::tagDecoder(Exiv2::DataBuf&, unsigned long) /tmp/exiv2-commit-459910c/build/src/quicktimevideo.cpp:608
+    #2 0x78907fed3edb in Exiv2::QuickTimeVideo::decodeBlock(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-commit-459910c/build/src/quicktimevideo.cpp:575
+    #3 0x78907fed3591 in Exiv2::QuickTimeVideo::readMetadata() /tmp/exiv2-commit-459910c/build/src/quicktimevideo.cpp:529
+    #4 0x5db3faa102fb in Action::Print::printSummary() /tmp/exiv2-commit-459910c/build/app/actions.cpp:237
+    #5 0x5db3faa0fb33 in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-commit-459910c/build/app/actions.cpp:204
+    #6 0x5db3fa9959d8 in main /tmp/exiv2-commit-459910c/build/app/exiv2.cpp:168
+    #7 0x78907f3041c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    #8 0x78907f30428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)
+    #9 0x5db3fa995104 in _start (/tmp/exiv2-commit-459910c/build/build/bin/exiv2+0x6a104)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/exiv2-commit-459910c/build/src/quicktimevideo.cpp:833 in Exiv2::QuickTimeVideo::userDataDecoder(unsigned long)
+==1222==ABORTING

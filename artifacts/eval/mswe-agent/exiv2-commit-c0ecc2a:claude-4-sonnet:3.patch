@@ -1,0 +1,32 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/crwimage_int.cpp b/src/crwimage_int.cpp
+index c2fd5f3a5..f6b1623e2 100644
+--- a/src/crwimage_int.cpp
++++ b/src/crwimage_int.cpp
+@@ -281,7 +281,7 @@ namespace Exiv2 {
+         if (size < 4)
+             throw Error(kerCorruptedMetadata);
+         uint32_t o = getULong(pData + size - 4, byteOrder);
+-        if ( o+2 > size )
++        if ( o+2 >= size )
+             throw Error(kerCorruptedMetadata);
+         uint16_t count = getUShort(pData + o, byteOrder);
+ #ifdef DEBUG

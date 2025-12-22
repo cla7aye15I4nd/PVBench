@@ -1,0 +1,205 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..8af89cb7164 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -40,6 +40,10 @@ zend_object_handlers spl_handler_ArrayIterator;
+ PHPAPI zend_class_entry  *spl_ce_ArrayIterator;
+ PHPAPI zend_class_entry  *spl_ce_RecursiveArrayIterator;
+ 
++typedef struct _spl_array_iterator {
++	zend_object_iterator it;
++	bool by_ref;
++} spl_array_iterator;
+ typedef struct _spl_array_object {
+ 	zval              array;
+ 	uint32_t          ht_iter;
+@@ -54,12 +58,9 @@ typedef struct _spl_array_object {
+ 	zend_function     *fptr_count;
+ 	zend_class_entry* ce_get_iterator;
+ 	zend_object       std;
++	zend_bool         in_serialize;
+ } spl_array_object;
+ 
+-typedef struct _spl_array_iterator {
+-	zend_object_iterator it;
+-	bool by_ref;
+-} spl_array_iterator;
+ 
+ static inline spl_array_object *spl_array_from_obj(zend_object *obj) /* {{{ */ {
+ 	return (spl_array_object*)((char*)(obj) - XtOffsetOf(spl_array_object, std));
+@@ -467,6 +468,10 @@ static uint32_t spl_array_set_refcount(bool is_child, HashTable *ht, uint32_t re
+ static void spl_array_write_dimension_ex(int check_inherited, zend_object *object, zval *offset, zval *value) /* {{{ */
+ {
+ 	spl_array_object *intern = spl_array_from_obj(object);
++	if (intern->in_serialize) {
++		zend_throw_error(NULL, "Cannot modify ArrayObject during serialization");
++		return;
++	}
+ 	HashTable *ht;
+ 	spl_hash_key key;
+ 
+@@ -527,8 +532,12 @@ static void spl_array_write_dimension(zend_object *object, zval *offset, zval *v
+ 
+ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *object, zval *offset) /* {{{ */
+ {
+-	HashTable *ht;
+ 	spl_array_object *intern = spl_array_from_obj(object);
++	HashTable *ht;
++	if (intern->in_serialize) {
++		zend_throw_error(NULL, "Cannot modify ArrayObject during serialization");
++		return;
++	}
+ 	spl_hash_key key;
+ 
+ 	if (check_inherited && intern->fptr_offset_del) {
+@@ -907,7 +916,11 @@ static int spl_array_compare_objects(zval *o1, zval *o2) /* {{{ */
+ } /* }}} */
+ 
+ static zend_result spl_array_skip_protected(spl_array_object *intern, HashTable *aht) /* {{{ */
+-{
++	{
++		uint32_t *pos_ptr = spl_array_get_pos_ptr(aht, intern);
++		if (zend_hash_has_more_elements_ex(aht, pos_ptr) != SUCCESS) {
++			return FAILURE;
++		}
+ 	zend_string *string_key;
+ 	zend_ulong num_key;
+ 	zval *data;
+@@ -1606,7 +1619,7 @@ PHP_METHOD(ArrayObject, serialize)
+ 	if (zend_parse_parameters_none() == FAILURE) {
+ 		RETURN_THROWS();
+ 	}
+-
++	intern->in_serialize = 1; /* Prevent modification during serialization */
+ 	PHP_VAR_SERIALIZE_INIT(var_hash);
+ 
+ 	ZVAL_LONG(&flags, (intern->ar_flags & SPL_ARRAY_CLONE_MASK));
+@@ -1632,6 +1645,7 @@ PHP_METHOD(ArrayObject, serialize)
+ 
+ 	/* done */
+ 	PHP_VAR_SERIALIZE_DESTROY(var_hash);
++	intern->in_serialize = 0; /* Allow modification again */
+ 
+ 	RETURN_STR(smart_str_extract(&buf));
+ } /* }}} */
+diff --git a/ext/spl/spl_observer.c b/ext/spl/spl_observer.c
+index cc2956ccc27..a05cdb65c0a 100644
+--- a/ext/spl/spl_observer.c
++++ b/ext/spl/spl_observer.c
+@@ -49,6 +49,10 @@ PHPAPI zend_object_handlers spl_handler_SplObjectStorage;
+ #define SOS_OVERRIDDEN_WRITE_DIMENSION 2
+ #define SOS_OVERRIDDEN_UNSET_DIMENSION 4
+ 
++typedef struct _spl_SplObjectStorageElement {
++	zend_object *obj;
++	zval inf;
++} spl_SplObjectStorageElement;
+ typedef struct _spl_SplObjectStorage { /* {{{ */
+ 	HashTable         storage;
+ 	zend_long         index;
+@@ -58,13 +62,10 @@ typedef struct _spl_SplObjectStorage { /* {{{ */
+ 	zend_long         flags;
+ 	zend_function    *fptr_get_hash;
+ 	zend_object       std;
+-} spl_SplObjectStorage; /* }}} */
+-
++	zend_bool         in_serialize;
++} spl_SplObjectStorage;
+ /* {{{ storage is an assoc array of [zend_object*]=>[zval *obj, zval *inf] */
+-typedef struct _spl_SplObjectStorageElement {
+-	zend_object *obj;
+-	zval inf;
+-} spl_SplObjectStorageElement; /* }}} */
++
+ 
+ static inline spl_SplObjectStorage *spl_object_storage_from_obj(zend_object *obj) /* {{{ */ {
+ 	return (spl_SplObjectStorage*)((char*)(obj) - XtOffsetOf(spl_SplObjectStorage, std));
+@@ -179,11 +180,12 @@ static spl_SplObjectStorageElement *spl_object_storage_attach_handle(spl_SplObje
+ 
+ spl_SplObjectStorageElement *spl_object_storage_attach(spl_SplObjectStorage *intern, zend_object *obj, zval *inf) /* {{{ */
+ {
+-	if (EXPECTED(!(intern->flags & SOS_OVERRIDDEN_WRITE_DIMENSION))) {
+-		return spl_object_storage_attach_handle(intern, obj, inf);
++	if (intern->in_serialize) {
++		zend_throw_error(NULL, "Cannot modify SplObjectStorage during serialization");
++		return NULL;
+ 	}
+-	/* getHash or offsetSet is overridden. */
+ 
++	// Original logic
+ 	spl_SplObjectStorageElement *pelement, element;
+ 	zend_hash_key key;
+ 	if (spl_object_storage_get_hash(&key, intern, obj) == FAILURE) {
+@@ -224,9 +226,15 @@ spl_SplObjectStorageElement *spl_object_storage_attach(spl_SplObjectStorage *int
+ 
+ static zend_result spl_object_storage_detach(spl_SplObjectStorage *intern, zend_object *obj) /* {{{ */
+ {
++	if (intern->in_serialize) {
++		zend_throw_error(NULL, "Cannot modify SplObjectStorage during serialization");
++		return FAILURE;
++	}
++
+ 	if (EXPECTED(!(intern->flags & SOS_OVERRIDDEN_UNSET_DIMENSION))) {
+ 		return zend_hash_index_del(&intern->storage, obj->handle);
+ 	}
++
+ 	zend_result ret = FAILURE;
+ 	zend_hash_key key;
+ 	if (spl_object_storage_get_hash(&key, intern, obj) == FAILURE) {
+@@ -240,7 +248,9 @@ static zend_result spl_object_storage_detach(spl_SplObjectStorage *intern, zend_
+ 	spl_object_storage_free_hash(intern, &key);
+ 
+ 	return ret;
+-} /* }}}*/
++} /* }}} */
++
++
+ 
+ void spl_object_storage_addall(spl_SplObjectStorage *intern, spl_SplObjectStorage *other) { /* {{{ */
+ 	spl_SplObjectStorageElement *element;
+@@ -780,6 +790,7 @@ PHP_METHOD(SplObjectStorage, serialize)
+ 		RETURN_THROWS();
+ 	}
+ 
++	intern->in_serialize = 1; /* Prevent modification during serialization */
+ 	PHP_VAR_SERIALIZE_INIT(var_hash);
+ 
+ 	/* storage */
+@@ -794,6 +805,7 @@ PHP_METHOD(SplObjectStorage, serialize)
+ 		if ((element = zend_hash_get_current_data_ptr_ex(&intern->storage, &pos)) == NULL) {
+ 			smart_str_free(&buf);
+ 			PHP_VAR_SERIALIZE_DESTROY(var_hash);
++			intern->in_serialize = 0;
+ 			RETURN_NULL();
+ 		}
+ 		ZVAL_OBJ(&obj, element->obj);
+@@ -813,9 +825,10 @@ PHP_METHOD(SplObjectStorage, serialize)
+ 
+ 	/* done */
+ 	PHP_VAR_SERIALIZE_DESTROY(var_hash);
++	intern->in_serialize = 0; /* Allow modification again */
+ 
+ 	RETURN_STR(smart_str_extract(&buf));
+-} /* }}} */
++}
+ 
+ /* {{{ Unserializes storage */
+ PHP_METHOD(SplObjectStorage, unserialize)

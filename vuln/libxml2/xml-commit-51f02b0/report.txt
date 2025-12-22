@@ -1,0 +1,67 @@
+==12643==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x502000000164 at pc 0x5ac155e09e15 bp 0x7fffd1c57120 sp 0x7fffd1c57118
+READ of size 1 at 0x502000000164 thread T0
+    #0 0x5ac155e09e14 in xmlDictComputeFastKey /tmp/xml-commit-51f02b0/build/dict.c:448:13
+    #1 0x5ac155e08bea in xmlDictLookup /tmp/xml-commit-51f02b0/build/dict.c:848:12
+    #2 0x5ac155aabb0b in xmlParseNCNameComplex /tmp/xml-commit-51f02b0/build/parser.c:3506:12
+    #3 0x5ac155aaacb4 in xmlParseNCName /tmp/xml-commit-51f02b0/build/parser.c:3565:12
+    #4 0x5ac155aa8ba7 in xmlParseQName /tmp/xml-commit-51f02b0/build/parser.c:8823:9
+    #5 0x5ac155a71b66 in xmlParseStartTag2 /tmp/xml-commit-51f02b0/build/parser.c:9344:17
+    #6 0x5ac155a6ea95 in xmlParseElement /tmp/xml-commit-51f02b0/build/parser.c:10077:16
+    #7 0x5ac155a82177 in xmlParseDocument /tmp/xml-commit-51f02b0/build/parser.c:10857:2
+    #8 0x5ac155aa4279 in xmlDoRead /tmp/xml-commit-51f02b0/build/parser.c:15311:5
+    #9 0x5ac155aa449d in xmlReadFile /tmp/xml-commit-51f02b0/build/parser.c:15373:13
+    #10 0x5ac1559d0174 in parseAndPrintFile /tmp/xml-commit-51f02b0/build/xmllint.c:2401:9
+    #11 0x5ac1559cbace in main /tmp/xml-commit-51f02b0/build/xmllint.c:3759:7
+    #12 0x7a1fd362c1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x7a1fd362c28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x5ac1558ed5f4 in _start (/tmp/xml-commit-51f02b0/build/xmllint+0x9b5f4) (BuildId: a1ab9ff9a65f805e5c9399090e95c4f6ca6b85be)
+
+0x502000000164 is located 12 bytes before 11-byte region [0x502000000170,0x50200000017b)
+allocated by thread T0 here:
+    #0 0x5ac155988443 in malloc (/tmp/xml-commit-51f02b0/build/xmllint+0x136443) (BuildId: a1ab9ff9a65f805e5c9399090e95c4f6ca6b85be)
+    #1 0x5ac155a124d8 in xmlNewBlanksWrapperInputStream /tmp/xml-commit-51f02b0/build/parser.c:2458:14
+    #2 0x5ac155a52174 in xmlParsePEReference /tmp/xml-commit-51f02b0/build/parser.c:8058:14
+    #3 0x5ac155a516f6 in xmlParseMarkupDecl /tmp/xml-commit-51f02b0/build/parser.c:6967:2
+    #4 0x5ac155a82e8f in xmlParseInternalSubset /tmp/xml-commit-51f02b0/build/parser.c:8409:6
+    #5 0x5ac155a819e9 in xmlParseDocument /tmp/xml-commit-51f02b0/build/parser.c:10825:6
+    #6 0x5ac155aa4279 in xmlDoRead /tmp/xml-commit-51f02b0/build/parser.c:15311:5
+    #7 0x5ac155aa449d in xmlReadFile /tmp/xml-commit-51f02b0/build/parser.c:15373:13
+    #8 0x5ac1559d0174 in parseAndPrintFile /tmp/xml-commit-51f02b0/build/xmllint.c:2401:9
+    #9 0x5ac1559cbace in main /tmp/xml-commit-51f02b0/build/xmllint.c:3759:7
+    #10 0x7a1fd362c1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7a1fd362c28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x5ac1558ed5f4 in _start (/tmp/xml-commit-51f02b0/build/xmllint+0x9b5f4) (BuildId: a1ab9ff9a65f805e5c9399090e95c4f6ca6b85be)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/xml-commit-51f02b0/build/dict.c:448:13 in xmlDictComputeFastKey
+Shadow bytes around the buggy address:
+  0x501ffffffe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x501fffffff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x501fffffff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502000000000: fa fa 06 fa fa fa 00 01 fa fa 00 01 fa fa 07 fa
+  0x502000000080: fa fa 00 03 fa fa 06 fa fa fa 00 01 fa fa 05 fa
+=>0x502000000100: fa fa 04 fa fa fa 04 fa fa fa 02 fa[fa]fa 00 03
+  0x502000000180: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000000200: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000000280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000000300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000000380: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12643==ABORTING

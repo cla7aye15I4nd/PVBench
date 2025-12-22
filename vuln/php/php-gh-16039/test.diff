@@ -1,0 +1,37 @@
+diff --git a/ext/dom/tests/gh16039.phpt b/ext/dom/tests/gh16039.phpt
+new file mode 100644
+index 0000000000..48a862eda7
+--- /dev/null
++++ b/ext/dom/tests/gh16039.phpt
+@@ -0,0 +1,31 @@
++--TEST--
++GH-16039 (Segmentation fault (access null pointer) in ext/dom/parentnode/tree.c)
++--EXTENSIONS--
++dom
++--FILE--
++<?php
++
++$dom = new DOMDocument;
++$element = $dom->appendChild($dom->createElement('root'));
++try {
++    $element->prepend('x', new DOMEntity);
++} catch (DOMException $e) {
++    echo $e->getMessage(), "\n";
++}
++echo $dom->saveXML();
++$dom->strictErrorChecking = false; // Should not have influence
++try {
++    $element->prepend('x', new DOMEntity);
++} catch (DOMException $e) {
++    echo $e->getMessage(), "\n";
++}
++echo $dom->saveXML();
++
++?>
++--EXPECT--
++Invalid State Error
++<?xml version="1.0"?>
++<root/>
++Invalid State Error
++<?xml version="1.0"?>
++<root/>

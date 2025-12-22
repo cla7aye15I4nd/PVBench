@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index f24b00a2857..ffcd22e70bc 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -887,7 +887,7 @@ static void _property_string(smart_str *str, zend_property_info *prop, const cha
+ {
+ 	smart_str_append_printf(str, "%sProperty [ ", indent);
+ 	if (!prop) {
+-		smart_str_append_printf(str, "<dynamic> public $%s", prop_name);
++		smart_str_append_printf(str, "<dynamic> public $%s", prop_name ? prop_name : "<unknown>");
+ 	} else {
+ 		/* These are mutually exclusive */
+ 		switch (prop->flags & ZEND_ACC_PPP_MASK) {

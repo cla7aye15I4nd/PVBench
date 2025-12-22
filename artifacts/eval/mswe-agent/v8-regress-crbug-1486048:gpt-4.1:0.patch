@@ -1,0 +1,28 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/compiler/turboshaft/type-inference-analysis.h b/src/compiler/turboshaft/type-inference-analysis.h
+index 61212df877f..a2aebe6bfbd 100644
+--- a/src/compiler/turboshaft/type-inference-analysis.h
++++ b/src/compiler/turboshaft/type-inference-analysis.h
+@@ -658,3 +658,5 @@ class TypeInferenceAnalysis {
+ }  // namespace v8::internal::compiler::turboshaft
+ 
+ #endif  // V8_COMPILER_TURBOSHAFT_TYPE_INFERENCE_ANALYSIS_H_
++    if (reps.size() == 0) return Type::None();
++    DCHECK_LT(0, reps.size());

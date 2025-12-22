@@ -1,0 +1,25 @@
+<?php
+
+#[\AllowDynamicProperties]
+class MyDynamicClass {
+
+}
+
+class NonDynamicClass {
+
+}
+
+$cases = [ MyDynamicClass::class, stdClass::class, NonDynamicClass::class ];
+
+foreach ( $cases as $c ) {
+    echo "$c:" . PHP_EOL;
+    $obj = new $c();
+    $obj->prop = 'foo';
+    $prop = new ReflectionProperty($obj, 'prop');
+    var_dump( $prop->getHooks() );
+    var_dump( $prop->getHook( PropertyHookType::Get ) );
+    var_dump( $prop->getHook( PropertyHookType::Set ) );
+    echo PHP_EOL;
+}
+
+?>

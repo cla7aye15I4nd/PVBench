@@ -1,0 +1,110 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0d38d901d..9f2f930da 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -121,3 +121,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/BUGFIX_SUMMARY.md b/BUGFIX_SUMMARY.md
+new file mode 100644
+index 000000000..80c9b3ddb
+--- /dev/null
++++ b/BUGFIX_SUMMARY.md
+@@ -0,0 +1,34 @@
++# Heap Buffer Overflow Fix Summary
++
++## Issue Description
++The issue was a heap buffer overflow in `src/message.c` caused by accessing `SOURCING_NAME` and `SOURCING_LNUM` macros without proper bounds checking. These macros access `exestack.ga_data[exestack.ga_len - 1]`, but when `exestack.ga_len` is 0, this results in accessing `exestack.ga_data[-1]`, causing an out-of-bounds memory access.
++
++## Root Cause
++The `SOURCING_NAME` and `SOURCING_LNUM` macros are defined as:
++- `SOURCING_NAME`: `exestack.ga_data[exestack.ga_len - 1].es_name`
++- `SOURCING_LNUM`: `exestack.ga_data[exestack.ga_len - 1].es_lnum`
++
++When `exestack.ga_len` is 0, `exestack.ga_len - 1` becomes -1 (or a very large unsigned number), causing heap buffer overflow.
++
++## Solution
++Added proper bounds checking using the existing `HAVE_SOURCING_INFO` macro before accessing `SOURCING_NAME` and `SOURCING_LNUM`. The `HAVE_SOURCING_INFO` macro is defined as:
++```c
++#define HAVE_SOURCING_INFO (exestack.ga_data != NULL && exestack.ga_len > 0)
++```
++
++## Files Modified
++- `src/message.c`: Fixed 6 locations where bounds checking was missing
++
++## Changes Made
++1. Line 521: Added `HAVE_SOURCING_INFO &&` before accessing `SOURCING_NAME`
++2. Line 567: Added `HAVE_SOURCING_INFO &&` before accessing `SOURCING_NAME`
++3. Line 696: Added bounds check for `SOURCING_LNUM`
++4. Line 699: Added bounds check for `SOURCING_NAME`
++5. Line 2806: Added bounds check for `SOURCING_NAME`
++6. Line 2821: Added bounds check for `SOURCING_LNUM`
++
++## Verification
++- Successfully reproduced the original crash
++- Applied the fix
++- Verified the crash no longer occurs with both test cases
++- All tests pass without segmentation faults
+diff --git a/src/message.c b/src/message.c
+index 24984123b..c64892d86 100644
+--- a/src/message.c
++++ b/src/message.c
+@@ -518,7 +518,7 @@ get_emsg_lnum(void)
+ 
+     // lnum is 0 when executing a command from the command line
+     // argument, we don't want a line number then
+-    if (SOURCING_NAME != NULL
++    if (HAVE_SOURCING_INFO && SOURCING_NAME != NULL
+ 	    && (other_sourcing_name() || SOURCING_LNUM != last_sourcing_lnum)
+ 	    && SOURCING_LNUM != 0)
+     {
+@@ -564,7 +564,7 @@ msg_source(int attr)
+     }
+ 
+     // remember the last sourcing name printed, also when it's empty
+-    if (SOURCING_NAME == NULL || other_sourcing_name())
++    if (HAVE_SOURCING_INFO && (SOURCING_NAME == NULL || other_sourcing_name()))
+     {
+ 	VIM_CLEAR(last_sourcing_name);
+ 	if (SOURCING_NAME != NULL)
+@@ -693,10 +693,10 @@ emsg_core(const char *s)
+ 	if (in_assert_fails && emsg_assert_fails_msg == NULL)
+ 	{
+ 	    emsg_assert_fails_msg = vim_strsave((char_u *)s);
+-	    emsg_assert_fails_lnum = SOURCING_LNUM;
++	    emsg_assert_fails_lnum = HAVE_SOURCING_INFO ? SOURCING_LNUM : 0;
+ 	    vim_free(emsg_assert_fails_context);
+ 	    emsg_assert_fails_context = vim_strsave(
+-			 SOURCING_NAME == NULL ? (char_u *)"" : SOURCING_NAME);
++		     HAVE_SOURCING_INFO && SOURCING_NAME != NULL ? SOURCING_NAME : (char_u *)"");
+ 	}
+ 
+ 	// set "v:errmsg", also when using ":silent! cmd"
+@@ -2803,7 +2803,7 @@ inc_msg_scrolled(void)
+ #ifdef FEAT_EVAL
+     if (*get_vim_var_str(VV_SCROLLSTART) == NUL)
+     {
+-	char_u	    *p = SOURCING_NAME;
++	char_u	    *p = HAVE_SOURCING_INFO ? SOURCING_NAME : NULL;
+ 	char_u	    *tofree = NULL;
+ 	int	    len;
+ 
+@@ -2818,7 +2818,7 @@ inc_msg_scrolled(void)
+ 	    if (tofree != NULL)
+ 	    {
+ 		vim_snprintf((char *)tofree, len, _("%s line %ld"),
+-						      p, (long)SOURCING_LNUM);
++					      p, HAVE_SOURCING_INFO ? (long)SOURCING_LNUM : 0L);
+ 		p = tofree;
+ 	    }
+ 	}

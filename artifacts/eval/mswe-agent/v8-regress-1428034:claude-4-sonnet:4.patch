@@ -1,0 +1,45 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1687038dc70..12768176b4a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -113,3 +113,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 4a3628ebb95..4ec0fef57d9 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -2944,9 +2944,8 @@ void ClassScope::MigrateUnresolvedPrivateNameTail(
+     VariableProxy* copy = ast_node_factory->CopyVariableProxy(proxy);
+     migrated_names.Add(copy);
+   }
+-
+-  // Replace with the migrated copies.
+   if (tail_is_empty) {
++    // If the saved tail is empty, the list used to be empty, so clear it.
+     rare_data->unresolved_private_names.Clear();
+   } else {
+     rare_data->unresolved_private_names.Rewind(tail);
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index eacebe6250c..e2135adfda8 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -2945,6 +2945,7 @@ bool Parser::SkipFunction(const AstRawString* function_name, FunctionKind kind,
+           factory(), unresolved_private_tail);
+     }
+     function_scope->AnalyzePartially(this, factory(), MaybeParsingArrowhead());
++    function_scope->ResetAfterPreparsing(ast_value_factory_, false);
+   }
+ 
+   return true;

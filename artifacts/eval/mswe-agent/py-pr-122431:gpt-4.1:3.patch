@@ -1,0 +1,172 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/clinic/readline.c.h b/Modules/clinic/readline.c.h
+index 1c616d60f09..7f77d47f9ff 100644
+--- a/Modules/clinic/readline.c.h
++++ b/Modules/clinic/readline.c.h
+@@ -2,16 +2,67 @@
+ preserve
+ [clinic start generated code]*/
+ 
+-#include "pycore_modsupport.h"    // _PyArg_CheckPositional()
++#if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
++#  include "pycore_gc.h"          // PyGC_Head
++#  include "pycore_runtime.h"     // _Py_ID()
++#endif
++#include "pycore_modsupport.h"    // _PyArg_UnpackKeywords()
+ 
+ PyDoc_STRVAR(readline_parse_and_bind__doc__,
+-"parse_and_bind($module, string, /)\n"
++"parse_and_bind($module, /, string)\n"
+ "--\n"
+ "\n"
+ "Execute the init line provided in the string argument.");
+ 
+ #define READLINE_PARSE_AND_BIND_METHODDEF    \
+-    {"parse_and_bind", (PyCFunction)readline_parse_and_bind, METH_O, readline_parse_and_bind__doc__},
++    {"parse_and_bind", _PyCFunction_CAST(readline_parse_and_bind), METH_FASTCALL|METH_KEYWORDS, readline_parse_and_bind__doc__},
++
++static PyObject *
++readline_parse_and_bind_impl(PyObject *module, PyObject *string);
++
++static PyObject *
++readline_parse_and_bind(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
++{
++    PyObject *return_value = NULL;
++    #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
++
++    #define NUM_KEYWORDS 1
++    static struct {
++        PyGC_Head _this_is_not_used;
++        PyObject_VAR_HEAD
++        PyObject *ob_item[NUM_KEYWORDS];
++    } _kwtuple = {
++        .ob_base = PyVarObject_HEAD_INIT(&PyTuple_Type, NUM_KEYWORDS)
++        .ob_item = { &_Py_ID(string), },
++    };
++    #undef NUM_KEYWORDS
++    #define KWTUPLE (&_kwtuple.ob_base.ob_base)
++
++    #else  // !Py_BUILD_CORE
++    #  define KWTUPLE NULL
++    #endif  // !Py_BUILD_CORE
++
++    static const char * const _keywords[] = {"string", NULL};
++    static _PyArg_Parser _parser = {
++        .keywords = _keywords,
++        .fname = "parse_and_bind",
++        .kwtuple = KWTUPLE,
++    };
++    #undef KWTUPLE
++    PyObject *argsbuf[1];
++    PyObject *string;
++
++    args = _PyArg_UnpackKeywords(args, nargs, NULL, kwnames, &_parser,
++            /*minpos*/ 1, /*maxpos*/ 1, /*minkw*/ 0, /*varpos*/ 0, argsbuf);
++    if (!args) {
++        goto exit;
++    }
++    string = args[0];
++    return_value = readline_parse_and_bind_impl(module, string);
++
++exit:
++    return return_value;
++}
+ 
+ PyDoc_STRVAR(readline_read_init_file__doc__,
+ "read_init_file($module, filename=None, /)\n"
+@@ -684,4 +735,4 @@ readline_redisplay(PyObject *module, PyObject *Py_UNUSED(ignored))
+ #ifndef READLINE_CLEAR_HISTORY_METHODDEF
+     #define READLINE_CLEAR_HISTORY_METHODDEF
+ #endif /* !defined(READLINE_CLEAR_HISTORY_METHODDEF) */
+-/*[clinic end generated code: output=358ab465285c7949 input=a9049054013a1b77]*/
++/*[clinic end generated code: output=ce110994c962e695 input=a9049054013a1b77]*/
+diff --git a/Modules/readline.c b/Modules/readline.c
+index 35655c70a46..6f38725331a 100644
+--- a/Modules/readline.c
++++ b/Modules/readline.c
+@@ -1,16 +1,7 @@
+-/* This module makes GNU readline available to Python.  It has ideas
+- * contributed by Lee Busby, LLNL, and William Magro, Cornell Theory
+- * Center.  The completer interface was inspired by Lele Gaifax.  More
+- * recently, it was largely rewritten by Guido van Rossum.
+- */
+-
+-#ifndef Py_BUILD_CORE_BUILTIN
+-#  define Py_BUILD_CORE_MODULE 1
+-#endif
+ 
+ /* Standard definitions */
+ #include "Python.h"
+-#include "pycore_pylifecycle.h"   // _Py_SetLocaleFromEnv()
++
+ 
+ #include <errno.h>                // errno
+ #include <signal.h>               // SIGWINCH
+@@ -201,15 +192,15 @@ disable_bracketed_paste(void)
+ /*[clinic input]
+ readline.parse_and_bind
+ 
++
+     string: object
+-    /
+ 
+ Execute the init line provided in the string argument.
+ [clinic start generated code]*/
+ 
+ static PyObject *
+-readline_parse_and_bind(PyObject *module, PyObject *string)
+-/*[clinic end generated code: output=1a1ede8afb9546c1 input=8a28a00bb4d61eec]*/
++readline_parse_and_bind_impl(PyObject *module, PyObject *string)
++/*[clinic end generated code: output=828d9b6630d434f5 input=425005df5e5ba5d4]*/
+ {
+     char *copy;
+     PyObject *encoded = encode(string);
+@@ -354,6 +345,13 @@ readline_append_history_file_impl(PyObject *module, int nelements,
+     PyObject *filename_bytes;
+     const char *filename;
+     int err;
++
++    // Bounds check for nelements
++    if (nelements < 0) {
++        PyErr_SetString(PyExc_ValueError, "nelements must be non-negative");
++        return NULL;
++    }
++
+     if (filename_obj != Py_None) {
+         if (!PyUnicode_FSConverter(filename_obj, &filename_bytes))
+             return NULL;
+@@ -1449,7 +1447,7 @@ call_readline(FILE *sys_stdin, FILE *sys_stdout, const char *prompt)
+     char *saved_locale = strdup(setlocale(LC_CTYPE, NULL));
+     if (!saved_locale)
+         Py_FatalError("not enough memory to save locale");
+-    _Py_SetLocaleFromEnv(LC_CTYPE);
++
+ #endif
+ 
+     if (sys_stdin != rl_instream || sys_stdout != rl_outstream) {
+diff --git a/test_readline_crash.py b/test_readline_crash.py
+new file mode 100644
+index 00000000000..ff2e837005a
+--- /dev/null
++++ b/test_readline_crash.py
+@@ -0,0 +1,6 @@
++import readline
++
++# Try to append the POC file as a history file with a large nelements value
++readline.read_history_file("/home/poc/0.bin")
++readline.append_history_file(1, "/home/poc/0.bin")
++print("Completed without crash.")

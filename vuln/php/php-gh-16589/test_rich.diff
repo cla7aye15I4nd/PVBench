@@ -1,0 +1,114 @@
+diff --git a/ext/spl/tests/gh16589.phpt b/ext/spl/tests/gh16589.phpt
+new file mode 100644
+index 00000000000..7b1452e37a4
+--- /dev/null
++++ b/ext/spl/tests/gh16589.phpt
+@@ -0,0 +1,23 @@
++--TEST--
++GH-16589 (UAF in SplDoublyLinked->serialize())
++--CREDITS--
++chibinz
++--FILE--
++<?php
++
++class C {
++    function __serialize(): array {
++        global $list;
++        $list->pop();
++        return [];
++    }
++}
++
++$list = new SplDoublyLinkedList;
++$list->add(0, new C);
++$list->add(1, 1);
++var_dump($list->serialize());
++
++?>
++--EXPECT--
++string(17) "i:0;:O:1:"C":0:{}"
+diff --git a/ext/spl/tests/gh16589_1.phpt b/ext/spl/tests/gh16589_1.phpt
+new file mode 100644
+index 00000000000..0c0e3e6b01b
+--- /dev/null
++++ b/ext/spl/tests/gh16589_1.phpt
+@@ -0,0 +1,40 @@
++--TEST--
++GH-16589 (UAF in SplDoublyLinked->serialize())
++--CREDITS--
++chibinz
++--FILE--
++<?php
++
++class C {
++    function __serialize(): array {
++        global $list;
++        $list->pop();
++        $list->pop();
++        $list->add(2, 33333);
++        $list->add(3, 44444);
++        $list->add(4, 55555);
++        $list->add(5, 66666);
++        $list->add(6, 77777);
++        $list->add(7, 88888);
++        $list->add(8, 99999);
++        return [];
++    }
++}
++
++$list = new SplDoublyLinkedList;
++$list->add(0, new C);
++$list->add(1, 22222);
++$list->add(2, 33333);
++
++class B {
++    function __serialize(): array {
++        return [111111];
++    }
++}
++
++$a = new B;
++$list->add(1, $a);
++var_dump($list->serialize());
++?>
++--EXPECT--
++string(106) "i:0;:O:1:"C":0:{}:O:1:"B":1:{i:0;i:111111;}:i:33333;:i:44444;:i:55555;:i:66666;:i:77777;:i:88888;:i:99999;"
+diff --git a/ext/spl/tests/gh16589_2.phpt b/ext/spl/tests/gh16589_2.phpt
+new file mode 100644
+index 00000000000..ed73c737cfc
+--- /dev/null
++++ b/ext/spl/tests/gh16589_2.phpt
+@@ -0,0 +1,33 @@
++--TEST--
++GH-16589 (UAF in SplDoublyLinked->serialize())
++--CREDITS--
++chibinz
++--FILE--
++<?php
++
++class C {
++    function __serialize(): array {
++        global $list;
++        $list->add(4, 66666);
++        return [55555];
++    }
++}
++
++$list = new SplDoublyLinkedList;
++$list->add(0, 11111);
++$list->add(0, new C);
++$list->add(0, 22222);
++$list->add(0, 33333);
++
++class B {
++    function __serialize(): array {
++        return [44444];
++    }
++}
++
++$a = new B;
++$list->add(1, $a);
++var_dump($list->serialize());
++?>
++--EXPECT--
++string(81) "i:0;:i:33333;:O:1:"B":1:{i:0;i:44444;}:i:22222;:O:1:"C":1:{i:0;i:55555;}:i:11111;"

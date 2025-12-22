@@ -1,0 +1,39 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/listobject.c b/Objects/listobject.c
+index d09bb639103..97d704852e7 100644
+--- a/Objects/listobject.c
++++ b/Objects/listobject.c
+@@ -3382,7 +3382,18 @@ list_richcompare_impl(PyObject *v, PyObject *w, int op)
+     }
+ 
+     /* Compare the final item again using the proper operator */
+-    return PyObject_RichCompare(vl->ob_item[i], wl->ob_item[i], op);
++    if (i >= Py_SIZE(vl) || i >= Py_SIZE(wl)) {
++        /* List was resized during comparison, fall back to size comparison */
++        Py_RETURN_RICHCOMPARE(Py_SIZE(vl), Py_SIZE(wl), op);
++    }
++    PyObject *vitem = vl->ob_item[i];
++    PyObject *witem = wl->ob_item[i];
++    Py_INCREF(vitem);
++    Py_INCREF(witem);
++    PyObject *result = PyObject_RichCompare(vitem, witem, op);
++    Py_DECREF(vitem);
++    Py_DECREF(witem);
++    return result;
+ }
+ 
+ static PyObject *

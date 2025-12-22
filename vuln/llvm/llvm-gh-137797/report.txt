@@ -1,0 +1,28 @@
+Instruction does not dominate all uses!
+  %4 = insertelement <2 x i32> <i32 poison, i32 0>, i32 0, i32 0
+  %2 = shufflevector <2 x i32> %4, <2 x i32> <i32 poison, i32 1>, <2 x i32> <i32 0, i32 3>
+LLVM ERROR: Broken module found, compilation aborted!
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ./build/bin/opt -passes=slp-vectorizer -slp-threshold=-99999 /testcases/llvm-gh-137797/input/poc.ll
+1.	Running pass "verify" on module "/testcases/llvm-gh-137797/input/poc.ll"
+ #0 0x000055555a356102 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-137797/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x000055555a356521 PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-137797/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x000055555a3538c7 llvm::sys::RunSignalHandlers() /tmp/llvm-gh-137797/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x000055555a355984 SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-137797/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x000055555a262142 llvm::report_fatal_error(llvm::Twine const&, bool) /tmp/llvm-gh-137797/build/llvm/lib/Support/ErrorHandling.cpp:126:9
+ #9 0x000055555a261f16 llvm::report_fatal_error(llvm::StringRef, bool) /tmp/llvm-gh-137797/build/llvm/lib/Support/ErrorHandling.cpp:87:68
+#10 0x000055555a10a24a llvm::VerifierPass::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137797/build/llvm/lib/IR/Verifier.cpp:7816:33
+#11 0x0000555555e14e7f llvm::detail::PassModel<llvm::Module, llvm::VerifierPass, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137797/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#12 0x000055555a08330d llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137797/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#13 0x0000555555deeee5 llvm::runPassPipeline(llvm::StringRef, llvm::Module&, llvm::TargetMachine*, llvm::TargetLibraryInfoImpl*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::StringRef, llvm::ArrayRef<llvm::PassPlugin>, llvm::ArrayRef<std::function<void (llvm::PassBuilder&)>>, llvm::opt_tool::OutputKind, llvm::opt_tool::VerifierKind, bool, bool, bool, bool, bool, bool, bool) /tmp/llvm-gh-137797/build/llvm/tools/opt/NewPMDriver.cpp:557:10
+#14 0x0000555555dc08fc optMain /tmp/llvm-gh-137797/build/llvm/tools/opt/optdriver.cpp:729:27
+#15 0x0000555555dbe081 main /tmp/llvm-gh-137797/build/llvm/tools/opt/opt.cpp:25:64
+#16 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#17 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#18 0x0000555555dbdf65 _start (./build/bin/opt+0x869f65)
+/testcases/llvm-gh-137797/exp.sh: line 2: 82601 Aborted                 (core dumped) ./build/bin/opt -passes=slp-vectorizer -slp-threshold=-99999 $1

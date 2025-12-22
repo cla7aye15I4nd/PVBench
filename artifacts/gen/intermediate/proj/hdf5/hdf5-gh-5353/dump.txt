@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+22|H5Sget_select_hyper_blocklist(space_id, 0, 1, blocks)|ret == -1|hyperslab selections are unsupported for null extents

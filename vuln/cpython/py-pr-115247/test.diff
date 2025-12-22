@@ -1,0 +1,24 @@
+diff --git a/Lib/test/test_deque.py b/Lib/test/test_deque.py
+index ae1dfacd726..4679f297fd7 100644
+--- a/Lib/test/test_deque.py
++++ b/Lib/test/test_deque.py
+@@ -166,7 +166,7 @@ def test_contains(self):
+         with self.assertRaises(RuntimeError):
+             n in d
+ 
+-    def test_contains_count_stop_crashes(self):
++    def test_contains_count_index_stop_crashes(self):
+         class A:
+             def __eq__(self, other):
+                 d.clear()
+@@ -178,6 +178,10 @@ def __eq__(self, other):
+         with self.assertRaises(RuntimeError):
+             _ = d.count(3)
+ 
++        d = deque([A()])
++        with self.assertRaises(RuntimeError):
++            d.index(0)
++
+     def test_extend(self):
+         d = deque('a')
+         self.assertRaises(TypeError, d.extend, 1)

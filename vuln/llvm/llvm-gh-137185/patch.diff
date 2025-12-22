@@ -1,0 +1,13 @@
+diff --git a/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp b/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp
+index 6027572f1e84..c45c62e13d76 100644
+--- a/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp
++++ b/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp
+@@ -2127,7 +2127,7 @@ void VPScalarIVStepsRecipe::execute(VPTransformState &State) {
+           Builder.CreateMul(StartIdx0, ConstantInt::get(StartIdx0->getType(),
+                                                         getUnrollPart(*this)));
+     }
+-    StartIdx0 = Builder.CreateTrunc(StartIdx0, IntStepTy);
++    StartIdx0 = Builder.CreateSExtOrTrunc(StartIdx0, IntStepTy);
+   }
+ 
+   if (!FirstLaneOnly && State.VF.isScalable()) {

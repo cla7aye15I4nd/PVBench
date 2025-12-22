@@ -1,0 +1,116 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f5dc0b4..07196a6f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ xstc/Makefile
+ xstc/Makefile.in
+ xstc/Tests
+ xstc/xsts-*.tar.gz
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/minimal_schema.xsd b/minimal_schema.xsd
+new file mode 100644
+index 00000000..b77b0569
+--- /dev/null
++++ b/minimal_schema.xsd
+@@ -0,0 +1,15 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
++  <xs:complexType name="BaseType">
++    <xs:sequence>
++      <xs:element name="child" type="xs:string"/>
++    </xs:sequence>
++  </xs:complexType>
++  <xs:complexType name="DerivedType">
++    <xs:complexContent>
++      <xs:extension base="BaseType">
++      </xs:extension>
++    </xs:complexContent>
++  </xs:complexType>
++  <xs:element name="root" type="DerivedType"/>
++</xs:schema>
+diff --git a/test.xml b/test.xml
+new file mode 100644
+index 00000000..e2b2fc2e
+--- /dev/null
++++ b/test.xml
+@@ -0,0 +1 @@
++<Child xmlns="http://www.test.com">5</Child>
+diff --git a/test_complex_type.xsd b/test_complex_type.xsd
+new file mode 100644
+index 00000000..32947c8d
+--- /dev/null
++++ b/test_complex_type.xsd
+@@ -0,0 +1,19 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
++  <xs:complexType name="BaseType">
++    <xs:complexContent>
++      <xs:restriction base="xs:anyType">
++      </xs:restriction>
++    </xs:complexContent>
++  </xs:complexType>
++  <xs:complexType name="DerivedType">
++    <xs:complexContent>
++      <xs:extension base="BaseType">
++        <xs:sequence>
++          <xs:element name="child" type="xs:string"/>
++        </xs:sequence>
++      </xs:extension>
++    </xs:complexContent>
++  </xs:complexType>
++  <xs:element name="root" type="DerivedType"/>
++</xs:schema>
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 6a353858..882591f3 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -18660,14 +18660,21 @@ xmlSchemaFixupComplexType(xmlSchemaParserCtxtPtr pctxt,
+ 		    particle->children->children =
+ 			(xmlSchemaTreeItemPtr) xmlSchemaAddParticle(pctxt,
+ 			type->node,
+-			((xmlSchemaParticlePtr) baseType->subtypes)->minOccurs,
+-			((xmlSchemaParticlePtr) baseType->subtypes)->maxOccurs);
++			((xmlSchemaParticlePtr) baseType->subtypes) != NULL ? 
++			    ((xmlSchemaParticlePtr) baseType->subtypes)->minOccurs : 1,
++			((xmlSchemaParticlePtr) baseType->subtypes) != NULL ?
++			    ((xmlSchemaParticlePtr) baseType->subtypes)->maxOccurs : 1);
+ 		    if (particle->children->children == NULL)
+ 			goto exit_failure;
+ 		    particle = (xmlSchemaParticlePtr)
+ 			particle->children->children;
+-		    particle->children =
+-			((xmlSchemaParticlePtr) baseType->subtypes)->children;
++
++		    if (baseType->subtypes != NULL) {
++			particle->children =
++			    ((xmlSchemaParticlePtr) baseType->subtypes)->children;
++		    } else {
++			particle->children = NULL;
++		    }
+ 		    /*
+ 		    * SPEC "followed by the `effective content`."
+ 		    */
+@@ -18692,8 +18699,12 @@ xmlSchemaFixupComplexType(xmlSchemaParserCtxtPtr pctxt,
+ 		    * neither the regex compilation of the content model,
+ 		    * nor to the complex type constraints.
+ 		    */
+-		    particle->children->children =
+-			(xmlSchemaTreeItemPtr) baseType->subtypes;
++		    if (baseType->subtypes != NULL) {
++			particle->children->children =
++			    (xmlSchemaTreeItemPtr) baseType->subtypes;
++		    } else {
++			particle->children->children = NULL;
++		    }
+ 		}
+ 	    }
+ 	}

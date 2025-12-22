@@ -1,0 +1,63 @@
+clang-21: /tmp/llvm-gh-134471/build/clang/lib/AST/ASTContext.cpp:6593: clang::QualType clang::ASTContext::getDeducedTemplateSpecializationTypeInternal(clang::TemplateName, clang::QualType, bool, clang::QualType) const: Assertion `ID == TempID && "ID does not match"' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace, preprocessed source, and associated run script.
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-134471/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-134471/build -fcoverage-compilation-dir=/tmp/llvm-gh-134471/build -resource-dir /tmp/llvm-gh-134471/build/build/lib/clang/21 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/backward -internal-isystem /tmp/llvm-gh-134471/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -std=c++20 -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-500077.o -x c++ /testcases/llvm-gh-134471/input/poc.c
+1.	/testcases/llvm-gh-134471/input/poc.c:7:7: current parser token ';'
+ #0 0x00005555585ce94a llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-134471/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x00005555585ced61 PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-134471/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x00005555585cc10f llvm::sys::RunSignalHandlers() /tmp/llvm-gh-134471/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x00005555585ce1cc SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-134471/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x000055555d2cd3f9 clang::ASTContext::getDeducedTemplateSpecializationTypeInternal(clang::TemplateName, clang::QualType, bool, clang::QualType) const /tmp/llvm-gh-134471/build/clang/lib/AST/ASTContext.cpp:6594:18
+#11 0x000055555d2cd570 clang::ASTContext::getDeducedTemplateSpecializationType(clang::TemplateName, clang::QualType, bool) const /tmp/llvm-gh-134471/build/clang/lib/AST/ASTContext.cpp:6611:1
+#12 0x000055555cc61ed2 (anonymous namespace)::SubstituteDeducedTypeTransform::TransformDeducedTemplateSpecializationType(clang::TypeLocBuilder&, clang::DeducedTemplateSpecializationTypeLoc) /tmp/llvm-gh-134471/build/clang/lib/Sema/SemaTemplateDeduction.cpp:5102:77
+#13 0x000055555cc6c318 clang::TreeTransform<(anonymous namespace)::SubstituteDeducedTypeTransform>::TransformType(clang::TypeLocBuilder&, clang::TypeLoc) /tmp/llvm-gh-134471/build/build/tools/clang/include/clang/AST/TypeNodes.inc:42:1
+#14 0x000055555cc7391f clang::TreeTransform<(anonymous namespace)::SubstituteDeducedTypeTransform>::TransformElaboratedType(clang::TypeLocBuilder&, clang::ElaboratedTypeLoc) /tmp/llvm-gh-134471/build/clang/lib/Sema/TreeTransform.h:7494:47
+#15 0x000055555cc6c476 clang::TreeTransform<(anonymous namespace)::SubstituteDeducedTypeTransform>::TransformType(clang::TypeLocBuilder&, clang::TypeLoc) /tmp/llvm-gh-134471/build/build/tools/clang/include/clang/AST/TypeNodes.inc:49:1
+#16 0x000055555cc6cd3d clang::TreeTransform<(anonymous namespace)::SubstituteDeducedTypeTransform>::TransformType(clang::TypeSourceInfo*) /tmp/llvm-gh-134471/build/clang/lib/Sema/TreeTransform.h:5168:47
+#17 0x000055555cc63c92 clang::Sema::SubstAutoTypeSourceInfo(clang::TypeSourceInfo*, clang::QualType) /tmp/llvm-gh-134471/build/clang/lib/Sema/SemaTemplateDeduction.cpp:5396:21
+#18 0x000055555c6ca4e5 clang::Sema::DeduceTemplateSpecializationFromInitializer(clang::TypeSourceInfo*, clang::InitializedEntity const&, clang::InitializationKind const&, llvm::MutableArrayRef<clang::Expr*>) /tmp/llvm-gh-134471/build/clang/lib/Sema/SemaInit.cpp:10257:20
+#19 0x000055555c1f7631 clang::Sema::deduceVarTypeFromInitializer(clang::VarDecl*, clang::DeclarationName, clang::QualType, clang::TypeSourceInfo*, clang::SourceRange, bool, clang::Expr*) /tmp/llvm-gh-134471/build/clang/lib/Sema/SemaDecl.cpp:13030:55
+#20 0x000055555c1f8113 clang::Sema::DeduceVariableDeclarationType(clang::VarDecl*, bool, clang::Expr*) /tmp/llvm-gh-134471/build/clang/lib/Sema/SemaDecl.cpp:13128:54
+#21 0x000055555c1fa8df clang::Sema::AddInitializerToDecl(clang::Decl*, clang::Expr*, bool) /tmp/llvm-gh-134471/build/clang/lib/Sema/SemaDecl.cpp:13616:5
+#22 0x000055555bdaf994 clang::Parser::ParseDeclarationAfterDeclaratorAndAttributes(clang::Declarator&, clang::Parser::ParsedTemplateInfo const&, clang::Parser::ForRangeInit*) /tmp/llvm-gh-134471/build/clang/lib/Parse/ParseDecl.cpp:2931:5
+#23 0x000055555bdade77 clang::Parser::ParseDeclGroup(clang::ParsingDeclSpec&, clang::DeclaratorContext, clang::ParsedAttributes&, clang::Parser::ParsedTemplateInfo&, clang::SourceLocation*, clang::Parser::ForRangeInit*) /tmp/llvm-gh-134471/build/clang/lib/Parse/ParseDecl.cpp:2550:51
+#24 0x000055555bd7331c clang::Parser::ParseDeclOrFunctionDefInternal(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec&, clang::AccessSpecifier) /tmp/llvm-gh-134471/build/clang/lib/Parse/Parser.cpp:1261:24
+#25 0x000055555bd73515 clang::Parser::ParseDeclarationOrFunctionDefinition(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*, clang::AccessSpecifier) /tmp/llvm-gh-134471/build/clang/lib/Parse/Parser.cpp:1283:42
+#26 0x000055555bd7271f clang::Parser::ParseExternalDeclaration(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*) /tmp/llvm-gh-134471/build/clang/lib/Parse/Parser.cpp:1086:50
+#27 0x000055555bd714d7 clang::Parser::ParseTopLevelDecl(clang::OpaquePtr<clang::DeclGroupRef>&, clang::Sema::ModuleImportState&) /tmp/llvm-gh-134471/build/clang/lib/Parse/Parser.cpp:772:36
+#28 0x000055555bd6c30b clang::ParseAST(clang::Sema&, bool, bool) /tmp/llvm-gh-134471/build/clang/lib/Parse/ParseAST.cpp:171:37
+#29 0x0000555559969cc2 clang::ASTFrontendAction::ExecuteAction() /tmp/llvm-gh-134471/build/clang/lib/Frontend/FrontendAction.cpp:1345:11
+#30 0x000055555960796c clang::CodeGenAction::ExecuteAction() /tmp/llvm-gh-134471/build/clang/lib/CodeGen/CodeGenAction.cpp:1112:5
+#31 0x000055555996957d clang::FrontendAction::Execute() /tmp/llvm-gh-134471/build/clang/lib/Frontend/FrontendAction.cpp:1231:38
+#32 0x000055555987b111 clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) /tmp/llvm-gh-134471/build/clang/lib/Frontend/CompilerInstance.cpp:1055:42
+#33 0x0000555559b41f82 clang::ExecuteCompilerInvocation(clang::CompilerInstance*) /tmp/llvm-gh-134471/build/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+#34 0x00005555565dda71 cc1_main(llvm::ArrayRef<char const*>, char const*, void*) /tmp/llvm-gh-134471/build/clang/tools/driver/cc1_main.cpp:294:40
+#35 0x00005555565ce1ae ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) /tmp/llvm-gh-134471/build/clang/tools/driver/driver.cpp:218:20
+#36 0x00005555565ce71b clang_main(int, char**, llvm::ToolContext const&) /tmp/llvm-gh-134471/build/clang/tools/driver/driver.cpp:259:26
+#37 0x0000555556604c62 main /tmp/llvm-gh-134471/build/build/tools/clang/tools/driver/clang-driver.cpp:17:20
+#38 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#39 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#40 0x00005555565cd4e5 _start (/tmp/llvm-gh-134471/build/build/bin/clang-21+0x10794e5)
+clang: error: unable to execute command: Aborted (core dumped)
+clang: error: clang frontend command failed due to signal (use -v to see invocation)
+clang version 21.0.0git (https://github.com/llvm/llvm-project.git 9bd0c8726a5e3fd4f76e84692bd920dfca7a8d7f)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /tmp/llvm-gh-134471/build/build/bin
+Build config: +unoptimized, +assertions
+clang: note: diagnostic msg: 
+********************
+
+PLEASE ATTACH THE FOLLOWING FILES TO THE BUG REPORT:
+Preprocessed source(s) and associated run script(s) are located at:
+clang: note: diagnostic msg: /tmp/poc-fa7a34.cpp
+clang: note: diagnostic msg: /tmp/poc-fa7a34.sh
+clang: note: diagnostic msg: 
+
+********************

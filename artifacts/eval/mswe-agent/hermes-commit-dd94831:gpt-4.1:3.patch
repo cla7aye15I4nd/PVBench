@@ -1,0 +1,83 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ba8d67d9..8556f202b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,3 +24,14 @@ test/ApplePlatformsIntegrationTestApp/Podfile.lock
+ test/ApplePlatformsIntegrationTestApp/Pods
+ test/ApplePlatformsIntegrationTestApp/**/xcuserdata
+ test/ApplePlatformsIntegrationTestApp/ApplePlatformsIntegrationTestApp.xcworkspace
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/Support/SHA1.h b/include/hermes/Support/SHA1.h
+index 48f70b538..cc4f8ab21 100644
+--- a/include/hermes/Support/SHA1.h
++++ b/include/hermes/Support/SHA1.h
+@@ -8,8 +8,10 @@
+ #ifndef HERMES_SUPPORT_SHA1_H
+ #define HERMES_SUPPORT_SHA1_H
+ 
++#include <cstddef>
+ #include <array>
+ #include <string>
++#include <cstdint>
+ 
+ namespace hermes {
+ 
+diff --git a/include/hermes/VM/JSCallableProxy.h b/include/hermes/VM/JSCallableProxy.h
+index 5aab5d3de..1a3289bca 100644
+--- a/include/hermes/VM/JSCallableProxy.h
++++ b/include/hermes/VM/JSCallableProxy.h
+@@ -38,10 +38,27 @@ class JSCallableProxy : public NativeFunction {
+       Handle<JSObject> handler);
+ 
+   bool isConstructor(Runtime *runtime) {
+-    return vm::isConstructor(
+-        runtime, vmcast_or_null<Callable>(slots_.target.get(runtime)));
++    // Recursion guard: follow the proxy chain, break on cycles or excessive depth.
++    const JSCallableProxy *current = this;
++    constexpr int kMaxProxyDepth = 100;
++    int depth = 0;
++    while (true) {
++      auto target = vmcast_or_null<Callable>(current->slots_.target.get(runtime));
++      if (!target) {
++        return false;
++      }
++      // If the target is not a JSCallableProxy, use its isConstructor.
++      auto *proxyTarget = dyn_vmcast<JSCallableProxy>(target);
++      if (!proxyTarget) {
++        return vm::isConstructor(runtime, target);
++      }
++      // If we see ourselves again, break the cycle.
++      if (proxyTarget == this || ++depth > kMaxProxyDepth) {
++        return false;
++      }
++      current = proxyTarget;
++    }
+   }
+-
+ #ifdef HERMESVM_SERIALIZE
+   explicit JSCallableProxy(Deserializer &d);
+ 
+diff --git a/public/hermes/Public/DebuggerTypes.h b/public/hermes/Public/DebuggerTypes.h
+index 191a81d1a..d23575823 100644
+--- a/public/hermes/Public/DebuggerTypes.h
++++ b/public/hermes/Public/DebuggerTypes.h
+@@ -10,7 +10,7 @@
+ 
+ #include <string>
+ #include <vector>
+-
++#include <cstdint>
+ namespace hermes {
+ namespace vm {
+ class Debugger;

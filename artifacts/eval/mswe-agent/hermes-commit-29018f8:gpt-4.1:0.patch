@@ -1,0 +1,235 @@
+
+diff --git a/.gitignore b/.gitignore
+index 24208ddbb..e3bfbe6e6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -31,3 +31,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ # VS Code and Visual Studio
+ .vs
+ .vscode
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/Support/SHA1.h b/include/hermes/Support/SHA1.h
+index cfc82b4e2..0b34fbef3 100644
+--- a/include/hermes/Support/SHA1.h
++++ b/include/hermes/Support/SHA1.h
+@@ -10,7 +10,7 @@
+ 
+ #include <array>
+ #include <string>
+-
++#include <cstdint>
+ namespace hermes {
+ 
+ constexpr size_t SHA1_NUM_BYTES = 20;
+diff --git a/lib/Parser/JSParserImpl.cpp b/lib/Parser/JSParserImpl.cpp
+index 0589efb3a..c24b26270 100644
+--- a/lib/Parser/JSParserImpl.cpp
++++ b/lib/Parser/JSParserImpl.cpp
+@@ -4138,12 +4138,8 @@ Optional<ESTree::Node *> JSParserImpl::parseConditionalExpression(
+     return None;
+   ESTree::Node *test = *optTest;
+ 
++  // Handle the special cases and early returns first (Flow/TS, CoverTypedParameters, etc.)
+   if (!check(TokenKind::question)) {
+-    // No '?', so this isn't a conditional expression.
+-    // If CoverTypedParameters::Yes, we still need to account for this
+-    // being formal parameters, so try that.
+-    // TS doesn't have type casts with this syntax, but we must still
+-    // cover the typed identifier node for when it turns into an arrow function.
+ #if HERMES_PARSE_FLOW || HERMES_PARSE_TS
+     if (context_.getParseTypes() &&
+         coverTypedParameters == CoverTypedParameters::Yes) {
+@@ -4154,143 +4150,42 @@ Optional<ESTree::Node *> JSParserImpl::parseConditionalExpression(
+         return *optCover;
+     }
+ #endif
+-
+-    // No CoverTypedParameters found, just return the LHS.
+     return test;
+   }
+ 
+-  ESTree::Node *consequent = nullptr;
+-  SMRange questionRange = tok_->getSourceRange();
++  // Iterative handling of nested conditional expressions to avoid stack overflow.
++  constexpr int kMaxConditionalDepth = 10000; // Arbitrary large limit for safety.
++  int depth = 0;
+ 
+-#if HERMES_PARSE_FLOW || HERMES_PARSE_TS
+-  if (context_.getParseTypes()) {
+-    // Save here to save the question mark (we can only save on punctuators).
+-    // Early returns will happen if we find anything that leads to
+-    // short-circuiting out of the traditional conditional expression.
+-    JSLexer::SavePoint savePoint{&lexer_};
+-    advance();
++  ESTree::Node *expr = test;
++  SMLoc exprStartLoc = startLoc;
+ 
+-    // If CoverTypedParameters::Yes, we still need to account for this
+-    // being formal parameters, so try that,
+-    // in which case the '?' was part of an optional parameter, not a
+-    // conditional expression.
+-    if (coverTypedParameters == CoverTypedParameters::Yes) {
+-      auto optCover = tryParseCoverTypedIdentifierNode(test, true);
+-      if (!optCover)
+-        return None;
+-      if (*optCover)
+-        return *optCover;
+-    }
+-
+-    // It is also possible to have a '?' without ':' but not be a conditional
+-    // expression, in the case of typed arrow parameters that didn't have a type
+-    // annotation. For example:
+-    // (foo?) => 1
+-    //      ^
+-    // The tokens which can come here are limited to ',', '=', and ')'.
+-    if (coverTypedParameters == CoverTypedParameters::Yes &&
+-        checkN(TokenKind::comma, TokenKind::r_paren, TokenKind::equal)) {
+-      return setLocation(
+-          startLoc,
+-          questionRange,
+-          new (context_) ESTree::CoverTypedIdentifierNode(test, nullptr, true));
+-    }
+-
+-    // Now we're in the real backtracking stage.
+-    // First, parse with AllowTypedArrowFunction::Yes to allow for the
+-    // possibility of a concise arrow function with return types. However, we
+-    // want to avoid the possibility of eating the ':' that we'll need for the
+-    // conditional expression's alternate. For example:
+-    // a ? b1 => (c1) : b2 => (c2)
+-    // We want to account for b2 incorrectly being parsed as the returnType
+-    // of an arrow function returned by the arrow function with param b1.
+-    // Thus, after parsing with AllowTypedArrowFunction::Yes, we check to
+-    // see if there is a ':' afterwards. If there isn't, failure is assured,
+-    // so we restore to the '?' and try again below, with
+-    // AllowTypedArrowFunction::No.
+-    SourceErrorManager::SaveAndSuppressMessages suppress{
+-        &sm_, Subsystem::Parser};
+-    CHECK_RECURSION;
+-    auto optConsequent = parseAssignmentExpression(
+-        ParamIn, AllowTypedArrowFunction::Yes, CoverTypedParameters::No);
+-    if (optConsequent && check(TokenKind::colon)) {
+-      consequent = *optConsequent;
+-    } else {
+-      // Parsing with typed arrow functions failed because we don't have a :,
+-      // so reset and try again.
+-      savePoint.restore();
++  while (check(TokenKind::question)) {
++    if (++depth > kMaxConditionalDepth) {
++      error(tok_->getSourceRange(), "Too many nested conditional expressions");
++      return None;
+     }
+-  }
+-#endif
+ 
+-  // Only try with AllowTypedArrowFunction::No if we haven't already set
+-  // up the consequent using AllowTypedArrowFunction::Yes.
+-  if (!consequent) {
+-    // Consume the '?' (either for the first time or after savePoint.restore()).
++    SMRange questionRange = tok_->getSourceRange();
+     advance();
+-    CHECK_RECURSION;
++
+     auto optConsequent = parseAssignmentExpression(
+         ParamIn, AllowTypedArrowFunction::No, CoverTypedParameters::No);
+     if (!optConsequent)
+       return None;
+-    consequent = *optConsequent;
+-  }
++    ESTree::Node *consequent = *optConsequent;
+ 
+-  if (!eat(
+-          TokenKind::colon,
+-          JSLexer::AllowRegExp,
+-          "in conditional expression after '... ? ...'",
+-          "location of '?'",
+-          questionRange.Start))
+-    return None;
+-
+-  auto optAlternate = parseAssignmentExpression(
+-      param, AllowTypedArrowFunction::Yes, CoverTypedParameters::No);
+-  if (!optAlternate)
+-    return None;
+-  ESTree::Node *alternate = *optAlternate;
+-
+-  return setLocation(
+-      startLoc,
+-      getPrevTokenEndLoc(),
+-      new (context_)
+-          ESTree::ConditionalExpressionNode(test, alternate, consequent));
+-}
+-
+-#if HERMES_PARSE_FLOW || HERMES_PARSE_TS
+-Optional<ESTree::Node *> JSParserImpl::tryParseCoverTypedIdentifierNode(
+-    ESTree::Node *test,
+-    bool optional) {
+-  assert(context_.getParseTypes() && "must be parsing types");
+-  // In the case of flow types in arrow function parameters, we may have
+-  // optional parameters which look like:
+-  // Identifier ? : TypeAnnotation
+-  // Because the colon and the type annotation are optional, we check and
+-  // consume the colon here and return a CoverTypedIdentifierNode if it's
+-  // possible we are parsing typed arrow parameters.
+-  if (check(TokenKind::colon) && test->getParens() == 0) {
+-    if (isa<ESTree::IdentifierNode>(test) ||
+-        isa<ESTree::ObjectExpressionNode>(test) ||
+-        isa<ESTree::ArrayExpressionNode>(test)) {
+-      // Deliberately wrap the type annotation later when reparsing.
+-      SMLoc annotStart = advance(JSLexer::GrammarContext::Type).Start;
+-      auto optRet = parseTypeAnnotation(annotStart);
+-      if (!optRet)
+-        return None;
+-      ESTree::Node *type = *optRet;
+-
+-      return setLocation(
+-          test,
+-          getPrevTokenEndLoc(),
+-          new (context_)
+-              ESTree::CoverTypedIdentifierNode(test, type, optional));
++    if (!eat(
++            TokenKind::colon,
++            JSLexer::AllowRegExp,
++            "in conditional expression after '... ? ...'",
++            "location of '?'",
++            questionRange.Start))
+     }
+-    // The colon must indicate something another than the typeAnnotation for
+-    // the parameter. Continue as usual.
+-  }
+-  return nullptr;
++  return expr;
+ }
+-#endif
++}
++
+ 
+ Optional<ESTree::YieldExpressionNode *> JSParserImpl::parseYieldExpression(
+     Param param) {
+diff --git a/public/hermes/Public/DebuggerTypes.h b/public/hermes/Public/DebuggerTypes.h
+index fe651803f..60f0e874a 100644
+--- a/public/hermes/Public/DebuggerTypes.h
++++ b/public/hermes/Public/DebuggerTypes.h
+@@ -11,11 +11,13 @@
+ #include <string>
+ #include <vector>
+ 
++#include <cstdint>
++
+ namespace hermes {
+ namespace vm {
+ class Debugger;
+ }
+-} // namespace hermes
++}
+ 
+ namespace facebook {
+ namespace hermes {

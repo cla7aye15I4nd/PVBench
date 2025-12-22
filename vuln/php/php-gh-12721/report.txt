@@ -1,0 +1,19 @@
+==2326971==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000004 (pc 0x5593f0cccc19 bp 0x7ffc4678a410 sp 0x7ffc4678a190 T0)
+==2326971==The signal is caused by a READ memory access.
+==2326971==Hint: address points to the zero page.
+    #0 0x5593f0cccc19 in zend_string_release_ex /php-gh-12721/build/Zend/zend_string.h:331:7
+    #1 0x5593f0cccc19 in zim_SplFileInfo_getFilename /php-gh-12721/build/ext/spl/spl_directory.c:936:2
+    #2 0x5593f1699ff9 in ZEND_DO_FCALL_SPEC_RETVAL_USED_HANDLER /php-gh-12721/build/Zend/zend_vm_execute.h:1951:4
+    #3 0x5593f14fbf3f in execute_ex /php-gh-12721/build/Zend/zend_vm_execute.h:55836:7
+    #4 0x5593f14fd6d6 in zend_execute /php-gh-12721/build/Zend/zend_vm_execute.h:60409:2
+    #5 0x5593f13de156 in zend_execute_scripts /php-gh-12721/build/Zend/zend.c:1838:4
+    #6 0x5593f11839ab in php_execute_script /php-gh-12721/build/main/main.c:2542:13
+    #7 0x5593f1d1025c in do_cli /php-gh-12721/build/sapi/cli/php_cli.c:964:5
+    #8 0x5593f1d0e219 in main /php-gh-12721/build/sapi/cli/php_cli.c:1333:18
+    #9 0x7fdfe42911c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x7fdfe429128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x5593f0403164 in _start (/php-gh-12721/build/sapi/cli/php+0x403164) (BuildId: 19fe2df3278c5af1b59b852b0d6d5e668b21e9eb)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-12721/build/Zend/zend_string.h:331:7 in zend_string_release_ex
+==2326971==ABORTING

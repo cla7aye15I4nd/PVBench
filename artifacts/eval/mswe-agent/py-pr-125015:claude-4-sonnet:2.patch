@@ -1,0 +1,27 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/Python-ast.c b/Python/Python-ast.c
+index 4a58c0973d1..89c52b9dc73 100644
+--- a/Python/Python-ast.c
++++ b/Python/Python-ast.c
+@@ -5809,7 +5809,6 @@ ast_repr_max_depth(AST_object *self, int depth)
+ 
+         if (!value_repr) {
+             Py_DECREF(name);
+-            Py_DECREF(value);
+             goto error;
+         }
+ 

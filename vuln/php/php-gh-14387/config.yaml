@@ -1,0 +1,14 @@
+id: php-gh-14387
+project: php
+sanitizer: LeakAddressSanitizer
+type: Incorrect Type Conversion or Cast
+trigger_commit: 18233e0f2ef473c188a0d1e7f1b34eeb2dbc400b
+binary: php
+patch:
+  commit: be7f3aa474c1328234a0fb39b56ded6609e9dca1
+  date: '2024-06-01T02:38:55+02:00'
+reference:
+- https://github.com/php/php-src.git
+- https://github.com/php/php-src/issues/14387
+- https://github.com/php/php-src/commit/18233e0f2ef473c188a0d1e7f1b34eeb2dbc400b
+- https://github.com/php/php-src/commit/be7f3aa474c1328234a0fb39b56ded6609e9dca1

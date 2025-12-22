@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/abstract.c b/Objects/abstract.c
+index f6647874d73..3e45137192f 100644
+--- a/Objects/abstract.c
++++ b/Objects/abstract.c
+@@ -2234,6 +2234,10 @@ PySequence_Count(PyObject *s, PyObject *o)
+ int
+ PySequence_Contains(PyObject *seq, PyObject *ob)
+ {
++    if (seq == NULL) {
++        null_error();
++        return -1;
++    }
+     PySequenceMethods *sqm = Py_TYPE(seq)->tp_as_sequence;
+     if (sqm != NULL && sqm->sq_contains != NULL) {
+         int res = (*sqm->sq_contains)(seq, ob);

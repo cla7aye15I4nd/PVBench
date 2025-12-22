@@ -1,0 +1,59 @@
+==12627==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7c0e08701408 at pc 0x5fe3274ea3be bp 0x7ffc94b5ae60 sp 0x7ffc94b5a600
+WRITE of size 2001 at 0x7c0e08701408 thread T0
+    #0 0x5fe3274ea3bd in strcat (/tmp/xml-commit-932cc98/build/xmllint+0x11e3bd) (BuildId: 1a0119941df9bb2138819d9fca09856ec15cbda6)
+    #1 0x5fe32769d0bb in xmlSnprintfElementContent /tmp/xml-commit-932cc98/build/valid.c:1279:3
+    #2 0x5fe3276bb12f in xmlValidateElementContent /tmp/xml-commit-932cc98/build/valid.c:5445:6
+    #3 0x5fe3276b8d54 in xmlValidateOneElement /tmp/xml-commit-932cc98/build/valid.c:6152:12
+    #4 0x5fe32799cc22 in xmlSAX2EndElementNs /tmp/xml-commit-932cc98/build/SAX2.c:2467:24
+    #5 0x5fe3275ea48c in xmlParseElement /tmp/xml-commit-932cc98/build/parser.c:10167:3
+    #6 0x5fe3275fc095 in xmlParseDocument /tmp/xml-commit-932cc98/build/parser.c:10917:2
+    #7 0x5fe32761e009 in xmlDoRead /tmp/xml-commit-932cc98/build/parser.c:15400:5
+    #8 0x5fe32761e6fd in xmlCtxtReadFile /tmp/xml-commit-932cc98/build/parser.c:15645:13
+    #9 0x5fe32754b208 in parseAndPrintFile /tmp/xml-commit-932cc98/build/xmllint.c:2391:9
+    #10 0x5fe327546c09 in main /tmp/xml-commit-932cc98/build/xmllint.c:3772:7
+    #11 0x7c0e09f661c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x7c0e09f6628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x5fe327468664 in _start (/tmp/xml-commit-932cc98/build/xmllint+0x9c664) (BuildId: 1a0119941df9bb2138819d9fca09856ec15cbda6)
+
+Address 0x7c0e08701408 is located in stack of thread T0 at offset 5128 in frame
+    #0 0x5fe3276ba55f in xmlValidateElementContent /tmp/xml-commit-932cc98/build/valid.c:5231
+
+  This frame has 3 object(s):
+    [32, 82) 'fn' (line 5288)
+    [128, 5128) 'expr' (line 5441)
+    [5392, 10392) 'list' (line 5442) <== Memory access at offset 5128 partially underflows this variable
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+      (longjmp and C++ exceptions *are* supported)
+SUMMARY: AddressSanitizer: stack-buffer-overflow (/tmp/xml-commit-932cc98/build/xmllint+0x11e3bd) (BuildId: 1a0119941df9bb2138819d9fca09856ec15cbda6) in strcat
+Shadow bytes around the buggy address:
+  0x7c0e08701180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7c0e08701200: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7c0e08701280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7c0e08701300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7c0e08701380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x7c0e08701400: 00[f2]f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2
+  0x7c0e08701480: f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2 f2
+  0x7c0e08701500: f2 f2 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7c0e08701580: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7c0e08701600: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x7c0e08701680: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12627==ABORTING

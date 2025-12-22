@@ -1,0 +1,8 @@
+<?php
+$attr = new DOMAttr('category', 'books');
+$clone = clone $attr;
+$attr->value = "hello";
+
+var_dump($attr->value);
+var_dump($clone->value);
+?>

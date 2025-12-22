@@ -1,0 +1,7 @@
+<?php
+$fragment = new DOMDocumentFragment();
+$nodes = $fragment->childNodes;
+$iter = $nodes->getIterator();
+$iter->next();
+var_dump($iter->valid());
+?>

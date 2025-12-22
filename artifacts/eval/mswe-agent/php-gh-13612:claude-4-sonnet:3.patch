@@ -1,0 +1,183 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..8e2092ff1bc 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -530,6 +530,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	HashTable *ht;
+ 	spl_array_object *intern = spl_array_from_obj(object);
+ 	spl_hash_key key;
++	zval tmp_val;
+ 
+ 	if (check_inherited && intern->fptr_offset_del) {
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
+@@ -549,13 +550,16 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
++	ZVAL_UNDEF(&tmp_val);
++
+ 	if (key.key) {
+ 		zval *data = zend_hash_find(ht, key.key);
+ 		if (data) {
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
++					/* Copy the value to defer destructor call */
++					ZVAL_COPY_VALUE(&tmp_val, data);
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+@@ -575,6 +579,11 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++
++	/* Now call the destructor after we've finished the unset operation */
++	if (Z_TYPE(tmp_val) != IS_UNDEF) {
++		zval_ptr_dtor(&tmp_val);
++	}
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+diff --git a/test_edge_case.php b/test_edge_case.php
+new file mode 100644
+index 00000000000..52afb19a1ac
+--- /dev/null
++++ b/test_edge_case.php
+@@ -0,0 +1,33 @@
++<?php
++
++class DestructorModifier {
++    function __destruct() {
++        global $arr;
++        echo "DestructorModifier destructor called\n";
++        // This used to cause use-after-free
++        $arr->exchangeArray(['new' => 'data']);
++        echo "exchangeArray completed successfully\n";
++    }
++}
++
++class Container {
++    public $item;
++    function __construct($item) {
++        $this->item = $item;
++    }
++}
++
++$arr = new ArrayObject(new Container(new DestructorModifier()));
++
++echo "Before unset:\n";
++var_dump($arr);
++
++echo "\nCalling unset(\$arr['item']):\n";
++unset($arr['item']);
++
++echo "\nAfter unset:\n";
++var_dump($arr);
++
++echo "\nTest completed successfully - no use-after-free!\n";
++
++?>
+diff --git a/test_indirect.php b/test_indirect.php
+new file mode 100644
+index 00000000000..41d6e4d2d46
+--- /dev/null
++++ b/test_indirect.php
+@@ -0,0 +1,25 @@
++<?php
++
++class TestObject {
++    public $prop1 = "value1";
++    public $prop2 = "value2";
++    
++    function __destruct() {
++        echo "TestObject destructor called\n";
++    }
++}
++
++// Test with object properties (indirect values)
++$obj = new TestObject();
++$arr = new ArrayObject($obj);
++
++echo "Original object:\n";
++var_dump($arr);
++
++echo "\nUnsetting prop1:\n";
++unset($arr['prop1']);
++var_dump($arr);
++
++echo "\nTest completed successfully!\n";
++
++?>
+diff --git a/test_normal.php b/test_normal.php
+new file mode 100644
+index 00000000000..e4a8713a6f1
+--- /dev/null
++++ b/test_normal.php
+@@ -0,0 +1,19 @@
++<?php
++
++// Test normal ArrayObject functionality
++$arr = new ArrayObject(['a' => 1, 'b' => 2, 'c' => 3]);
++
++echo "Original array:\n";
++var_dump($arr);
++
++echo "\nUnsetting 'b':\n";
++unset($arr['b']);
++var_dump($arr);
++
++echo "\nAdding new element:\n";
++$arr['d'] = 4;
++var_dump($arr);
++
++echo "\nTest completed successfully!\n";
++
++?>
+diff --git a/test_poc.php b/test_poc.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/test_poc.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>

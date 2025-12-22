@@ -1,0 +1,37 @@
+diff --git a/NEWS b/NEWS
+index 3dfc430884..4653280876 100644
+--- a/NEWS
++++ b/NEWS
+@@ -8,6 +8,10 @@ PHP                                                                        NEWS
+   . Fixed bug GH-15515 (Configure error grep illegal option q). (Peter Kokot)
+   . Fixed bug GH-15514 (Configure error: genif.sh: syntax error). (Peter Kokot)
+ 
++- DOM:
++  . Fixed bug GH-15551 (Segmentation fault (access null pointer) in
++    ext/dom/xml_common.h). (nielsdos)
++
+ - MySQLnd:
+   . Fixed bug GH-15432 (Heap corruption when querying a vector). (cmb,
+     Kamil Tekiela)
+diff --git a/ext/dom/dom_iterators.c b/ext/dom/dom_iterators.c
+index 866cb5a07e..d22cb0699f 100644
+--- a/ext/dom/dom_iterators.c
++++ b/ext/dom/dom_iterators.c
+@@ -184,13 +184,15 @@ static void php_dom_iterator_move_forward(zend_object_iterator *iter) /* {{{ */
+ 	bool do_curobj_undef = 1;
+ 
+ 	php_dom_iterator *iterator = (php_dom_iterator *)iter;
++	if (Z_ISUNDEF(iterator->curobj)) {
++		return;
++	}
+ 
++	intern = Z_DOMOBJ_P(&iterator->curobj);
+ 	object = &iterator->intern.data;
+ 	nnmap = Z_DOMOBJ_P(object);
+ 	objmap = (dom_nnodemap_object *)nnmap->ptr;
+ 
+-	intern = Z_DOMOBJ_P(&iterator->curobj);
+-
+ 	if (intern != NULL && intern->ptr != NULL) {
+ 		if (objmap->nodetype != XML_ENTITY_NODE &&
+ 			objmap->nodetype != XML_NOTATION_NODE) {

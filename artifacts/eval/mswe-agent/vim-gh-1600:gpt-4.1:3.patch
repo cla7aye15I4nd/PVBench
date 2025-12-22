@@ -1,0 +1,45 @@
+
+diff --git a/.gitignore b/.gitignore
+index 07adcb61a..0ff76b4d5 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -83,3 +83,11 @@ src/memfile_test
+ src/json_test
+ src/message_test
+ src/kword_test
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/edit.c b/src/edit.c
+index cdde11e40..d4621e17d 100644
+--- a/src/edit.c
++++ b/src/edit.c
+@@ -4948,13 +4948,16 @@ ins_compl_next(
+      */
+     if (compl_shown_match->cp_fname != NULL)
+     {
+-	STRCPY(IObuff, "match in file ");
+-	i = (vim_strsize(compl_shown_match->cp_fname) + 16) - sc_col;
+-	if (i <= 0)
+-	    i = 0;
+-	else
+-	    STRCAT(IObuff, "<");
+-	STRCAT(IObuff, compl_shown_match->cp_fname + i);
++        size_t fname_len = STRLEN(compl_shown_match->cp_fname);
++        i = (vim_strsize(compl_shown_match->cp_fname) + 16) - sc_col;
++        if (i <= 0)
++            i = 0;
++        else if ((size_t)i > fname_len)
++            i = fname_len;
++        if (i > 0)
++            vim_snprintf((char *)IObuff, IOSIZE, "match in file <%s", compl_shown_match->cp_fname + i);
++        else
++            vim_snprintf((char *)IObuff, IOSIZE, "match in file %s", compl_shown_match->cp_fname);
+ 	msg(IObuff);
+ 	redraw_cmdline = FALSE;	    /* don't overwrite! */
+     }

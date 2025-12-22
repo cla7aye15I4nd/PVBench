@@ -1,0 +1,33 @@
+diff --git a/clang/docs/ReleaseNotes.rst b/clang/docs/ReleaseNotes.rst
+index 1adb59a97032..5cc1a36fac1e 100644
+--- a/clang/docs/ReleaseNotes.rst
++++ b/clang/docs/ReleaseNotes.rst
+@@ -511,6 +511,9 @@ Bug Fixes in This Version
+   evaluation. The crashes were happening during diagnostics emission due to
+   unimplemented statement printer. (#GH132641)
+ - Fixed visibility calculation for template functions. (#GH103477)
++- Fixed a bug where an attribute before a ``pragma clang attribute`` or
++  ``pragma clang __debug`` would cause an assertion. Instead, this now diagnoses
++  the invalid attribute location appropriately.  (#GH137861)
+ 
+ Bug Fixes to Compiler Builtins
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+diff --git a/clang/lib/Parse/ParseStmt.cpp b/clang/lib/Parse/ParseStmt.cpp
+index bdd02469a85b..546e524932f5 100644
+--- a/clang/lib/Parse/ParseStmt.cpp
++++ b/clang/lib/Parse/ParseStmt.cpp
+@@ -526,10 +526,14 @@ Retry:
+     return ParsePragmaLoopHint(Stmts, StmtCtx, TrailingElseLoc, CXX11Attrs);
+ 
+   case tok::annot_pragma_dump:
++    ProhibitAttributes(CXX11Attrs);
++    ProhibitAttributes(GNUAttrs);
+     HandlePragmaDump();
+     return StmtEmpty();
+ 
+   case tok::annot_pragma_attribute:
++    ProhibitAttributes(CXX11Attrs);
++    ProhibitAttributes(GNUAttrs);
+     HandlePragmaAttribute();
+     return StmtEmpty();
+   }

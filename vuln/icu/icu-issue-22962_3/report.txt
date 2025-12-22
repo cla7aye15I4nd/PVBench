@@ -1,0 +1,13 @@
+runtime error: signed integer overflow: -2147483648 - 1 cannot be represented in type 'int'
+    #0 0x78238c74b65f in icu_76::Calendar::handleComputeJulianDay(UCalendarDateFields, UErrorCode&) /tmp/icu-issue-22962_3/build/i18n/.././icu4c/source/i18n/calendar.cpp:3612:65
+    #1 0x78238c746f03 in icu_76::Calendar::computeJulianDay(UErrorCode&) /tmp/icu-issue-22962_3/build/i18n/.././icu4c/source/i18n/calendar.cpp:3388:12
+    #2 0x78238c74530a in icu_76::Calendar::computeTime(UErrorCode&) /tmp/icu-issue-22962_3/build/i18n/.././icu4c/source/i18n/calendar.cpp:3127:25
+    #3 0x78238c72ba40 in icu_76::Calendar::updateTime(UErrorCode&) /tmp/icu-issue-22962_3/build/i18n/.././icu4c/source/i18n/calendar.cpp:4216:5
+    #4 0x78238c72c4a5 in icu_76::Calendar::complete(UErrorCode&) /tmp/icu-issue-22962_3/build/i18n/.././icu4c/source/i18n/calendar.cpp:1342:9
+    #5 0x78238c72c08c in icu_76::Calendar::get(UCalendarDateFields, UErrorCode&) const /tmp/icu-issue-22962_3/build/i18n/.././icu4c/source/i18n/calendar.cpp:1194:57
+    #6 0x63a0e38fcc23 in main /tmp/icu-issue-22962_3/build/poc.cpp:18:15
+    #7 0x7823899b11c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x7823899b128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x63a0e38d1464 in _start (/tmp/icu-issue-22962_3/build/poc+0x6464) (BuildId: 02228de1886f28a1342b9c61e5591fce28af537b)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/calendar.cpp:3612:65 

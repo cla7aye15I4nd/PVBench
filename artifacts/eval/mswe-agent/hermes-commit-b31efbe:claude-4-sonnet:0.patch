@@ -1,0 +1,52 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/lib/AST/ES6Class.cpp b/lib/AST/ES6Class.cpp
+index 42155e587..3d805a8f2 100644
+--- a/lib/AST/ES6Class.cpp
++++ b/lib/AST/ES6Class.cpp
+@@ -223,16 +223,26 @@ class ES6ClassesTransformations {
+   }
+ 
+   bool incRecursionDepth(ESTree::Node *) {
++    if (_recursionDepth >= MAX_RECURSION_DEPTH) {
++      return false;  // Stop recursion when depth limit is reached
++    }
++    _recursionDepth++;
+     return true;
+   }
+ 
+-  void decRecursionDepth() {}
++  void decRecursionDepth() {
++    if (_recursionDepth > 0) {
++      _recursionDepth--;
++    }
++  }
+ 
+  private:
+   Context &context_;
+   UniqueString *const identVar_;
+   VisitedClass *_currentProcessingClass = nullptr;
+   const ResolvedClassMember *_currentClassMember = nullptr;
++  unsigned int _recursionDepth = 0;
++  static const unsigned int MAX_RECURSION_DEPTH = 1000;
+ 
+   ESTree::VisitResult doVisitChildren(ESTree::Node *node) {
+     visitESTreeChildren(*this, node);

@@ -1,0 +1,14 @@
+id: xml-gh-491
+project: libxml2
+sanitizer: LeakAddressSanitizer
+type: NULL Pointer Dereference
+binary: xmllint
+trigger_commit: cb1b8b8516ade9add9f63fa0e39eaa3bc7034828
+patch:
+  commit: e4f85f1bd2eb34d9b49da9154a4cc3a1bc284f68
+  date: '2023-04-11T14:29:50+02:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/merge_requests/491
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/cb1b8b8516ade9add9f63fa0e39eaa3bc7034828
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/e4f85f1bd2eb34d9b49da9154a4cc3a1bc284f68

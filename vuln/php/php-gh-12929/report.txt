@@ -1,0 +1,27 @@
+==3408462==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000040 (pc 0x55617184f0c9 bp 0x7fff86c735f0 sp 0x7fff86c72d20 T0)
+==3408462==The signal is caused by a READ memory access.
+==3408462==Hint: address points to the zero page.
+    #0 0x55617184f0c9 in sxe_prop_dim_write /php-gh-12929/build/ext/simplexml/simplexml.c:424:55
+    #1 0x556171847b19 in sxe_property_write /php-gh-12929/build/ext/simplexml/simplexml.c:605:17
+    #2 0x556171fcd7c9 in add_property_zval_ex /php-gh-12929/build/Zend/zend_API.c:2259:2
+    #3 0x556171fcdd81 in add_property_resource_ex /php-gh-12929/build/Zend/zend_API.c:2180:2
+    #4 0x556171dec593 in add_property_resource /php-gh-12929/build/Zend/zend_API.h:651:2
+    #5 0x556171dec593 in user_stream_create_object /php-gh-12929/build/main/streams/userspace.c:276:3
+    #6 0x556171de3030 in user_wrapper_opener /php-gh-12929/build/main/streams/userspace.c:327:2
+    #7 0x556171dc0946 in _php_stream_open_wrapper_ex /php-gh-12929/build/main/streams/streams.c:2216:13
+    #8 0x556171a6e0c8 in zif_file_get_contents /php-gh-12929/build/ext/standard/file.c:426:11
+    #9 0x55617169afa2 in phar_file_get_contents /php-gh-12929/build/ext/phar/func_interceptors.c:231:2
+    #10 0x5561723aaa14 in ZEND_DO_ICALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-12929/build/Zend/zend_vm_execute.h:1275:2
+    #11 0x5561720ce6af in execute_ex /php-gh-12929/build/Zend/zend_vm_execute.h:57007:7
+    #12 0x5561720cfdf5 in zend_execute /php-gh-12929/build/Zend/zend_vm_execute.h:61604:2
+    #13 0x556171faae46 in zend_execute_scripts /php-gh-12929/build/Zend/zend.c:1881:4
+    #14 0x556171d500cb in php_execute_script /php-gh-12929/build/main/main.c:2501:13
+    #15 0x5561728bb4de in do_cli /php-gh-12929/build/sapi/cli/php_cli.c:966:5
+    #16 0x5561728b94d9 in main /php-gh-12929/build/sapi/cli/php_cli.c:1340:18
+    #17 0x7fe378f021c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x7fe378f0228a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x556171003214 in _start (/php-gh-12929/build/sapi/cli/php+0x403214) (BuildId: fc15666660689efdecc28bddbc1df061eeef7577)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-12929/build/ext/simplexml/simplexml.c:424:55 in sxe_prop_dim_write
+==3408462==ABORTING

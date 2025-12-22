@@ -1,0 +1,36 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/session/php_session.h b/ext/session/php_session.h
+index 65bf7de2044..0b9d6a91d48 100644
+--- a/ext/session/php_session.h
++++ b/ext/session/php_session.h
+@@ -299,9 +299,12 @@ PHPAPI zend_result php_session_reset_id(void);
+ 					"Skipping numeric key " ZEND_LONG_FMT, num_key);\
+ 			continue;												\
+ 		}															\
+-		if ((struc = php_get_session_var(key))) {					\
++		zend_string *key_copy = zend_string_copy(key);				\
++		if ((struc = php_get_session_var(key_copy))) {				\
++			key = key_copy;											\
+ 			code;		 											\
+ 		} 															\
++		zend_string_release(key_copy);								\
+ 	} ZEND_HASH_FOREACH_END();										\
+ } while(0)
+ 

@@ -1,0 +1,9 @@
+<?php
+$doc = new DOMDocument();
+$doc->appendChild($doc->createElement('container'));
+try {
+    $doc->documentElement->setAttributeNodeNS($doc);
+} catch (Error $e) {
+    echo $e->getMessage(), "\n";
+}
+?>

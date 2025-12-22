@@ -1,0 +1,130 @@
+==36318==ERROR: AddressSanitizer: heap-use-after-free on address 0x522000007900 at pc 0x55b3711148b9 bp 0x7ffc2abc4200 sp 0x7ffc2abc41f8
+READ of size 8 at 0x522000007900 thread T0
+    #0 0x55b3711148b8 in _Py_IsImmortal /py-pr-125015/build/./Include/refcount.h:112:13
+    #1 0x55b3711148b8 in Py_DECREF /py-pr-125015/build/./Include/refcount.h:375:9
+    #2 0x55b3711148b8 in Py_XDECREF /py-pr-125015/build/./Include/refcount.h:474:9
+    #3 0x55b371114e26 in dictkeys_decref /py-pr-125015/build/Objects/dictobject.c:456:17
+    #4 0x55b37110ea82 in dict_dealloc /py-pr-125015/build/Objects/dictobject.c:3183:9
+    #5 0x55b37115a43d in _Py_Dealloc /py-pr-125015/build/Objects/object.c:2888:5
+    #6 0x55b3713564f2 in Py_DECREF /py-pr-125015/build/./Include/refcount.h:381:9
+    #7 0x55b3713564f2 in ast_dealloc /py-pr-125015/build/Python/Python-ast.c:5053:5
+    #8 0x55b3711c0bd0 in subtype_dealloc /py-pr-125015/build/Objects/typeobject.c:2575:5
+    #9 0x55b371408525 in _PyEval_EvalFrameDefault /py-pr-125015/build/Python/generated_cases.c.h:945:21
+    #10 0x55b3713ffdf1 in _PyEval_EvalFrame /py-pr-125015/build/./Include/internal/pycore_ceval.h:119:16
+    #11 0x55b3713ffceb in _PyEval_Vector /py-pr-125015/build/Python/ceval.c:1852:12
+    #12 0x55b3713ff75f in PyEval_EvalCode /py-pr-125015/build/Python/ceval.c:650:21
+    #13 0x55b3715ba213 in run_eval_code_obj /py-pr-125015/build/Python/pythonrun.c:1323:9
+    #14 0x55b3715b9f1b in run_mod /py-pr-125015/build/Python/pythonrun.c:1408:19
+    #15 0x55b3715b5c52 in pyrun_file /py-pr-125015/build/Python/pythonrun.c:1241:15
+    #16 0x55b3715b3e22 in _PyRun_SimpleFileObject /py-pr-125015/build/Python/pythonrun.c:490:13
+    #17 0x55b3715b35d8 in _PyRun_AnyFileObject /py-pr-125015/build/Python/pythonrun.c:77:15
+    #18 0x55b37164bf06 in pymain_run_file_obj /py-pr-125015/build/Modules/main.c:409:15
+    #19 0x55b37164ac4b in pymain_run_file /py-pr-125015/build/Modules/main.c:428:15
+    #20 0x55b371648b52 in pymain_run_python /py-pr-125015/build/Modules/main.c:696:21
+    #21 0x55b371647f78 in Py_RunMain /py-pr-125015/build/Modules/main.c:775:5
+    #22 0x55b371648f98 in pymain_main /py-pr-125015/build/Modules/main.c:805:12
+    #23 0x55b3716490a7 in Py_BytesMain /py-pr-125015/build/Modules/main.c:829:12
+    #24 0x55b370ea7511 in main /py-pr-125015/build/./Programs/python.c:15:12
+    #25 0x7fddc899b1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #26 0x7fddc899b28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #27 0x55b370dce104 in _start (/py-pr-125015/build/python+0x19e104) (BuildId: 5e81a59940e6536626b2b3a3b95e286a6a4e8981)
+
+0x522000007900 is located 0 bytes inside of 5360-byte region [0x522000007900,0x522000008df0)
+freed by thread T0 here:
+    #0 0x55b370e68cba in free (/py-pr-125015/build/python+0x238cba) (BuildId: 5e81a59940e6536626b2b3a3b95e286a6a4e8981)
+    #1 0x55b37117b828 in _PyMem_RawFree /py-pr-125015/build/Objects/obmalloc.c:90:5
+    #2 0x55b37117ec97 in PyObject_Free /py-pr-125015/build/Objects/obmalloc.c:1334:5
+    #3 0x55b3710ec5e0 in long_dealloc /py-pr-125015/build/Objects/longobject.c:3599:5
+    #4 0x55b37115a43d in _Py_Dealloc /py-pr-125015/build/Objects/object.c:2888:5
+    #5 0x55b371358622 in Py_DECREF /py-pr-125015/build/./Include/refcount.h:381:9
+    #6 0x55b371358622 in ast_repr_max_depth /py-pr-125015/build/Python/Python-ast.c:5812:13
+    #7 0x55b3713565d9 in ast_repr /py-pr-125015/build/Python/Python-ast.c:5860:12
+    #8 0x55b371151962 in PyObject_Repr /py-pr-125015/build/Objects/object.c:694:11
+    #9 0x55b3713f1fc8 in builtin_repr /py-pr-125015/build/Python/bltinmodule.c:2390:12
+    #10 0x55b371143bfc in cfunction_vectorcall_O /py-pr-125015/build/Objects/methodobject.c:523:24
+    #11 0x55b37103d42f in _PyObject_VectorcallTstate /py-pr-125015/build/./Include/internal/pycore_call.h:167:11
+    #12 0x55b37103eed9 in PyObject_Vectorcall /py-pr-125015/build/Objects/call.c:327:12
+    #13 0x55b371407fef in _PyEval_EvalFrameDefault /py-pr-125015/build/Python/generated_cases.c.h:920:35
+    #14 0x55b3713ffdf1 in _PyEval_EvalFrame /py-pr-125015/build/./Include/internal/pycore_ceval.h:119:16
+    #15 0x55b3713ffceb in _PyEval_Vector /py-pr-125015/build/Python/ceval.c:1852:12
+    #16 0x55b3713ff75f in PyEval_EvalCode /py-pr-125015/build/Python/ceval.c:650:21
+    #17 0x55b3715ba213 in run_eval_code_obj /py-pr-125015/build/Python/pythonrun.c:1323:9
+    #18 0x55b3715b9f1b in run_mod /py-pr-125015/build/Python/pythonrun.c:1408:19
+    #19 0x55b3715b5c52 in pyrun_file /py-pr-125015/build/Python/pythonrun.c:1241:15
+    #20 0x55b3715b3e22 in _PyRun_SimpleFileObject /py-pr-125015/build/Python/pythonrun.c:490:13
+    #21 0x55b3715b35d8 in _PyRun_AnyFileObject /py-pr-125015/build/Python/pythonrun.c:77:15
+    #22 0x55b37164bf06 in pymain_run_file_obj /py-pr-125015/build/Modules/main.c:409:15
+    #23 0x55b37164ac4b in pymain_run_file /py-pr-125015/build/Modules/main.c:428:15
+    #24 0x55b371648b52 in pymain_run_python /py-pr-125015/build/Modules/main.c:696:21
+    #25 0x55b371647f78 in Py_RunMain /py-pr-125015/build/Modules/main.c:775:5
+    #26 0x55b371648f98 in pymain_main /py-pr-125015/build/Modules/main.c:805:12
+    #27 0x55b3716490a7 in Py_BytesMain /py-pr-125015/build/Modules/main.c:829:12
+    #28 0x55b370ea7511 in main /py-pr-125015/build/./Programs/python.c:15:12
+    #29 0x7fddc899b1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #30 0x7fddc899b28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+
+previously allocated by thread T0 here:
+    #0 0x55b370e68f53 in malloc (/py-pr-125015/build/python+0x238f53) (BuildId: 5e81a59940e6536626b2b3a3b95e286a6a4e8981)
+    #1 0x55b37117b76b in _PyMem_RawMalloc /py-pr-125015/build/Objects/obmalloc.c:62:12
+    #2 0x55b37117ea28 in PyObject_Malloc /py-pr-125015/build/Objects/obmalloc.c:1305:12
+    #3 0x55b3710db33c in _PyLong_New /py-pr-125015/build/Objects/longobject.c:172:14
+    #4 0x55b3710eed00 in long_from_binary_base /py-pr-125015/build/Objects/longobject.c:2589:9
+    #5 0x55b3710e6570 in long_from_string_base /py-pr-125015/build/Objects/longobject.c:2963:16
+    #6 0x55b3710e5b90 in PyLong_FromString /py-pr-125015/build/Objects/longobject.c:3053:15
+    #7 0x55b370eb037d in parsenumber_raw /py-pr-125015/build/Parser/pegen.c:635:20
+    #8 0x55b370ead927 in parsenumber /py-pr-125015/build/Parser/pegen.c:665:16
+    #9 0x55b370ead257 in _PyPegen_number_token /py-pr-125015/build/Parser/pegen.c:704:19
+    #10 0x55b370eeaf77 in atom_rule /py-pr-125015/build/Parser/parser.c:14617:27
+    #11 0x55b370ee7589 in primary_raw /py-pr-125015/build/Parser/parser.c:14236:25
+    #12 0x55b370ee5801 in primary_rule /py-pr-125015/build/Parser/parser.c:14034:22
+    #13 0x55b370ee5240 in await_primary_rule /py-pr-125015/build/Parser/parser.c:13988:28
+    #14 0x55b370ee4007 in power_rule /py-pr-125015/build/Parser/parser.c:13864:18
+    #15 0x55b370ee3207 in factor_rule /py-pr-125015/build/Parser/parser.c:13814:26
+    #16 0x55b370ee1a9a in term_raw /py-pr-125015/build/Parser/parser.c:13655:27
+    #17 0x55b370edf7c1 in term_rule /py-pr-125015/build/Parser/parser.c:13398:22
+    #18 0x55b370edf289 in sum_raw /py-pr-125015/build/Parser/parser.c:13351:25
+    #19 0x55b370edd9a1 in sum_rule /py-pr-125015/build/Parser/parser.c:13230:22
+    #20 0x55b370edd468 in shift_expr_raw /py-pr-125015/build/Parser/parser.c:13190:24
+    #21 0x55b370edc031 in shift_expr_rule /py-pr-125015/build/Parser/parser.c:13050:22
+    #22 0x55b370edbaf3 in bitwise_and_raw /py-pr-125015/build/Parser/parser.c:13010:31
+    #23 0x55b370edad91 in bitwise_and_rule /py-pr-125015/build/Parser/parser.c:12928:22
+    #24 0x55b370eda853 in bitwise_xor_raw /py-pr-125015/build/Parser/parser.c:12888:32
+    #25 0x55b370ed9af1 in bitwise_xor_rule /py-pr-125015/build/Parser/parser.c:12806:22
+    #26 0x55b370ed95b3 in bitwise_or_raw /py-pr-125015/build/Parser/parser.c:12766:32
+    #27 0x55b370ed7781 in bitwise_or_rule /py-pr-125015/build/Parser/parser.c:12684:22
+    #28 0x55b370efe6bb in comparison_rule /py-pr-125015/build/Parser/parser.c:11924:18
+    #29 0x55b370efd5c5 in inversion_rule /py-pr-125015/build/Parser/parser.c:11875:31
+
+SUMMARY: AddressSanitizer: heap-use-after-free /py-pr-125015/build/./Include/refcount.h:112:13 in _Py_IsImmortal
+Shadow bytes around the buggy address:
+  0x522000007680: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x522000007700: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x522000007780: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x522000007800: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x522000007880: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x522000007900:[fd]fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x522000007980: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x522000007a00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x522000007a80: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x522000007b00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x522000007b80: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==36318==ABORTING

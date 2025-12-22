@@ -1,0 +1,100 @@
+diff --git a/NEWS b/NEWS
+index 4182d5d774..80c66a126a 100644
+--- a/NEWS
++++ b/NEWS
+@@ -31,6 +31,10 @@ PHP                                                                        NEWS
+ - Shmop:
+    . Fixed bug GH-14537 (shmop Windows 11 crashes the process). (nielsdos)
+ 
++- SimpleXML:
++   . Fixed bug GH-14638 (null dereference after XML parsing failure).
++     (David Carlier)
++
+ 04 Jul 2024, PHP 8.2.21
+ 
+ - Core:
+diff --git a/ext/simplexml/simplexml.c b/ext/simplexml/simplexml.c
+index ce7c96a0d4..6bcb9edcff 100644
+--- a/ext/simplexml/simplexml.c
++++ b/ext/simplexml/simplexml.c
+@@ -1502,6 +1502,35 @@ static void sxe_add_namespaces(php_sxe_object *sxe, xmlNodePtr node, bool recurs
+ 	}
+ } /* }}} */
+ 
++static inline void sxe_object_free_iterxpath(php_sxe_object *sxe)
++{
++	if (!Z_ISUNDEF(sxe->iter.data)) {
++		zval_ptr_dtor(&sxe->iter.data);
++		ZVAL_UNDEF(&sxe->iter.data);
++	}
++
++	if (sxe->iter.name) {
++		efree(sxe->iter.name);
++		sxe->iter.name = NULL;
++	}
++	if (sxe->iter.nsprefix) {
++		efree(sxe->iter.nsprefix);
++		sxe->iter.nsprefix = NULL;
++	}
++	if (!Z_ISUNDEF(sxe->tmp)) {
++		zval_ptr_dtor(&sxe->tmp);
++		ZVAL_UNDEF(&sxe->tmp);
++	}
++
++	php_libxml_node_decrement_resource((php_libxml_node_object *)sxe);
++
++	if (sxe->xpath) {
++		xmlXPathFreeContext(sxe->xpath);
++		sxe->xpath = NULL;
++	}
++}
++
++
+ /* {{{ Return all namespaces in use */
+ PHP_METHOD(SimpleXMLElement, getNamespaces)
+ {
+@@ -2156,29 +2185,7 @@ static void sxe_object_free_storage(zend_object *object)
+ 
+ 	zend_object_std_dtor(&sxe->zo);
+ 
+-	if (!Z_ISUNDEF(sxe->iter.data)) {
+-		zval_ptr_dtor(&sxe->iter.data);
+-		ZVAL_UNDEF(&sxe->iter.data);
+-	}
+-
+-	if (sxe->iter.name) {
+-		efree(sxe->iter.name);
+-		sxe->iter.name = NULL;
+-	}
+-	if (sxe->iter.nsprefix) {
+-		efree(sxe->iter.nsprefix);
+-		sxe->iter.nsprefix = NULL;
+-	}
+-	if (!Z_ISUNDEF(sxe->tmp)) {
+-		zval_ptr_dtor(&sxe->tmp);
+-		ZVAL_UNDEF(&sxe->tmp);
+-	}
+-
+-	php_libxml_node_decrement_resource((php_libxml_node_object *)sxe);
+-
+-	if (sxe->xpath) {
+-		xmlXPathFreeContext(sxe->xpath);
+-	}
++	sxe_object_free_iterxpath(sxe);
+ 
+ 	if (sxe->properties) {
+ 		zend_hash_destroy(sxe->properties);
+@@ -2378,11 +2385,12 @@ PHP_METHOD(SimpleXMLElement, __construct)
+ 	PHP_LIBXML_RESTORE_GLOBALS(read_file_or_memory);
+ 
+ 	if (!docp) {
+-		((php_libxml_node_object *)sxe)->document = NULL;
+ 		zend_throw_exception(zend_ce_exception, "String could not be parsed as XML", 0);
+ 		RETURN_THROWS();
+ 	}
+ 
++	sxe_object_free_iterxpath(sxe);
++
+ 	sxe->iter.nsprefix = ns_len ? (xmlChar*)estrdup(ns) : NULL;
+ 	sxe->iter.isprefix = isprefix;
+ 	php_libxml_increment_doc_ref((php_libxml_node_object *)sxe, docp);

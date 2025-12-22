@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/compiler/backend/instruction-selector.cc b/src/compiler/backend/instruction-selector.cc
+index 28468a70790..28fe324eeb3 100644
+--- a/src/compiler/backend/instruction-selector.cc
++++ b/src/compiler/backend/instruction-selector.cc
+@@ -1848,7 +1848,7 @@ template <typename Adapter>
+ void InstructionSelectorT<Adapter>::VisitLoadRootRegister(node_t node) {
+   // Do nothing. Following loads/stores from this operator will use kMode_Root
+   // to load/store from an offset of the root register.
+-  UNREACHABLE();
++  // Intentionally left blank: loads/stores from this operator use kMode_Root.
+ }
+ 
+ template <typename Adapter>

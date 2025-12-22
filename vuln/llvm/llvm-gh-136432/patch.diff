@@ -1,0 +1,38 @@
+diff --git a/clang/docs/ReleaseNotes.rst b/clang/docs/ReleaseNotes.rst
+index 76e811653aa9..95e0574562a2 100644
+--- a/clang/docs/ReleaseNotes.rst
++++ b/clang/docs/ReleaseNotes.rst
+@@ -621,6 +621,8 @@ Bug Fixes to C++ Support
+ - Clang now issues an error when placement new is used to modify a const-qualified variable
+   in a ``constexpr`` function. (#GH131432)
+ - Clang now emits a warning when class template argument deduction for alias templates is used in C++17. (#GH133806)
++- Fix a crash when checking the template template parameters of a dependent lambda appearing in an alias declaration.
++  (#GH136432), (#GH137014), (#GH138018)
+ 
+ Bug Fixes to AST Handling
+ ^^^^^^^^^^^^^^^^^^^^^^^^^
+diff --git a/clang/lib/AST/DeclCXX.cpp b/clang/lib/AST/DeclCXX.cpp
+index 4d07efd58f51..a3b3478e4b26 100644
+--- a/clang/lib/AST/DeclCXX.cpp
++++ b/clang/lib/AST/DeclCXX.cpp
+@@ -1696,7 +1696,11 @@ static NamedDecl* getLambdaCallOperatorHelper(const CXXRecordDecl &RD) {
+       RD.getASTContext().DeclarationNames.getCXXOperatorName(OO_Call);
+ 
+   DeclContext::lookup_result Calls = RD.lookup(Name);
+-  assert(!Calls.empty() && "Missing lambda call operator!");
++
++  // This can happen while building the lambda.
++  if (Calls.empty())
++    return nullptr;
++
+   assert(allLookupResultsAreTheSame(Calls) &&
+          "More than one lambda call operator!");
+ 
+@@ -1750,6 +1754,7 @@ CXXMethodDecl *CXXRecordDecl::getLambdaCallOperator() const {
+ 
+ CXXMethodDecl* CXXRecordDecl::getLambdaStaticInvoker() const {
+   CXXMethodDecl *CallOp = getLambdaCallOperator();
++  assert(CallOp && "null call operator");
+   CallingConv CC = CallOp->getType()->castAs<FunctionType>()->getCallConv();
+   return getLambdaStaticInvoker(CC);
+ }

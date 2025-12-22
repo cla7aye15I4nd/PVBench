@@ -1,0 +1,22 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/execution/messages.cc, line 532
+# Too many arguments to template (expected 0, got 1): Cannot create proxy with a non-object as target or handler
+#
+#
+#
+#FailureMessage Object: 0x7f36d2714c60
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x5e) [0x55a547ca8f5e]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x55a54f57a113]
+    out/debug_asan/d8(+0xa43f74a) [0x55a54f57774a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x26f) [0x55a54f5323df]
+    out/debug_asan/d8(v8::internal::MessageFormatter::TryFormat(v8::internal::Isolate*, v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::String> const>)+0x62e) [0x55a548b4538e]
+    out/debug_asan/d8(v8::internal::MessageFormatter::Format(v8::internal::Isolate*, v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::Object> const>)+0x1ee) [0x55a548b407ee]
+    out/debug_asan/d8(v8::internal::ErrorUtils::MakeGenericError(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSFunction>, v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::Object> const>, v8::internal::FrameSkipMode)+0xff) [0x55a548b486af]
+    out/debug_asan/d8(v8::internal::Factory::NewError(v8::internal::Handle<v8::internal::JSFunction>, v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::Object> const>)+0x9d) [0x55a548e8010d]
+    out/debug_asan/d8(+0x556cfbf) [0x55a54a6a4fbf]
+    out/debug_asan/d8(v8::internal::Runtime_ThrowTypeError(int, unsigned long*, v8::internal::Isolate*)+0x153) [0x55a54a669b23]
+    out/debug_asan/d8(+0x99eba7d) [0x55a54eb23a7d]

@@ -1,0 +1,13 @@
+diff --git a/test/mjsunit/regress/regress-1494681.js b/test/mjsunit/regress/regress-1494681.js
+new file mode 100644
+index 00000000000..b95994a8e9c
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1494681.js
+@@ -0,0 +1,7 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++assertThrows(
++    () => eval('A interface'), SyntaxError,
++    'Unexpected identifier \'undefined\'');

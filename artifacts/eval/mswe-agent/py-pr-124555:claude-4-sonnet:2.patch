@@ -1,0 +1,51 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index ece6b13c788..3f70f8e93c9 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3366,10 +3366,13 @@ _curses_initscr_impl(PyObject *module)
+     WINDOW *win;
+ 
+     if (curses_initscr_called) {
+-        wrefresh(stdscr);
++        if (stdscr != NULL) {
++            wrefresh(stdscr);
++        }
+         return (PyObject *)PyCursesWindow_New(stdscr, NULL);
+     }
+ 
++
+     win = initscr();
+ 
+     if (win == NULL) {
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..44eb151db53
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,11 @@
++import curses
++
++try:
++    # This should trigger the issue
++    screen = curses.initscr()
++    print("initscr succeeded")
++    curses.endwin()
++except Exception as e:
++    print(f"Error: {e}")
++    import traceback
++    traceback.print_exc()

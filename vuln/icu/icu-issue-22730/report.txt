@@ -1,0 +1,12 @@
+runtime error: signed integer overflow: -2147456654 - 1824665 cannot be represented in type 'int32_t' (aka 'int')
+    #0 0x735bf3536db9 in icu_76::CECalendar::jdToCE(int, int, int&, int&, int&) /tmp/icu-issue-22730/build/i18n/.././icu4c/source/i18n/cecal.cpp:118:43
+    #1 0x735bf362bb8a in icu_76::CopticCalendar::handleComputeFields(int, UErrorCode&) /tmp/icu-issue-22730/build/i18n/.././icu4c/source/i18n/coptccal.cpp:85:5
+    #2 0x735bf350c93e in icu_76::Calendar::computeFields(UErrorCode&) /tmp/icu-issue-22730/build/i18n/.././icu4c/source/i18n/calendar.cpp:1476:5
+    #3 0x735bf350765d in icu_76::Calendar::complete(UErrorCode&) /tmp/icu-issue-22730/build/i18n/.././icu4c/source/i18n/calendar.cpp:1349:9
+    #4 0x735bf3513e02 in icu_76::Calendar::roll(UCalendarDateFields, int, UErrorCode&) /tmp/icu-issue-22730/build/i18n/.././icu4c/source/i18n/calendar.cpp:1742:5
+    #5 0x632a4f79fb07 in main /tmp/icu-issue-22730/build/poc.cpp:15:13
+    #6 0x735bf07521c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x735bf075228a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x632a4f774454 in _start (/tmp/icu-issue-22730/build/poc+0x6454) (BuildId: 11deb20c919dacd14359d1a7fab6111358851f14)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/cecal.cpp:118:43 

@@ -1,0 +1,35 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/lib/AST/BlockScopingTransformations.cpp b/lib/AST/BlockScopingTransformations.cpp
+index 15f96a3b8..d667ff386 100644
+--- a/lib/AST/BlockScopingTransformations.cpp
++++ b/lib/AST/BlockScopingTransformations.cpp
+@@ -218,9 +218,7 @@ class BlockScopingTransformations {
+   }
+ 
+   /// Rewrites
+-  ///
+-  ///   [label:]* for (const/let x = init; test; update) body
+-  ///
++
+   /// into
+   ///
+   ///  {

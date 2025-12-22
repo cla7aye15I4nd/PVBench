@@ -1,0 +1,151 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index 64e494200ee..313614638fe 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -808,7 +808,13 @@ ZEND_API zval *zend_std_read_property(zend_object *zobj, zend_string *name, int
+ 
+ 		zend_class_entry *ce = zobj->ce;
+ 
++		/* Add reference to prevent object destruction during hook execution */
++		GC_ADDREF(zobj);
++		
+ 		if (!zend_call_get_hook(prop_info, name, get, zobj, rv)) {
++			/* Release the reference we added */
++			OBJ_RELEASE(zobj);
++			
+ 			if (EG(exception)) {
+ 				return &EG(uninitialized_zval);
+ 			}
+@@ -826,6 +832,13 @@ ZEND_API zval *zend_std_read_property(zend_object *zobj, zend_string *name, int
+ 			goto try_again;
+ 		}
+ 
++		/* Check if object is still valid after hook execution */
++		if (UNEXPECTED(GC_REFCOUNT(zobj) == 1)) {
++			/* Object was destroyed during hook execution, only our reference remains */
++			OBJ_RELEASE(zobj);
++			return &EG(uninitialized_zval);
++		}
++
+ 		if (EXPECTED(cache_slot
+ 		 && zend_execute_ex == execute_ex
+ 		 && zobj->ce->default_object_handlers->read_property == zend_std_read_property
+@@ -835,6 +848,9 @@ ZEND_API zval *zend_std_read_property(zend_object *zobj, zend_string *name, int
+ 			ZEND_SET_PROPERTY_HOOK_SIMPLE_GET(cache_slot);
+ 		}
+ 
++		/* Release the reference we added */
++		OBJ_RELEASE(zobj);
++
+ 		if (Z_TYPE_P(rv) != IS_UNDEF) {
+ 			retval = rv;
+ 			if (!Z_ISREF_P(rv)
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..066242a8406 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -159,6 +159,27 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+ 
+ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
+ {
++	/* Check if object is already freed/invalid before accessing it */
++	if (UNEXPECTED(!object)) {
++		return;
++	}
++
++	/* Check if object is already being freed to prevent recursion */
++	if (UNEXPECTED(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
++		/* Object is already being freed, avoid double-free */
++		return;
++	}
++
++	/* Get handle before any potential recursive calls */
++	uint32_t handle = object->handle;
++	
++	/* Additional safety check - verify the object handle is still valid */
++	if (UNEXPECTED(handle >= EG(objects_store).top || 
++	               !IS_OBJ_VALID(EG(objects_store).object_buckets[handle]) ||
++	               EG(objects_store).object_buckets[handle] != object)) {
++		return;
++	}
++
+ 	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+ 
+ 	/* GC might have released this object already. */
+@@ -166,6 +187,9 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 		return;
+ 	}
+ 
++	/* Set the free flag immediately to prevent recursive calls */
++	GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
++
+ 	/*	Make sure we hold a reference count during the destructor call
+ 		otherwise, when the destructor ends the storage might be freed
+ 		when the refcount reaches 0 a second time
+@@ -182,17 +206,15 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 	}
+ 
+ 	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+ 		void *ptr;
+ 
+ 		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+ 		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+ 		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+-		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+-			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->free_obj(object);
+-		}
++		
++		/* Mark the object as invalid in the store before calling free_obj */
++		GC_SET_REFCOUNT(object, 1);
++		object->handlers->free_obj(object);
+ 		ptr = ((char*)object) - object->handlers->offset;
+ 		GC_REMOVE_FROM_BUFFER(object);
+ 		efree(ptr);
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 0be317c173e..d7e2b8c1c48 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -554,6 +554,14 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+ 					zval_ptr_dtor(data);
++					
++					/* Check if the object is still valid after zval_ptr_dtor */
++					if (UNEXPECTED(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
++						/* Object was freed during zval_ptr_dtor, abort */
++						spl_hash_key_release(&key);
++						return;
++					}
++					
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+@@ -573,7 +581,6 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
+-} /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+ {

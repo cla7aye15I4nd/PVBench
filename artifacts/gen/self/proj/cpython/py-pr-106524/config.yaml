@@ -1,0 +1,15 @@
+id: py-pr-106524
+project: cpython
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+trigger_commit: 1c9e4934621627fbbfeada8d9dd87ecba4e446b0
+binary: python
+patch:
+  commit: 2ef1dc37f02b08536b677dd23ec51541a60effd7
+  date: '2023-07-08T10:47:01+03:00'
+reference:
+- https://github.com/python/cpython.git
+- https://github.com/python/cpython/pull/106525
+- https://github.com/python/cpython/issues/106524
+- https://github.com/python/cpython/commit/1c9e4934621627fbbfeada8d9dd87ecba4e446b0
+- https://github.com/python/cpython/commit/2ef1dc37f02b08536b677dd23ec51541a60effd7

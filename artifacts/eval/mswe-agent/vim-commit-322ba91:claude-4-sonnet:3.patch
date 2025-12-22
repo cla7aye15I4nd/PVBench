@@ -1,0 +1,169 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/debug_typebuf.c b/debug_typebuf.c
+new file mode 100644
+index 000000000..75fc9ae1f
+--- /dev/null
++++ b/debug_typebuf.c
+@@ -0,0 +1,56 @@
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++// Simulate the typebuf structure
++typedef struct {
++    char *tb_buf;
++    int tb_buflen;
++    int tb_off;
++    int tb_len;
++} typebuf_T;
++
++void debug_ins_typebuf(typebuf_T *typebuf, const char *str, int offset) {
++    int addlen = strlen(str);
++    
++    printf("Before insertion:\n");
++    printf("  tb_buflen: %d\n", typebuf->tb_buflen);
++    printf("  tb_off: %d\n", typebuf->tb_off);
++    printf("  tb_len: %d\n", typebuf->tb_len);
++    printf("  addlen: %d\n", addlen);
++    printf("  offset: %d\n", offset);
++    
++    if (offset == 0 && addlen <= typebuf->tb_off) {
++        printf("Taking first branch (easy case)\n");
++        printf("  New tb_off would be: %d\n", typebuf->tb_off - addlen);
++        printf("  Writing to position: %d\n", typebuf->tb_off - addlen);
++        printf("  Buffer bounds: 0 to %d\n", typebuf->tb_buflen - 1);
++        
++        if (typebuf->tb_off - addlen < 0) {
++            printf("  ERROR: Would write before buffer start!\n");
++        }
++        if (typebuf->tb_off - addlen + addlen > typebuf->tb_buflen) {
++            printf("  ERROR: Would write past buffer end!\n");
++        }
++    }
++}
++
++int main() {
++    typebuf_T typebuf;
++    
++    // Simulate initial buffer state (265 bytes as per ASAN report)
++    typebuf.tb_buflen = 265;
++    typebuf.tb_buf = malloc(265);
++    typebuf.tb_off = 54;  // MAXMAPLEN + 4 = 50 + 4 = 54
++    typebuf.tb_len = 0;
++    
++    // Simulate a large string like in the POC
++    char large_str[1000];
++    memset(large_str, '0', 987);
++    large_str[987] = '\0';
++    
++    debug_ins_typebuf(&typebuf, large_str, 0);
++    
++    free(typebuf.tb_buf);
++    return 0;
++}
+diff --git a/src/Makefile b/src/Makefile
+index 257742f4c..030ff6b68 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -696,9 +696,9 @@ LINT_OPTIONS = -beprxzF
+ # $ export ASAN_OPTIONS="print_stacktrace=1 log_path=asan"
+ # $ export LSAN_OPTIONS="suppressions=`pwd`/testdir/lsan-suppress.txt"
+ # When running tests output can be found in testdir/asan.*
+-#SANITIZER_CFLAGS = -g -O0 -fsanitize-recover=all \
+-#		   -fsanitize=address -fsanitize=undefined \
+-#		   -fno-omit-frame-pointer
++SANITIZER_CFLAGS = -g -O0 -fsanitize-recover=all \
++		   -fsanitize=address -fsanitize=undefined \
++		   -fno-omit-frame-pointer
+ 
+ # Similarly when compiling with clang and using ubsan.
+ # $ export UBSAN_OPTIONS="print_stacktrace=1 log_path=ubsan"
+@@ -713,7 +713,7 @@ SANITIZER_LIBS = $(SANITIZER_CFLAGS)
+ # Configuration is in the .ccmalloc or ~/.ccmalloc file.
+ # Doesn't work very well, since memory linked to from global variables
+ # (in libraries) is also marked as leaked memory.
+-#LEAK_CFLAGS = -DEXITFREE
++LEAK_CFLAGS = -DEXITFREE
+ #LEAK_LIBS = -lccmalloc
+ 
+ # Uncomment this line to have Vim call abort() when an internal error is
+diff --git a/src/getchar.c b/src/getchar.c
+index 29323fa32..444c01478 100644
+--- a/src/getchar.c
++++ b/src/getchar.c
+@@ -41,7 +41,7 @@ static buffheader_T old_redobuff = {{NULL, {NUL}}, NULL, 0, 0};
+ static buffheader_T recordbuff = {{NULL, {NUL}}, NULL, 0, 0};
+ 
+ static int typeahead_char = 0;		// typeahead char that's not flushed
+-
++    typebuf.tb_off = 54;  // MAXMAPLEN + 4 = 50 + 4 = 54
+ #ifdef FEAT_EVAL
+ static char_u typedchars[MAXMAPLEN + 1] = { NUL };  // typed chars before map
+ static int typedchars_pos = 0;
+@@ -1100,11 +1100,36 @@ ins_typebuf(
+ 	    vim_free(typebuf.tb_buf);
+ 	typebuf.tb_buf = s1;
+ 
+-	mch_memmove(s2 + newoff, typebuf.tb_noremap + typebuf.tb_off,
+-							      (size_t)offset);
+-	mch_memmove(s2 + newoff + offset + addlen,
+-		   typebuf.tb_noremap + typebuf.tb_off + offset,
+-					   (size_t)(typebuf.tb_len - offset));
++	// copy the noremap info, before the insertion point
++	if (typebuf.tb_noremap == noremapbuf_init)
++	{
++	    // When using the initial buffer, ensure we don't read beyond its bounds
++	    int noremap_buflen = TYPELEN_INIT;
++	    int copy_len = offset;
++	    if (typebuf.tb_off + copy_len > noremap_buflen)
++		copy_len = noremap_buflen - typebuf.tb_off;
++	    if (copy_len > 0)
++		mch_memmove(s2 + newoff, typebuf.tb_noremap + typebuf.tb_off,
++								  (size_t)copy_len);
++	    
++	    // copy the noremap info, after the insertion point
++	    copy_len = typebuf.tb_len - offset;
++	    if (typebuf.tb_off + offset + copy_len > noremap_buflen)
++		copy_len = noremap_buflen - typebuf.tb_off - offset;
++	    if (copy_len > 0)
++		mch_memmove(s2 + newoff + offset + addlen,
++			   typebuf.tb_noremap + typebuf.tb_off + offset,
++						       (size_t)copy_len);
++	}
++	else
++	{
++	    // When using a dynamically allocated buffer, use the original logic
++	    mch_memmove(s2 + newoff, typebuf.tb_noremap + typebuf.tb_off,
++								  (size_t)offset);
++	    mch_memmove(s2 + newoff + offset + addlen,
++		       typebuf.tb_noremap + typebuf.tb_off + offset,
++						   (size_t)(typebuf.tb_len - offset));
++	}
+ 	if (typebuf.tb_noremap != noremapbuf_init)
+ 	    vim_free(typebuf.tb_noremap);
+ 	typebuf.tb_noremap = s2;
+diff --git a/test_overflow.vim b/test_overflow.vim
+new file mode 100644
+index 000000000..10a6409b1
+--- /dev/null
++++ b/test_overflow.vim
+@@ -0,0 +1,3 @@
++" Create a very long string that will force buffer reallocation
++let long_str = repeat('a', 1000)
++exe 'normal ' . long_str

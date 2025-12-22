@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/Python-ast.c b/Python/Python-ast.c
+index 4a58c0973d1..c4ecdf51b42 100644
+--- a/Python/Python-ast.c
++++ b/Python/Python-ast.c
+@@ -5855,9 +5855,13 @@ error:
+ }
+ 
+ static PyObject *
++
+ ast_repr(PyObject *self)
+ {
+-    return ast_repr_max_depth((AST_object*)self, 3);
++    Py_INCREF(self);
++    PyObject *result = ast_repr_max_depth((AST_object*)self, 3);
++    Py_DECREF(self);
++    return result;
+ }
+ 
+ static PyType_Slot AST_type_slots[] = {

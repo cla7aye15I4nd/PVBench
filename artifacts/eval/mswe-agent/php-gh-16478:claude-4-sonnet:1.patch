@@ -1,0 +1,149 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..6ad6e9f1490 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -546,6 +546,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		return;
+ 	}
+ 
++	/* Protect the object from being freed during the operation */
++	GC_ADDREF(object);
++
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
+@@ -555,13 +558,17 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
++					/* Store the data to be destroyed later */
++					zval temp_data;
++					ZVAL_COPY_VALUE(&temp_data, data);
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+ 					if (spl_array_is_object(intern)) {
+ 						spl_array_skip_protected(intern, ht);
+ 					}
++					/* Now destroy the data after all operations are complete */
++					zval_ptr_dtor(&temp_data);
+ 				}
+ 			} else {
+ 				zend_hash_del(ht, key.key);
+@@ -575,6 +582,8 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++
++	GC_DELREF(object);
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7c08a189c6f..d79df407c76 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -484,8 +484,12 @@ static void spl_fixedarray_object_unset_dimension_helper(spl_fixedarray_object *
+ 		return;
+ 	} else {
+ 		intern->array.should_rebuild_properties = true;
+-		zval_ptr_dtor(&(intern->array.elements[index]));
++		/* Store the data to be destroyed later */
++		zval temp_data;
++		ZVAL_COPY_VALUE(&temp_data, &(intern->array.elements[index]));
+ 		ZVAL_NULL(&intern->array.elements[index]);
++		/* Now destroy the data after all operations are complete */
++		zval_ptr_dtor(&temp_data);
+ 	}
+ }
+ 
+diff --git a/ext/spl/tests/fixedarray_023.phpt b/ext/spl/tests/fixedarray_023.phpt
+index 781685b7891..1e1d4cceb2e 100644
+--- a/ext/spl/tests/fixedarray_023.phpt
++++ b/ext/spl/tests/fixedarray_023.phpt
+@@ -33,4 +33,64 @@
+   *RECURSION*
+   [3]=>
+   *RECURSION*
+-}
+\ No newline at end of file
++}
++static void spl_array_unset_dimension_ex(int check_inherited, zend_object *object, zval *offset) /* {{{ */
++{
++	HashTable *ht;
++	spl_array_object *intern = spl_array_from_obj(object);
++	spl_hash_key key;
++
++	if (check_inherited && intern->fptr_offset_del) {
++		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
++		return;
++	}
++
++	if (intern->nApplyCount > 0) {
++		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		return;
++	}
++
++	if (get_hash_key(&key, intern, offset) == FAILURE) {
++		zend_type_error("Illegal offset type in unset");
++		return;
++	}
++
++	ht = spl_array_get_hash_table(intern);
++	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
++
++	if (key.key) {
++		zval *data = zend_hash_find(ht, key.key);
++		if (data) {
++			if (Z_TYPE_P(data) == IS_INDIRECT) {
++				data = Z_INDIRECT_P(data);
++				if (Z_TYPE_P(data) != IS_UNDEF) {
++					/* Check if data contains a reference to the same object */
++					bool is_self_reference = (Z_TYPE_P(data) == IS_OBJECT && Z_OBJ_P(data) == object);
++					if (is_self_reference) {
++						/* Protect the object from being freed during zval_ptr_dtor */
++						GC_ADDREF(object);
++					}
++					zval_ptr_dtor(data);
++					ZVAL_UNDEF(data);
++					if (is_self_reference) {
++						GC_DELREF(object);
++					}
++					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
++					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
++					if (spl_array_is_object(intern)) {
++						spl_array_skip_protected(intern, ht);
++					}
++				}
++			} else {
++				zend_hash_del(ht, key.key);
++			}
++		}
++		spl_hash_key_release(&key);
++	} else {
++		zend_hash_index_del(ht, key.h);
++	}
++
++	if (refcount) {
++		spl_array_set_refcount(intern->is_child, ht, refcount);
++	}
++} /* }}} */

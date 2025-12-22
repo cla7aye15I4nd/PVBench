@@ -1,0 +1,13 @@
+runtime error: signed integer overflow: 3001130011030001130 * 10 cannot be represented in type 'int64_t' (aka 'long')
+    #0 0x733dd484bd39 in icu_77::NFRule::parseRuleDescriptor(icu_77::UnicodeString&, UErrorCode&) /tmp/icu-issue-23002/build/i18n/.././icu4c/source/i18n/nfrule.cpp:329:35
+    #1 0x733dd484ae66 in icu_77::NFRule::NFRule(icu_77::RuleBasedNumberFormat const*, icu_77::UnicodeString const&, UErrorCode&) /tmp/icu-issue-23002/build/i18n/.././icu4c/source/i18n/nfrule.cpp:50:9
+    #2 0x733dd484d031 in icu_77::NFRule::makeRules(icu_77::UnicodeString&, icu_77::NFRuleSet*, icu_77::NFRule const*, icu_77::RuleBasedNumberFormat const*, icu_77::NFRuleList&, UErrorCode&) /tmp/icu-issue-23002/build/i18n/.././icu4c/source/i18n/nfrule.cpp:120:36
+    #3 0x733dd4842ed6 in icu_77::NFRuleSet::parseRules(icu_77::UnicodeString&, UErrorCode&) /tmp/icu-issue-23002/build/i18n/.././icu4c/source/i18n/nfrs.cpp:222:9
+    #4 0x733dd4a75f20 in icu_77::RuleBasedNumberFormat::init(icu_77::UnicodeString const&, icu_77::LocalizationInfo*, UParseError&, UErrorCode&) /tmp/icu-issue-23002/build/i18n/.././icu4c/source/i18n/rbnf.cpp:1624:27
+    #5 0x733dd4a77611 in icu_77::RuleBasedNumberFormat::RuleBasedNumberFormat(icu_77::UnicodeString const&, icu_77::Locale const&, UParseError&, UErrorCode&) /tmp/icu-issue-23002/build/i18n/.././icu4c/source/i18n/rbnf.cpp:806:5
+    #6 0x64ffa4cae7f8 in main /tmp/icu-issue-23002/build/poc.cpp:16:27
+    #7 0x733dd15e91c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x733dd15e928a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x64ffa4c83494 in _start (/tmp/icu-issue-23002/build/poc+0x6494) (BuildId: a9fc986daa1d00fa0309f5384f11b980cad285a4)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/nfrule.cpp:329:35 

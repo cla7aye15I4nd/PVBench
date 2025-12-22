@@ -1,0 +1,76 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 7483e9c0f43..d3fb8fb1ad0 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -3055,7 +3055,7 @@ task_step_handle_result_impl(asyncio_state *state, TaskObj *task, PyObject *resu
+         Py_DECREF(tmp);
+ 
+         /* task._fut_waiter = result */
+-        task->task_fut_waiter = result;  /* no incref is necessary */
++        Py_XSETREF(task->task_fut_waiter, Py_NewRef(result));
+ 
+         if (task->task_must_cancel) {
+             PyObject *r;
+diff --git a/test_fix.py b/test_fix.py
+new file mode 100644
+index 00000000000..a0f93acf68e
+--- /dev/null
++++ b/test_fix.py
+@@ -0,0 +1,42 @@
++import asyncio
++import gc
++
++async def test_task_cancellation():
++    """Test that reproduces the use-after-free issue"""
++    
++    # Create a future that will be awaited by the task
++    future = asyncio.Future()
++    
++    async def task_func():
++        try:
++            # This will cause the task to wait on the future
++            result = await future
++            return result
++        except asyncio.CancelledError:
++            print("Task was cancelled")
++            raise
++    
++    # Create the task
++    task = asyncio.create_task(task_func())
++    
++    # Let the task start and reach the await point
++    await asyncio.sleep(0)
++    
++    # Cancel the task - this should trigger the code path we fixed
++    task.cancel("Test cancellation")
++    
++    # Force garbage collection to potentially trigger use-after-free
++    gc.collect()
++    
++    try:
++        await task
++    except asyncio.CancelledError:
++        print("Task cancellation handled correctly")
++    
++    print("Test completed successfully")
++
++async def main():
++    await test_task_cancellation()
++
++if __name__ == "__main__":
++    asyncio.run(main())

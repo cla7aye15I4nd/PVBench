@@ -1,0 +1,281 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/array b/array
+new file mode 100644
+index 00000000000..dc0555a6c25
+--- /dev/null
++++ b/array
+@@ -0,0 +1,167 @@
++Found 165 matches for "intern-" in /home/php/ext/spl/spl_array.c:
++Line 73:	if (intern->ar_flags & SPL_ARRAY_IS_SELF) {
++Line 74:		if (!intern->std.properties) {
++Line 75:			rebuild_object_properties(&intern->std);
++Line 77:		return &intern->std.properties;
++Line 78:	} else if (intern->ar_flags & SPL_ARRAY_USE_OTHER) {
++Line 79:		spl_array_object *other = Z_SPLARRAY_P(&intern->array);
++Line 81:	} else if (Z_TYPE(intern->array) == IS_ARRAY) {
++Line 82:		return &Z_ARRVAL(intern->array);
++Line 84:		zend_object *obj = Z_OBJ(intern->array);
++Line 105:	while (intern->ar_flags & SPL_ARRAY_USE_OTHER) {
++Line 106:		intern = Z_SPLARRAY_P(&intern->array);
++Line 108:	return (intern->ar_flags & SPL_ARRAY_IS_SELF) || Z_TYPE(intern->array) == IS_OBJECT;
++Line 116:	intern->ht_iter = zend_hash_iterator_add(ht, zend_hash_get_current_pos(ht));
++Line 117:	zend_hash_internal_pointer_reset_ex(ht, &EG(ht_iterators)[intern->ht_iter].pos);
++Line 124:	if (UNEXPECTED(intern->ht_iter == (uint32_t)-1)) {
++Line 127:	return &EG(ht_iterators)[intern->ht_iter].pos;
++Line 136:	if (intern->ht_iter != (uint32_t) -1) {
++Line 137:		zend_hash_iterator_del(intern->ht_iter);
++Line 140:	zend_object_std_dtor(&intern->std);
++Line 142:    if (!(intern->ar_flags & SPL_ARRAY_USE_OTHER)) {
++Line 143:        zval_ptr_dtor(&intern->array);
++Line 144:        ZVAL_UNDEF(&intern->array);
++Line 158:	zend_object_std_init(&intern->std, class_type);
++Line 159:	object_properties_init(&intern->std, class_type);
++Line 161:	intern->ar_flags = 0;
++Line 162:	intern->is_child = false;
++Line 163:	intern->bucket = NULL;
++Line 164:	intern->ce_get_iterator = spl_ce_ArrayIterator;
++Line 168:		intern->ar_flags &= ~ SPL_ARRAY_CLONE_MASK;
++Line 169:		intern->ar_flags |= (other->ar_flags & SPL_ARRAY_CLONE_MASK);
++Line 170:		intern->ce_get_iterator = other->ce_get_iterator;
++Line 173:				ZVAL_UNDEF(&intern->array);
++Line 175:				ZVAL_ARR(&intern->array,
++Line 179:				ZVAL_OBJ_COPY(&intern->array, orig);
++Line 180:				intern->ar_flags |= SPL_ARRAY_USE_OTHER;
++Line 183:			ZVAL_OBJ_COPY(&intern->array, orig);
++Line 184:			intern->ar_flags |= SPL_ARRAY_USE_OTHER;
++Line 187:		array_init(&intern->array);
++Line 192:			intern->std.handlers = &spl_handler_ArrayIterator;
++Line 195:			intern->std.handlers = &spl_handler_ArrayObject;
++Line 205:		intern->fptr_offset_get = zend_hash_str_find_ptr(&class_type->function_table, "offsetget", sizeof("offsetget") - 1);
++Line 206:		if (intern->fptr_offset_get->common.scope == parent) {
++Line 207:			intern->fptr_offset_get = NULL;
++Line 209:		intern->fptr_offset_set = zend_hash_str_find_ptr(&class_type->function_table, "offsetset", sizeof("offsetset") - 1);
++Line 210:		if (intern->fptr_offset_set->common.scope == parent) {
++Line 211:			intern->fptr_offset_set = NULL;
++Line 213:		intern->fptr_offset_has = zend_hash_str_find_ptr(&class_type->function_table, "offsetexists", sizeof("offsetexists") - 1);
++Line 214:		if (intern->fptr_offset_has->common.scope == parent) {
++Line 215:			intern->fptr_offset_has = NULL;
++Line 217:		intern->fptr_offset_del = zend_hash_str_find_ptr(&class_type->function_table, "offsetunset",  sizeof("offsetunset") - 1);
++Line 218:		if (intern->fptr_offset_del->common.scope == parent) {
++Line 219:			intern->fptr_offset_del = NULL;
++Line 221:		intern->fptr_count = zend_hash_str_find_ptr(&class_type->function_table, "count", sizeof("count") - 1);
++Line 222:		if (intern->fptr_count->common.scope == parent) {
++Line 223:			intern->fptr_count = NULL;
++Line 227:	intern->ht_iter = (uint32_t)-1;
++Line 228:	return &intern->std;
++Line 325:	if ((type == BP_VAR_W || type == BP_VAR_RW) && intern->nApplyCount > 0) {
++Line 411:			(intern->fptr_offset_get || (type == BP_VAR_IS && intern->fptr_offset_has))) {
++Line 418:		if (intern->fptr_offset_get) {
++Line 424:			zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_get, "offsetGet", rv, offset);
++Line 455: * The assertion(HT_ASSERT_RC1(ht)) failed because the refcount was increased manually when intern->is_child is true.
++Line 457: * modifying the array when intern->is_child is true.
++Line 476:	if (check_inherited && intern->fptr_offset_set) {
++Line 483:		zend_call_method_with_2_params(object, object->ce, &intern->fptr_offset_set, "offsetSet", NULL, offset, value);
++Line 487:	if (intern->nApplyCount > 0) {
++Line 497:		refcount = spl_array_set_refcount(intern->is_child, ht, 1);
++Line 501:			spl_array_set_refcount(intern->is_child, ht, refcount);
++Line 513:	refcount = spl_array_set_refcount(intern->is_child, ht, 1);
++Line 522:		spl_array_set_refcount(intern->is_child, ht, refcount);
++Line 536:    if (intern->ar_flags & SPL_ARRAY_USE_OTHER) {
++Line 539:    if (Z_TYPE(intern->array) == IS_UNDEF) {
++Line 545:	if (check_inherited && intern->fptr_offset_del) {
++Line 546:		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
++Line 550:	if (intern->nApplyCount > 0) {
++Line 561:	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
++Line 587:		spl_array_set_refcount(intern->is_child, ht, refcount);
++Line 604:	if (check_inherited && intern->fptr_offset_has) {
++Line 605:		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_has, "offsetExists", &rv, offset);
++Line 616:		} else if (intern->fptr_offset_get) {
++Line 647:		if (check_empty && check_inherited && intern->fptr_offset_get) {
++Line 752:	if (intern->ar_flags & SPL_ARRAY_STD_PROP_LIST) {
++Line 789:	if (!intern->std.properties) {
++Line 790:		rebuild_object_properties(&intern->std);
++Line 793:	if (intern->ar_flags & SPL_ARRAY_IS_SELF) {
++Line 794:		return zend_array_dup(intern->std.properties);
++Line 798:		debug_info = zend_new_array(zend_hash_num_elements(intern->std.properties) + 1);
++Line 799:		zend_hash_copy(debug_info, intern->std.properties, (copy_ctor_func_t) zval_add_ref);
++Line 801:		storage = &intern->array;
++Line 818:	*gc_data = &intern->array;
++Line 828:	if ((intern->ar_flags & SPL_ARRAY_ARRAY_AS_PROPS) != 0
++Line 841:	if ((intern->ar_flags & SPL_ARRAY_ARRAY_AS_PROPS) != 0
++Line 855:	if ((intern->ar_flags & SPL_ARRAY_ARRAY_AS_PROPS) != 0
++Line 860:		if (intern->fptr_offset_get) {
++Line 873:	if ((intern->ar_flags & SPL_ARRAY_ARRAY_AS_PROPS) != 0
++Line 886:	if ((intern->ar_flags & SPL_ARRAY_ARRAY_AS_PROPS) != 0
++Line 1039:	if (intern->ht_iter == (uint32_t)-1) {
++Line 1067:		zval_ptr_dtor(&intern->array);
++Line 1069:			ZVAL_COPY(&intern->array, array);
++Line 1072:			ZVAL_ARR(&intern->array, zend_array_dup(Z_ARR_P(array)));
++Line 1074:			if (intern->is_child) {
++Line 1075:				Z_TRY_DELREF(intern->bucket->val);
++Line 1080:				ZVAL_COPY(&intern->bucket->val, &intern->array);
++Line 1085:			zval_ptr_dtor(&intern->array);
++Line 1092:				ZVAL_UNDEF(&intern->array);
++Line 1095:				ZVAL_COPY(&intern->array, array);
++Line 1102:					ZSTR_VAL(Z_OBJCE_P(array)->name), ZSTR_VAL(intern->std.ce->name));
++Line 1105:			zval_ptr_dtor(&intern->array);
++Line 1106:			ZVAL_COPY(&intern->array, array);
++Line 1110:	intern->ar_flags &= ~SPL_ARRAY_IS_SELF & ~SPL_ARRAY_USE_OTHER;
++Line 1111:	intern->ar_flags |= ar_flags;
++Line 1112:	if (intern->ht_iter != (uint32_t)-1) {
++Line 1113:		zend_hash_iterator_del(intern->ht_iter);
++Line 1114:		intern->ht_iter = (uint32_t)-1;
++Line 1164:		intern->ce_get_iterator = ce_get_iterator;
++Line 1208:	intern->ce_get_iterator = ce_get_iterator;
++Line 1222:	zend_string_addref(intern->ce_get_iterator->name);
++Line 1223:	RETURN_STR(intern->ce_get_iterator->name);
++Line 1237:	RETURN_LONG(intern->ar_flags & ~SPL_ARRAY_INT_MASK);
++Line 1252:	intern->ar_flags = (intern->ar_flags & SPL_ARRAY_INT_MASK) | (ar_flags & ~SPL_ARRAY_INT_MASK);
++Line 1266:	if (intern->nApplyCount > 0) {
++Line 1286:	RETURN_OBJ(spl_array_object_new_ex(intern->ce_get_iterator, Z_OBJ_P(object), 0));
++Line 1357:	if (intern->fptr_count) {
++Line 1359:		zend_call_method_with_0_params(object, intern->std.ce, &intern->fptr_count, "count", &rv);
++Line 1402:		intern->nApplyCount++;
++Line 1404:		intern->nApplyCount--;
++Line 1411:		intern->nApplyCount++;
++Line 1413:		intern->nApplyCount--;
++Line 1419:		intern->nApplyCount++;
++Line 1421:		intern->nApplyCount--;
++Line 1554:	RETURN_BOOL(Z_TYPE_P(entry) == IS_ARRAY || (Z_TYPE_P(entry) == IS_OBJECT && (intern->ar_flags & SPL_ARRAY_CHILD_ARRAYS_ONLY) == 0));
++Line 1563:	 * set new_intern->is_child is true to indicate that the object was created by
++Line 1566:	new_intern->is_child = true;
++Line 1569:	new_intern->bucket = (Bucket *)((char *)(arg1) - XtOffsetOf(Bucket, val));;
++Line 1595:		if ((intern->ar_flags & SPL_ARRAY_CHILD_ARRAYS_ONLY) != 0) {
++Line 1603:	ZVAL_LONG(&flags, intern->ar_flags);
++Line 1623:	ZVAL_LONG(&flags, (intern->ar_flags & SPL_ARRAY_CLONE_MASK));
++Line 1629:	if (!(intern->ar_flags & SPL_ARRAY_IS_SELF)) {
++Line 1630:		php_var_serialize(&buf, &intern->array, &var_hash);
++Line 1636:	if (!intern->std.properties) {
++Line 1637:		rebuild_object_properties(&intern->std);
++Line 1640:	ZVAL_ARR(&members, intern->std.properties);
++Line 1671:	if (intern->nApplyCount > 0) {
++Line 1704:		intern->ar_flags &= ~SPL_ARRAY_CLONE_MASK;
++Line 1705:		intern->ar_flags |= flags & SPL_ARRAY_CLONE_MASK;
++Line 1706:		zval_ptr_dtor(&intern->array);
++Line 1707:		ZVAL_UNDEF(&intern->array);
++Line 1719:		intern->ar_flags &= ~SPL_ARRAY_CLONE_MASK;
++Line 1720:		intern->ar_flags |= flags & SPL_ARRAY_CLONE_MASK;
++Line 1723:			zval_ptr_dtor(&intern->array);
++Line 1724:			ZVAL_COPY_VALUE(&intern->array, array);
++Line 1726:			SEPARATE_ARRAY(&intern->array);
++Line 1749:	object_properties_load(&intern->std, Z_ARRVAL_P(members));
++Line 1775:	ZVAL_LONG(&tmp, (intern->ar_flags & SPL_ARRAY_CLONE_MASK));
++Line 1779:	if (intern->ar_flags & SPL_ARRAY_IS_SELF) {
++Line 1782:		ZVAL_COPY(&tmp, &intern->array);
++Line 1788:		zend_std_get_properties(&intern->std), /* always_duplicate */ 1));
++Line 1792:	if (intern->ce_get_iterator == spl_ce_ArrayIterator) {
++Line 1795:		ZVAL_STR_COPY(&tmp, intern->ce_get_iterator->name);
++Line 1829:	intern->ar_flags &= ~SPL_ARRAY_CLONE_MASK;
++Line 1830:	intern->ar_flags |= flags & SPL_ARRAY_CLONE_MASK;
++Line 1833:		zval_ptr_dtor(&intern->array);
++Line 1834:		ZVAL_UNDEF(&intern->array);
++Line 1844:	object_properties_load(&intern->std, Z_ARRVAL_P(members_zv));
++Line 1866:		intern->ce_get_iterator = ce;
++End of matches for "intern-" in /home/php/ext/spl/spl_array.c
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..971ad739e92 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -139,7 +139,10 @@ static void spl_array_object_free_storage(zend_object *object)
+ 
+ 	zend_object_std_dtor(&intern->std);
+ 
+-	zval_ptr_dtor(&intern->array);
++    if (!(intern->ar_flags & SPL_ARRAY_USE_OTHER)) {
++        zval_ptr_dtor(&intern->array);
++        ZVAL_UNDEF(&intern->array);
++    }
+ }
+ /* }}} */
+ 
+@@ -529,7 +532,15 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ {
+ 	HashTable *ht;
+ 	spl_array_object *intern = spl_array_from_obj(object);
+-	spl_hash_key key;
++    spl_hash_key key;
++    if (intern->ar_flags & SPL_ARRAY_USE_OTHER) {
++        return;
++    }
++    if (Z_TYPE(intern->array) == IS_UNDEF) {
++        return;
++    }
++
++
+ 
+ 	if (check_inherited && intern->fptr_offset_del) {
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
+@@ -1053,7 +1064,9 @@ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *ar
+ 	/* Handled by ZPP prior to this, or for __unserialize() before passing to here */
+ 	ZEND_ASSERT(Z_TYPE_P(array) == IS_ARRAY || Z_TYPE_P(array) == IS_OBJECT);
+ 	if (Z_TYPE_P(array) == IS_ARRAY) {
+-		zval_ptr_dtor(&intern->array);
++        if (!(intern->ar_flags & SPL_ARRAY_USE_OTHER)) {
++            zval_ptr_dtor(&intern->array);
++        }
+ 		if (Z_REFCOUNT_P(array) == 1) {
+ 			ZVAL_COPY(&intern->array, array);
+ 		} else {
+@@ -1069,7 +1082,9 @@ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *ar
+ 				ZVAL_COPY(&intern->bucket->val, &intern->array);
+ 			}
+ 		}
+-	} else {
++            if (!(intern->ar_flags & SPL_ARRAY_USE_OTHER)) {
++                zval_ptr_dtor(&intern->array);
++            }
+ 		if (Z_OBJ_HT_P(array) == &spl_handler_ArrayObject || Z_OBJ_HT_P(array) == &spl_handler_ArrayIterator) {
+ 			zval_ptr_dtor(&intern->array);
+ 			if (just_array)	{
+@@ -1086,23 +1101,21 @@ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *ar
+ 		} else {
+ 			zend_object_get_properties_t handler = Z_OBJ_HANDLER_P(array, get_properties);
+ 			if (handler != zend_std_get_properties) {
+-				zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0,
+-					"Overloaded object of type %s is not compatible with %s",
+-					ZSTR_VAL(Z_OBJCE_P(array)->name), ZSTR_VAL(intern->std.ce->name));
+-				return;
++                zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0,
++                    "Overloaded object of type %s is not compatible with %s",
++                    ZSTR_VAL(Z_OBJCE_P(array)->name), ZSTR_VAL(intern->std.ce->name));
++                return;
++            }
++            if (!(intern->ar_flags & SPL_ARRAY_USE_OTHER)) {
++                zval_ptr_dtor(&intern->array);
++            }
++            ZVAL_COPY(&intern->array, array);
+ 			}
+-			zval_ptr_dtor(&intern->array);
+-			ZVAL_COPY(&intern->array, array);
+-		}
+-	}
+ 
+-	intern->ar_flags &= ~SPL_ARRAY_IS_SELF & ~SPL_ARRAY_USE_OTHER;
+-	intern->ar_flags |= ar_flags;
+-	if (intern->ht_iter != (uint32_t)-1) {
+-		zend_hash_iterator_del(intern->ht_iter);
+-		intern->ht_iter = (uint32_t)-1;
++		}
+ 	}
+ }
++
+ /* }}} */
+ 
+ /* iterator handler table */

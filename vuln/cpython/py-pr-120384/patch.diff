@@ -1,0 +1,90 @@
+diff --git a/Misc/NEWS.d/next/Core and Builtins/2024-06-13-12-17-52.gh-issue-120384.w1UBGl.rst b/Misc/NEWS.d/next/Core and Builtins/2024-06-13-12-17-52.gh-issue-120384.w1UBGl.rst
+new file mode 100644
+index 00000000000..4a4db821ce2
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core and Builtins/2024-06-13-12-17-52.gh-issue-120384.w1UBGl.rst	
+@@ -0,0 +1,3 @@
++Fix an array out of bounds crash in ``list_ass_subscript``, which could be
++invoked via some specificly tailored input: including concurrent modification
++of a list object, where one thread assigns a slice and another clears it.
+diff --git a/Objects/listobject.c b/Objects/listobject.c
+index 6829d5d2865..a05ddeabeb2 100644
+--- a/Objects/listobject.c
++++ b/Objects/listobject.c
+@@ -3581,6 +3581,23 @@ list_subscript(PyObject* _self, PyObject* item)
+     }
+ }
+ 
++static Py_ssize_t
++adjust_slice_indexes(PyListObject *lst,
++                     Py_ssize_t *start, Py_ssize_t *stop,
++                     Py_ssize_t step)
++{
++    Py_ssize_t slicelength = PySlice_AdjustIndices(Py_SIZE(lst), start, stop,
++                                                   step);
++
++    /* Make sure s[5:2] = [..] inserts at the right place:
++        before 5, not before 2. */
++    if ((step < 0 && *start < *stop) ||
++        (step > 0 && *start > *stop))
++        *stop = *start;
++
++    return slicelength;
++}
++
+ static int
+ list_ass_subscript(PyObject* _self, PyObject* item, PyObject* value)
+ {
+@@ -3594,22 +3611,11 @@ list_ass_subscript(PyObject* _self, PyObject* item, PyObject* value)
+         return list_ass_item((PyObject *)self, i, value);
+     }
+     else if (PySlice_Check(item)) {
+-        Py_ssize_t start, stop, step, slicelength;
++        Py_ssize_t start, stop, step;
+ 
+         if (PySlice_Unpack(item, &start, &stop, &step) < 0) {
+             return -1;
+         }
+-        slicelength = PySlice_AdjustIndices(Py_SIZE(self), &start, &stop,
+-                                            step);
+-
+-        if (step == 1)
+-            return list_ass_slice(self, start, stop, value);
+-
+-        /* Make sure s[5:2] = [..] inserts at the right place:
+-           before 5, not before 2. */
+-        if ((step < 0 && start < stop) ||
+-            (step > 0 && start > stop))
+-            stop = start;
+ 
+         if (value == NULL) {
+             /* delete slice */
+@@ -3618,6 +3624,12 @@ list_ass_subscript(PyObject* _self, PyObject* item, PyObject* value)
+             Py_ssize_t i;
+             int res;
+ 
++            Py_ssize_t slicelength = adjust_slice_indexes(self, &start, &stop,
++                                                          step);
++
++            if (step == 1)
++                return list_ass_slice(self, start, stop, value);
++
+             if (slicelength <= 0)
+                 return 0;
+ 
+@@ -3695,6 +3707,15 @@ list_ass_subscript(PyObject* _self, PyObject* item, PyObject* value)
+             if (!seq)
+                 return -1;
+ 
++            Py_ssize_t slicelength = adjust_slice_indexes(self, &start, &stop,
++                                                          step);
++
++            if (step == 1) {
++                int res = list_ass_slice(self, start, stop, seq);
++                Py_DECREF(seq);
++                return res;
++            }
++
+             if (PySequence_Fast_GET_SIZE(seq) != slicelength) {
+                 PyErr_Format(PyExc_ValueError,
+                     "attempt to assign sequence of "

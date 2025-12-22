@@ -1,0 +1,20 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/execution/isolate.cc, line 1925
+# Debug check failed: !has_pending_message().
+#
+#
+#
+#FailureMessage Object: 0x7fa8b5a62460
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x5e) [0x55dbb1bf5fce]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x55dbb9812403]
+    out/debug_asan/d8(+0xa8bba3a) [0x55dbb980fa3a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x26f) [0x55dbb97ca45f]
+    out/debug_asan/d8(+0xa87538f) [0x55dbb97c938f]
+    out/debug_asan/d8(v8::internal::Isolate::ReThrow(v8::internal::Tagged<v8::internal::Object>, v8::internal::Tagged<v8::internal::Object>)+0x27d) [0x55dbb2a0d8bd]
+    out/debug_asan/d8(+0x56ef404) [0x55dbb4643404]
+    out/debug_asan/d8(v8::internal::Runtime_ReThrowWithMessage(int, unsigned long*, v8::internal::Isolate*)+0x14c) [0x55dbb464282c]
+    out/debug_asan/d8(+0x9e5d0bd) [0x55dbb8db10bd]

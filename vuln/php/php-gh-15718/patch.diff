@@ -1,0 +1,46 @@
+diff --git a/NEWS b/NEWS
+index ff4465e9d7..4dd5bd348f 100644
+--- a/NEWS
++++ b/NEWS
+@@ -16,6 +16,8 @@ PHP                                                                        NEWS
+     property. (ilutov)
+   . Fixed bug GH-15693 (Unnecessary include in main.c bloats binary).
+     (nielsdos)
++  . Fixed bug GH-15718 (Segfault on ReflectionProperty::get{Hook,Hooks}() on
++    dynamic properties). (DanielEScherzer)
+ 
+ - DOM:
+   . Fixed bug GH-13988 (Storing DOMElement consume 4 times more memory in
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index 531db004b3..289c939212 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6505,7 +6505,8 @@ ZEND_METHOD(ReflectionProperty, getHooks)
+ 
+ 	GET_REFLECTION_OBJECT_PTR(ref);
+ 
+-	if (!ref->prop->hooks) {
++	// ref->prop can be missing for dynamic properties
++	if (!ref->prop || !ref->prop->hooks) {
+ 		RETURN_EMPTY_ARRAY();
+ 	}
+ 
+@@ -6536,11 +6537,16 @@ ZEND_METHOD(ReflectionProperty, getHook)
+ 
+ 	GET_REFLECTION_OBJECT_PTR(ref);
+ 
++	// ref->prop can be missing for dynamic properties
++	if (!ref->prop || !ref->prop->hooks) {
++		RETURN_NULL();
++	}
++
+ 	zend_function *hook;
+ 	if (zend_string_equals_literal(Z_STR_P(zend_enum_fetch_case_name(type)), "Get")) {
+-		hook = ref->prop->hooks ? ref->prop->hooks[ZEND_PROPERTY_HOOK_GET] : NULL;
++		hook = ref->prop->hooks[ZEND_PROPERTY_HOOK_GET];
+ 	} else {
+-		hook = ref->prop->hooks ? ref->prop->hooks[ZEND_PROPERTY_HOOK_SET] : NULL;
++		hook = ref->prop->hooks[ZEND_PROPERTY_HOOK_SET];
+ 	}
+ 
+ 	if (!hook) {

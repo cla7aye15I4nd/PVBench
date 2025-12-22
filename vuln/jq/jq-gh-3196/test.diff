@@ -1,0 +1,44 @@
+diff --git a/tests/jq.test b/tests/jq.test
+index 2e3c1e8..f5a57b1 100644
+--- a/tests/jq.test
++++ b/tests/jq.test
+@@ -2110,11 +2110,17 @@ tojson | fromjson
+ {"a":nan}
+ {"a":null}
+ 
+-# also "nan with payload" #2985
+-if have_decnum then fromjson else nan end | isnan
+-"nan1234"
++# NaN with payload is not parsed
++.[] | try (fromjson | isnan) catch .
++["NaN","-NaN","NaN1","NaN10","NaN100","NaN1000","NaN10000","NaN100000"]
+ true
+-
++true
++"Invalid numeric literal at EOF at line 1, column 4 (while parsing 'NaN1')"
++"Invalid numeric literal at EOF at line 1, column 5 (while parsing 'NaN10')"
++"Invalid numeric literal at EOF at line 1, column 6 (while parsing 'NaN100')"
++"Invalid numeric literal at EOF at line 1, column 7 (while parsing 'NaN1000')"
++"Invalid numeric literal at EOF at line 1, column 8 (while parsing 'NaN10000')"
++"Invalid numeric literal at EOF at line 1, column 9 (while parsing 'NaN100000')"
+ 
+ # calling input/0, or debug/0 in a test doesn't crash jq
+ 
+diff --git a/tests/shtest b/tests/shtest
+index 86e759b..72ffc08 100755
+--- a/tests/shtest
++++ b/tests/shtest
+@@ -669,13 +669,6 @@ if ! x=$($JQ -cn "$(printf '[\r\n1,# comment\r\n2,# comment\\\r\ncomment\r\n3\r\
+   exit 1
+ fi
+ 
+-# CVE-2023-50268: No stack overflow comparing a nan with a large payload
+-if $JQ -ne 'have_decnum'; then
+-  $VALGRIND $Q $JQ '1 != .' <<\EOF >/dev/null
+-  Nan4000
+-EOF
+-fi
+-
+ # Allow passing the inline jq script before -- #2919
+ if ! r=$($JQ --args -rn -- '$ARGS.positional[0]' bar) || [ "$r" != bar ]; then
+     echo "passing the inline script after -- didn't work"

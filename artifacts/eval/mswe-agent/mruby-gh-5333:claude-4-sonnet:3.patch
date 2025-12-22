@@ -1,0 +1,100 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6a0e7e46b..d217e0f49 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -35,3 +35,13 @@ tags
+ 
+ /doc/api
+ /doc/capi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/hash.c b/src/hash.c
+index 289f02a91..add783198 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -260,6 +260,7 @@ HT_ASSERT_SAFE_READ(ea_capa);
+ 
+ static uint32_t ib_upper_bound_for(uint32_t capa);
+ static uint32_t ib_bit_to_capa(uint32_t bit);
++static uint32_t ib_ary_size_for(uint32_t ib_bit);
+ static void ht_init(
+   mrb_state *mrb, struct RHash *h, uint32_t size,
+   hash_entry *ea, uint32_t ea_capa, hash_table *ht, uint32_t ib_bit);
+@@ -636,10 +637,23 @@ ib_it_next(index_buckets_iter *it)
+   uint32_t slid_ary_index = slid_bit_pos / IB_TYPE_BIT;
+   it->ary_index = slid_ary_index + it->pos / IB_TYPE_BIT * it->bit;
+   it->shift2 = (slid_ary_index + 1) * IB_TYPE_BIT - slid_bit_pos - 1;
++  
++  /* Add bounds checking to prevent heap buffer overflow */
++  uint32_t ary_size = ib_ary_size_for(it->bit);
++  if (it->ary_index >= ary_size) {
++    it->ea_index = ib_it_deleted_value(it);
++    it->shift1 = 0;
++    it->pos = ib_it_pos_for(it, it->pos + (++it->step));
++    return;
++  }
++  
+   it->ea_index = (ht_ib(it->h)[it->ary_index] >> it->shift2) & it->mask;
+   if (IB_TYPE_BIT - it->bit < it->shift2) {
+     it->shift1 = IB_TYPE_BIT - it->shift2;
+-    it->ea_index |= (ht_ib(it->h)[it->ary_index - 1] << it->shift1) & it->mask;
++    /* Add bounds checking for ary_index - 1 */
++    if (it->ary_index > 0) {
++      it->ea_index |= (ht_ib(it->h)[it->ary_index - 1] << it->shift1) & it->mask;
++    }
+   }
+   else {
+     it->shift1 = 0;
+@@ -657,15 +671,23 @@ static void
+ ib_it_set(index_buckets_iter *it, uint32_t ea_index)
+ {
+   uint32_t mask, i;
++  uint32_t ary_size = ib_ary_size_for(it->bit);
++  
+   it->ea_index = ea_index;
+-  if (it->shift1) {
++  if (it->shift1 && it->ary_index > 0) {
+     i = it->ary_index - 1;
+-    mask = it->mask >> it->shift1;
+-    ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index >> it->shift1);
++    /* Add bounds checking for ary_index - 1 */
++    if (i < ary_size) {
++      mask = it->mask >> it->shift1;
++      ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index >> it->shift1);
++    }
+   }
+   i = it->ary_index;
+-  mask = it->mask << it->shift2;
+-  ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index << it->shift2);
++  /* Add bounds checking for ary_index */
++  if (i < ary_size) {
++    mask = it->mask << it->shift2;
++    ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index << it->shift2);
++  }
+ }
+ 
+ static void
+@@ -724,6 +746,14 @@ ib_byte_size_for(uint32_t ib_bit)
+   return U32(sizeof(uint32_t) * ary_size);
+ }
+ 
++static uint32_t
++ib_ary_size_for(uint32_t ib_bit)
++{
++  return IB_INIT_BIT == 4 ?
++    ib_bit_to_capa(ib_bit) * 2 / IB_TYPE_BIT * ib_bit / 2 :
++    ib_bit_to_capa(ib_bit) / IB_TYPE_BIT * ib_bit;
++}
++
+ static void
+ ib_init(mrb_state *mrb, struct RHash *h, uint32_t ib_bit, size_t ib_byte_size)
+ {

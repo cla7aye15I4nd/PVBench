@@ -1,0 +1,147 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..40b40104b22 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -482,12 +482,15 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return;
+ 	}
+ 
+ 	Z_TRY_ADDREF_P(value);
+ 
++	/* Increment nApplyCount to prevent reentrancy during destructor calls */
++	intern->nApplyCount++;
++
+ 	uint32_t refcount = 0;
+ 	if (!offset || Z_TYPE_P(offset) == IS_NULL) {
+ 		ht = spl_array_get_hash_table(intern);
+@@ -495,7 +498,15 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 		zend_hash_next_index_insert(ht, value);
+ 
+ 		if (refcount) {
+-			spl_array_set_refcount(intern->is_child, ht, refcount);
++			/* Re-validate hash table before restoring refcount */
++			ht = spl_array_get_hash_table(intern);
++			if (ht) {
++				spl_array_set_refcount(intern->is_child, ht, refcount);
++			}
++		}
++		/* Decrement nApplyCount */
++		if (intern->nApplyCount > 0) {
++			intern->nApplyCount--;
+ 		}
+ 		return;
+ 	}
+@@ -503,6 +514,10 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 	if (get_hash_key(&key, intern, offset) == FAILURE) {
+ 		zend_type_error("Illegal offset type");
+ 		zval_ptr_dtor(value);
++		/* Decrement nApplyCount */
++		if (intern->nApplyCount > 0) {
++			intern->nApplyCount--;
++		}
+ 		return;
+ 	}
+ 
+@@ -516,7 +531,16 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (refcount) {
+-		spl_array_set_refcount(intern->is_child, ht, refcount);
++		/* Re-validate hash table before restoring refcount */
++		ht = spl_array_get_hash_table(intern);
++		if (ht) {
++			spl_array_set_refcount(intern->is_child, ht, refcount);
++		}
++	}
++
++	/* Decrement nApplyCount */
++	if (intern->nApplyCount > 0) {
++		intern->nApplyCount--;
+ 	}
+ } /* }}} */
+ 
+@@ -537,7 +561,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return;
+ 	}
+ 
+@@ -549,6 +573,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
++	/* Increment nApplyCount to prevent reentrancy during destructor calls */
++	intern->nApplyCount++;
++
+ 	if (key.key) {
+ 		zval *data = zend_hash_find(ht, key.key);
+ 		if (data) {
+@@ -556,11 +583,18 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+ 					zval_ptr_dtor(data);
+-					ZVAL_UNDEF(data);
+-					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+-					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+-					if (spl_array_is_object(intern)) {
+-						spl_array_skip_protected(intern, ht);
++					/* Check if object is still valid after destructor call */
++					if (intern->nApplyCount > 0) {
++						/* Re-validate hash table after destructor call */
++						ht = spl_array_get_hash_table(intern);
++						if (ht && zend_hash_find(ht, key.key)) {
++							ZVAL_UNDEF(data);
++							HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
++							zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
++							if (spl_array_is_object(intern)) {
++								spl_array_skip_protected(intern, ht);
++							}
++						}
+ 					}
+ 				}
+ 			} else {
+@@ -572,8 +606,17 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		zend_hash_index_del(ht, key.h);
+ 	}
+ 
++	/* Decrement nApplyCount */
++	if (intern->nApplyCount > 0) {
++		intern->nApplyCount--;
++	}
++
+ 	if (refcount) {
+-		spl_array_set_refcount(intern->is_child, ht, refcount);
++		/* Re-validate hash table before restoring refcount */
++		ht = spl_array_get_hash_table(intern);
++		if (ht) {
++			spl_array_set_refcount(intern->is_child, ht, refcount);
++		}
+ 	}
+ } /* }}} */
+ 

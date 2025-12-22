@@ -1,0 +1,14 @@
+id: wabt-gh-2509
+project: wabt
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: wast2json
+trigger_commit: 94c25a93c5ee81939bd1acfee06808f6745883ce
+patch:
+  commit: 958d0a72030227bf3133c8b99c7c670bcdbc7636
+  date: '2024-11-12T05:10:52+00:00'
+reference:
+- https://github.com/WebAssembly/wabt
+- https://github.com/WebAssembly/wabt/issues/2509
+- https://github.com/WebAssembly/wabt/commit/94c25a93c5ee81939bd1acfee06808f6745883ce
+- https://github.com/WebAssembly/wabt/commit/958d0a72030227bf3133c8b99c7c670bcdbc7636

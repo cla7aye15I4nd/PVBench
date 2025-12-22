@@ -1,0 +1,77 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
+index 815747e1b1e..b684958714c 100644
+--- a/Objects/unicodeobject.c
++++ b/Objects/unicodeobject.c
+@@ -460,8 +460,7 @@ raise_encode_exception(PyObject **exceptionObject,
+ static const unsigned char ascii_linebreak[] = {
+     0, 0, 0, 0, 0, 0, 0, 0,
+ /*         0x000A, * LINE FEED */
+-/*         0x000B, * LINE TABULATION */
+-/*         0x000C, * FORM FEED */
++    0, 0, 0, 0,
+ /*         0x000D, * CARRIAGE RETURN */
+     0, 0, 1, 1, 1, 1, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0,
+diff --git a/Python/pythonrun.c b/Python/pythonrun.c
+index 5f3d249df45..cc282fdae1f 100644
+--- a/Python/pythonrun.c
++++ b/Python/pythonrun.c
+@@ -388,6 +388,7 @@ _PyRun_SimpleFileObject(FILE *fp, PyObject *filename, int closeit,
+         if (PyErr_Occurred()) {
+             goto done;
+         }
++        Py_INCREF(filename);
+         if (PyDict_SetItemString(d, "__file__", filename) < 0) {
+             goto done;
+         }
+@@ -451,26 +452,25 @@ _PyRun_SimpleFileObject(FILE *fp, PyObject *filename, int closeit,
+         }
+     }
+     Py_XDECREF(m);
++
+     return ret;
+ }
+-
+-
+-int
+-PyRun_SimpleFileExFlags(FILE *fp, const char *filename, int closeit,
+-                        PyCompilerFlags *flags)
++int PyRun_SimpleFileExFlags(FILE *fp, const char *filename, int closeit, PyCompilerFlags *flags)
+ {
+-    PyObject *filename_obj = PyUnicode_DecodeFSDefault(filename);
++    PyObject *filename_obj;
++    int res;
++
++    filename_obj = PyUnicode_DecodeFSDefault(filename);
+     if (filename_obj == NULL) {
++        PyErr_Clear();
+         return -1;
+     }
+-    int res = _PyRun_SimpleFileObject(fp, filename_obj, closeit, flags);
++    res = _PyRun_SimpleFileObject(fp, filename_obj, closeit, flags);
+     Py_DECREF(filename_obj);
+     return res;
+ }
++int PyRun_SimpleStringFlags(const char *command, PyCompilerFlags *flags)
+ 
+-
+-int
+-PyRun_SimpleStringFlags(const char *command, PyCompilerFlags *flags)
+ {
+     PyObject *m, *d, *v;
+     m = PyImport_AddModule("__main__");

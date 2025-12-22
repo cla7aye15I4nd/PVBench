@@ -1,0 +1,21 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/objects/objects.cc, line 361
+# Debug check failed: Handle<To> v8::internal::Cast(Handle<From>, const v8::SourceLocation &) [To = v8::internal::JSReceiver, From = v8::internal::Object].
+#
+#
+#
+#FailureMessage Object: 0x7b7ea4762060
+==== C stack trace ===============================
+
+    out/debug_asan/d8(___interceptor_backtrace+0x46) [0x5630c5eed536]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x5630cd4821f3]
+    out/debug_asan/d8(+0xae9760a) [0x5630cd48060a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x5630cd44d3e0]
+    out/debug_asan/d8(+0xae6341f) [0x5630cd44c41f]
+    out/debug_asan/d8(v8::internal::Handle<v8::internal::JSReceiver> v8::internal::Cast<v8::internal::JSReceiver, v8::internal::Object>(v8::internal::Handle<v8::internal::Object>, v8::SourceLocation const&)+0x169) [0x5630c61716e9]
+    out/debug_asan/d8(v8::internal::Object::ConvertToNumeric(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Object>)+0x10f) [0x5630c7db9e2f]
+    out/debug_asan/d8(+0x5dc3ec2) [0x5630c83acec2]
+    out/debug_asan/d8(v8::internal::Runtime_ToNumeric(int, unsigned long*, v8::internal::Isolate*)+0x1da) [0x5630c83ac61a]
+    out/debug_asan/d8(+0xa4588fd) [0x5630cca418fd]

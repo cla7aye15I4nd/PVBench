@@ -1,0 +1,67 @@
+==5361==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x519000000981 at pc 0x58c328d2f454 bp 0x7ffe8108c8a0 sp 0x7ffe8108c058
+WRITE of size 1023 at 0x519000000981 thread T0
+    #0 0x58c328d2f453 in strcpy (/tmp/vim-commit-bd228fd/build/src/vim+0x1c1453) (BuildId: cad5886b4d76f938be20c3fe873a545347666ba0)
+    #1 0x58c329007f1a in find_help_tags /tmp/vim-commit-bd228fd/build/src/help.c:426:6
+    #2 0x58c32900669e in ex_help /tmp/vim-commit-bd228fd/build/src/help.c:88:9
+    #3 0x58c328f3304e in do_one_cmd /tmp/vim-commit-bd228fd/build/src/ex_docmd.c:2614:2
+    #4 0x58c328f2b4fd in do_cmdline /tmp/vim-commit-bd228fd/build/src/ex_docmd.c:1000:17
+    #5 0x58c328eaf511 in ex_execute /tmp/vim-commit-bd228fd/build/src/eval.c:6259:6
+    #6 0x58c328f3304e in do_one_cmd /tmp/vim-commit-bd228fd/build/src/ex_docmd.c:2614:2
+    #7 0x58c328f2b4fd in do_cmdline /tmp/vim-commit-bd228fd/build/src/ex_docmd.c:1000:17
+    #8 0x58c3292daaa0 in do_source /tmp/vim-commit-bd228fd/build/src/scriptfile.c:1420:5
+    #9 0x58c3292d85f3 in cmd_source /tmp/vim-commit-bd228fd/build/src/scriptfile.c:985:14
+    #10 0x58c3292d838d in ex_source /tmp/vim-commit-bd228fd/build/src/scriptfile.c:1011:2
+    #11 0x58c328f3304e in do_one_cmd /tmp/vim-commit-bd228fd/build/src/ex_docmd.c:2614:2
+    #12 0x58c328f2b4fd in do_cmdline /tmp/vim-commit-bd228fd/build/src/ex_docmd.c:1000:17
+    #13 0x58c328f2d9e0 in do_cmdline_cmd /tmp/vim-commit-bd228fd/build/src/ex_docmd.c:594:12
+    #14 0x58c32961ea4c in exe_commands /tmp/vim-commit-bd228fd/build/src/main.c:3082:2
+    #15 0x58c32961c846 in vim_main2 /tmp/vim-commit-bd228fd/build/src/main.c:774:2
+    #16 0x58c32961736d in main /tmp/vim-commit-bd228fd/build/src/main.c:426:12
+    #17 0x70bc5dfbd1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x70bc5dfbd28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x58c328caca24 in _start (/tmp/vim-commit-bd228fd/build/src/vim+0x13ea24) (BuildId: cad5886b4d76f938be20c3fe873a545347666ba0)
+
+0x519000000981 is located 0 bytes after 1025-byte region [0x519000000580,0x519000000981)
+allocated by thread T0 here:
+    #0 0x58c328d47873 in malloc (/tmp/vim-commit-bd228fd/build/src/vim+0x1d9873) (BuildId: cad5886b4d76f938be20c3fe873a545347666ba0)
+    #1 0x58c328d861d6 in lalloc /tmp/vim-commit-bd228fd/build/src/alloc.c:244:11
+    #2 0x58c328d86139 in alloc /tmp/vim-commit-bd228fd/build/src/alloc.c:151:12
+    #3 0x58c3296173ae in common_init /tmp/vim-commit-bd228fd/build/src/main.c:911:19
+    #4 0x58c329617026 in main /tmp/vim-commit-bd228fd/build/src/main.c:179:5
+    #5 0x70bc5dfbd1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x70bc5dfbd28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x58c328caca24 in _start (/tmp/vim-commit-bd228fd/build/src/vim+0x13ea24) (BuildId: cad5886b4d76f938be20c3fe873a545347666ba0)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow (/tmp/vim-commit-bd228fd/build/src/vim+0x1c1453) (BuildId: cad5886b4d76f938be20c3fe873a545347666ba0) in strcpy
+Shadow bytes around the buggy address:
+  0x519000000700: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000780: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000800: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000880: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x519000000980:[01]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x519000000a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x519000000a80: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000b00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000b80: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000c00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==5361==ABORTING

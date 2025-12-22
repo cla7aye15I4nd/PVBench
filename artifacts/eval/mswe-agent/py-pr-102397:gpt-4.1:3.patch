@@ -1,0 +1,221 @@
+
+diff --git a/.gitignore b/.gitignore
+index d42e111666f..6df96840d41 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -151,3 +151,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
+index 60a8067fc8c..a66b4e51bc7 100644
+--- a/Modules/signalmodule.c
++++ b/Modules/signalmodule.c
+@@ -141,7 +141,37 @@ typedef struct {
+ 
+ // State shared by all Python interpreters
+ static signal_state_t signal_global_state = {0};
++static int signal_install_handlers(void)
++{
++#ifdef SIGPIPE
++    PyOS_setsig(SIGPIPE, SIG_IGN);
++#endif
++#ifdef SIGXFZ
++    PyOS_setsig(SIGXFZ, SIG_IGN);
++#endif
++#ifdef SIGXFSZ
++    PyOS_setsig(SIGXFSZ, SIG_IGN);
++#endif
++
++    // Import _signal to install the Python SIGINT handler
++    PyObject *module = PyImport_ImportModule("_signal");
++    if (!module) {
++        return -1;
++    }
++    Py_DECREF(module);
++
++    return 0;
++}
+ 
++#ifdef HAVE_FORK
++static void _clear_pending_signals(void)
++{
++    _Py_atomic_store(&is_tripped, 0);
++    for (int i = 1; i < Py_NSIG; ++i) {
++        _Py_atomic_store_relaxed(&Handlers[i].tripped, 0);
++    }
++}
++#endif
+ #if defined(HAVE_GETITIMER) || defined(HAVE_SETITIMER)
+ #  define PYHAVE_ITIMER_ERROR
+ #endif
+@@ -156,19 +186,23 @@ typedef struct {
+ } _signal_module_state;
+ 
+ 
+-Py_LOCAL_INLINE(PyObject *)
++static PyObject *
+ get_handler(int i)
+ {
+-    return (PyObject *)_Py_atomic_load(&Handlers[i].func);
++    PyObject *handler = (PyObject *)_Py_atomic_load(&Handlers[i].func);
++    Py_XINCREF(handler);
++    return handler;
+ }
+ 
+-Py_LOCAL_INLINE(void)
++static void
+ set_handler(int i, PyObject* func)
+ {
++    PyObject *old_func = (PyObject *)_Py_atomic_load(&Handlers[i].func);
+     _Py_atomic_store(&Handlers[i].func, (uintptr_t)func);
++    Py_XINCREF(func);
++    Py_XDECREF(old_func);
+ }
+ 
+-
+ static inline _signal_module_state*
+ get_signal_state(PyObject *module)
+ {
+@@ -610,12 +644,7 @@ signal_getsignal_impl(PyObject *module, int signalnum)
+         return NULL;
+     }
+     old_handler = get_handler(signalnum);
+-    if (old_handler != NULL) {
+-        return Py_NewRef(old_handler);
+-    }
+-    else {
+-        Py_RETURN_NONE;
+-    }
++    return old_handler;
+ }
+ 
+ 
+@@ -1892,7 +1921,7 @@ _PyErr_CheckSignalsTstate(PyThreadState *tstate)
+         }
+ 
+         Py_DECREF(result);
+-    }
++        Py_XDECREF(func);
+ 
+     return 0;
+ }
+@@ -1911,21 +1940,6 @@ _PyErr_CheckSignals(void)
+    is called,  the corresponding Python signal handler will be raised.
+ 
+    Missing signal handler for the given signal number is silently ignored. */
+-int
+-PyErr_SetInterruptEx(int signum)
+-{
+-    if (signum < 1 || signum >= Py_NSIG) {
+-        return -1;
+-    }
+-
+-    signal_state_t *state = &signal_global_state;
+-    PyObject *func = get_handler(signum);
+-    if (!compare_handler(func, state->ignore_handler)
+-            && !compare_handler(func, state->default_handler)) {
+-        trip_signal(signum);
+-    }
+-    return 0;
+-}
+ 
+ void
+ PyErr_SetInterrupt(void)
+@@ -1933,9 +1947,6 @@ PyErr_SetInterrupt(void)
+     (void) PyErr_SetInterruptEx(SIGINT);
+ }
+ 
+-static int
+-signal_install_handlers(void)
+-{
+ #ifdef SIGPIPE
+     PyOS_setsig(SIGPIPE, SIG_IGN);
+ #endif
+@@ -2046,18 +2057,6 @@ PyOS_InterruptOccurred(void)
+ 
+ 
+ #ifdef HAVE_FORK
+-static void
+-_clear_pending_signals(void)
+-{
+-    if (!_Py_atomic_load(&is_tripped)) {
+-        return;
+-    }
+-
+-    _Py_atomic_store(&is_tripped, 0);
+-    for (int i = 1; i < Py_NSIG; ++i) {
+-        _Py_atomic_store_relaxed(&Handlers[i].tripped, 0);
+-    }
+-}
+ 
+ void
+ _PySignal_AfterFork(void)
+@@ -2076,7 +2075,6 @@ _PyOS_IsMainThread(void)
+     PyInterpreterState *interp = _PyInterpreterState_GET();
+     return _Py_ThreadCanHandleSignals(interp);
+ }
+-
+ #ifdef MS_WINDOWS
+ /* Returns a manual-reset event which gets tripped whenever
+    SIGINT is received.
+diff --git a/Python/errors.c b/Python/errors.c
+index 3eb8a5ef04d..9808a91c3c3 100644
+--- a/Python/errors.c
++++ b/Python/errors.c
+@@ -22,7 +22,8 @@
+ extern "C" {
+ #endif
+ 
+-/* Forward declarations */
++#include "pycore_signal.h"   // for get_handler, compare_handler, trip_signal
++
+ static PyObject *
+ _PyErr_FormatV(PyThreadState *tstate, PyObject *exception,
+                const char *format, va_list vargs);
+@@ -141,9 +142,37 @@ _PyErr_SetObject(PyThreadState *tstate, PyObject *exception, PyObject *value)
+ 
+             value = fixed_value;
+         }
++int
++PyErr_SetInterruptEx(int signum)
++{
++    if (signum < 1 || signum >= Py_NSIG) {
++        return -1;
++    }
+ 
+-        /* Avoid creating new reference cycles through the
+-           context chain, while taking care not to hang on
++    signal_state_t *state = &signal_global_state;
++    PyObject *func = get_handler(signum);
++    if (!compare_handler(func, state->ignore_handler)
++            && !compare_handler(func, state->default_handler)) {
++        trip_signal(signum);
++    }
++    Py_XDECREF(func);
++    return 0;
++}
++PyErr_SetInterruptEx(int signum)
++{
++    if (signum < 1 || signum >= Py_NSIG) {
++        return -1;
++    }
++
++    signal_state_t *state = &signal_global_state;
++    PyObject *func = get_handler(signum);
++    if (!compare_handler(func, state->ignore_handler)
++            && !compare_handler(func, state->default_handler)) {
++        trip_signal(signum);
++    }
++    Py_XDECREF(func);
++    return 0;
++}
+            pre-existing ones.
+            This is O(chain length) but context chains are
+            usually very short. Sensitive readers may try

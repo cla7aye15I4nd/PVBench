@@ -1,0 +1,14 @@
+id: llvm-gh-132841
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: Reachable Assertion
+trigger_commit: 822aa5ec1afee68fb16457ff06de9111c1b62450
+binary: opt
+patch:
+  commit: 8122bb9dbe39a1dde77eb4aad76bf1c0e70b2d89
+  date: '2025-03-25T04:35:33-07:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/132841
+- https://github.com/llvm/llvm-project/commit/822aa5ec1afee68fb16457ff06de9111c1b62450
+- https://github.com/llvm/llvm-project/commit/8122bb9dbe39a1dde77eb4aad76bf1c0e70b2d89

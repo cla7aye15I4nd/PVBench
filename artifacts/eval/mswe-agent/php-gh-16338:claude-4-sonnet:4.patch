@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index 49acc9f2e17..de22b095dfc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/node.c b/ext/dom/node.c
+index 242e56ad2d3..49002246dca 100644
+--- a/ext/dom/node.c
++++ b/ext/dom/node.c
+@@ -824,7 +824,7 @@ int dom_node_text_content_write(dom_object *obj, zval *newval)
+ static bool dom_set_document_ref_obj_single(xmlNodePtr node, xmlDocPtr doc, php_libxml_ref_obj *document)
+ {
+ 	dom_object *childobj = php_dom_object_get_data(node);
+-	if (childobj && !childobj->document) {
++	if (childobj && !childobj->document && document != NULL) {
+ 		childobj->document = document;
+ 		document->refcount++;
+ 		return true;

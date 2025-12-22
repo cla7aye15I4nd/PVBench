@@ -1,0 +1,53 @@
+
+diff --git a/.gitignore b/.gitignore
+index c2918f31a..6bf18697a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -32,3 +32,13 @@ compile_flags.txt
+ cscope.files
+ cscope.out
+ tags
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/error.h b/src/error.h
+index eb755ec7f..669cb2707 100644
+--- a/src/error.h
++++ b/src/error.h
+@@ -1,3 +1,4 @@
+ /* this header file is to be removed soon.
+    added for compatibility purpose (1.0.0) */
+ #include <mruby/error.h>
++
+diff --git a/src/string.c b/src/string.c
+index 1bd3f6f8f..eb4ae3d4c 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2950,12 +2950,20 @@ str_bytesplice(mrb_state *mrb, mrb_value str, mrb_int idx1, mrb_int len1, mrb_va
+   if (RSTR_LEN(s) < idx1 || RSTRING_LEN(replace) < idx2) {
+     mrb_raise(mrb, E_INDEX_ERROR, "index out of string");
+   }
++  /* Check for integer overflow in idx1+len1 and idx2+len2 */
++  if ((len1 > 0 && idx1 > MRB_INT_MAX - len1) || (len1 < 0 && idx1 < MRB_INT_MIN - len1)) {
++    mrb_raise(mrb, E_INDEX_ERROR, "idx1+len1 overflow");
++  }
++  if ((len2 > 0 && idx2 > MRB_INT_MAX - len2) || (len2 < 0 && idx2 < MRB_INT_MIN - len2)) {
++    mrb_raise(mrb, E_INDEX_ERROR, "idx2+len2 overflow");
++  }
+   if (RSTR_LEN(s) <= idx1+len1) {
+     len1 = RSTR_LEN(s) - idx1;
+   }
+   if (RSTRING_LEN(replace) <= idx2+len2) {
+     len2 = RSTRING_LEN(replace) - idx2;
+   }
++
+   if (len2 == 0) return str;
+   mrb_str_modify(mrb, s);
+   if (len1 >= len2) {

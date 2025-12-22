@@ -1,0 +1,14 @@
+==1314==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x78dd1d81ce70 bp 0x7ffff23c7cb0 sp 0x7ffff23c7b70 T0)
+==1314==The signal is caused by a READ memory access.
+==1314==Hint: address points to the zero page.
+    #0 0x78dd1d81ce70 in heif_decode_image (/lib/x86_64-linux-gnu/libheif.so.1+0x41e70) (BuildId: b04256265575de1da0732ff46ef64813c7182ca1)
+    #1 0x78dd1da1f9ac in jas_heic_decode /tmp/jas-gh-383/build/src/libjasper/heic/heic_dec.c:222:8
+    #2 0x78dd1d964add in jas_image_decode /tmp/jas-gh-383/build/src/libjasper/base/jas_image.c:445:16
+    #3 0x594fbf484e6b in main /tmp/jas-gh-383/build/src/app/jasper.c:320:16
+    #4 0x78dd1d4c71c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x78dd1d4c728a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x594fbf3aa574 in _start (/tmp/jas-gh-383/build/install/bin/jasper+0x2e574) (BuildId: 604f1658a4c868fe4c0e195faca0e1600db0937a)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/lib/x86_64-linux-gnu/libheif.so.1+0x41e70) (BuildId: b04256265575de1da0732ff46ef64813c7182ca1) in heif_decode_image
+==1314==ABORTING

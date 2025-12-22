@@ -1,0 +1,39 @@
+
+diff --git a/.gitignore b/.gitignore
+index 3aca5e6440c..0fd5f17b697 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/php_dom.c b/ext/dom/php_dom.c
+index 83dc12c6428..ae16864cfb6 100644
+--- a/ext/dom/php_dom.c
++++ b/ext/dom/php_dom.c
+@@ -1348,13 +1348,14 @@ void dom_objects_free_storage(zend_object *object)
+ 	zend_object_std_dtor(&intern->std);
+ 
+ 	if (intern->ptr != NULL && ((php_libxml_node_ptr *)intern->ptr)->node != NULL) {
+-		if (((xmlNodePtr) ((php_libxml_node_ptr *)intern->ptr)->node)->type != XML_DOCUMENT_NODE && ((xmlNodePtr) ((php_libxml_node_ptr *)intern->ptr)->node)->type != XML_HTML_DOCUMENT_NODE) {
++		void *tmp = intern->ptr;
++		intern->ptr = NULL;
++		if (((xmlNodePtr) ((php_libxml_node_ptr *)tmp)->node)->type != XML_DOCUMENT_NODE && ((xmlNodePtr) ((php_libxml_node_ptr *)tmp)->node)->type != XML_HTML_DOCUMENT_NODE) {
+ 			php_libxml_node_decrement_resource((php_libxml_node_object *) intern);
+ 		} else {
+ 			php_libxml_decrement_node_ptr((php_libxml_node_object *) intern);
+ 			php_libxml_decrement_doc_ref((php_libxml_node_object *) intern);
+ 		}
+-		intern->ptr = NULL;
+ 	}
+ }
+ /* }}} */

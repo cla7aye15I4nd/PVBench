@@ -1,0 +1,32 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/ast/scopes.cc, line 1647
+# Debug check failed: scope->is_declaration_scope() implies !scope->AsDeclarationScope()->was_lazily_parsed().
+#
+#
+#
+#FailureMessage Object: 0x7faf0571f860
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x57) [0x55c8c4f983c7]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x55c8cac130a3]
+    out/debug_asan/d8(+0x7f4fe2a) [0x55c8cac10e2a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x27f) [0x55c8cabce89f]
+    out/debug_asan/d8(+0x7f0c80f) [0x55c8cabcd80f]
+    out/debug_asan/d8(v8::internal::Scope::AnalyzePartially(v8::internal::DeclarationScope*, v8::internal::AstNodeFactory*, v8::base::ThreadedListBase<v8::internal::VariableProxy, v8::base::EmptyBase, v8::internal::VariableProxy::UnresolvedNext, false>*, bool)+0x3cf) [0x55c8c52eb8ef]
+    out/debug_asan/d8(v8::internal::DeclarationScope::AnalyzePartially(v8::internal::Parser*, v8::internal::AstNodeFactory*, bool)+0x1d2) [0x55c8c52ecb52]
+    out/debug_asan/d8(v8::internal::Parser::SkipFunction(v8::internal::AstRawString const*, v8::internal::FunctionKind, v8::internal::FunctionSyntaxKind, v8::internal::DeclarationScope*, int*, int*, v8::internal::ProducedPreparseData**)+0x17f3) [0x55c8c70a0e43]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseArrowFunctionLiteral(v8::internal::ParserFormalParameters const&)+0xb1c) [0x55c8c7080dfc]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseAssignmentExpressionCoverGrammar()+0x1df8) [0x55c8c70c8ef8]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseVariableDeclarations(v8::internal::ParserBase<v8::internal::Parser>::VariableDeclarationContext, v8::internal::ParserBase<v8::internal::Parser>::DeclarationParsingResult*, v8::internal::ZoneList<v8::internal::AstRawString const*>*)+0x16a1) [0x55c8c710e5a1]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseStatementListItem()+0x1c5) [0x55c8c7087eb5]
+    out/debug_asan/d8(v8::internal::ParserBase<v8::internal::Parser>::ParseStatementList(v8::internal::ScopedList<v8::internal::Statement*, void*>*, v8::internal::Token::Value)+0x820) [0x55c8c7075a00]
+    out/debug_asan/d8(v8::internal::Parser::DoParseProgram(v8::internal::Isolate*, v8::internal::ParseInfo*)+0xbac) [0x55c8c707108c]
+    out/debug_asan/d8(v8::internal::Parser::ParseProgram(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Script>, v8::internal::ParseInfo*, v8::internal::MaybeHandle<v8::internal::ScopeInfo>)+0x751) [0x55c8c706f9e1]
+    out/debug_asan/d8(v8::internal::parsing::ParseProgram(v8::internal::ParseInfo*, v8::internal::Handle<v8::internal::Script>, v8::internal::MaybeHandle<v8::internal::ScopeInfo>, v8::internal::Isolate*, v8::internal::parsing::ReportStatisticsMode)+0x279) [0x55c8c711fdd9]
+    out/debug_asan/d8(+0x2b15be7) [0x55c8c57d6be7]
+    out/debug_asan/d8(v8::internal::Compiler::GetFunctionFromEval(v8::internal::Handle<v8::internal::String>, v8::internal::Handle<v8::internal::SharedFunctionInfo>, v8::internal::Handle<v8::internal::Context>, v8::internal::LanguageMode, v8::internal::ParseRestriction, int, int, int, v8::internal::ParsingWhileDebugging)+0xee3) [0x55c8c57da843]
+    out/debug_asan/d8(+0x47e0503) [0x55c8c74a1503]
+    out/debug_asan/d8(v8::internal::Runtime_ResolvePossiblyDirectEval(int, unsigned long*, v8::internal::Isolate*)+0x197) [0x55c8c74a04e7]
+    out/debug_asan/d8(+0x769d2b8) [0x55c8ca35e2b8]

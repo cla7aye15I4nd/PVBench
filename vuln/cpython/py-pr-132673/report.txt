@@ -1,0 +1,37 @@
+==1615950==ERROR: AddressSanitizer: FPE on unknown address 0x7ffff744f9bf (pc 0x7ffff744f9bf bp 0x7fffffff4d20 sp 0x7fffffff4580 T0)
+    #0 0x7ffff744f9bf in PyCStructUnionType_update_stginfo /tmp/py-pr-132673/build/./Modules/_ctypes/stgdict.c:573:46
+    #1 0x7ffff74255d0 in PyCStructType_setattro /tmp/py-pr-132673/build/./Modules/_ctypes/_ctypes.c:1096:16
+    #2 0x555555c99be6 in PyObject_SetAttr /tmp/py-pr-132673/build/Objects/object.c:1415:15
+    #3 0x7ffff7428886 in StructUnionType_init /tmp/py-pr-132673/build/./Modules/_ctypes/_ctypes.c:685:13
+    #4 0x7ffff7425619 in PyCStructType_init /tmp/py-pr-132673/build/./Modules/_ctypes/_ctypes.c:715:12
+    #5 0x555555d1bffb in type_call /tmp/py-pr-132673/build/Objects/typeobject.c:1997:19
+    #6 0x555555b8bc2f in _PyObject_MakeTpCall /tmp/py-pr-132673/build/Objects/call.c:242:18
+    #7 0x555555b8b751 in _PyObject_VectorcallDictTstate /tmp/py-pr-132673/build/Objects/call.c:130:16
+    #8 0x555555b8c489 in PyObject_VectorcallDict /tmp/py-pr-132673/build/Objects/call.c:159:12
+    #9 0x555555ef54aa in builtin___build_class__ /tmp/py-pr-132673/build/Python/bltinmodule.c:210:15
+    #10 0x555555c899a3 in cfunction_vectorcall_FASTCALL_KEYWORDS /tmp/py-pr-132673/build/Objects/methodobject.c:441:24
+    #11 0x555555b8b4b9 in _PyObject_VectorcallTstate /tmp/py-pr-132673/build/./Include/internal/pycore_call.h:168:11
+    #12 0x555555b8d129 in PyObject_Vectorcall /tmp/py-pr-132673/build/Objects/call.c:327:12
+    #13 0x555555f0ba4c in _PyEval_EvalFrameDefault /tmp/py-pr-132673/build/Python/generated_cases.c.h:813:23
+    #14 0x555555f02f61 in _PyEval_EvalFrame /tmp/py-pr-132673/build/./Include/internal/pycore_ceval.h:119:16
+    #15 0x555555f02e66 in _PyEval_Vector /tmp/py-pr-132673/build/Python/ceval.c:1816:12
+    #16 0x555555f02bec in PyEval_EvalCode /tmp/py-pr-132673/build/Python/ceval.c:604:21
+    #17 0x5555560d7083 in run_eval_code_obj /tmp/py-pr-132673/build/Python/pythonrun.c:1381:9
+    #18 0x5555560d6d31 in run_mod /tmp/py-pr-132673/build/Python/pythonrun.c:1466:19
+    #19 0x5555560d3692 in pyrun_file /tmp/py-pr-132673/build/Python/pythonrun.c:1295:15
+    #20 0x5555560d235f in _PyRun_SimpleFileObject /tmp/py-pr-132673/build/Python/pythonrun.c:517:13
+    #21 0x5555560d1a38 in _PyRun_AnyFileObject /tmp/py-pr-132673/build/Python/pythonrun.c:77:15
+    #22 0x555556160c06 in pymain_run_file_obj /tmp/py-pr-132673/build/Modules/main.c:410:15
+    #23 0x55555615f9aa in pymain_run_file /tmp/py-pr-132673/build/Modules/main.c:429:15
+    #24 0x55555615e4aa in pymain_run_python /tmp/py-pr-132673/build/Modules/main.c:696:21
+    #25 0x55555615dac8 in Py_RunMain /tmp/py-pr-132673/build/Modules/main.c:775:5
+    #26 0x55555615e8e8 in pymain_main /tmp/py-pr-132673/build/Modules/main.c:805:12
+    #27 0x55555615e9f7 in Py_BytesMain /tmp/py-pr-132673/build/Modules/main.c:829:12
+    #28 0x555555893531 in main /tmp/py-pr-132673/build/./Programs/python.c:15:12
+    #29 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #30 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #31 0x5555557ba124 in _start (/tmp/py-pr-132673/build/python+0x266124) (BuildId: 9698658b6224f05dcb349e016fa336e89d6ef0db)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: FPE /tmp/py-pr-132673/build/./Modules/_ctypes/stgdict.c:573:46 in PyCStructUnionType_update_stginfo
+==1615950==ABORTING

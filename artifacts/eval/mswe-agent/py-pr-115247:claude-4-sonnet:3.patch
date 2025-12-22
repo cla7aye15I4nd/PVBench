@@ -1,0 +1,306 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6ed7197e3ab..0c0663b8668 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -161,3 +161,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_collectionsmodule.c b/Modules/_collectionsmodule.c
+index ef77d34b10e..d6c7a8ea663 100644
+--- a/Modules/_collectionsmodule.c
++++ b/Modules/_collectionsmodule.c
+@@ -1219,7 +1219,9 @@ deque_index_impl(dequeobject *deque, PyObject *v, Py_ssize_t start,
+     while (--n >= 0) {
+         CHECK_NOT_END(b);
+         item = b->data[index];
++        Py_INCREF(item);  /* Protect item during comparison */
+         cmp = PyObject_RichCompareBool(item, v, Py_EQ);
++        Py_DECREF(item);  /* Release the reference */
+         if (cmp > 0)
+             return PyLong_FromSsize_t(stop - n - 1);
+         if (cmp < 0)
+diff --git a/test_deque_normal.py b/test_deque_normal.py
+new file mode 100644
+index 00000000000..a28b39443a9
+--- /dev/null
++++ b/test_deque_normal.py
+@@ -0,0 +1,89 @@
++import collections
++
++# Test normal deque.index() functionality
++print("=== Testing normal deque.index() functionality ===")
++
++d = collections.deque()
++
++# Test with integers
++for i in range(10):
++    d.append(i)
++
++# Test finding existing elements
++for i in range(10):
++    index = d.index(i)
++    print(f"Found {i} at index {index}")
++    assert index == i, f"Expected index {i}, got {index}"
++
++# Test with strings
++d.clear()
++items = ["apple", "banana", "cherry", "date", "elderberry"]
++for item in items:
++    d.append(item)
++
++for i, item in enumerate(items):
++    index = d.index(item)
++    print(f"Found '{item}' at index {index}")
++    assert index == i, f"Expected index {i}, got {index}"
++
++# Test finding non-existent element
++try:
++    d.index("nonexistent")
++    assert False, "Should have raised ValueError"
++except ValueError as e:
++    print(f"Correctly raised ValueError for non-existent item: {e}")
++
++# Test with start and stop parameters
++d.clear()
++for i in range(20):
++    d.append(i % 5)  # [0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]
++
++# Find first occurrence of 2
++index = d.index(2)
++print(f"First occurrence of 2 at index: {index}")
++assert index == 2
++
++# Find occurrence of 2 starting from index 5
++index = d.index(2, 5)
++print(f"First occurrence of 2 starting from index 5: {index}")
++assert index == 7
++
++# Find occurrence of 2 in range [10, 15)
++index = d.index(2, 10, 15)
++print(f"First occurrence of 2 in range [10, 15): {index}")
++assert index == 12
++
++print("\n=== All normal functionality tests passed! ===")
++
++# Test with custom objects that have __eq__ method
++print("\n=== Testing with custom objects ===")
++
++class CustomObject:
++    def __init__(self, value):
++        self.value = value
++    
++    def __eq__(self, other):
++        return isinstance(other, CustomObject) and self.value == other.value
++    
++    def __repr__(self):
++        return f"CustomObject({self.value})"
++
++d.clear()
++objects = [CustomObject(i) for i in range(5)]
++for obj in objects:
++    d.append(obj)
++
++# Test finding custom objects
++for i, obj in enumerate(objects):
++    index = d.index(obj)
++    print(f"Found {obj} at index {index}")
++    assert index == i
++
++# Test finding equivalent object (not same instance)
++equivalent = CustomObject(3)
++index = d.index(equivalent)
++print(f"Found equivalent object at index {index}")
++assert index == 3
++
++print("\n=== Custom object tests passed! ===")
++print("\nAll tests completed successfully!")
+diff --git a/test_deque_specific.py b/test_deque_specific.py
+new file mode 100644
+index 00000000000..1c91aac5a8d
+--- /dev/null
++++ b/test_deque_specific.py
+@@ -0,0 +1,99 @@
++import collections
++import gc
++import weakref
++
++class EvilComparator:
++    def __init__(self, deque_ref):
++        self.deque_ref = deque_ref
++        self.called = False
++    
++    def __eq__(self, other):
++        if not self.called:
++            self.called = True
++            # Try to trigger the use-after-free by clearing the deque
++            # during the comparison, which should free the item being compared
++            original_len = len(self.deque_ref)
++            print(f"Before clear: deque length = {original_len}")
++            
++            # Clear the deque, which should deallocate all items
++            self.deque_ref.clear()
++            
++            # Force garbage collection to ensure objects are freed
++            gc.collect()
++            
++            print(f"After clear: deque length = {len(self.deque_ref)}")
++            
++            # Add some new items to potentially reuse memory
++            for i in range(10):
++                self.deque_ref.append(f"new_item_{i}")
++                
++        return False
++
++# Test case 1: Try to trigger use-after-free during index search
++print("=== Test Case 1: Basic use-after-free attempt ===")
++d = collections.deque()
++
++# Add many items to increase chance of memory reuse
++for i in range(1000):
++    d.append(f"item_{i}")
++
++# Create evil comparator
++evil = EvilComparator(d)
++
++# Add evil comparator to the deque
++d.append(evil)
++
++try:
++    # This should trigger the comparison and potentially the use-after-free
++    result = d.index(evil)
++    print(f"Found evil comparator at index: {result}")
++except Exception as e:
++    print(f"Exception caught: {type(e).__name__}: {e}")
++
++print("Test case 1 completed\n")
++
++# Test case 2: Try with objects that have custom __del__ methods
++print("=== Test Case 2: Objects with custom destructors ===")
++
++class TrackedObject:
++    def __init__(self, value):
++        self.value = value
++        self.freed = False
++    
++    def __del__(self):
++        self.freed = True
++        print(f"TrackedObject {self.value} was freed")
++    
++    def __eq__(self, other):
++        if hasattr(other, 'deque_ref'):
++            # This is our evil comparator
++            return other.__eq__(self)
++        return self.value == getattr(other, 'value', other)
++
++d2 = collections.deque()
++
++# Add tracked objects
++tracked_objects = []
++for i in range(100):
++    obj = TrackedObject(i)
++    tracked_objects.append(weakref.ref(obj))
++    d2.append(obj)
++
++# Create evil comparator for this deque
++evil2 = EvilComparator(d2)
++d2.append(evil2)
++
++try:
++    # Try to find the evil comparator
++    result = d2.index(evil2)
++    print(f"Found evil comparator at index: {result}")
++except Exception as e:
++    print(f"Exception caught: {type(e).__name__}: {e}")
++
++# Check if any objects were freed
++freed_count = sum(1 for ref in tracked_objects if ref() is None)
++print(f"Objects freed: {freed_count}/{len(tracked_objects)}")
++
++print("Test case 2 completed\n")
++
++print("All tests completed successfully!")
+diff --git a/test_deque_uaf.py b/test_deque_uaf.py
+new file mode 100644
+index 00000000000..83878551d6d
+--- /dev/null
++++ b/test_deque_uaf.py
+@@ -0,0 +1,71 @@
++import collections
++import gc
++
++class EvilComparator:
++    def __init__(self, deque_ref):
++        self.deque_ref = deque_ref
++        self.called = False
++    
++    def __eq__(self, other):
++        if not self.called:
++            self.called = True
++            # Try to trigger garbage collection during comparison
++            # This might free objects that are still being referenced
++            gc.collect()
++            # Try to modify the deque in a way that might not be caught
++            try:
++                # Pop from the left while we're iterating
++                self.deque_ref.popleft()
++                self.deque_ref.popleft()
++            except:
++                pass
++        return False
++
++# Create a deque with some objects
++d = collections.deque()
++
++# Add some objects to the deque
++for i in range(100):
++    d.append(f"item_{i}")
++
++# Create an evil comparator that will modify the deque during comparison
++evil = EvilComparator(d)
++
++# Insert the evil comparator at the beginning so it gets compared early
++d.appendleft(evil)
++
++# Now try to find something that doesn't exist, forcing iteration through all items
++try:
++    result = d.index("nonexistent")
++    print(f"Found at index: {result}")
++except ValueError as e:
++    print(f"ValueError (expected): {e}")
++except Exception as e:
++    print(f"Unexpected exception: {e}")
++
++print("Test completed")
++
++# Let's also try a different approach - create objects that might be freed
++class WeakRefTarget:
++    def __init__(self, value):
++        self.value = value
++    
++    def __eq__(self, other):
++        # Force garbage collection during comparison
++        gc.collect()
++        return self.value == getattr(other, 'value', other)
++
++# Test 2: Try with objects that might be garbage collected
++print("\nTest 2:")
++d2 = collections.deque()
++for i in range(50):
++    d2.append(WeakRefTarget(i))
++
++# Try to find an object that will trigger comparisons
++try:
++    result = d2.index(WeakRefTarget(25))
++    print(f"Found at index: {result}")
++except Exception as e:
++    print(f"Exception: {e}")
++
++print("Test 2 completed")

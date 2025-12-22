@@ -1,0 +1,36 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1687038dc70..12768176b4a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -113,3 +113,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 4a3628ebb95..bc660e1120f 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -1641,6 +1641,13 @@ void Scope::AnalyzePartially(DeclarationScope* max_outer_scope,
+                              AstNodeFactory* ast_node_factory,
+                              UnresolvedList* new_unresolved_list,
+                              bool maybe_in_arrowhead) {
++  if (is_declaration_scope() && AsDeclarationScope()->was_lazily_parsed()) {
++    // Do not analyze lazily parsed declaration scopes.
++    return;
++  }
++                             AstNodeFactory* ast_node_factory,
++                             UnresolvedList* new_unresolved_list,
++                             bool maybe_in_arrowhead) {
+   this->ForEach([max_outer_scope, ast_node_factory, new_unresolved_list,
+                  maybe_in_arrowhead](Scope* scope) {
+     DCHECK_IMPLIES(scope->is_declaration_scope(),

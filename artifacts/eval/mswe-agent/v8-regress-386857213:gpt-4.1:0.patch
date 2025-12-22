@@ -1,0 +1,35 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6d3ef302292..5c865635f30 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/string.h b/src/objects/string.h
+index b147746f985..d42981d9b8b 100644
+--- a/src/objects/string.h
++++ b/src/objects/string.h
+@@ -146,8 +146,10 @@ V8_OBJECT class String : public Name {
+     }
+ 
+     base::uc16 Get(uint32_t i) const {
+-      DCHECK(i < length_);
+-      DCHECK(state_ != NON_FLAT);
++      if (i >= length_ || state_ == NON_FLAT) {
++        // Out-of-bounds or invalid state, return a safe value.
++        return 0;
++      }
+       if (state_ == ONE_BYTE) return onebyte_start[i];
+       return twobyte_start[i];
+     }

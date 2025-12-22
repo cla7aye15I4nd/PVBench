@@ -1,0 +1,14 @@
+id: tif-gh-933
+project: libxml2
+sanitizer: LeakAddressSanitizer
+type: Incorrect Type Conversion or Cast
+binary: poc
+trigger_commit: 24d7e15914588cb45e7fb41cbe4fcf785e1a4861
+patch:
+  commit: 71e1e8af5ee46dad1b57bb96cfbf1c3ad21fbd7b
+  date: '2025-07-04T14:44:54+02:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/merge_requests/933
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/24d7e15914588cb45e7fb41cbe4fcf785e1a4861
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/71e1e8af5ee46dad1b57bb96cfbf1c3ad21fbd7b

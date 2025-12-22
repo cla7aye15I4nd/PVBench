@@ -1,0 +1,180 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 1c06104944f..e77f02ce4e3 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -757,6 +757,10 @@ static zend_always_inline zval *_zend_hash_add_or_update_i(HashTable *ht, zend_s
+ 	HT_ASSERT_RC1(ht);
+ 	zend_string_hash_val(key);
+ 
++	/* Prevent modifications during sorting */
++	if (UNEXPECTED(HT_IS_SORTING(ht))) {
++		return NULL;
++	}
+ 	if (UNEXPECTED(HT_FLAGS(ht) & (HASH_FLAG_UNINITIALIZED|HASH_FLAG_PACKED))) {
+ 		if (EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED)) {
+ 			zend_hash_real_init_mixed(ht);
+@@ -837,6 +841,10 @@ static zend_always_inline zval *_zend_hash_str_add_or_update_i(HashTable *ht, co
+ 	IS_CONSISTENT(ht);
+ 	HT_ASSERT_RC1(ht);
+ 
++	/* Prevent modifications during sorting */
++	if (UNEXPECTED(HT_IS_SORTING(ht))) {
++		return NULL;
++	}
+ 	if (UNEXPECTED(HT_FLAGS(ht) & (HASH_FLAG_UNINITIALIZED|HASH_FLAG_PACKED))) {
+ 		if (EXPECTED(HT_FLAGS(ht) & HASH_FLAG_UNINITIALIZED)) {
+ 			zend_hash_real_init_mixed(ht);
+@@ -1022,6 +1030,10 @@ static zend_always_inline zval *_zend_hash_index_add_or_update_i(HashTable *ht,
+ 	IS_CONSISTENT(ht);
+ 	HT_ASSERT_RC1(ht);
+ 
++	/* Prevent modifications during sorting */
++	if (UNEXPECTED(HT_IS_SORTING(ht))) {
++		return NULL;
++	}
+ 	if ((flag & HASH_ADD_NEXT) && h == ZEND_LONG_MIN) {
+ 		h = 0;
+ 	}
+@@ -1480,6 +1492,11 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del(HashTable *ht, zend_string *key
+ 	IS_CONSISTENT(ht);
+ 	HT_ASSERT_RC1(ht);
+ 
++	/* Prevent modifications during sorting */
++	if (UNEXPECTED(HT_IS_SORTING(ht))) {
++		return FAILURE;
++	}
++
+ 	h = zend_string_hash_val(key);
+ 	nIndex = h | ht->nTableMask;
+ 
+@@ -1512,6 +1529,11 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_del_ind(HashTable *ht, zend_string
+ 	IS_CONSISTENT(ht);
+ 	HT_ASSERT_RC1(ht);
+ 
++	/* Prevent modifications during sorting */
++	if (UNEXPECTED(HT_IS_SORTING(ht))) {
++		return FAILURE;
++	}
++
+ 	h = zend_string_hash_val(key);
+ 	nIndex = h | ht->nTableMask;
+ 
+@@ -1607,6 +1629,11 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_str_del(HashTable *ht, const char *
+ 	IS_CONSISTENT(ht);
+ 	HT_ASSERT_RC1(ht);
+ 
++	/* Prevent modifications during sorting */
++	if (UNEXPECTED(HT_IS_SORTING(ht))) {
++		return FAILURE;
++	}
++
+ 	h = zend_inline_hash_func(str, len);
+ 	nIndex = h | ht->nTableMask;
+ 
+@@ -1637,6 +1664,11 @@ ZEND_API zend_result ZEND_FASTCALL zend_hash_index_del(HashTable *ht, zend_ulong
+ 	IS_CONSISTENT(ht);
+ 	HT_ASSERT_RC1(ht);
+ 
++	/* Prevent modifications during sorting */
++	if (UNEXPECTED(HT_IS_SORTING(ht))) {
++		return FAILURE;
++	}
++
+ 	if (HT_IS_PACKED(ht)) {
+ 		if (h < ht->nNumUsed) {
+ 			zval *zv = ht->arPacked + h;
+@@ -2908,11 +2940,17 @@ ZEND_API void ZEND_FASTCALL zend_hash_sort_ex(HashTable *ht, sort_func_t sort, b
+ 		 */
+ 		HT_HASH_RESET(ht);
+ 	}
++	
++	/* Set sorting flag to prevent modifications during sorting */
++	HT_FLAGS(ht) |= HASH_FLAG_SORTING;
+ 
+ 	sort((void *)ht->arData, ht->nNumUsed, sizeof(Bucket), (compare_func_t) compar,
+ 			(swap_func_t)(renumber? zend_hash_bucket_renum_swap :
+ 				(HT_IS_PACKED(ht) ? zend_hash_bucket_packed_swap : zend_hash_bucket_swap)));
+ 
++	/* Clear sorting flag */
++	HT_FLAGS(ht) &= ~HASH_FLAG_SORTING;
++
+ 	ht->nInternalPointer = 0;
+ 
+ 	if (renumber) {
+diff --git a/Zend/zend_hash.h b/Zend/zend_hash.h
+index 5306fe34c79..279be46cf74 100644
+--- a/Zend/zend_hash.h
++++ b/Zend/zend_hash.h
+@@ -41,6 +41,7 @@
+ #define HASH_FLAG_STATIC_KEYS      (1<<4) /* long and interned strings */
+ #define HASH_FLAG_HAS_EMPTY_IND    (1<<5)
+ #define HASH_FLAG_ALLOW_COW_VIOLATION (1<<6)
++#define HASH_FLAG_SORTING             (1<<7)
+ 
+ /* Only the low byte are real flags */
+ #define HASH_FLAG_MASK 0xff
+@@ -69,6 +70,9 @@
+ # define HT_ALLOW_COW_VIOLATION(ht)
+ #endif
+ 
++#define HT_IS_SORTING(ht) \
++	((HT_FLAGS(ht) & HASH_FLAG_SORTING) != 0)
++
+ #define HT_ITERATORS_COUNT(ht) (ht)->u.v.nIteratorsCount
+ #define HT_ITERATORS_OVERFLOW(ht) (HT_ITERATORS_COUNT(ht) == 0xff)
+ #define HT_HAS_ITERATORS(ht) (HT_ITERATORS_COUNT(ht) != 0)
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..8cd024af524 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -555,7 +555,11 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
++					/* Set flag to prevent recursive modifications during destructor */
++					intern->ar_flags |= SPL_ARRAY_IN_UNSET;
+ 					zval_ptr_dtor(data);
++					/* Clear flag after destructor completes */
++					intern->ar_flags &= ~SPL_ARRAY_IN_UNSET;
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+@@ -568,6 +572,8 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			}
+ 		}
+ 		spl_hash_key_release(&key);
++		}
++		spl_hash_key_release(&key);
+ 	} else {
+ 		zend_hash_index_del(ht, key.h);
+ 	}
+diff --git a/ext/spl/spl_array.h b/ext/spl/spl_array.h
+index e3ea2d3a546..d5f073fb417 100644
+--- a/ext/spl/spl_array.h
++++ b/ext/spl/spl_array.h
+@@ -28,6 +28,7 @@
+ #define SPL_ARRAY_USE_OTHER          0x02000000
+ #define SPL_ARRAY_INT_MASK           0xFFFF0000
+ #define SPL_ARRAY_CLONE_MASK         0x0100FFFF
++#define SPL_ARRAY_IN_UNSET           0x04000000
+ 
+ #define SPL_ARRAY_METHOD_NO_ARG				0
+ #define SPL_ARRAY_METHOD_CALLBACK_ARG  		1

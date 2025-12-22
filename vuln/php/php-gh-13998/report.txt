@@ -1,0 +1,104 @@
+==2858867==ERROR: AddressSanitizer: heap-use-after-free on address 0x503000028210 at pc 0x56017c5cb1ba bp 0x7fffc9c76a90 sp 0x7fffc9c76a88
+READ of size 4 at 0x503000028210 thread T0
+    #0 0x56017c5cb1b9 in zend_gc_delref /php-gh-13998/build/Zend/zend_types.h:1228:2
+    #1 0x56017c5cb1b9 in i_zval_ptr_dtor /php-gh-13998/build/Zend/zend_variables.h:43:8
+    #2 0x56017c5cb1b9 in zval_ptr_dtor /php-gh-13998/build/Zend/zend_variables.c:84:2
+    #3 0x56017bc35f64 in do_callback /php-gh-13998/build/ext/pdo_sqlite/sqlite_driver.c:444:5
+    #4 0x56017bc320b8 in php_sqlite3_func_step_callback /php-gh-13998/build/ext/pdo_sqlite/sqlite_driver.c:473:2
+    #5 0x7f98e187d8e2 in sqlite3VdbeExec (/lib/x86_64-linux-gnu/libsqlite3.so.0+0xfa8e2) (BuildId: e45193963d39db83c0a9aee583c5cdb2ce7e71d8)
+    #6 0x7f98e1881660 in sqlite3_step (/lib/x86_64-linux-gnu/libsqlite3.so.0+0xfe660) (BuildId: e45193963d39db83c0a9aee583c5cdb2ce7e71d8)
+    #7 0x56017bc39874 in pdo_sqlite_stmt_execute /php-gh-13998/build/ext/pdo_sqlite/sqlite_statement.c:51:10
+    #8 0x56017bbeaa54 in zim_PDO_query /php-gh-13998/build/ext/pdo/pdo_dbh.c:1140:8
+    #9 0x56017c8994cf in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-13998/build/Zend/zend_vm_execute.h:1842:4
+    #10 0x56017c6fd48f in execute_ex /php-gh-13998/build/Zend/zend_vm_execute.h:55866:7
+    #11 0x56017c6fec26 in zend_execute /php-gh-13998/build/Zend/zend_vm_execute.h:60439:2
+    #12 0x56017c5df396 in zend_execute_scripts /php-gh-13998/build/Zend/zend.c:1840:4
+    #13 0x56017c384a6b in php_execute_script /php-gh-13998/build/main/main.c:2565:13
+    #14 0x56017cf1162c in do_cli /php-gh-13998/build/sapi/cli/php_cli.c:964:5
+    #15 0x56017cf0f5e9 in main /php-gh-13998/build/sapi/cli/php_cli.c:1333:18
+    #16 0x7f98e15581c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x7f98e155828a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x56017b603164 in _start (/php-gh-13998/build/sapi/cli/php+0x403164) (BuildId: b156c0f08220fa9e3f2002b034687e1bc29144d2)
+
+0x503000028210 is located 0 bytes inside of 32-byte region [0x503000028210,0x503000028230)
+freed by thread T0 here:
+    #0 0x56017b69dd1a in free (/php-gh-13998/build/sapi/cli/php+0x49dd1a) (BuildId: b156c0f08220fa9e3f2002b034687e1bc29144d2)
+    #1 0x56017c4cb8e7 in tracked_free /php-gh-13998/build/Zend/zend_alloc.c:2853:2
+    #2 0x56017c4b84c7 in _efree_custom /php-gh-13998/build/Zend/zend_alloc.c:2488:3
+    #3 0x56017c4b8a26 in _efree_32 /php-gh-13998/build/Zend/zend_alloc.c:2568:1
+    #4 0x56017c5cc643 in zend_reference_destroy /php-gh-13998/build/Zend/zend_variables.c:75:2
+    #5 0x56017c5cb0ca in rc_dtor_func /php-gh-13998/build/Zend/zend_variables.c:57:2
+    #6 0x56017c5cb22c in i_zval_ptr_dtor /php-gh-13998/build/Zend/zend_variables.h:44:4
+    #7 0x56017c5cb22c in zval_ptr_dtor /php-gh-13998/build/Zend/zend_variables.c:84:2
+    #8 0x56017bc35f64 in do_callback /php-gh-13998/build/ext/pdo_sqlite/sqlite_driver.c:444:5
+    #9 0x56017bc320b8 in php_sqlite3_func_step_callback /php-gh-13998/build/ext/pdo_sqlite/sqlite_driver.c:473:2
+    #10 0x7f98e187d8e2 in sqlite3VdbeExec (/lib/x86_64-linux-gnu/libsqlite3.so.0+0xfa8e2) (BuildId: e45193963d39db83c0a9aee583c5cdb2ce7e71d8)
+    #11 0x7f98e1881660 in sqlite3_step (/lib/x86_64-linux-gnu/libsqlite3.so.0+0xfe660) (BuildId: e45193963d39db83c0a9aee583c5cdb2ce7e71d8)
+    #12 0x56017bc39874 in pdo_sqlite_stmt_execute /php-gh-13998/build/ext/pdo_sqlite/sqlite_statement.c:51:10
+    #13 0x56017bbeaa54 in zim_PDO_query /php-gh-13998/build/ext/pdo/pdo_dbh.c:1140:8
+    #14 0x56017c8994cf in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-13998/build/Zend/zend_vm_execute.h:1842:4
+    #15 0x56017c6fd48f in execute_ex /php-gh-13998/build/Zend/zend_vm_execute.h:55866:7
+    #16 0x56017c6fec26 in zend_execute /php-gh-13998/build/Zend/zend_vm_execute.h:60439:2
+    #17 0x56017c5df396 in zend_execute_scripts /php-gh-13998/build/Zend/zend.c:1840:4
+    #18 0x56017c384a6b in php_execute_script /php-gh-13998/build/main/main.c:2565:13
+    #19 0x56017cf1162c in do_cli /php-gh-13998/build/sapi/cli/php_cli.c:964:5
+    #20 0x56017cf0f5e9 in main /php-gh-13998/build/sapi/cli/php_cli.c:1333:18
+    #21 0x7f98e15581c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #22 0x7f98e155828a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #23 0x56017b603164 in _start (/php-gh-13998/build/sapi/cli/php+0x403164) (BuildId: b156c0f08220fa9e3f2002b034687e1bc29144d2)
+
+previously allocated by thread T0 here:
+    #0 0x56017b69dfb3 in malloc (/php-gh-13998/build/sapi/cli/php+0x49dfb3) (BuildId: b156c0f08220fa9e3f2002b034687e1bc29144d2)
+    #1 0x56017c4ab700 in tracked_malloc /php-gh-13998/build/Zend/zend_alloc.c:2834:14
+    #2 0x56017c4b1333 in _malloc_custom /php-gh-13998/build/Zend/zend_alloc.c:2479:10
+    #3 0x56017c4b1ab3 in _emalloc_32 /php-gh-13998/build/Zend/zend_alloc.c:2528:1
+    #4 0x56017bc34ca6 in do_callback /php-gh-13998/build/ext/pdo_sqlite/sqlite_driver.c:361:4
+    #5 0x56017bc320b8 in php_sqlite3_func_step_callback /php-gh-13998/build/ext/pdo_sqlite/sqlite_driver.c:473:2
+    #6 0x7f98e187d8e2 in sqlite3VdbeExec (/lib/x86_64-linux-gnu/libsqlite3.so.0+0xfa8e2) (BuildId: e45193963d39db83c0a9aee583c5cdb2ce7e71d8)
+    #7 0x7f98e1881660 in sqlite3_step (/lib/x86_64-linux-gnu/libsqlite3.so.0+0xfe660) (BuildId: e45193963d39db83c0a9aee583c5cdb2ce7e71d8)
+    #8 0x56017bc39874 in pdo_sqlite_stmt_execute /php-gh-13998/build/ext/pdo_sqlite/sqlite_statement.c:51:10
+    #9 0x56017bbeaa54 in zim_PDO_query /php-gh-13998/build/ext/pdo/pdo_dbh.c:1140:8
+    #10 0x56017c8994cf in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-13998/build/Zend/zend_vm_execute.h:1842:4
+    #11 0x56017c6fd48f in execute_ex /php-gh-13998/build/Zend/zend_vm_execute.h:55866:7
+    #12 0x56017c6fec26 in zend_execute /php-gh-13998/build/Zend/zend_vm_execute.h:60439:2
+    #13 0x56017c5df396 in zend_execute_scripts /php-gh-13998/build/Zend/zend.c:1840:4
+    #14 0x56017c384a6b in php_execute_script /php-gh-13998/build/main/main.c:2565:13
+    #15 0x56017cf1162c in do_cli /php-gh-13998/build/sapi/cli/php_cli.c:964:5
+    #16 0x56017cf0f5e9 in main /php-gh-13998/build/sapi/cli/php_cli.c:1333:18
+    #17 0x7f98e15581c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x7f98e155828a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x56017b603164 in _start (/php-gh-13998/build/sapi/cli/php+0x403164) (BuildId: b156c0f08220fa9e3f2002b034687e1bc29144d2)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /php-gh-13998/build/Zend/zend_types.h:1228:2 in zend_gc_delref
+Shadow bytes around the buggy address:
+  0x503000027f80: 00 00 fa fa fd fd fd fa fa fa 00 00 00 fa fa fa
+  0x503000028000: 00 00 00 fa fa fa fd fd fd fa fa fa fd fd fd fa
+  0x503000028080: fa fa fd fd fd fa fa fa fd fd fd fa fa fa fd fd
+  0x503000028100: fd fa fa fa 00 00 00 fa fa fa fd fd fd fa fa fa
+  0x503000028180: fd fd fd fa fa fa fd fd fd fa fa fa 00 00 00 fa
+=>0x503000028200: fa fa[fd]fd fd fd fa fa fa fa fa fa fa fa fa fa
+  0x503000028280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000028300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000028380: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000028400: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000028480: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==2858867==ABORTING

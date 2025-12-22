@@ -1,0 +1,41 @@
+opt: /tmp/llvm-gh-137185/build/llvm/lib/IR/Constants.cpp:2215: static llvm::Constant* llvm::ConstantExpr::getCast(unsigned int, llvm::Constant*, llvm::Type*, bool): Assertion `CastInst::castIsValid(opc, C, Ty) && "Invalid constantexpr cast!"' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ./build/bin/opt -passes=loop-vectorize -slp-threshold=-99999 -force-vector-width=4 /testcases/llvm-gh-137185/input/poc.ll
+1.	Running pass "function(loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>)" on module "/testcases/llvm-gh-137185/input/poc.ll"
+2.	Running pass "loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>" on function "widget"
+ #0 0x000055555a3573c2 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-137185/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x000055555a3577e1 PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-137185/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x000055555a354b87 llvm::sys::RunSignalHandlers() /tmp/llvm-gh-137185/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x000055555a356c44 SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-137185/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x0000555559e2a29d llvm::ConstantExpr::getCast(unsigned int, llvm::Constant*, llvm::Type*, bool) /tmp/llvm-gh-137185/build/llvm/lib/IR/Constants.cpp:2217:11
+#11 0x0000555559fa2a1d llvm::ConstantFolder::FoldCast(llvm::Instruction::CastOps, llvm::Value*, llvm::Type*) const /tmp/llvm-gh-137185/build/llvm/include/llvm/IR/ConstantFolder.h:177:51
+#12 0x0000555556279988 llvm::IRBuilderBase::CreateTrunc(llvm::Value*, llvm::Type*, llvm::Twine const&, bool, bool) /tmp/llvm-gh-137185/build/llvm/include/llvm/IR/IRBuilder.h:2071:0
+#13 0x0000555558bf8834 llvm::VPScalarIVStepsRecipe::execute(llvm::VPTransformState&) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp:2130:36
+#14 0x0000555558ba37da llvm::VPBasicBlock::executeRecipes(llvm::VPTransformState*, llvm::BasicBlock*) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/VPlan.cpp:540:31
+#15 0x0000555558ba353d llvm::VPBasicBlock::execute(llvm::VPTransformState*) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/VPlan.cpp:525:1
+#16 0x0000555558ba4fe3 llvm::VPRegionBlock::execute(llvm::VPTransformState*) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/VPlan.cpp:752:31
+#17 0x0000555558ba6a10 llvm::VPlan::execute(llvm::VPTransformState*) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/VPlan.cpp:964:29
+#18 0x00005555588f42ae llvm::LoopVectorizationPlanner::executePlan(llvm::ElementCount, unsigned int, llvm::VPlan&, llvm::InnerLoopVectorizer&, llvm::DominatorTree*, bool) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:7878:3
+#19 0x0000555558905bdb llvm::LoopVectorizePass::processLoop(llvm::Loop*) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:10962:24
+#20 0x0000555558906266 llvm::LoopVectorizePass::runImpl(llvm::Function&) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:11041:27
+#21 0x00005555589065b3 llvm::LoopVectorizePass::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-137185/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:11078:39
+#22 0x0000555556d95c37 llvm::detail::PassModel<llvm::Function, llvm::LoopVectorizePass, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-137185/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#23 0x000055555a0848f9 llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-137185/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#24 0x0000555555f65b4b llvm::detail::PassModel<llvm::Function, llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-137185/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#25 0x000055555a08379e llvm::ModuleToFunctionPassAdaptor::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137185/build/llvm/lib/IR/PassManager.cpp:129:23
+#26 0x0000555555f65a7b llvm::detail::PassModel<llvm::Module, llvm::ModuleToFunctionPassAdaptor, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137185/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#27 0x000055555a084525 llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137185/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#28 0x0000555555deeee5 llvm::runPassPipeline(llvm::StringRef, llvm::Module&, llvm::TargetMachine*, llvm::TargetLibraryInfoImpl*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::StringRef, llvm::ArrayRef<llvm::PassPlugin>, llvm::ArrayRef<std::function<void (llvm::PassBuilder&)>>, llvm::opt_tool::OutputKind, llvm::opt_tool::VerifierKind, bool, bool, bool, bool, bool, bool, bool) /tmp/llvm-gh-137185/build/llvm/tools/opt/NewPMDriver.cpp:557:10
+#29 0x0000555555dc08fc optMain /tmp/llvm-gh-137185/build/llvm/tools/opt/optdriver.cpp:729:27
+#30 0x0000555555dbe081 main /tmp/llvm-gh-137185/build/llvm/tools/opt/opt.cpp:25:64
+#31 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#32 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#33 0x0000555555dbdf65 _start (./build/bin/opt+0x869f65)
+/testcases/llvm-gh-137185/exp.sh: line 2: 2451321 Aborted                 (core dumped) ./build/bin/opt -passes=loop-vectorize -slp-threshold=-99999 -force-vector-width=4 $1

@@ -1,0 +1,90 @@
+==11315==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x521000c2d503 at pc 0x589b51efd298 bp 0x7ffc7448bca0 sp 0x7ffc7448bc98
+READ of size 1 at 0x521000c2d503 thread T0
+    #0 0x589b51efd297 in utf_ptr2char /tmp/vim-gh-16796/build/src/mbyte.c:1826:9
+    #1 0x589b51f00e8f in utfc_ptr2char /tmp/vim-gh-16796/build/src/mbyte.c:1985:9
+    #2 0x589b51d48a18 in do_ascii /tmp/vim-gh-16796/build/src/ex_cmds.c:44:6
+    #3 0x589b51d78cc1 in do_one_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:2621:2
+    #4 0x589b51d712bd in do_cmdline /tmp/vim-gh-16796/build/src/ex_docmd.c:1033:17
+    #5 0x589b51d73820 in do_cmdline_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:627:12
+    #6 0x589b522782d4 in jumpto_tag /tmp/vim-gh-16796/build/src/tag.c:4000:6
+    #7 0x589b5227039e in do_tag /tmp/vim-gh-16796/build/src/tag.c:891:10
+    #8 0x589b51dad22d in ex_tag_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:9578:5
+    #9 0x589b51da5007 in ex_tag /tmp/vim-gh-16796/build/src/ex_docmd.c:9529:5
+    #10 0x589b51d78cc1 in do_one_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:2621:2
+    #11 0x589b51d712bd in do_cmdline /tmp/vim-gh-16796/build/src/ex_docmd.c:1033:17
+    #12 0x589b52174317 in do_source_ext /tmp/vim-gh-16796/build/src/scriptfile.c:1889:5
+    #13 0x589b52172270 in do_source /tmp/vim-gh-16796/build/src/scriptfile.c:2035:12
+    #14 0x589b52171e0f in cmd_source /tmp/vim-gh-16796/build/src/scriptfile.c:1381:14
+    #15 0x589b5217190d in ex_source /tmp/vim-gh-16796/build/src/scriptfile.c:1407:2
+    #16 0x589b51d78cc1 in do_one_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:2621:2
+    #17 0x589b51d712bd in do_cmdline /tmp/vim-gh-16796/build/src/ex_docmd.c:1033:17
+    #18 0x589b51d73820 in do_cmdline_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:627:12
+    #19 0x589b525696b0 in exe_commands /tmp/vim-gh-16796/build/src/main.c:3190:2
+    #20 0x589b5256745a in vim_main2 /tmp/vim-gh-16796/build/src/main.c:795:2
+    #21 0x589b52561d4c in main /tmp/vim-gh-16796/build/src/main.c:446:12
+    #22 0x7e9d07eb61c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #23 0x7e9d07eb628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #24 0x589b51aaeff4 in _start (/tmp/vim-gh-16796/build/src/vim+0x167ff4) (BuildId: e4e187cdc670fb4cbfb6a688a9b16a60b0d091bb)
+
+0x521000c2d503 is located 3 bytes after 4096-byte region [0x521000c2c500,0x521000c2d500)
+allocated by thread T0 here:
+    #0 0x589b51b49e43 in malloc (/tmp/vim-gh-16796/build/src/vim+0x202e43) (BuildId: e4e187cdc670fb4cbfb6a688a9b16a60b0d091bb)
+    #1 0x589b51b887a6 in lalloc /tmp/vim-gh-16796/build/src/alloc.c:246:11
+    #2 0x589b51b88709 in alloc /tmp/vim-gh-16796/build/src/alloc.c:151:12
+    #3 0x589b5256ec82 in mf_alloc_bhdr /tmp/vim-gh-16796/build/src/memfile.c:887:24
+    #4 0x589b5256e00a in mf_new /tmp/vim-gh-16796/build/src/memfile.c:375:26
+    #5 0x589b51f0d203 in ml_new_data /tmp/vim-gh-16796/build/src/memline.c:4258:15
+    #6 0x589b51f0c108 in ml_open /tmp/vim-gh-16796/build/src/memline.c:399:15
+    #7 0x589b51bac2b0 in open_buffer /tmp/vim-gh-16796/build/src/buffer.c:193:9
+    #8 0x589b51d58c9c in do_ecmd /tmp/vim-gh-16796/build/src/ex_cmds.c:3110:23
+    #9 0x589b51d9804c in do_exedit /tmp/vim-gh-16796/build/src/ex_docmd.c:7674:6
+    #10 0x589b51d96830 in ex_splitview /tmp/vim-gh-16796/build/src/ex_docmd.c:7271:2
+    #11 0x589b51d78cc1 in do_one_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:2621:2
+    #12 0x589b51d712bd in do_cmdline /tmp/vim-gh-16796/build/src/ex_docmd.c:1033:17
+    #13 0x589b52174317 in do_source_ext /tmp/vim-gh-16796/build/src/scriptfile.c:1889:5
+    #14 0x589b52172270 in do_source /tmp/vim-gh-16796/build/src/scriptfile.c:2035:12
+    #15 0x589b52171e0f in cmd_source /tmp/vim-gh-16796/build/src/scriptfile.c:1381:14
+    #16 0x589b5217190d in ex_source /tmp/vim-gh-16796/build/src/scriptfile.c:1407:2
+    #17 0x589b51d78cc1 in do_one_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:2621:2
+    #18 0x589b51d712bd in do_cmdline /tmp/vim-gh-16796/build/src/ex_docmd.c:1033:17
+    #19 0x589b51d73820 in do_cmdline_cmd /tmp/vim-gh-16796/build/src/ex_docmd.c:627:12
+    #20 0x589b525696b0 in exe_commands /tmp/vim-gh-16796/build/src/main.c:3190:2
+    #21 0x589b5256745a in vim_main2 /tmp/vim-gh-16796/build/src/main.c:795:2
+    #22 0x589b52561d4c in main /tmp/vim-gh-16796/build/src/main.c:446:12
+    #23 0x7e9d07eb61c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #24 0x7e9d07eb628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #25 0x589b51aaeff4 in _start (/tmp/vim-gh-16796/build/src/vim+0x167ff4) (BuildId: e4e187cdc670fb4cbfb6a688a9b16a60b0d091bb)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/vim-gh-16796/build/src/mbyte.c:1826:9 in utf_ptr2char
+Shadow bytes around the buggy address:
+  0x521000c2d280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x521000c2d300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x521000c2d380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x521000c2d400: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x521000c2d480: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x521000c2d500:[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000c2d580: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000c2d600: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000c2d680: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000c2d700: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000c2d780: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==11315==ABORTING

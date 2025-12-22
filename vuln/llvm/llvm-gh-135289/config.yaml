@@ -1,0 +1,14 @@
+id: llvm-gh-135289
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: Reachable Assertion
+trigger_commit: c3c0b27f2d34cd106df278afc378c30fe493f513
+binary: mlir-opt
+patch:
+  commit: 35f4cdbf59fca82b97869cce7e9e5d5009144938
+  date: '2025-04-17T11:17:34+02:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/135289
+- https://github.com/llvm/llvm-project/commit/c3c0b27f2d34cd106df278afc378c30fe493f513
+- https://github.com/llvm/llvm-project/commit/35f4cdbf59fca82b97869cce7e9e5d5009144938

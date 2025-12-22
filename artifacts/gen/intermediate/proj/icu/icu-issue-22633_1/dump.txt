@@ -1,0 +1,5 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+25|calendar->add(static_cast<UCalendarDateFields>(i), INT32_MAX, status)|U_FAILURE(status)|add INT32_MAX should fail for ERA, YEAR, YEAR_WOY, EXTENDED_YEAR, IS_LEAP_MONTH, MONTH, ORDINAL_MONTH, ZONE_OFFSET, DST_OFFSET
+37|calendar->add(static_cast<UCalendarDateFields>(i), INT32_MIN, status)|U_FAILURE(status)|add INT32_MIN should fail for YEAR, YEAR_WOY, EXTENDED_YEAR, IS_LEAP_MONTH, ZONE_OFFSET, DST_OFFSET

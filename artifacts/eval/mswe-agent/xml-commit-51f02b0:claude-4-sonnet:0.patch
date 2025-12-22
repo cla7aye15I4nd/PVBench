@@ -1,0 +1,354 @@
+
+diff --git a/.gitignore b/.gitignore
+index 995094da..294f2ca2 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,13 @@ xstc/Makefile
+ xstc/Makefile.in
+ xstc/Tests
+ xstc/xsts-*.tar.gz
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/dict.c b/dict.c
+index 5f71d55d..d1ed5943 100644
+--- a/dict.c
++++ b/dict.c
+@@ -445,6 +445,7 @@ xmlDictComputeFastKey(const xmlChar *name, int namelen, int seed) {
+     unsigned long value = seed;
+ 
+     if (name == NULL) return(0);
++    if (namelen <= 0) return(0);
+     value = *name;
+     value <<= 5;
+     if (namelen > 10) {
+@@ -480,10 +481,16 @@ xmlDictComputeFastQKey(const xmlChar *prefix, int plen,
+ {
+     unsigned long value = (unsigned long) seed;
+ 
++    if (name == NULL) return(0);
++    if (prefix == NULL && plen > 0) return(0);
++    if (len < 0) return(0);
++
+     if (plen == 0)
+ 	value += 30 * (unsigned long) ':';
+-    else
+-	value += 30 * (*prefix);
++    else {
++        if (plen <= 0) return(0);
++        value += 30 * (*prefix);
++    }
+ 
+     if (len > 10) {
+         value += name[len - (plen + 1 + 1)];
+diff --git a/libxml2-config.cmake b/libxml2-config.cmake
+new file mode 100644
+index 00000000..31a19aa7
+--- /dev/null
++++ b/libxml2-config.cmake
+@@ -0,0 +1,50 @@
++# libxml2-config.cmake
++# --------------------
++#
++# Libxml2 cmake module.
++# THis module sets the following variables:
++#
++# ::
++#
++#   LIBXML2_INCLUDE_DIRS      - Directory where libxml2 headers are located.
++#   LIBXML2_LIBRARIES         - xml2 libraries to link against.
++#   LIBXML2_VERSION_MAJOR     - The major version of libxml2.
++#   LIBXML2_VERSION_MINOR     - The minor version of libxml2.
++#   LIBXML2_VERSION_PATCH     - The patch version of libxml2.
++#   LIBXML2_VERSION_STRING    - version number as a string (ex: "2.3.4")
++#   LIBXML2_MODULES           - whether libxml2 as dso support
++
++get_filename_component(_libxml2_rootdir ${CMAKE_CURRENT_LIST_DIR}/../../../ ABSOLUTE)
++
++set(LIBXML2_VERSION_MAJOR  2)
++set(LIBXML2_VERSION_MINOR  9)
++set(LIBXML2_VERSION_MICRO  2)
++set(LIBXML2_VERSION_STRING "2.9.2")
++set(LIBXML2_INSTALL_PREFIX ${_libxml2_rootdir})
++set(LIBXML2_INCLUDE_DIRS   ${_libxml2_rootdir}/include ${_libxml2_rootdir}/include/libxml2)
++set(LIBXML2_LIBRARY_DIR    ${_libxml2_rootdir}/lib)
++set(LIBXML2_LIBRARIES      -L${LIBXML2_LIBRARY_DIR} -lxml2)
++
++if(1)
++  find_package(Threads REQUIRED)
++  list(APPEND LIBXML2_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
++endif()
++
++if(1)
++  find_package(LibLZMA REQUIRED)
++  list(APPEND LIBXML2_LIBRARIES    ${LIBLZMA_LIBRARIES})
++  list(APPEND LIBXML2_INCLUDE_DIRS ${LIBLZMA_INCLUDE_DIRS})
++endif()
++
++if(1)
++  find_package(ZLIB REQUIRED)
++  list(APPEND LIBXML2_LIBRARIES    ${ZLIB_LIBRARIES})
++  list(APPEND LIBXML2_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
++endif()
++
++list(APPEND LIBXML2_LIBRARIES   -lm  )
++
++# whether libxml2 has dso support
++set(LIBXML2_MODULES 1)
++
++mark_as_advanced( LIBXML2_INCLUDE_DIRS LIBXML2_LIBRARIES )
+diff --git a/python/setup.py b/python/setup.py
+deleted file mode 100755
+index e5043237..00000000
+--- a/python/setup.py
++++ /dev/null
+@@ -1,242 +0,0 @@
+-#!/usr/bin/python -u
+-#
+-# Setup script for libxml2 and libxslt if found
+-#
+-import sys, os
+-from distutils.core import setup, Extension
+-
+-# Below ROOT, we expect to find include, include/libxml2, lib and bin.
+-# On *nix, it is not needed (but should not harm),
+-# on Windows, it is set by configure.js.
+-ROOT = r'/usr'
+-
+-# Thread-enabled libxml2
+-with_threads = 1
+-
+-# If this flag is set (windows only),
+-# a private copy of the dlls are included in the package.
+-# If this flag is not set, the libxml2 and libxslt
+-# dlls must be found somewhere in the PATH at runtime.
+-WITHDLLS = 1 and sys.platform.startswith('win')
+-
+-def missing(file):
+-    if os.access(file, os.R_OK) == 0:
+-        return 1
+-    return 0
+-
+-try:
+-    HOME = os.environ['HOME']
+-except:
+-    HOME="C:"
+-
+-if WITHDLLS:
+-    # libxml dlls (expected in ROOT/bin)
+-    dlls = [ 'iconv.dll','libxml2.dll','libxslt.dll','libexslt.dll' ]
+-    dlls = [os.path.join(ROOT,'bin',dll) for dll in dlls]
+-
+-    # create __init__.py for the libxmlmods package
+-    if not os.path.exists("libxmlmods"):
+-        os.mkdir("libxmlmods")
+-        open("libxmlmods/__init__.py","w").close()
+-
+-    def altImport(s):
+-        s = s.replace("import libxml2mod","from libxmlmods import libxml2mod")
+-        s = s.replace("import libxsltmod","from libxmlmods import libxsltmod")
+-        return s
+-
+-if sys.platform.startswith('win'):
+-    libraryPrefix = 'lib'
+-    platformLibs = []
+-else:
+-    libraryPrefix = ''
+-    platformLibs = ["m","z"]
+-
+-# those are examined to find
+-# - libxml2/libxml/tree.h
+-# - iconv.h
+-# - libxslt/xsltconfig.h
+-includes_dir = [
+-"/usr/include",
+-"/usr/local/include",
+-"/opt/include",
+-os.path.join(ROOT,'include'),
+-HOME
+-];
+-
+-xml_includes=""
+-for dir in includes_dir:
+-    if not missing(dir + "/libxml2/libxml/tree.h"):
+-        xml_includes=dir + "/libxml2"
+-        break;
+-
+-if xml_includes == "":
+-    print("failed to find headers for libxml2: update includes_dir")
+-    sys.exit(1)
+-
+-iconv_includes=""
+-for dir in includes_dir:
+-    if not missing(dir + "/iconv.h"):
+-        iconv_includes=dir
+-        break;
+-
+-if iconv_includes == "":
+-    print("failed to find headers for libiconv: update includes_dir")
+-    sys.exit(1)
+-
+-# those are added in the linker search path for libraries
+-libdirs = [
+-os.path.join(ROOT,'lib'),
+-]
+-
+-xml_files = ["libxml2-api.xml", "libxml2-python-api.xml",
+-             "libxml.c", "libxml.py", "libxml_wrap.h", "types.c",
+-             "xmlgenerator.py", "README", "TODO", "drv_libxml2.py"]
+-
+-xslt_files = ["libxslt-api.xml", "libxslt-python-api.xml",
+-             "libxslt.c", "libxsl.py", "libxslt_wrap.h",
+-             "xsltgenerator.py"]
+-
+-if missing("libxml2-py.c") or missing("libxml2.py"):
+-    try:
+-        try:
+-            import xmlgenerator
+-        except:
+-            import generator
+-    except:
+-        print("failed to find and generate stubs for libxml2, aborting ...")
+-        print(sys.exc_info()[0], sys.exc_info()[1])
+-        sys.exit(1)
+-
+-    head = open("libxml.py", "r")
+-    generated = open("libxml2class.py", "r")
+-    result = open("libxml2.py", "w")
+-    for line in head.readlines():
+-        if WITHDLLS:
+-            result.write(altImport(line))
+-        else:
+-            result.write(line)
+-    for line in generated.readlines():
+-        result.write(line)
+-    head.close()
+-    generated.close()
+-    result.close()
+-
+-with_xslt=0
+-if missing("libxslt-py.c") or missing("libxslt.py"):
+-    if missing("xsltgenerator.py") or missing("libxslt-api.xml"):
+-        print("libxslt stub generator not found, libxslt not built")
+-    else:
+-        try:
+-            import xsltgenerator
+-        except:
+-            print("failed to generate stubs for libxslt, aborting ...")
+-            print(sys.exc_info()[0], sys.exc_info()[1])
+-        else:
+-            head = open("libxsl.py", "r")
+-            generated = open("libxsltclass.py", "r")
+-            result = open("libxslt.py", "w")
+-            for line in head.readlines():
+-                if WITHDLLS:
+-                    result.write(altImport(line))
+-                else:
+-                    result.write(line)
+-            for line in generated.readlines():
+-                result.write(line)
+-            head.close()
+-            generated.close()
+-            result.close()
+-            with_xslt=1
+-else:
+-    with_xslt=1
+-
+-if with_xslt == 1:
+-    xslt_includes=""
+-    for dir in includes_dir:
+-        if not missing(dir + "/libxslt/xsltconfig.h"):
+-            xslt_includes=dir + "/libxslt"
+-            break;
+-
+-    if xslt_includes == "":
+-        print("failed to find headers for libxslt: update includes_dir")
+-        with_xslt = 0
+-
+-
+-descr = "libxml2 package"
+-modules = [ 'libxml2', 'drv_libxml2' ]
+-if WITHDLLS:
+-    modules.append('libxmlmods.__init__')
+-c_files = ['libxml2-py.c', 'libxml.c', 'types.c' ]
+-includes= [xml_includes, iconv_includes]
+-libs    = [libraryPrefix + "xml2"] + platformLibs
+-macros  = []
+-if with_threads:
+-    macros.append(('_REENTRANT','1'))
+-if with_xslt == 1:
+-    descr = "libxml2 and libxslt package"
+-    if not sys.platform.startswith('win'):
+-        #
+-        # We are gonna build 2 identical shared libs with merge initializing
+-        # both libxml2mod and libxsltmod
+-        #
+-        c_files = c_files + ['libxslt-py.c', 'libxslt.c']
+-        xslt_c_files = c_files
+-        macros.append(('MERGED_MODULES', '1'))
+-    else:
+-        #
+-        # On windows the MERGED_MODULE option is not needed
+-        # (and does not work)
+-        #
+-        xslt_c_files = ['libxslt-py.c', 'libxslt.c', 'types.c']
+-    libs.insert(0, libraryPrefix + 'exslt')
+-    libs.insert(0, libraryPrefix + 'xslt')
+-    includes.append(xslt_includes)
+-    modules.append('libxslt')
+-
+-
+-extens=[Extension('libxml2mod', c_files, include_dirs=includes,
+-                  library_dirs=libdirs,
+-                  libraries=libs, define_macros=macros)]
+-if with_xslt == 1:
+-    extens.append(Extension('libxsltmod', xslt_c_files, include_dirs=includes,
+-                            library_dirs=libdirs,
+-                            libraries=libs, define_macros=macros))
+-
+-if missing("MANIFEST"):
+-
+-    manifest = open("MANIFEST", "w")
+-    manifest.write("setup.py\n")
+-    for file in xml_files:
+-        manifest.write(file + "\n")
+-    if with_xslt == 1:
+-        for file in xslt_files:
+-            manifest.write(file + "\n")
+-    manifest.close()
+-
+-if WITHDLLS:
+-    ext_package = "libxmlmods"
+-    if sys.version >= "2.2":
+-        base = "lib/site-packages/"
+-    else:
+-        base = ""
+-    data_files = [(base+"libxmlmods",dlls)]
+-else:
+-    ext_package = None
+-    data_files = []
+-
+-setup (name = "libxml2-python",
+-       # On *nix, the version number is created from setup.py.in
+-       # On windows, it is set by configure.js
+-       version = "2.9.2",
+-       description = descr,
+-       author = "Daniel Veillard",
+-       author_email = "veillard@redhat.com",
+-       url = "http://xmlsoft.org/python.html",
+-       licence="MIT Licence",
+-       py_modules=modules,
+-       ext_modules=extens,
+-       ext_package=ext_package,
+-       data_files=data_files,
+-       )
+-
+-sys.exit(0)
+-

@@ -1,0 +1,45 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/element.c b/ext/dom/element.c
+index b4495559830..cbf93d913ce 100644
+--- a/ext/dom/element.c
++++ b/ext/dom/element.c
+@@ -710,12 +710,16 @@ static void dom_element_set_attribute_node_common(INTERNAL_FUNCTION_PARAMETERS,
+ 		}
+ 	}
+ 
+-	nsp = attrp->ns;
+-	if (use_ns && nsp != NULL) {
+-		existattrp = xmlHasNsProp(nodep, attrp->name, nsp->href);
+-	} else {
+-		existattrp = xmlHasProp(nodep, attrp->name);
+-	}
++    nsp = attrp->ns;
++    if (use_ns && nsp != NULL && nodep != NULL && attrp != NULL && attrp->name != NULL && nsp->href != NULL) {
++        existattrp = xmlHasNsProp(nodep, attrp->name, nsp->href);
++    } else if (use_ns && (nsp == NULL || nodep == NULL || attrp == NULL || attrp->name == NULL || nsp->href == NULL)) {
++        /* Defensive: If any pointer is NULL, avoid crash and throw error */
++        php_dom_throw_error(INVALID_STATE_ERR, dom_get_strict_error(intern->document));
++        RETURN_FALSE;
++    } else {
++        existattrp = xmlHasProp(nodep, attrp->name);
++    }
+ 
+ 	if (existattrp != NULL && existattrp->type != XML_ATTRIBUTE_DECL) {
+ 		if ((oldobj = php_dom_object_get_data((xmlNodePtr) existattrp)) != NULL &&

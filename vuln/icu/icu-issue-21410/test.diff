@@ -1,0 +1,45 @@
+diff --git a/icu4c/source/test/intltest/listformattertest.cpp b/icu4c/source/test/intltest/listformattertest.cpp
+index 513d63edff9..34536e6e7cb 100644
+--- a/icu4c/source/test/intltest/listformattertest.cpp
++++ b/icu4c/source/test/intltest/listformattertest.cpp
+@@ -49,6 +49,7 @@ void ListFormatterTest::runIndexedTest(int32_t index, UBool exec,
+     TESTCASE_AUTO(TestCreateStyled);
+     TESTCASE_AUTO(TestContextual);
+     TESTCASE_AUTO(TestNextPosition);
++    TESTCASE_AUTO(TestInt32Overflow);
+     TESTCASE_AUTO_END;
+ }
+ 
+@@ -828,4 +829,20 @@ void ListFormatterTest::TestNextPosition() {
+     }
+ }
+ 
++void ListFormatterTest::TestInt32Overflow() {
++    if (quick) {
++        return;
++    }
++    IcuTestErrorCode status(*this, "TestInt32Overflow");
++    LocalPointer<ListFormatter> fmt(ListFormatter::createInstance("en", status), status);
++    std::vector<UnicodeString> inputs;
++    UnicodeString input(0xAAAFF00, 0x00000042, 0xAAAFF00);
++    for (int32_t i = 0; i < 16; i++) {
++      inputs.push_back(input);
++    }
++    FormattedList result = fmt->formatStringsToValue(
++        inputs.data(), static_cast<int32_t>(inputs.size()), status);
++    status.expectErrorAndReset(U_INPUT_TOO_LONG_ERROR);
++}
++
+ #endif /* #if !UCONFIG_NO_FORMATTING */
+diff --git a/icu4c/source/test/intltest/listformattertest.h b/icu4c/source/test/intltest/listformattertest.h
+index b3d4005659f..aeba483285a 100644
+--- a/icu4c/source/test/intltest/listformattertest.h
++++ b/icu4c/source/test/intltest/listformattertest.h
+@@ -56,6 +56,7 @@ class ListFormatterTest : public IntlTestWithFieldPosition {
+     void TestCreateStyled();
+     void TestContextual();
+     void TestNextPosition();
++    void TestInt32Overflow();
+ 
+   private:
+     void CheckFormatting(

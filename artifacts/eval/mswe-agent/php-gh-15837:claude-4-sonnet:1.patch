@@ -1,0 +1,139 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..7384c88d2f9 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -555,13 +555,14 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
++					/* Increment nApplyCount to prevent reentrancy during destructor call */
++					intern->nApplyCount++;
+ 					zval_ptr_dtor(data);
++					intern->nApplyCount--;
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+-					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+-					if (spl_array_is_object(intern)) {
+-						spl_array_skip_protected(intern, ht);
+-					}
++					/* After zval_ptr_dtor, we need to re-fetch ht in case it was modified */
++					ht = spl_array_get_hash_table(intern);
+ 				}
+ 			} else {
+ 				zend_hash_del(ht, key.key);
+@@ -573,6 +574,8 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (refcount) {
++		/* Re-fetch ht in case it was modified during destructor call */
++		ht = spl_array_get_hash_table(intern);
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
+ } /* }}} */
+diff --git a/poc_readable.php b/poc_readable.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/poc_readable.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
+diff --git a/test_edge_cases.php b/test_edge_cases.php
+new file mode 100644
+index 00000000000..4aa61fb60d0
+--- /dev/null
++++ b/test_edge_cases.php
+@@ -0,0 +1,23 @@
++<?php
++
++// Test 1: Normal unset operations
++echo "Test 1: Normal unset operations\n";
++$arr = new ArrayObject(['a' => 1, 'b' => 2, 'c' => 3]);
++unset($arr['b']);
++var_dump($arr);
++
++// Test 2: Unset with numeric keys
++echo "\nTest 2: Unset with numeric keys\n";
++$arr2 = new ArrayObject([10, 20, 30]);
++unset($arr2[1]);
++var_dump($arr2);
++
++// Test 3: Multiple unsets
++echo "\nTest 3: Multiple unsets\n";
++$arr3 = new ArrayObject(['x' => 'val1', 'y' => 'val2', 'z' => 'val3']);
++unset($arr3['x']);
++unset($arr3['z']);
++var_dump($arr3);
++
++echo "\nAll edge case tests completed successfully!\n";
++?>
+diff --git a/test_normal.php b/test_normal.php
+new file mode 100644
+index 00000000000..4a2d21ab17c
+--- /dev/null
++++ b/test_normal.php
+@@ -0,0 +1,26 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        echo __METHOD__, "\n";
++        // Normal destructor without modifying the ArrayObject
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++echo "Before unset:\n";
++var_dump($arr);
++
++unset($arr["b"]);
++echo "After unset:\n";
++var_dump($arr);
++
++echo "Script completed successfully, no errors.\n";
++?>

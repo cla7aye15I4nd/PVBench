@@ -1,0 +1,75 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/llvm/lib/Transforms/IPO/GlobalOpt.cpp b/llvm/lib/Transforms/IPO/GlobalOpt.cpp
+index cfba8dcc05b2..e5523fd81b65 100644
+--- a/llvm/lib/Transforms/IPO/GlobalOpt.cpp
++++ b/llvm/lib/Transforms/IPO/GlobalOpt.cpp
+@@ -961,6 +961,18 @@ OptimizeGlobalAddressOfAllocation(GlobalVariable *GV, CallInst *CI,
+   // Loop over all instruction uses of GV, processing them in turn.
+   SmallVector<Value *, 4> Guses;
+   allUsesOfLoadAndStores(GV, Guses);
++  // Check if any of the uses are atomic operations. If so, we cannot safely
++  // create i1 operations as atomic operations on i1 types are invalid.
++  for (auto *U : Guses) {
++    if (auto *LI = dyn_cast<LoadInst>(U)) {
++      if (LI->getOrdering() != AtomicOrdering::NotAtomic)
++        return NewGV; // Return early without creating InitBool
++    } else if (auto *SI = dyn_cast<StoreInst>(U)) {
++      if (SI->getOrdering() != AtomicOrdering::NotAtomic)
++        return NewGV; // Return early without creating InitBool
++    }
++  }
++
+   for (auto *U : Guses) {
+     if (StoreInst *SI = dyn_cast<StoreInst>(U)) {
+       // The global is initialized when the store to it occurs. If the stored
+@@ -1178,12 +1190,22 @@ static bool TryToShrinkGlobalToBoolean(GlobalVariable *GV, Constant *OtherVal) {
+     return false;
+ 
+   // Walk the use list of the global seeing if all the uses are load or store.
+-  // If there is anything else, bail out.
++  // If there is anything else, bail out. Also check that no atomic operations
++  // are present, as atomic operations on i1 types are invalid.
+   for (User *U : GV->users()) {
+     if (!isa<LoadInst>(U) && !isa<StoreInst>(U))
+       return false;
+     if (getLoadStoreType(U) != GVElType)
+       return false;
++    
++    // Check for atomic operations - atomic operations on i1 types are invalid
++    if (auto *LI = dyn_cast<LoadInst>(U)) {
++      if (LI->getOrdering() != AtomicOrdering::NotAtomic)
++        return false;
++    } else if (auto *SI = dyn_cast<StoreInst>(U)) {
++      if (SI->getOrdering() != AtomicOrdering::NotAtomic)
++        return false;
++    }
+   }
+ 
+   LLVM_DEBUG(dbgs() << "   *** SHRINKING TO BOOL: " << *GV << "\n");
+diff --git a/test_script.sh b/test_script.sh
+new file mode 100755
+index 000000000000..fedc876adabf
+--- /dev/null
++++ b/test_script.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++./build/bin/opt -S -passes=globalopt $1

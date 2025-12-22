@@ -1,0 +1,39 @@
+diff --git a/Misc/NEWS.d/next/Library/2023-06-22-15-21-11.gh-issue-105987.T7Kzrb.rst b/Misc/NEWS.d/next/Library/2023-06-22-15-21-11.gh-issue-105987.T7Kzrb.rst
+new file mode 100644
+index 00000000000..0bc97da4edf
+--- /dev/null
++++ b/Misc/NEWS.d/next/Library/2023-06-22-15-21-11.gh-issue-105987.T7Kzrb.rst
+@@ -0,0 +1 @@
++Fix crash due to improper reference counting in :mod:`asyncio` eager task factory internal routines.
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 4b84c1de66b..5b28f2dd28a 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2047,20 +2047,23 @@ swap_current_task(asyncio_state *state, PyObject *loop, PyObject *task)
+         }
+         prev_task = Py_None;
+     }
++    Py_INCREF(prev_task);
+ 
+     if (task == Py_None) {
+         if (_PyDict_DelItem_KnownHash(state->current_tasks, loop, hash) == -1) {
+-            return NULL;
++            goto error;
+         }
+     } else {
+         if (_PyDict_SetItem_KnownHash(state->current_tasks, loop, task, hash) == -1) {
+-            return NULL;
++            goto error;
+         }
+     }
+ 
+-    Py_INCREF(prev_task);
+-
+     return prev_task;
++
++error:
++    Py_DECREF(prev_task);
++    return NULL;
+ }
+ 
+ /* ----- Task */

@@ -1,0 +1,67 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6d3ef302292..5c865635f30 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/strings/string-hasher-inl.h b/src/strings/string-hasher-inl.h
+index fd308f36b7d..6a61ba39ccd 100644
+--- a/src/strings/string-hasher-inl.h
++++ b/src/strings/string-hasher-inl.h
+@@ -231,25 +231,28 @@ uint32_t StringHasher::HashSequentialString(const char_t* chars_raw,
+           // overflowed an array index.
+           static_assert(String::kMaxArrayIndexSize <
+                         String::kMaxIntegerIndexSize);
+-          switch (detail::TryParseIntegerIndex(chars, length, i, index)) {
+-            case detail::kSuccess: {
+-              uint32_t hash = String::CreateHashFieldValue(
+-                  GetUsableRapidHash(chars, length, seed),
+-                  String::HashFieldType::kIntegerIndex);
+-              if (Name::ContainsCachedArrayIndex(hash)) {
+-                // The hash accidentally looks like a cached index. Fix that by
+-                // setting a bit that looks like a longer-than-cacheable string
+-                // length.
+-                hash |= (String::kMaxCachedArrayIndexLength + 1)
+-                        << String::ArrayIndexLengthBits::kShift;
++          if (index > 0) {
++            switch (detail::TryParseIntegerIndex(chars, length, i, index)) {
++              case detail::kSuccess: {
++                uint32_t hash = String::CreateHashFieldValue(
++                    GetUsableRapidHash(chars, length, seed),
++                    String::HashFieldType::kIntegerIndex);
++                if (Name::ContainsCachedArrayIndex(hash)) {
++                  // The hash accidentally looks like a cached index. Fix that by
++                  // setting a bit that looks like a longer-than-cacheable string
++                  // length.
++                  hash |= (String::kMaxCachedArrayIndexLength + 1)
++                          << String::ArrayIndexLengthBits::kShift;
++                }
++                DCHECK(!Name::ContainsCachedArrayIndex(hash));
++                return hash;
+               }
+-              DCHECK(!Name::ContainsCachedArrayIndex(hash));
+-              return hash;
++              case detail::kNonIndex:
++              case detail::kOverflow:
++                break;
+             }
+-            case detail::kNonIndex:
+-            case detail::kOverflow:
+-              break;
+           }
++          break;
+ #else
+           static_assert(String::kMaxArrayIndexSize ==
+                         String::kMaxIntegerIndexSize);

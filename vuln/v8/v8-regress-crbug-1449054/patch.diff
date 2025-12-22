@@ -1,0 +1,15 @@
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index b78f9ffe241..6e929536341 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -507,7 +507,9 @@ void Parser::DeserializeScopeChain(
+     original_scope_ = Scope::DeserializeScopeChain(
+         isolate, zone(), *outer_scope_info, info->script_scope(),
+         ast_value_factory(), mode);
+-    if (flags().is_eval() || IsArrowFunction(flags().function_kind())) {
++    if (flags().is_eval() || IsArrowFunction(flags().function_kind()) ||
++        flags().function_kind() ==
++            FunctionKind::kClassStaticInitializerFunction) {
+       original_scope_->GetReceiverScope()->DeserializeReceiver(
+           ast_value_factory());
+     }

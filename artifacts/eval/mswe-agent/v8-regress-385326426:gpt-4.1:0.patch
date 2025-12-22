@@ -1,0 +1,41 @@
+
+diff --git a/.gitignore b/.gitignore
+index ff67337416c..7afe9789038 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/numbers/conversions.cc b/src/numbers/conversions.cc
+index 9aab71e00a2..244af2c17b7 100644
+--- a/src/numbers/conversions.cc
++++ b/src/numbers/conversions.cc
+@@ -118,12 +118,17 @@ class SimpleStringBuilder final {
+     for (uint32_t factor = 10; digits < 10; digits++, factor *= 10) {
+       if (factor > number) break;
+     }
++    // Check for buffer overflow before writing digits.
++    if (cursor_ + digits > buffer_.end()) {
++      // In debug mode, crash; in release, truncate or do nothing.
++      DCHECK(false && "Buffer overflow in AddDecimalInteger");
++      return;
++    }
+     cursor_ += digits;
+     for (int i = 1; i <= digits; i++) {
+       *(cursor_ - i) = '0' + static_cast<char>(number % 10);
+       number /= 10;
+     }
+-  }
+ 
+   // Finalize the string by, checking that there is no null-character in the
+   // content. Returns a pointer one past the last character.

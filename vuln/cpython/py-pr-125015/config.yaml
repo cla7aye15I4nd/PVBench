@@ -1,0 +1,15 @@
+id: py-pr-125015
+project: cpython
+sanitizer: LeakAddressSanitizer
+type: Use After Free
+trigger_commit: 3fc673e97dafb8a73ee99937cf2bf0b849b1f418
+binary: python
+patch:
+  commit: a1be83dae311e4a1a6e66ed5e128b1ad8794f72f
+  date: '2024-10-06T12:46:03-07:00'
+reference:
+- https://github.com/python/cpython.git
+- https://github.com/python/cpython/pull/125015
+- https://github.com/python/cpython/issues/125010
+- https://github.com/python/cpython/commit/3fc673e97dafb8a73ee99937cf2bf0b849b1f418
+- https://github.com/python/cpython/commit/a1be83dae311e4a1a6e66ed5e128b1ad8794f72f

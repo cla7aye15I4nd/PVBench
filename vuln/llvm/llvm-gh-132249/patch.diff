@@ -1,0 +1,26 @@
+diff --git a/clang/docs/ReleaseNotes.rst b/clang/docs/ReleaseNotes.rst
+index 7fb6b0baae16..5e8df45e71d5 100644
+--- a/clang/docs/ReleaseNotes.rst
++++ b/clang/docs/ReleaseNotes.rst
+@@ -365,6 +365,7 @@ Bug Fixes to Attribute Support
+ Bug Fixes to C++ Support
+ ^^^^^^^^^^^^^^^^^^^^^^^^
+ 
++- Clang now supports implicitly defined comparison operators for friend declarations. (#GH132249)
+ - Clang now diagnoses copy constructors taking the class by value in template instantiations. (#GH130866)
+ - Clang is now better at keeping track of friend function template instance contexts. (#GH55509)
+ - Clang now prints the correct instantiation context for diagnostics suppressed
+diff --git a/clang/lib/Sema/SemaDeclCXX.cpp b/clang/lib/Sema/SemaDeclCXX.cpp
+index 2142582adf6e..96c0470198e3 100644
+--- a/clang/lib/Sema/SemaDeclCXX.cpp
++++ b/clang/lib/Sema/SemaDeclCXX.cpp
+@@ -9006,8 +9006,7 @@ bool Sema::CheckExplicitlyDefaultedComparison(Scope *S, FunctionDecl *FD,
+       return true;
+ 
+     if (llvm::none_of(RD->friends(), [&](const FriendDecl *F) {
+-          return FD->getCanonicalDecl() ==
+-                 F->getFriendDecl()->getCanonicalDecl();
++          return declaresSameEntity(F->getFriendDecl(), FD);
+         })) {
+       Diag(FD->getLocation(), diag::err_defaulted_comparison_not_friend)
+           << int(DCK) << int(0) << RD;

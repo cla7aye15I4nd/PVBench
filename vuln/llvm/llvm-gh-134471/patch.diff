@@ -1,0 +1,43 @@
+diff --git a/clang/docs/ReleaseNotes.rst b/clang/docs/ReleaseNotes.rst
+index 07ff1251fc1a..0bf5e07ec5df 100644
+--- a/clang/docs/ReleaseNotes.rst
++++ b/clang/docs/ReleaseNotes.rst
+@@ -471,6 +471,7 @@ Bug Fixes to C++ Support
+ - Clang no longer crashes when trying to unify the types of arrays with
+   certain differences in qualifiers (this could happen during template argument
+   deduction or when building a ternary operator). (#GH97005)
++- Fixed type alias CTAD issues involving default template arguments. (#GH134471)
+ - The initialization kind of elements of structured bindings
+   direct-list-initialized from an array is corrected to direct-initialization.
+ - Clang no longer crashes when a coroutine is declared ``[[noreturn]]``. (#GH127327)
+diff --git a/clang/lib/Sema/SemaTemplateDeductionGuide.cpp b/clang/lib/Sema/SemaTemplateDeductionGuide.cpp
+index b4863cefc3fb..29c5736a9bf9 100644
+--- a/clang/lib/Sema/SemaTemplateDeductionGuide.cpp
++++ b/clang/lib/Sema/SemaTemplateDeductionGuide.cpp
+@@ -690,6 +690,26 @@ SmallVector<unsigned> TemplateParamsReferencedInTemplateArgumentList(
+   SemaRef.MarkUsedTemplateParameters(
+       DeducedArgs, TemplateParamsList->getDepth(), ReferencedTemplateParams);
+ 
++  auto MarkDefaultArgs = [&](auto *Param) {
++    if (!Param->hasDefaultArgument())
++      return;
++    SemaRef.MarkUsedTemplateParameters(
++        Param->getDefaultArgument().getArgument(),
++        TemplateParamsList->getDepth(), ReferencedTemplateParams);
++  };
++
++  for (unsigned Index = 0; Index < TemplateParamsList->size(); ++Index) {
++    if (!ReferencedTemplateParams[Index])
++      continue;
++    auto *Param = TemplateParamsList->getParam(Index);
++    if (auto *TTPD = dyn_cast<TemplateTypeParmDecl>(Param))
++      MarkDefaultArgs(TTPD);
++    else if (auto *NTTPD = dyn_cast<NonTypeTemplateParmDecl>(Param))
++      MarkDefaultArgs(NTTPD);
++    else
++      MarkDefaultArgs(cast<TemplateTemplateParmDecl>(Param));
++  }
++
+   SmallVector<unsigned> Results;
+   for (unsigned Index = 0; Index < TemplateParamsList->size(); ++Index) {
+     if (ReferencedTemplateParams[Index])

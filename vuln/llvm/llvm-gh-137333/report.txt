@@ -1,0 +1,54 @@
+mlir-opt: /tmp/llvm-gh-137333/build/mlir/lib/IR/Block.cpp:247: mlir::Operation* mlir::Block::getTerminator(): Assertion `mightHaveTerminator()' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ./build/bin/mlir-opt /testcases/llvm-gh-137333/input/poc.mlir -test-lower-to-llvm
+ #0 0x0000555557e912a6 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-137333/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x0000555557e9172f PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-137333/build/llvm/lib/Support/Unix/Signals.inc:888:1
+ #2 0x0000555557e8ea6b llvm::sys::RunSignalHandlers() /tmp/llvm-gh-137333/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x0000555557e90b28 SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-137333/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x000055555de04bdc mlir::Block::getTerminator() /tmp/llvm-gh-137333/build/mlir/lib/IR/Block.cpp:248:15
+#11 0x000055555aea927e lastNonTerminatorInRegion(mlir::Operation*) /tmp/llvm-gh-137333/build/mlir/lib/Dialect/MemRef/IR/MemRefOps.cpp:401:63
+#12 0x000055555af265df AllocaScopeHoister::matchAndRewrite(mlir::memref::AllocaScopeOp, mlir::PatternRewriter&) const /tmp/llvm-gh-137333/build/mlir/lib/Dialect/MemRef/IR/MemRefOps.cpp:466:9
+#13 0x000055555af47b54 mlir::detail::OpOrInterfaceRewritePatternBase<mlir::memref::AllocaScopeOp>::matchAndRewrite(mlir::Operation*, mlir::PatternRewriter&) const /tmp/llvm-gh-137333/build/mlir/include/mlir/IR/PatternMatch.h:300:3
+#14 0x00005555625fef73 mlir::PatternApplicator::matchAndRewrite(mlir::Operation*, mlir::PatternRewriter&, llvm::function_ref<bool (mlir::Pattern const&)>, llvm::function_ref<void (mlir::Pattern const&)>, llvm::function_ref<llvm::LogicalResult (mlir::Pattern const&)>)::'lambda'()::operator()() const /tmp/llvm-gh-137333/build/mlir/lib/Rewrite/PatternApplicator.cpp:212:46
+#15 0x00005555625ff852 void llvm::function_ref<void ()>::callback_fn<mlir::PatternApplicator::matchAndRewrite(mlir::Operation*, mlir::PatternRewriter&, llvm::function_ref<bool (mlir::Pattern const&)>, llvm::function_ref<void (mlir::Pattern const&)>, llvm::function_ref<llvm::LogicalResult (mlir::Pattern const&)>)::'lambda'()>(long) /tmp/llvm-gh-137333/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:47:40
+#16 0x0000555557eb48b0 llvm::function_ref<void ()>::operator()() const /tmp/llvm-gh-137333/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:69:62
+#17 0x00005555626032d1 void mlir::MLIRContext::executeAction<mlir::ApplyPatternAction, mlir::Pattern const&>(llvm::function_ref<void ()>, llvm::ArrayRef<mlir::IRUnit>, mlir::Pattern const&) /tmp/llvm-gh-137333/build/mlir/include/mlir/IR/MLIRContext.h:281:3
+#18 0x00005555625ff6f7 mlir::PatternApplicator::matchAndRewrite(mlir::Operation*, mlir::PatternRewriter&, llvm::function_ref<bool (mlir::Pattern const&)>, llvm::function_ref<void (mlir::Pattern const&)>, llvm::function_ref<llvm::LogicalResult (mlir::Pattern const&)>) /tmp/llvm-gh-137333/build/mlir/lib/Rewrite/PatternApplicator.cpp:233:5
+#19 0x000055555dd249cc (anonymous namespace)::GreedyPatternRewriteDriver::processWorklist() /tmp/llvm-gh-137333/build/mlir/lib/Transforms/Utils/GreedyPatternRewriteDriver.cpp:616:32
+#20 0x000055555dd25bdc (anonymous namespace)::RegionPatternRewriteDriver::simplify(bool*) &&::'lambda'()::operator()() const /tmp/llvm-gh-137333/build/mlir/lib/Transforms/Utils/GreedyPatternRewriteDriver.cpp:875:28
+#21 0x000055555dd26f2a void llvm::function_ref<void ()>::callback_fn<(anonymous namespace)::RegionPatternRewriteDriver::simplify(bool*) &&::'lambda'()>(long) /tmp/llvm-gh-137333/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:47:40
+#22 0x0000555557eb48b0 llvm::function_ref<void ()>::operator()() const /tmp/llvm-gh-137333/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:69:62
+#23 0x000055555dd26c73 void mlir::MLIRContext::executeAction<(anonymous namespace)::GreedyPatternRewriteIteration, long&>(llvm::function_ref<void ()>, llvm::ArrayRef<mlir::IRUnit>, long&) /tmp/llvm-gh-137333/build/mlir/include/mlir/IR/MLIRContext.h:281:3
+#24 0x000055555dd25f04 (anonymous namespace)::RegionPatternRewriteDriver::simplify(bool*) && /tmp/llvm-gh-137333/build/mlir/lib/Transforms/Utils/GreedyPatternRewriteDriver.cpp:888:3
+#25 0x000055555dd260d0 mlir::applyPatternsGreedily(mlir::Region&, mlir::FrozenRewritePatternSet const&, mlir::GreedyRewriteConfig, bool*) /tmp/llvm-gh-137333/build/mlir/lib/Transforms/Utils/GreedyPatternRewriteDriver.cpp:920:55
+#26 0x00005555580c815d mlir::applyPatternsGreedily(mlir::Operation*, mlir::FrozenRewritePatternSet const&, mlir::GreedyRewriteConfig, bool*) /tmp/llvm-gh-137333/build/mlir/include/mlir/Transforms/GreedyPatternRewriteDriver.h:224:36
+#27 0x000055555dc5559e (anonymous namespace)::Canonicalizer::runOnOperation() /tmp/llvm-gh-137333/build/mlir/lib/Transforms/Canonicalizer.cpp:64:30
+#28 0x000055555dbfa13f mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int)::'lambda'()::operator()() const /tmp/llvm-gh-137333/build/mlir/lib/Pass/Pass.cpp:529:22
+#29 0x000055555dbfde8c void llvm::function_ref<void ()>::callback_fn<mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int)::'lambda'()>(long) /tmp/llvm-gh-137333/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:47:40
+#30 0x0000555557eb48b0 llvm::function_ref<void ()>::operator()() const /tmp/llvm-gh-137333/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:69:62
+#31 0x000055555dc06537 void mlir::MLIRContext::executeAction<mlir::PassExecutionAction, mlir::Pass&>(llvm::function_ref<void ()>, llvm::ArrayRef<mlir::IRUnit>, mlir::Pass&) /tmp/llvm-gh-137333/build/mlir/include/mlir/IR/MLIRContext.h:281:3
+#32 0x000055555dbfa56a mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int) /tmp/llvm-gh-137333/build/mlir/lib/Pass/Pass.cpp:534:23
+#33 0x000055555dbfa848 mlir::detail::OpToOpPassAdaptor::runPipeline(mlir::OpPassManager&, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int, mlir::PassInstrumentor*, mlir::PassInstrumentation::PipelineParentInfo const*) /tmp/llvm-gh-137333/build/mlir/lib/Pass/Pass.cpp:594:15
+#34 0x000055555dbfc72e mlir::PassManager::runPasses(mlir::Operation*, mlir::AnalysisManager) /tmp/llvm-gh-137333/build/mlir/lib/Pass/Pass.cpp:907:40
+#35 0x000055555dbfc585 mlir::PassManager::run(mlir::Operation*) /tmp/llvm-gh-137333/build/mlir/lib/Pass/Pass.cpp:887:69
+#36 0x000055555dbe7a86 performActions(llvm::raw_ostream&, std::shared_ptr<llvm::SourceMgr> const&, mlir::MLIRContext*, mlir::MlirOptMainConfig const&) /tmp/llvm-gh-137333/build/mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:484:13
+#37 0x000055555dbe81ad processBuffer(llvm::raw_ostream&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, mlir::MlirOptMainConfig const&, mlir::DialectRegistry&, llvm::ThreadPoolInterface*) /tmp/llvm-gh-137333/build/mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:552:26
+#38 0x000055555dbe8783 mlir::MlirOptMain(llvm::raw_ostream&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, mlir::DialectRegistry&, mlir::MlirOptMainConfig const&)::'lambda'(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)::operator()(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&) const /tmp/llvm-gh-137333/build/mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:636:25
+#39 0x000055555dbe9973 llvm::LogicalResult llvm::function_ref<llvm::LogicalResult (std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)>::callback_fn<mlir::MlirOptMain(llvm::raw_ostream&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, mlir::DialectRegistry&, mlir::MlirOptMainConfig const&)::'lambda'(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)>(long, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&) /tmp/llvm-gh-137333/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:46:52
+#40 0x000055555dd8c1d9 llvm::function_ref<llvm::LogicalResult (std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)>::operator()(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&) const /tmp/llvm-gh-137333/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:69:12
+#41 0x000055555dd8ba2e mlir::splitAndProcessBuffer(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::function_ref<llvm::LogicalResult (std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)>, llvm::raw_ostream&, llvm::StringRef, llvm::StringRef) /tmp/llvm-gh-137333/build/mlir/lib/Support/ToolUtilities.cpp:27:30
+#42 0x000055555dbe891c mlir::MlirOptMain(llvm::raw_ostream&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, mlir::DialectRegistry&, mlir::MlirOptMainConfig const&) /tmp/llvm-gh-137333/build/mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:639:31
+#43 0x000055555dbe8c15 mlir::MlirOptMain(int, char**, llvm::StringRef, llvm::StringRef, mlir::DialectRegistry&) /tmp/llvm-gh-137333/build/mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:680:13
+#44 0x000055555dbe8e0c mlir::MlirOptMain(int, char**, llvm::StringRef, mlir::DialectRegistry&) /tmp/llvm-gh-137333/build/mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:696:21
+#45 0x0000555557debaf1 main /tmp/llvm-gh-137333/build/mlir/tools/mlir-opt/mlir-opt.cpp:339:0
+#46 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#47 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#48 0x0000555557deb4e5 _start (./build/bin/mlir-opt+0x28974e5)
+/testcases/llvm-gh-137333/exp.sh: line 2: 2329972 Aborted                 (core dumped) ./build/bin/mlir-opt $1 -test-lower-to-llvm

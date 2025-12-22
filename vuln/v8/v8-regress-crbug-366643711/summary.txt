@@ -1,0 +1,23 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/objects/waiter-queue-node.cc, line 107
+# Debug check failed: count > 0 (0 vs. 0).
+#
+#
+#
+#FailureMessage Object: 0x7b24fde45460
+==== C stack trace ===============================
+
+    out/debug_asan/d8(___interceptor_backtrace+0x46) [0x55e14694b476]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x55e14dd43663]
+    out/debug_asan/d8(+0xacb6b3a) [0x55e14dd41b3a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x55e14dd0eb30]
+    out/debug_asan/d8(+0xac82b7f) [0x55e14dd0db7f]
+    out/debug_asan/d8(v8::internal::detail::WaiterQueueNode::Split(v8::internal::detail::WaiterQueueNode**, unsigned int)+0x1da) [0x55e1488a6e0a]
+    out/debug_asan/d8(+0x52c1362) [0x55e14834c362]
+    out/debug_asan/d8(v8::internal::JSAtomicsCondition::DequeueExplicit(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSAtomicsCondition>, std::__Cr::atomic<unsigned int>*, std::__Cr::function<unsigned int (v8::internal::detail::WaiterQueueNode**)> const&)+0x1d8) [0x55e148345088]
+    out/debug_asan/d8(v8::internal::JSAtomicsCondition::Notify(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSAtomicsCondition>, unsigned int)+0x10c) [0x55e1483454cc]
+    out/debug_asan/d8(+0x3ca82a9) [0x55e146d332a9]
+    out/debug_asan/d8(v8::internal::Builtin_AtomicsConditionNotify(int, unsigned long*, v8::internal::Isolate*)+0x1b5) [0x55e146d322c5]
+    out/debug_asan/d8(+0xa32b7bd) [0x55e14d3b67bd]

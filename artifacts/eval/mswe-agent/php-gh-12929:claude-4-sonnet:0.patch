@@ -1,0 +1,74 @@
+
+diff --git a/.gitignore b/.gitignore
+index 49acc9f2e17..de22b095dfc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/simplexml/simplexml.c b/ext/simplexml/simplexml.c
+index ae3c98b7e3e..c8d7af61264 100644
+--- a/ext/simplexml/simplexml.c
++++ b/ext/simplexml/simplexml.c
+@@ -421,12 +421,25 @@ static zval *sxe_prop_dim_write(zend_object *object, zval *member, zval *value,
+ 
+ 	GET_NODE(sxe, node);
+ 
++	if (node == NULL) {
++		if (member == &tmp_zv) {
++			zval_ptr_dtor_str(&tmp_zv);
++		}
++		return &EG(error_zval);
++	}
++
+ 	php_libxml_invalidate_node_list_cache_from_doc(node->doc);
+ 
+ 	if (sxe->iter.type == SXE_ITER_ATTRLIST) {
+ 		attribs = 1;
+ 		elements = 0;
+ 		node = php_sxe_get_first_node(sxe, node);
++		if (node == NULL) {
++			if (member == &tmp_zv) {
++				zval_ptr_dtor_str(&tmp_zv);
++			}
++			return &EG(error_zval);
++		}
+ 		attr = (xmlAttrPtr)node;
+ 		test = sxe->iter.name != NULL;
+ 	} else if (sxe->iter.type != SXE_ITER_CHILD) {
+@@ -674,6 +687,12 @@ static int sxe_prop_dim_exists(zend_object *object, zval *member, int check_empt
+ 	sxe = php_sxe_fetch_object(object);
+ 
+ 	GET_NODE(sxe, node);
++	if (node == NULL) {
++		if (member == &tmp_zv) {
++			zval_ptr_dtor_str(&tmp_zv);
++		}
++		return 0;
++	}
+ 
+ 	if (Z_TYPE_P(member) == IS_LONG) {
+ 		if (sxe->iter.type != SXE_ITER_ATTRLIST) {
+@@ -796,6 +815,12 @@ static void sxe_prop_dim_delete(zend_object *object, zval *member, bool elements
+ 	sxe = php_sxe_fetch_object(object);
+ 
+ 	GET_NODE(sxe, node);
++	if (node == NULL) {
++		if (member == &tmp_zv) {
++			zval_ptr_dtor_str(&tmp_zv);
++		}
++		return;
++	}
+ 
+ 	php_libxml_invalidate_node_list_cache_from_doc(node->doc);
+ 

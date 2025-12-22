@@ -1,0 +1,68 @@
+
+diff --git a/poc.js b/poc.js
+new file mode 100644
+index 00000000000..657d16a1c9e
+--- /dev/null
++++ b/poc.js
+@@ -0,0 +1,21 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --stress-lazy-source-positions
++
++eval(`
++var f = (
++    a = function in_arrowhead_args() {
++        return function inner() {
++            b = 42;
++        };
++    },
++    b = 1,
++) => {
++    if (b !== 1) throw new Error();
++    a()();
++    if (b !== 42) throw new Error();
++};
++f();
++`);
+diff --git a/test_crash.js b/test_crash.js
+new file mode 100644
+index 00000000000..b0548ec0565
+--- /dev/null
++++ b/test_crash.js
+@@ -0,0 +1,14 @@
++// Test case that might trigger the original issue
++var obj = {};
++
++// This should trigger string hashing for the key "0"
++obj["0"] = "value";
++
++// Access the property to ensure it's properly stored
++console.log(obj["0"]);
++
++// Test with other edge cases
++obj["00"] = "value2";  // Leading zero
++obj["0000"] = "value3";  // Multiple leading zeros
++
++console.log("Test completed successfully");
+diff --git a/test_repro.js b/test_repro.js
+new file mode 100644
+index 00000000000..1a333e6334c
+--- /dev/null
++++ b/test_repro.js
+@@ -0,0 +1,14 @@
++// Test cases that might trigger string hashing issues
++var obj = {};
++
++// Test with "0" string which might cause index=0 issues
++obj["0"] = "test";
++
++// Test with large numbers that might cause overflow
++obj["4294967295"] = "test";  // 2^32 - 1
++obj["4294967296"] = "test";  // 2^32
++
++// Test with very large numbers
++obj["18446744073709551615"] = "test";  // 2^64 - 1
++
++console.log("Test completed");

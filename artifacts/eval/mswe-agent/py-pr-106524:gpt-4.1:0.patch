@@ -1,0 +1,392 @@
+
+diff --git a/.gitignore b/.gitignore
+index dddf28da016..efa3374de86 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -158,3 +158,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_sre/sre.c b/Modules/_sre/sre.c
+index 3f11916f9e1..ee57868e3f7 100644
+--- a/Modules/_sre/sre.c
++++ b/Modules/_sre/sre.c
+@@ -1539,7 +1539,11 @@ _sre_template_impl(PyObject *module, PyObject *pattern, PyObject *template)
+     self = PyObject_GC_NewVar(TemplateObject, module_state->Template_Type, n);
+     if (!self)
+         return NULL;
+-    self->chunks = 1 + 2*n;
++    self->chunks = 0;
++    self->literal = NULL;
++    for (Py_ssize_t i = 0; i < n; i++) {
++        self->items[i].literal = NULL;
++    }
+     self->literal = Py_NewRef(PyList_GET_ITEM(template, 0));
+     for (Py_ssize_t i = 0; i < n; i++) {
+         Py_ssize_t index = PyLong_AsSsize_t(PyList_GET_ITEM(template, 2*i+1));
+@@ -2773,6 +2777,7 @@ pattern_scanner(_sremodulestate *module_state,
+ /* template methods */
+ 
+ static int
++
+ template_traverse(TemplateObject *self, visitproc visit, void *arg)
+ {
+     Py_VISIT(Py_TYPE(self));
+@@ -2786,24 +2791,24 @@ template_traverse(TemplateObject *self, visitproc visit, void *arg)
+ static int
+ template_clear(TemplateObject *self)
+ {
+-    Py_CLEAR(self->literal);
+-    for (Py_ssize_t i = 0, n = Py_SIZE(self); i < n; i++) {
+-        Py_CLEAR(self->items[i].literal);
++    if (self == NULL)
++        return 0;
++    Py_ssize_t n = Py_SIZE(self);
++    if (n < 0 || n > 1000000)
++        return 0;
++
++    if (n > 0) {
++        for (Py_ssize_t i = 0; i < n; i++) {
++            Py_CLEAR(self->items[i].literal);
++            self->items[i].literal = NULL;
++        }
++        Py_SET_SIZE(self, 0);  // Prevent double free/use-after-free
+     }
++    Py_CLEAR(self->literal);
++    self->literal = NULL;
+     return 0;
+ }
+ 
+-static void
+-template_dealloc(TemplateObject *self)
+-{
+-    PyTypeObject *tp = Py_TYPE(self);
+-
+-    PyObject_GC_UnTrack(self);
+-    (void)template_clear(self);
+-    tp->tp_free(self);
+-    Py_DECREF(tp);
+-}
+-
+ static PyObject *
+ expand_template(TemplateObject *self, MatchObject *match)
+ {
+@@ -2870,7 +2875,6 @@ expand_template(TemplateObject *self, MatchObject *match)
+     return result;
+ }
+ 
+-
+ static Py_hash_t
+ pattern_hash(PatternObject *self)
+ {
+@@ -2943,299 +2947,10 @@ pattern_richcompare(PyObject *lefto, PyObject *righto, int op)
+     return PyBool_FromLong(cmp);
+ }
+ 
+-#include "clinic/sre.c.h"
+-
+-static PyMethodDef pattern_methods[] = {
+-    _SRE_SRE_PATTERN_MATCH_METHODDEF
+-    _SRE_SRE_PATTERN_FULLMATCH_METHODDEF
+-    _SRE_SRE_PATTERN_SEARCH_METHODDEF
+-    _SRE_SRE_PATTERN_SUB_METHODDEF
+-    _SRE_SRE_PATTERN_SUBN_METHODDEF
+-    _SRE_SRE_PATTERN_FINDALL_METHODDEF
+-    _SRE_SRE_PATTERN_SPLIT_METHODDEF
+-    _SRE_SRE_PATTERN_FINDITER_METHODDEF
+-    _SRE_SRE_PATTERN_SCANNER_METHODDEF
+-    _SRE_SRE_PATTERN___COPY___METHODDEF
+-    _SRE_SRE_PATTERN___DEEPCOPY___METHODDEF
+-    {"__class_getitem__", Py_GenericAlias, METH_O|METH_CLASS,
+-     PyDoc_STR("See PEP 585")},
+-    {NULL, NULL}
+-};
+-
+-static PyGetSetDef pattern_getset[] = {
+-    {"groupindex", (getter)pattern_groupindex, (setter)NULL,
+-      "A dictionary mapping group names to group numbers."},
+-    {NULL}  /* Sentinel */
+-};
+-
+-#define PAT_OFF(x) offsetof(PatternObject, x)
+-static PyMemberDef pattern_members[] = {
+-    {"pattern",    T_OBJECT,    PAT_OFF(pattern),       READONLY,
+-     "The pattern string from which the RE object was compiled."},
+-    {"flags",      T_INT,       PAT_OFF(flags),         READONLY,
+-     "The regex matching flags."},
+-    {"groups",     T_PYSSIZET,  PAT_OFF(groups),        READONLY,
+-     "The number of capturing groups in the pattern."},
+-    {"__weaklistoffset__", T_PYSSIZET, offsetof(PatternObject, weakreflist), READONLY},
+-    {NULL}  /* Sentinel */
+-};
+-
+-static PyType_Slot pattern_slots[] = {
+-    {Py_tp_dealloc, (destructor)pattern_dealloc},
+-    {Py_tp_repr, (reprfunc)pattern_repr},
+-    {Py_tp_hash, (hashfunc)pattern_hash},
+-    {Py_tp_doc, (void *)pattern_doc},
+-    {Py_tp_richcompare, pattern_richcompare},
+-    {Py_tp_methods, pattern_methods},
+-    {Py_tp_members, pattern_members},
+-    {Py_tp_getset, pattern_getset},
+-    {Py_tp_traverse, pattern_traverse},
+-    {Py_tp_clear, pattern_clear},
+-    {0, NULL},
+-};
+-
+-static PyType_Spec pattern_spec = {
+-    .name = "re.Pattern",
+-    .basicsize = sizeof(PatternObject),
+-    .itemsize = sizeof(SRE_CODE),
+-    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IMMUTABLETYPE |
+-              Py_TPFLAGS_DISALLOW_INSTANTIATION | Py_TPFLAGS_HAVE_GC),
+-    .slots = pattern_slots,
+-};
+-
+-static PyMethodDef match_methods[] = {
+-    {"group", (PyCFunction) match_group, METH_VARARGS, match_group_doc},
+-    _SRE_SRE_MATCH_START_METHODDEF
+-    _SRE_SRE_MATCH_END_METHODDEF
+-    _SRE_SRE_MATCH_SPAN_METHODDEF
+-    _SRE_SRE_MATCH_GROUPS_METHODDEF
+-    _SRE_SRE_MATCH_GROUPDICT_METHODDEF
+-    _SRE_SRE_MATCH_EXPAND_METHODDEF
+-    _SRE_SRE_MATCH___COPY___METHODDEF
+-    _SRE_SRE_MATCH___DEEPCOPY___METHODDEF
+-    {"__class_getitem__", Py_GenericAlias, METH_O|METH_CLASS,
+-     PyDoc_STR("See PEP 585")},
+-    {NULL, NULL}
+-};
+-
+-static PyGetSetDef match_getset[] = {
+-    {"lastindex", (getter)match_lastindex_get, (setter)NULL,
+-     "The integer index of the last matched capturing group."},
+-    {"lastgroup", (getter)match_lastgroup_get, (setter)NULL,
+-     "The name of the last matched capturing group."},
+-    {"regs",      (getter)match_regs_get,      (setter)NULL},
+-    {NULL}
+-};
+-
+-#define MATCH_OFF(x) offsetof(MatchObject, x)
+-static PyMemberDef match_members[] = {
+-    {"string",  T_OBJECT,   MATCH_OFF(string),  READONLY,
+-     "The string passed to match() or search()."},
+-    {"re",      T_OBJECT,   MATCH_OFF(pattern), READONLY,
+-     "The regular expression object."},
+-    {"pos",     T_PYSSIZET, MATCH_OFF(pos),     READONLY,
+-     "The index into the string at which the RE engine started looking for a match."},
+-    {"endpos",  T_PYSSIZET, MATCH_OFF(endpos),  READONLY,
+-     "The index into the string beyond which the RE engine will not go."},
+-    {NULL}
+-};
+-
+-/* FIXME: implement setattr("string", None) as a special case (to
+-   detach the associated string, if any */
+-static PyType_Slot match_slots[] = {
+-    {Py_tp_dealloc, match_dealloc},
+-    {Py_tp_repr, match_repr},
+-    {Py_tp_doc, (void *)match_doc},
+-    {Py_tp_methods, match_methods},
+-    {Py_tp_members, match_members},
+-    {Py_tp_getset, match_getset},
+-    {Py_tp_traverse, match_traverse},
+-    {Py_tp_clear, match_clear},
+-
+-    /* As mapping.
+-     *
+-     * Match objects do not support length or assignment, but do support
+-     * __getitem__.
+-     */
+-    {Py_mp_subscript, match_getitem},
+-
+-    {0, NULL},
+-};
+-
+-static PyType_Spec match_spec = {
+-    .name = "re.Match",
+-    .basicsize = sizeof(MatchObject),
+-    .itemsize = sizeof(Py_ssize_t),
+-    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IMMUTABLETYPE |
+-              Py_TPFLAGS_DISALLOW_INSTANTIATION | Py_TPFLAGS_HAVE_GC),
+-    .slots = match_slots,
+-};
+-
+-static PyMethodDef scanner_methods[] = {
+-    _SRE_SRE_SCANNER_MATCH_METHODDEF
+-    _SRE_SRE_SCANNER_SEARCH_METHODDEF
+-    {NULL, NULL}
+-};
+-
+-#define SCAN_OFF(x) offsetof(ScannerObject, x)
+-static PyMemberDef scanner_members[] = {
+-    {"pattern", T_OBJECT, SCAN_OFF(pattern), READONLY},
+-    {NULL}  /* Sentinel */
+-};
+-
+-static PyType_Slot scanner_slots[] = {
+-    {Py_tp_dealloc, scanner_dealloc},
+-    {Py_tp_methods, scanner_methods},
+-    {Py_tp_members, scanner_members},
+-    {Py_tp_traverse, scanner_traverse},
+-    {Py_tp_clear, scanner_clear},
+-    {0, NULL},
+-};
+-
+-static PyType_Spec scanner_spec = {
+-    .name = "_sre.SRE_Scanner",
+-    .basicsize = sizeof(ScannerObject),
+-    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IMMUTABLETYPE |
+-              Py_TPFLAGS_DISALLOW_INSTANTIATION | Py_TPFLAGS_HAVE_GC),
+-    .slots = scanner_slots,
+-};
+-
+-static PyType_Slot template_slots[] = {
+-    {Py_tp_dealloc, template_dealloc},
+-    {Py_tp_traverse, template_traverse},
+-    {Py_tp_clear, template_clear},
+-    {0, NULL},
+-};
+-
+-static PyType_Spec template_spec = {
+-    .name = "_sre.SRE_Template",
+-    .basicsize = sizeof(TemplateObject),
+-    .itemsize = sizeof(((TemplateObject *)0)->items[0]),
+-    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_IMMUTABLETYPE |
+-              Py_TPFLAGS_DISALLOW_INSTANTIATION | Py_TPFLAGS_HAVE_GC),
+-    .slots = template_slots,
+-};
+-
+-static PyMethodDef _functions[] = {
+-    _SRE_COMPILE_METHODDEF
+-    _SRE_TEMPLATE_METHODDEF
+-    _SRE_GETCODESIZE_METHODDEF
+-    _SRE_ASCII_ISCASED_METHODDEF
+-    _SRE_UNICODE_ISCASED_METHODDEF
+-    _SRE_ASCII_TOLOWER_METHODDEF
+-    _SRE_UNICODE_TOLOWER_METHODDEF
+-    {NULL, NULL}
+-};
+-
+-static int
+-sre_traverse(PyObject *module, visitproc visit, void *arg)
+-{
+-    _sremodulestate *state = get_sre_module_state(module);
+-
+-    Py_VISIT(state->Pattern_Type);
+-    Py_VISIT(state->Match_Type);
+-    Py_VISIT(state->Scanner_Type);
+-    Py_VISIT(state->Template_Type);
+-    Py_VISIT(state->compile_template);
+-
+-    return 0;
+-}
+-
+-static int
+-sre_clear(PyObject *module)
+-{
+-    _sremodulestate *state = get_sre_module_state(module);
+-
+-    Py_CLEAR(state->Pattern_Type);
+-    Py_CLEAR(state->Match_Type);
+-    Py_CLEAR(state->Scanner_Type);
+-    Py_CLEAR(state->Template_Type);
+-    Py_CLEAR(state->compile_template);
+-
+-    return 0;
+-}
+-
+-static void
+-sre_free(void *module)
+-{
+-    sre_clear((PyObject *)module);
+-}
+-
+-#define CREATE_TYPE(m, type, spec)                                  \
+-do {                                                                \
+-    type = (PyTypeObject *)PyType_FromModuleAndSpec(m, spec, NULL); \
+-    if (type == NULL) {                                             \
+-        goto error;                                                 \
+-    }                                                               \
+-} while (0)
+-
+-#define ADD_ULONG_CONSTANT(module, name, value)           \
+-    do {                                                  \
+-        PyObject *o = PyLong_FromUnsignedLong(value);     \
+-        if (!o)                                           \
+-            goto error;                                   \
+-        int res = PyModule_AddObjectRef(module, name, o); \
+-        Py_DECREF(o);                                     \
+-        if (res < 0) {                                    \
+-            goto error;                                   \
+-        }                                                 \
+-} while (0)
+-
+-static int
+-sre_exec(PyObject *m)
+-{
+-    _sremodulestate *state;
+-
+-    /* Create heap types */
+-    state = get_sre_module_state(m);
+-    CREATE_TYPE(m, state->Pattern_Type, &pattern_spec);
+-    CREATE_TYPE(m, state->Match_Type, &match_spec);
+-    CREATE_TYPE(m, state->Scanner_Type, &scanner_spec);
+-    CREATE_TYPE(m, state->Template_Type, &template_spec);
+-
+-    if (PyModule_AddIntConstant(m, "MAGIC", SRE_MAGIC) < 0) {
+-        goto error;
+-    }
+-
+-    if (PyModule_AddIntConstant(m, "CODESIZE", sizeof(SRE_CODE)) < 0) {
+-        goto error;
+-    }
+-
+-    ADD_ULONG_CONSTANT(m, "MAXREPEAT", SRE_MAXREPEAT);
+-    ADD_ULONG_CONSTANT(m, "MAXGROUPS", SRE_MAXGROUPS);
+-
+-    if (PyModule_AddStringConstant(m, "copyright", copyright) < 0) {
+-        goto error;
+-    }
+-
+-    return 0;
+-
+-error:
+-    return -1;
+-}
+-
+-static PyModuleDef_Slot sre_slots[] = {
+-    {Py_mod_exec, sre_exec},
+-    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+-    {0, NULL},
+-};
+-
+-static struct PyModuleDef sremodule = {
+-    .m_base = PyModuleDef_HEAD_INIT,
+-    .m_name = "_sre",
+-    .m_size = sizeof(_sremodulestate),
+-    .m_methods = _functions,
+-    .m_slots = sre_slots,
+-    .m_traverse = sre_traverse,
+-    .m_free = sre_free,
+-    .m_clear = sre_clear,
+-};
+-
+-PyMODINIT_FUNC
+-PyInit__sre(void)
+-{
+-    return PyModuleDef_Init(&sremodule);
+-}
++/* Add static to the following functions as well: */
++static int sre_traverse(PyObject *module, visitproc visit, void *arg);
++static int sre_clear(PyObject *module);
++static void sre_free(void *module);
++static int sre_exec(PyObject *m);
+ 
+-/* vim:ts=4:sw=4:et
+ */

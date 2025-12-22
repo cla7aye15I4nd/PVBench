@@ -1,0 +1,37 @@
+==1761847==ERROR: AddressSanitizer: SEGV on unknown address 0x000002020308 (pc 0x55da066c5c5d bp 0x7fffde7efe10 sp 0x7fffde7ede00 T0)
+==1761847==The signal is caused by a READ memory access.
+    #0 0x55da066c5c5d in zend_fetch_debug_backtrace /php-gh-14387/build/Zend/zend_builtin_functions.c:1745:29
+    #1 0x55da06b74704 in zend_default_exception_new_ex /php-gh-14387/build/Zend/zend_exceptions.c:257:3
+    #2 0x55da06b6b1b6 in zend_default_exception_new /php-gh-14387/build/Zend/zend_exceptions.c:288:9
+    #3 0x55da065f8d93 in _object_and_properties_init /php-gh-14387/build/Zend/zend_API.c:1705:3
+    #4 0x55da065f8d93 in object_init_ex /php-gh-14387/build/Zend/zend_API.c:1719:9
+    #5 0x55da068b4d3e in ZEND_NEW_SPEC_CONST_UNUSED_HANDLER /php-gh-14387/build/Zend/zend_vm_execute.h:10309:6
+    #6 0x55da066fe4ff in execute_ex /php-gh-14387/build/Zend/zend_vm_execute.h:55866:7
+    #7 0x55da06565569 in zend_call_function /php-gh-14387/build/Zend/zend_execute_API.c:949:3
+    #8 0x55da0656706c in zend_call_known_function /php-gh-14387/build/Zend/zend_execute_API.c:1043:23
+    #9 0x55da06c1c70d in zend_call_known_instance_method /php-gh-14387/build/Zend/zend_API.h:753:2
+    #10 0x55da06c1c70d in zend_call_known_instance_method_with_0_params /php-gh-14387/build/Zend/zend_API.h:759:2
+    #11 0x55da06c1c70d in zend_objects_destroy_object /php-gh-14387/build/Zend/zend_objects.c:170:3
+    #12 0x55da06c42628 in zend_objects_store_del /php-gh-14387/build/Zend/zend_objects_API.c:184:4
+    #13 0x55da065cc06a in rc_dtor_func /php-gh-14387/build/Zend/zend_variables.c:57:2
+    #14 0x55da0667b5fa in i_zval_ptr_dtor /php-gh-14387/build/Zend/zend_variables.h:44:4
+    #15 0x55da0667b5fa in zend_array_destroy /php-gh-14387/build/Zend/zend_hash.c:1769:5
+    #16 0x55da065cc06a in rc_dtor_func /php-gh-14387/build/Zend/zend_variables.c:57:2
+    #17 0x55da065cc1cc in i_zval_ptr_dtor /php-gh-14387/build/Zend/zend_variables.h:44:4
+    #18 0x55da065cc1cc in zval_ptr_dtor /php-gh-14387/build/Zend/zend_variables.c:84:2
+    #19 0x55da06bba282 in zend_generator_throw_exception /php-gh-14387/build/Zend/zend_generators.c:474:3
+    #20 0x55da06bbd732 in zim_Generator_throw /php-gh-14387/build/Zend/zend_generators.c:976:3
+    #21 0x55da0689a53f in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-14387/build/Zend/zend_vm_execute.h:1842:4
+    #22 0x55da066fe4ff in execute_ex /php-gh-14387/build/Zend/zend_vm_execute.h:55866:7
+    #23 0x55da066ffc96 in zend_execute /php-gh-14387/build/Zend/zend_vm_execute.h:60439:2
+    #24 0x55da065e0336 in zend_execute_scripts /php-gh-14387/build/Zend/zend.c:1840:4
+    #25 0x55da0638587b in php_execute_script /php-gh-14387/build/main/main.c:2565:13
+    #26 0x55da06f08d8c in do_cli /php-gh-14387/build/sapi/cli/php_cli.c:964:5
+    #27 0x55da06f06d49 in main /php-gh-14387/build/sapi/cli/php_cli.c:1333:18
+    #28 0x7fcb89c321c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #29 0x7fcb89c3228a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #30 0x55da05603164 in _start (/php-gh-14387/build/sapi/cli/php+0x403164) (BuildId: b861422562646989f152cc90eaf6ee617c9f6d82)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-14387/build/Zend/zend_builtin_functions.c:1745:29 in zend_fetch_debug_backtrace
+==1761847==ABORTING

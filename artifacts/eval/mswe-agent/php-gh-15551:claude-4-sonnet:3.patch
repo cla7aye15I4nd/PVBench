@@ -1,0 +1,81 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/dom_iterators.c b/ext/dom/dom_iterators.c
+index 866cb5a07e9..77d944e96a4 100644
+--- a/ext/dom/dom_iterators.c
++++ b/ext/dom/dom_iterators.c
+@@ -159,7 +159,7 @@ static void php_dom_iterator_current_key(zend_object_iterator *iter, zval *key)
+ 	if (instanceof_function(Z_OBJCE_P(object), dom_nodelist_class_entry)) {
+ 		ZVAL_LONG(key, iter->index);
+ 	} else {
+-		dom_object *intern = Z_DOMOBJ_P(&iterator->curobj);
++		dom_object *intern = Z_TYPE(iterator->curobj) == IS_OBJECT ? Z_DOMOBJ_P(&iterator->curobj) : NULL;
+ 
+ 		if (intern != NULL && intern->ptr != NULL) {
+ 			xmlNodePtr curnode = (xmlNodePtr)((php_libxml_node_ptr *)intern->ptr)->node;
+@@ -186,12 +186,16 @@ static void php_dom_iterator_move_forward(zend_object_iterator *iter) /* {{{ */
+ 	php_dom_iterator *iterator = (php_dom_iterator *)iter;
+ 
+ 	object = &iterator->intern.data;
+-	nnmap = Z_DOMOBJ_P(object);
+-	objmap = (dom_nnodemap_object *)nnmap->ptr;
++	nnmap = Z_TYPE_P(object) == IS_OBJECT ? Z_DOMOBJ_P(object) : NULL;
++	objmap = (nnmap != NULL) ? (dom_nnodemap_object *)nnmap->ptr : NULL;
+ 
+-	intern = Z_DOMOBJ_P(&iterator->curobj);
++	if (Z_TYPE(iterator->curobj) == IS_OBJECT) {
++		intern = Z_DOMOBJ_P(&iterator->curobj);
++	} else {
++		intern = NULL;
++	}
+ 
+-	if (intern != NULL && intern->ptr != NULL) {
++	if (intern != NULL && intern->ptr != NULL && objmap != NULL) {
+ 		if (objmap->nodetype != XML_ENTITY_NODE &&
+ 			objmap->nodetype != XML_NOTATION_NODE) {
+ 			if (objmap->nodetype == DOM_NODESET) {
+@@ -236,7 +240,7 @@ static void php_dom_iterator_move_forward(zend_object_iterator *iter) /* {{{ */
+ 		zval_ptr_dtor(&iterator->curobj);
+ 		ZVAL_UNDEF(&iterator->curobj);
+ 	}
+-	if (curnode) {
++	if (curnode && objmap != NULL) {
+ 		php_dom_create_object(curnode, &iterator->curobj, objmap->baseobj);
+ 	}
+ }
+@@ -275,8 +279,8 @@ zend_object_iterator *php_dom_get_iterator(zend_class_entry *ce, zval *object, i
+ 
+ 	ZVAL_UNDEF(&iterator->curobj);
+ 
+-	intern = Z_DOMOBJ_P(object);
+-	objmap = (dom_nnodemap_object *)intern->ptr;
++	intern = Z_TYPE_P(object) == IS_OBJECT ? Z_DOMOBJ_P(object) : NULL;
++	objmap = (intern != NULL) ? (dom_nnodemap_object *)intern->ptr : NULL;
+ 	if (objmap != NULL) {
+ 		if (objmap->nodetype != XML_ENTITY_NODE &&
+ 			objmap->nodetype != XML_NOTATION_NODE) {
+@@ -316,7 +320,7 @@ zend_object_iterator *php_dom_get_iterator(zend_class_entry *ce, zval *object, i
+ 		}
+ 	}
+ err:
+-	if (curnode) {
++	if (curnode && objmap != NULL) {
+ 		php_dom_create_object(curnode, &iterator->curobj, objmap->baseobj);
+ 	}
+ 

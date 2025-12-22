@@ -1,0 +1,32 @@
+
+diff --git a/.gitignore b/.gitignore
+index dddf28da016..efa3374de86 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -158,3 +158,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_sre/sre.c b/Modules/_sre/sre.c
+index 3f11916f9e1..4e2a90dde8e 100644
+--- a/Modules/_sre/sre.c
++++ b/Modules/_sre/sre.c
+@@ -1541,6 +1541,12 @@ _sre_template_impl(PyObject *module, PyObject *pattern, PyObject *template)
+         return NULL;
+     self->chunks = 1 + 2*n;
+     self->literal = Py_NewRef(PyList_GET_ITEM(template, 0));
++    
++    // Initialize all literal pointers to NULL to prevent crashes in template_clear
++    // if an error occurs during initialization
++    for (Py_ssize_t i = 0; i < n; i++) {
++        self->items[i].literal = NULL;
++    }
+     for (Py_ssize_t i = 0; i < n; i++) {
+         Py_ssize_t index = PyLong_AsSsize_t(PyList_GET_ITEM(template, 2*i+1));
+         if (index == -1 && PyErr_Occurred()) {

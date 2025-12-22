@@ -1,0 +1,151 @@
+diff --git a/result/errors/759573-2.xml b/result/errors/759573-2.xml
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/result/errors/759573-2.xml.err b/result/errors/759573-2.xml.err
+new file mode 100644
+index 00000000..d8773d8a
+--- /dev/null
++++ b/result/errors/759573-2.xml.err
+@@ -0,0 +1,58 @@
++Entity: line 1: parser error : Space required after '<!ENTITY'
++ %zz; 
++     ^
++Entity: line 1: 
++<!ENTITY<?xDOCTYPEm~?>
++        ^
++Entity: line 1: parser error : xmlParseEntityDecl: no name
++ %zz; 
++     ^
++Entity: line 1: 
++<!ENTITY<?xDOCTYPEm~?>
++        ^
++Entity: line 1: parser error : ParsePI: PI xDOCTYPEm space expected
++ %zz; 
++     ^
++Entity: line 1: 
++<!ENTITY<?xDOCTYPEm~?>
++                   ^
++Entity: line 1: parser error : Space required after '<!ENTITY'
++ %zz; 
++     ^
++Entity: line 1: 
++<!ENTITY<?xDOCTYPEm~?>
++        ^
++Entity: line 1: parser error : xmlParseEntityDecl: no name
++ %zz; 
++     ^
++Entity: line 1: 
++<!ENTITY<?xDOCTYPEm~?>
++        ^
++Entity: line 1: parser error : ParsePI: PI xDOCTYPEm space expected
++ %zz; 
++     ^
++Entity: line 1: 
++<!ENTITY<?xDOCTYPEm~?>
++                   ^
++Entity: line 1: parser error : Space required after 'ELEMENT'
++ %xx; 
++     ^
++Entity: line 3: 
++%zz;<!ELEMENTD(%MENT%MENTDÅ¹MENTD%zNMT9KENSMYSYSTEM;MENT9%zz;
++             ^
++Entity: line 1: parser error : Content error in the external subset
++ %xx; 
++     ^
++Entity: line 3: 
++%zz;<!ELEMENTD(%MENT%MENTDÅ¹MENTD%zNMT9KENSMYSYSTEM;MENT9%zz;
++             ^
++./test/errors/759573-2.xml:6: parser error : internal error: xmlParseInternalSubset: error detected in Markup declaration
++
++%xx;ÿggKENSMYNT&#35;MENTD&#372zz;'>
++    ^
++./test/errors/759573-2.xml:6: parser error : DOCTYPE improperly terminated
++%xx;ÿggKENSMYNT&#35;MENTD&#372zz;'>
++    ^
++./test/errors/759573-2.xml:6: parser error : Start tag expected, '<' not found
++%xx;ÿggKENSMYNT&#35;MENTD&#372zz;'>
++    ^
+diff --git a/result/errors/759573-2.xml.str b/result/errors/759573-2.xml.str
+new file mode 100644
+index 00000000..baac1643
+--- /dev/null
++++ b/result/errors/759573-2.xml.str
+@@ -0,0 +1,4 @@
++./test/errors/759573-2.xml:2: parser error : Extra content at the end of the document
++<!DOCTYPE test [
++               ^
++./test/errors/759573-2.xml : failed to parse
+diff --git a/result/errors/759573.xml b/result/errors/759573.xml
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/result/errors/759573.xml.err b/result/errors/759573.xml.err
+new file mode 100644
+index 00000000..2c21e9ac
+--- /dev/null
++++ b/result/errors/759573.xml.err
+@@ -0,0 +1,31 @@
++./test/errors/759573.xml:1: parser error : Space required after '<!ENTITY'
++ELEMENT t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;000&#37;z;'><!ENTITY
++                                                                               ^
++./test/errors/759573.xml:1: parser error : Space required after the entity name
++LEMENT t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;000&#37;z;'><!ENTITYz
++                                                                               ^
++./test/errors/759573.xml:1: parser error : Entity value required
++LEMENT t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;000&#37;z;'><!ENTITYz
++                                                                               ^
++Entity: line 1: parser error : PEReference: no name
++ %xx; 
++     ^
++Entity: line 1: 
++%<![INCLUDE[000%à®¸000%z;
++ ^
++Entity: line 1: parser error : Content error in the external subset
++ %xx; 
++     ^
++Entity: line 1: 
++%<![INCLUDE[000%à®¸000%z;
++            ^
++./test/errors/759573.xml:1: parser error : internal error: xmlParseInternalSubset: error detected in Markup declaration
++
++T t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;000&#37;z;'><!ENTITYz>%xx;
++                                                                               ^
++./test/errors/759573.xml:1: parser error : DOCTYPE improperly terminated
++T t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;000&#37;z;'><!ENTITYz>%xx;
++                                                                               ^
++./test/errors/759573.xml:1: parser error : Start tag expected, '<' not found
++T t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;000&#37;z;'><!ENTITYz>%xx;
++                                                                               ^
+diff --git a/result/errors/759573.xml.str b/result/errors/759573.xml.str
+new file mode 100644
+index 00000000..1b6addb7
+--- /dev/null
++++ b/result/errors/759573.xml.str
+@@ -0,0 +1,4 @@
++./test/errors/759573.xml:1: parser error : Extra content at the end of the document
++<?h?><!DOCTYPEt[<!ELEMENT t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;00
++               ^
++./test/errors/759573.xml : failed to parse
+diff --git a/test/errors/759573-2.xml b/test/errors/759573-2.xml
+new file mode 100644
+index 00000000..5ad655f8
+--- /dev/null
++++ b/test/errors/759573-2.xml
+@@ -0,0 +1,9 @@
++<?xmh ven="1.0"?>
++<!DOCTYPE test [
++<!ELEMENT test (#PCDATA) >
++<!ENTITY % xx '&#37;zz;<![INCLUDE[&#37;zz;<!ELEMENTD(&#37;MENT&#37;MENTD&#377;MENTD&#37;zNMT9KENSMYSYSTEM;MENT9&#37;zz;'>
++<!ENTITY % zz '&#60;!ENTITY<?xDOCTYPEm~?>' >
++%xx;ÿggKENSMYNT&#35;MENTD&#372zz;'>
++<!ENBITY % zz '&#60;!EN#3&##37;z ';!EY'#x;g
++<!ENTent ref="bè:b>r.B"/>				
++e		</
+\ No newline at end of file
+diff --git a/test/errors/759573.xml b/test/errors/759573.xml
+new file mode 100644
+index 00000000..69ebb57c
+--- /dev/null
++++ b/test/errors/759573.xml
+@@ -0,0 +1 @@
++<?h?><!DOCTYPEt[<!ELEMENT t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;000&#37;z;'><!ENTITYz>%xx;
+\ No newline at end of file

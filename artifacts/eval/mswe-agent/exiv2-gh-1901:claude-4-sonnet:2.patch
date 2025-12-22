@@ -1,0 +1,103 @@
+
+diff --git a/.gitignore b/.gitignore
+index d3090138a..109566f69 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,4 +23,13 @@ src/doxygen.hpp
+ test/tmp/*
+ doc/html
+ contrib/vms/.vagrant
+-/.vscode
+\ No newline at end of file
++/.vscodebuild/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/test_datetime.cpp b/test_datetime.cpp
+new file mode 100644
+index 000000000..090998ae8
+--- /dev/null
++++ b/test_datetime.cpp
+@@ -0,0 +1,50 @@
++#include <iostream>
++#include "../xmpsdk/include/XMP.hpp"
++
++int main() {
++    try {
++        // Test normal date
++        XMP_DateTime normalDate;
++        normalDate.year = 2023;
++        normalDate.month = 12;
++        normalDate.day = 25;
++        normalDate.hour = 10;
++        normalDate.minute = 30;
++        normalDate.second = 45;
++        normalDate.nanoSecond = 0;
++        normalDate.tzSign = 0;
++        normalDate.tzHour = 0;
++        normalDate.tzMinute = 0;
++        
++        XMPUtils::SetTimeZone(&normalDate);
++        std::cout << "Normal date test passed: " << normalDate.year << std::endl;
++        
++        // Test edge case that should fail
++        XMP_DateTime badDate;
++        badDate.year = -2147483648; // INT_MIN
++        badDate.month = 1;
++        badDate.day = 1;
++        badDate.hour = 0;
++        badDate.minute = 0;
++        badDate.second = 0;
++        badDate.nanoSecond = 0;
++        badDate.tzSign = 0;
++        badDate.tzHour = 0;
++        badDate.tzMinute = 0;
++        
++        try {
++            XMPUtils::SetTimeZone(&badDate);
++            std::cout << "ERROR: Bad date should have thrown exception!" << std::endl;
++            return 1;
++        } catch (const XMP_Error& e) {
++            std::cout << "Bad date correctly caught: " << e.GetErrMsg() << std::endl;
++        }
++        
++        std::cout << "All tests passed!" << std::endl;
++        return 0;
++        
++    } catch (const std::exception& e) {
++        std::cout << "Test failed with exception: " << e.what() << std::endl;
++        return 1;
++    }
++}
+diff --git a/xmpsdk/src/XMPUtils.cpp b/xmpsdk/src/XMPUtils.cpp
+index 8474b8dd3..9031ec047 100644
+--- a/xmpsdk/src/XMPUtils.cpp
++++ b/xmpsdk/src/XMPUtils.cpp
+@@ -1311,6 +1311,10 @@ XMPUtils::ConvertToDate ( XMP_StringPtr	 strValue,
+ 		if ( (strValue[pos] != 0) && (strValue[pos] != '-') ) XMP_Throw ( "Invalid date string, after year", kXMPErr_BadParam );
+ 		if ( strValue[0] == '-' ) temp = -temp;
+ 		binValue->year = temp;
++		// Check for reasonable year range to prevent integer overflow in subsequent operations
++		if (temp < (std::numeric_limits<int>::min() + 1900) || temp > (std::numeric_limits<int>::max() - 1900)) {
++			XMP_Throw ( "Year value out of reasonable range", kXMPErr_BadParam );
++		}
+ 		if ( strValue[pos] == 0 ) return;
+ 
+ 		++pos;
+@@ -1960,6 +1964,10 @@ XMPUtils::SetTimeZone ( XMP_DateTime * xmpTime )
+ 		if ( now == -1 ) XMP_Throw ( "Failure from ANSI C time function", kXMPErr_ExternalFailure );
+ 		ansi_localtime ( &now, &tmLocal );
+ 	} else {
++		// Check for potential integer overflow when subtracting 1900
++		if (xmpTime->year < (std::numeric_limits<int>::min() + 1900)) {
++			XMP_Throw ( "Year value too small, would cause integer overflow", kXMPErr_BadParam );
++		}
+ 		tmLocal.tm_year = xmpTime->year - 1900;
+ #if 0
+ 		// Removed to fix https://github.com/Exiv2/exiv2/issues/1901

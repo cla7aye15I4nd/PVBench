@@ -1,0 +1,213 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 7483e9c0f43..0b42c651230 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -3208,7 +3208,9 @@ task_eager_start(asyncio_state *state, TaskObj *task)
+         register_task(state, task);
+     } else {
+         // This seems to really help performance on pyperformance benchmarks
+-        Py_CLEAR(task->task_coro);
++        // Don't clear the coroutine immediately to avoid use-after-free
++        // The coroutine will be cleared during task deallocation
++        // Py_CLEAR(task->task_coro);
+     }
+ 
+     return retval;
+diff --git a/aggressive_test.py b/aggressive_test.py
+new file mode 100644
+index 00000000000..6399e620900
+--- /dev/null
++++ b/aggressive_test.py
+@@ -0,0 +1,52 @@
++import asyncio
++import gc
++import weakref
++
++async def test_coro():
++    return "done"
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    tasks = []
++    weak_refs = []
++    
++    # Create many tasks to increase chances of triggering the issue
++    for i in range(1000):
++        task = asyncio.create_task(test_coro())
++        await task
++        
++        # Keep weak references to track when objects are freed
++        weak_refs.append(weakref.ref(task))
++        
++        # Try to access the coroutine after completion
++        coro = task.get_coro()
++        
++        # Force garbage collection periodically
++        if i % 100 == 0:
++            gc.collect()
++        
++        # Try to access the coroutine multiple times
++        for j in range(10):
++            coro = task.get_coro()
++            if coro is not None:
++                try:
++                    str(coro)
++                    repr(coro)
++                except:
++                    pass
++        
++        tasks.append(task)
++    
++    # Final garbage collection
++    gc.collect()
++    
++    # Check how many objects were freed
++    freed_count = sum(1 for ref in weak_refs if ref() is None)
++    print(f"Freed {freed_count} out of {len(weak_refs)} tasks")
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    asyncio.run(main())
+diff --git a/cancel_test.py b/cancel_test.py
+new file mode 100644
+index 00000000000..4361a7fb842
+--- /dev/null
++++ b/cancel_test.py
+@@ -0,0 +1,48 @@
++import asyncio
++import gc
++
++async def slow_coro():
++    try:
++        await asyncio.sleep(1)
++        return "done"
++    except asyncio.CancelledError:
++        print("Coroutine was cancelled")
++        raise
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    # Test with task cancellation
++    for i in range(100):
++        task = asyncio.create_task(slow_coro())
++        
++        # Cancel the task immediately
++        task.cancel("Test cancellation")
++        
++        try:
++            await task
++        except asyncio.CancelledError:
++            pass
++        
++        # Try to access the coroutine after cancellation
++        coro = task.get_coro()
++        
++        # Force garbage collection
++        if i % 10 == 0:
++            gc.collect()
++        
++        # Try to access the coroutine multiple times
++        for j in range(10):
++            coro = task.get_coro()
++            if coro is not None:
++                try:
++                    str(coro)
++                    repr(coro)
++                except:
++                    pass
++    
++    print("Cancellation test completed successfully")
++
++if __name__ == "__main__":
++    asyncio.run(main())
+diff --git a/poc.py b/poc.py
+new file mode 100644
+index 00000000000..8f5473a6272
+--- /dev/null
++++ b/poc.py
+@@ -0,0 +1,15 @@
++import asyncio
++
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++
++    async def foo(): ...
++
++    task = asyncio.create_task(foo())
++    await task
++    print(task.get_coro())
++
++
++asyncio.run(main())
+\ No newline at end of file
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..ba26baf937b
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,43 @@
++import asyncio
++import gc
++
++async def test_coro():
++    return "done"
++
++async def test_eager_task_use_after_free():
++    # Create and run task with eager task factory
++    task = asyncio.create_task(test_coro())
++    
++    # Wait for the task to complete
++    await task
++    
++    # Force garbage collection to trigger any potential issues
++    import gc
++    gc.collect()
++    
++    # Try to access the coroutine after task completion
++    # This should trigger the use-after-free if the bug exists
++    coro = task.get_coro()
++    print(f"Coroutine: {coro}")
++    
++    # Try to access it multiple times to increase chances of triggering the bug
++    for i in range(100):
++        coro = task.get_coro()
++        if coro is not None:
++            # Try to access attributes of the coroutine
++            try:
++                str(coro)
++            except:
++                pass
++    
++    print("Test completed")
++
++def main():
++    # Get event loop and set eager task factory
++    loop = asyncio.new_event_loop()
++    asyncio.set_event_loop(loop)
++    loop.set_task_factory(asyncio.eager_task_factory)
++    asyncio.run(test_eager_task_use_after_free())
++
++if __name__ == "__main__":
++    main()

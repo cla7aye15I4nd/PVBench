@@ -1,0 +1,48 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ec7961f..87231784 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -64,3 +64,12 @@ Makefile.in
+ /m4/lt*.m4
+ /py-compile
+ /stamp-h1
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/schematron.c b/schematron.c
+index 85b46282..018d2877 100644
+--- a/schematron.c
++++ b/schematron.c
+@@ -1380,8 +1380,24 @@ xmlSchematronGetNode(xmlSchematronValidCtxtPtr ctxt,
+         return(NULL);
+ 
+     if ((ret->type == XPATH_NODESET) &&
+-        (ret->nodesetval != NULL) && (ret->nodesetval->nodeNr > 0))
++        (ret->nodesetval != NULL) && (ret->nodesetval->nodeNr > 0)) {
+         node = ret->nodesetval->nodeTab[0];
++        
++        /* 
++         * Special handling for namespace nodes created by XPath evaluation.
++         * These nodes are freed when the XPath object is freed, so we need
++         * to avoid returning them to prevent use-after-free.
++         */
++        if (node != NULL && node->type == XML_NAMESPACE_DECL) {
++            /* 
++             * Namespace nodes from XPath evaluation (like namespace::*) 
++             * will be freed when we call xmlXPathFreeObject.
++             * To avoid use-after-free, we return NULL in this case.
++             * This is a conservative fix that prevents the crash.
++             */
++            node = NULL;
++        }
++    }
+ 
+     xmlXPathFreeObject(ret);
+     return(node);

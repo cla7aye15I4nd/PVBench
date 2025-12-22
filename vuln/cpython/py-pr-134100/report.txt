@@ -1,0 +1,134 @@
+==1375879==ERROR: AddressSanitizer: heap-use-after-free on address 0x50400004fa98 at pc 0x555555ab49b2 bp 0x7fffffff2770 sp 0x7fffffff2768
+READ of size 8 at 0x50400004fa98 thread T0
+    #0 0x555555ab49b1 in _Py_TYPE /tmp/py-pr-134100/build/./Include/object.h:270:20
+    #1 0x555555ab5ce0 in PyObject_Repr /tmp/py-pr-134100/build/Objects/object.c:761:9
+    #2 0x555555bdb282 in unicode_fromformat_arg /tmp/py-pr-134100/build/Objects/unicodeobject.c:3105:16
+    #3 0x555555b94866 in unicode_from_format /tmp/py-pr-134100/build/Objects/unicodeobject.c:3224:17
+    #4 0x555555b9430e in PyUnicode_FromFormatV /tmp/py-pr-134100/build/Objects/unicodeobject.c:3258:9
+    #5 0x555555e8763d in _PyErr_FormatV /tmp/py-pr-134100/build/Python/errors.c:1209:14
+    #6 0x555555e835f3 in _PyErr_Format /tmp/py-pr-134100/build/Python/errors.c:1232:5
+    #7 0x555555eeb635 in PyImport_ImportModuleLevelObject /tmp/py-pr-134100/build/Python/import.c:3860:25
+    #8 0x555555d8de88 in builtin___import___impl /tmp/py-pr-134100/build/Python/bltinmodule.c:285:12
+    #9 0x555555d8837a in builtin___import__ /tmp/py-pr-134100/build/Python/clinic/bltinmodule.c.h:110:20
+    #10 0x555555aa6133 in cfunction_vectorcall_FASTCALL_KEYWORDS /tmp/py-pr-134100/build/Objects/methodobject.c:466:24
+    #11 0x555555988b1f in _PyObject_VectorcallTstate /tmp/py-pr-134100/build/./Include/internal/pycore_call.h:169:11
+    #12 0x55555598a739 in PyObject_Vectorcall /tmp/py-pr-134100/build/Objects/call.c:327:12
+    #13 0x555555dac89c in _PyEval_EvalFrameDefault /tmp/py-pr-134100/build/Python/generated_cases.c.h:2966:35
+    #14 0x555555d9e731 in _PyEval_EvalFrame /tmp/py-pr-134100/build/./Include/internal/pycore_ceval.h:119:16
+    #15 0x555555d9e5bc in _PyEval_Vector /tmp/py-pr-134100/build/Python/ceval.c:1964:12
+    #16 0x555555d9de9a in PyEval_EvalCode /tmp/py-pr-134100/build/Python/ceval.c:856:21
+    #17 0x555555f8a756 in run_eval_code_obj /tmp/py-pr-134100/build/Python/pythonrun.c:1365:12
+    #18 0x555555f8a497 in run_mod /tmp/py-pr-134100/build/Python/pythonrun.c:1436:19
+    #19 0x555555f85742 in pyrun_file /tmp/py-pr-134100/build/Python/pythonrun.c:1293:15
+    #20 0x555555f8355d in _PyRun_SimpleFileObject /tmp/py-pr-134100/build/Python/pythonrun.c:521:13
+    #21 0x555555f82be8 in _PyRun_AnyFileObject /tmp/py-pr-134100/build/Python/pythonrun.c:81:15
+    #22 0x555556029be6 in pymain_run_file_obj /tmp/py-pr-134100/build/Modules/main.c:402:15
+    #23 0x55555602888c in pymain_run_file /tmp/py-pr-134100/build/Modules/main.c:421:15
+    #24 0x5555560266cf in pymain_run_python /tmp/py-pr-134100/build/Modules/main.c:686:21
+    #25 0x5555560259e2 in Py_RunMain /tmp/py-pr-134100/build/Modules/main.c:767:5
+    #26 0x555556026b18 in pymain_main /tmp/py-pr-134100/build/Modules/main.c:797:12
+    #27 0x555556026c27 in Py_BytesMain /tmp/py-pr-134100/build/Modules/main.c:821:12
+    #28 0x5555557d6511 in main /tmp/py-pr-134100/build/./Programs/python.c:15:12
+    #29 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #30 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #31 0x5555556fd104 in _start (/tmp/py-pr-134100/build/python+0x1a9104) (BuildId: 6267bdd8a2227199b4d5d36e533f01615a9508e0)
+
+0x50400004fa98 is located 8 bytes inside of 44-byte region [0x50400004fa90,0x50400004fabc)
+freed by thread T0 here:
+    #0 0x555555797cba in free (/tmp/py-pr-134100/build/python+0x243cba) (BuildId: 6267bdd8a2227199b4d5d36e533f01615a9508e0)
+    #1 0x555555ae1308 in _PyMem_RawFree /tmp/py-pr-134100/build/Objects/obmalloc.c:91:5
+    #2 0x555555ae4807 in PyObject_Free /tmp/py-pr-134100/build/Objects/obmalloc.c:1423:5
+    #3 0x555555bcee5a in unicode_dealloc /tmp/py-pr-134100/build/Objects/unicodeobject.c:1801:5
+    #4 0x555555abfae1 in _Py_Dealloc /tmp/py-pr-134100/build/Objects/object.c:3107:5
+    #5 0x555555eeb5c2 in Py_DECREF /tmp/py-pr-134100/build/./Include/refcount.h:433:9
+    #6 0x555555eeb5c2 in PyImport_ImportModuleLevelObject /tmp/py-pr-134100/build/Python/import.c:3857:17
+    #7 0x555555d8de88 in builtin___import___impl /tmp/py-pr-134100/build/Python/bltinmodule.c:285:12
+    #8 0x555555d8837a in builtin___import__ /tmp/py-pr-134100/build/Python/clinic/bltinmodule.c.h:110:20
+    #9 0x555555aa6133 in cfunction_vectorcall_FASTCALL_KEYWORDS /tmp/py-pr-134100/build/Objects/methodobject.c:466:24
+    #10 0x555555988b1f in _PyObject_VectorcallTstate /tmp/py-pr-134100/build/./Include/internal/pycore_call.h:169:11
+    #11 0x55555598a739 in PyObject_Vectorcall /tmp/py-pr-134100/build/Objects/call.c:327:12
+    #12 0x555555dac89c in _PyEval_EvalFrameDefault /tmp/py-pr-134100/build/Python/generated_cases.c.h:2966:35
+    #13 0x555555d9e731 in _PyEval_EvalFrame /tmp/py-pr-134100/build/./Include/internal/pycore_ceval.h:119:16
+    #14 0x555555d9e5bc in _PyEval_Vector /tmp/py-pr-134100/build/Python/ceval.c:1964:12
+    #15 0x555555d9de9a in PyEval_EvalCode /tmp/py-pr-134100/build/Python/ceval.c:856:21
+    #16 0x555555f8a756 in run_eval_code_obj /tmp/py-pr-134100/build/Python/pythonrun.c:1365:12
+    #17 0x555555f8a497 in run_mod /tmp/py-pr-134100/build/Python/pythonrun.c:1436:19
+    #18 0x555555f85742 in pyrun_file /tmp/py-pr-134100/build/Python/pythonrun.c:1293:15
+    #19 0x555555f8355d in _PyRun_SimpleFileObject /tmp/py-pr-134100/build/Python/pythonrun.c:521:13
+    #20 0x555555f82be8 in _PyRun_AnyFileObject /tmp/py-pr-134100/build/Python/pythonrun.c:81:15
+    #21 0x555556029be6 in pymain_run_file_obj /tmp/py-pr-134100/build/Modules/main.c:402:15
+    #22 0x55555602888c in pymain_run_file /tmp/py-pr-134100/build/Modules/main.c:421:15
+    #23 0x5555560266cf in pymain_run_python /tmp/py-pr-134100/build/Modules/main.c:686:21
+    #24 0x5555560259e2 in Py_RunMain /tmp/py-pr-134100/build/Modules/main.c:767:5
+    #25 0x555556026b18 in pymain_main /tmp/py-pr-134100/build/Modules/main.c:797:12
+    #26 0x555556026c27 in Py_BytesMain /tmp/py-pr-134100/build/Modules/main.c:821:12
+    #27 0x5555557d6511 in main /tmp/py-pr-134100/build/./Programs/python.c:15:12
+    #28 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #29 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #30 0x5555556fd104 in _start (/tmp/py-pr-134100/build/python+0x1a9104) (BuildId: 6267bdd8a2227199b4d5d36e533f01615a9508e0)
+
+previously allocated by thread T0 here:
+    #0 0x555555797f53 in malloc (/tmp/py-pr-134100/build/python+0x243f53) (BuildId: 6267bdd8a2227199b4d5d36e533f01615a9508e0)
+    #1 0x555555ae124b in _PyMem_RawMalloc /tmp/py-pr-134100/build/Objects/obmalloc.c:63:12
+    #2 0x555555ae4598 in PyObject_Malloc /tmp/py-pr-134100/build/Objects/obmalloc.c:1394:12
+    #3 0x555555b8a4b6 in PyUnicode_New /tmp/py-pr-134100/build/Objects/unicodeobject.c:1417:24
+    #4 0x555555b90ab5 in _PyUnicode_FromASCII /tmp/py-pr-134100/build/Objects/unicodeobject.c:2275:15
+    #5 0x555555bc3273 in PyUnicode_Substring /tmp/py-pr-134100/build/Objects/unicodeobject.c:12643:16
+    #6 0x555555eeb49f in PyImport_ImportModuleLevelObject /tmp/py-pr-134100/build/Python/import.c:3850:39
+    #7 0x555555d8de88 in builtin___import___impl /tmp/py-pr-134100/build/Python/bltinmodule.c:285:12
+    #8 0x555555d8837a in builtin___import__ /tmp/py-pr-134100/build/Python/clinic/bltinmodule.c.h:110:20
+    #9 0x555555aa6133 in cfunction_vectorcall_FASTCALL_KEYWORDS /tmp/py-pr-134100/build/Objects/methodobject.c:466:24
+    #10 0x555555988b1f in _PyObject_VectorcallTstate /tmp/py-pr-134100/build/./Include/internal/pycore_call.h:169:11
+    #11 0x55555598a739 in PyObject_Vectorcall /tmp/py-pr-134100/build/Objects/call.c:327:12
+    #12 0x555555dac89c in _PyEval_EvalFrameDefault /tmp/py-pr-134100/build/Python/generated_cases.c.h:2966:35
+    #13 0x555555d9e731 in _PyEval_EvalFrame /tmp/py-pr-134100/build/./Include/internal/pycore_ceval.h:119:16
+    #14 0x555555d9e5bc in _PyEval_Vector /tmp/py-pr-134100/build/Python/ceval.c:1964:12
+    #15 0x555555d9de9a in PyEval_EvalCode /tmp/py-pr-134100/build/Python/ceval.c:856:21
+    #16 0x555555f8a756 in run_eval_code_obj /tmp/py-pr-134100/build/Python/pythonrun.c:1365:12
+    #17 0x555555f8a497 in run_mod /tmp/py-pr-134100/build/Python/pythonrun.c:1436:19
+    #18 0x555555f85742 in pyrun_file /tmp/py-pr-134100/build/Python/pythonrun.c:1293:15
+    #19 0x555555f8355d in _PyRun_SimpleFileObject /tmp/py-pr-134100/build/Python/pythonrun.c:521:13
+    #20 0x555555f82be8 in _PyRun_AnyFileObject /tmp/py-pr-134100/build/Python/pythonrun.c:81:15
+    #21 0x555556029be6 in pymain_run_file_obj /tmp/py-pr-134100/build/Modules/main.c:402:15
+    #22 0x55555602888c in pymain_run_file /tmp/py-pr-134100/build/Modules/main.c:421:15
+    #23 0x5555560266cf in pymain_run_python /tmp/py-pr-134100/build/Modules/main.c:686:21
+    #24 0x5555560259e2 in Py_RunMain /tmp/py-pr-134100/build/Modules/main.c:767:5
+    #25 0x555556026b18 in pymain_main /tmp/py-pr-134100/build/Modules/main.c:797:12
+    #26 0x555556026c27 in Py_BytesMain /tmp/py-pr-134100/build/Modules/main.c:821:12
+    #27 0x5555557d6511 in main /tmp/py-pr-134100/build/./Programs/python.c:15:12
+    #28 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #29 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /tmp/py-pr-134100/build/./Include/object.h:270:20 in _Py_TYPE
+Shadow bytes around the buggy address:
+  0x50400004f800: fa fa 00 00 00 00 06 fa fa fa fd fd fd fd fd fd
+  0x50400004f880: fa fa fd fd fd fd fd fd fa fa fd fd fd fd fd fd
+  0x50400004f900: fa fa fd fd fd fd fd fd fa fa fd fd fd fd fd fd
+  0x50400004f980: fa fa fd fd fd fd fd fa fa fa fd fd fd fd fd fa
+  0x50400004fa00: fa fa 00 00 00 00 00 06 fa fa fd fd fd fd fd fd
+=>0x50400004fa80: fa fa fd[fd]fd fd fd fd fa fa fa fa fa fa fa fa
+  0x50400004fb00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50400004fb80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50400004fc00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50400004fc80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50400004fd00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==1375879==ABORTING

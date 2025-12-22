@@ -1,0 +1,33 @@
+opt: /tmp/llvm-gh-141237/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:7478: llvm::VectorizationFactor llvm::LoopVectorizationPlanner::computeBestVF(): Assertion `(BestFactor.Width == LegacyVF.Width || BestPlan.hasEarlyExit() || planContainsAdditionalSimplifications(getPlanFor(BestFactor.Width), CostCtx, OrigLoop) || planContainsAdditionalSimplifications(getPlanFor(LegacyVF.Width), CostCtx, OrigLoop)) && " VPlan cost model and legacy cost model disagreed"' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ./build/bin/opt -O2 /testcases/llvm-gh-141237/input/poc.ll
+1.	Running pass "function<eager-inv>(float2int,lower-constant-intrinsics,loop(loop-rotate<header-duplication;no-prepare-for-lto>,loop-deletion),loop-distribute,inject-tli-mappings,loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>,infer-alignment,loop-load-elim,instcombine<max-iterations=1;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;forward-switch-cond;switch-range-to-icmp;switch-to-lookup;no-keep-loops;hoist-common-insts;no-hoist-loads-stores-with-cond-faulting;sink-common-insts;speculate-blocks;simplify-cond-branch;no-speculate-unpredictables>,slp-vectorizer,vector-combine,instcombine<max-iterations=1;no-verify-fixpoint>,loop-unroll<O2>,transform-warning,sroa<preserve-cfg>,infer-alignment,instcombine<max-iterations=1;no-verify-fixpoint>,loop-mssa(licm<allowspeculation>),alignment-from-assumptions,loop-sink,instsimplify,div-rem-pairs,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;hoist-loads-stores-with-cond-faulting;no-sink-common-insts;speculate-blocks;simplify-cond-branch;speculate-unpredictables>)" on module "/testcases/llvm-gh-141237/input/poc.ll"
+2.	Running pass "loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>" on function "reduced_test_"
+ #0 0x000055555a3b6fa6 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-141237/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x000055555a3b742f PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-141237/build/llvm/lib/Support/Unix/Signals.inc:888:1
+ #2 0x000055555a3b476b llvm::sys::RunSignalHandlers() /tmp/llvm-gh-141237/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x000055555a3b6828 SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-141237/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x0000555557305fd8 llvm::LoopVectorizationPlanner::computeBestVF() /tmp/llvm-gh-141237/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:7484:3
+#11 0x000055555731634b llvm::LoopVectorizePass::processLoop(llvm::Loop*) /tmp/llvm-gh-141237/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:10352:12
+#12 0x0000555557317f66 llvm::LoopVectorizePass::runImpl(llvm::Function&) /tmp/llvm-gh-141237/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:10649:27
+#13 0x00005555573182b3 llvm::LoopVectorizePass::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-141237/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:10686:39
+#14 0x00005555568169b1 llvm::detail::PassModel<llvm::Function, llvm::LoopVectorizePass, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-141237/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#15 0x000055555a0e3937 llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-141237/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#16 0x0000555555f78951 llvm::detail::PassModel<llvm::Function, llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-141237/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#17 0x000055555a0e27dc llvm::ModuleToFunctionPassAdaptor::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-141237/build/llvm/lib/IR/PassManager.cpp:129:23
+#18 0x0000555555f78881 llvm::detail::PassModel<llvm::Module, llvm::ModuleToFunctionPassAdaptor, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-141237/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#19 0x000055555a0e3563 llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-141237/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#20 0x0000555555df9ee3 llvm::runPassPipeline(llvm::StringRef, llvm::Module&, llvm::TargetMachine*, llvm::TargetLibraryInfoImpl*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::StringRef, llvm::ArrayRef<llvm::PassPlugin>, llvm::ArrayRef<std::function<void (llvm::PassBuilder&)>>, llvm::opt_tool::OutputKind, llvm::opt_tool::VerifierKind, bool, bool, bool, bool, bool, bool, bool) /tmp/llvm-gh-141237/build/llvm/tools/opt/NewPMDriver.cpp:557:10
+#21 0x0000555555dcb8fc optMain /tmp/llvm-gh-141237/build/llvm/tools/opt/optdriver.cpp:729:27
+#22 0x0000555555dc9081 main /tmp/llvm-gh-141237/build/llvm/tools/opt/opt.cpp:25:64
+#23 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#24 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#25 0x0000555555dc8f65 _start (./build/bin/opt+0x874f65)
+/testcases/llvm-gh-141237/exp.sh: line 3: 16357 Aborted                 ./build/bin/opt -O2 $1

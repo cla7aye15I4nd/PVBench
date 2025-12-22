@@ -1,0 +1,72 @@
+clang-21: /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenTypes.cpp:853: bool clang::CodeGen::CodeGenTypes::isPointerZeroInitializable(clang::QualType): Assertion `(T->isAnyPointerType() || T->isBlockPointerType()) && "Invalid type"' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace, preprocessed source, and associated run script.
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-137276/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-137276/build -fcoverage-compilation-dir=/tmp/llvm-gh-137276/build -resource-dir /tmp/llvm-gh-137276/build/build/lib/clang/21 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/backward -internal-isystem /tmp/llvm-gh-137276/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -std=c++20 -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-ff1660.o -x c++ /testcases/llvm-gh-137276/input/poc.c
+1.	<eof> parser at end of file
+2.	Per-file LLVM IR generation
+3.	/testcases/llvm-gh-137276/input/poc.c:6:6: Generating code for declaration 'g'
+ #0 0x00005555585f8af6 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-137276/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x00005555585f8f0d PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-137276/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x00005555585f62bb llvm::sys::RunSignalHandlers() /tmp/llvm-gh-137276/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x00005555585f8378 SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-137276/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x00005555590cc158 clang::CodeGen::CodeGenTypes::isPointerZeroInitializable(clang::QualType) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenTypes.cpp:854:29
+#11 0x0000555558c0ac78 isSimpleZero(clang::Expr const*, clang::CodeGen::CodeGenFunction&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGExprAgg.cpp:1676:51
+#12 0x0000555558c0dfdd GetNumNonZeroBytesInInit(clang::Expr const*, clang::CodeGen::CodeGenFunction&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGExprAgg.cpp:2109:3
+#13 0x0000555558c0e3c5 GetNumNonZeroBytesInInit(clang::Expr const*, clang::CodeGen::CodeGenFunction&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGExprAgg.cpp:2158:48
+#14 0x0000555558c0e31c GetNumNonZeroBytesInInit(clang::Expr const*, clang::CodeGen::CodeGenFunction&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGExprAgg.cpp:2148:54
+#15 0x0000555558c0e5e0 CheckAggExprForMemSetUse(clang::CodeGen::AggValueSlot&, clang::Expr const*, clang::CodeGen::CodeGenFunction&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGExprAgg.cpp:2188:55
+#16 0x0000555558c0e810 clang::CodeGen::CodeGenFunction::EmitAggExpr(clang::Expr const*, clang::CodeGen::AggValueSlot) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGExprAgg.cpp:2218:45
+#17 0x000055555957215f clang::CodeGen::CodeGenFunction::EmitExprAsInit(clang::Expr const*, clang::ValueDecl const*, clang::CodeGen::LValue, bool) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGDecl.cpp:2112:18
+#18 0x00005555595717b3 clang::CodeGen::CodeGenFunction::EmitAutoVarInit(clang::CodeGen::CodeGenFunction::AutoVarEmission const&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGDecl.cpp:2045:26
+#19 0x000055555956d421 clang::CodeGen::CodeGenFunction::EmitAutoVarDecl(clang::VarDecl const&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGDecl.cpp:1334:22
+#20 0x0000555559566cfa clang::CodeGen::CodeGenFunction::EmitVarDecl(clang::VarDecl const&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGDecl.cpp:225:27
+#21 0x00005555595669e6 clang::CodeGen::CodeGenFunction::EmitDecl(clang::Decl const&, bool) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGDecl.cpp:167:5
+#22 0x0000555558e5d785 clang::CodeGen::CodeGenFunction::EmitDeclStmt(clang::DeclStmt const&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGStmt.cpp:1673:3
+#23 0x0000555558e57663 clang::CodeGen::CodeGenFunction::EmitSimpleStmt(clang::Stmt const*, llvm::ArrayRef<clang::Attr const*>) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGStmt.cpp:516:5
+#24 0x0000555558e562e6 clang::CodeGen::CodeGenFunction::EmitStmt(clang::Stmt const*, llvm::ArrayRef<clang::Attr const*>) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGStmt.cpp:65:3
+#25 0x0000555558e57d6b clang::CodeGen::CodeGenFunction::EmitCompoundStmtWithoutScope(clang::CompoundStmt const&, bool, clang::CodeGen::AggValueSlot) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CGStmt.cpp:587:3
+#26 0x0000555558f23637 clang::CodeGen::CodeGenFunction::EmitFunctionBody(clang::Stmt const*) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenFunction.cpp:1373:33
+#27 0x0000555558f24b1a clang::CodeGen::CodeGenFunction::GenerateCode(clang::GlobalDecl, llvm::Function*, clang::CodeGen::CGFunctionInfo const&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenFunction.cpp:1619:21
+#28 0x0000555558f5f4e9 clang::CodeGen::CodeGenModule::EmitGlobalFunctionDefinition(clang::GlobalDecl, llvm::GlobalValue*) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenModule.cpp:6174:3
+#29 0x0000555558f56aff clang::CodeGen::CodeGenModule::EmitGlobalDefinition(clang::GlobalDecl, llvm::GlobalValue*) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenModule.cpp:4290:47
+#30 0x0000555558f520e0 clang::CodeGen::CodeGenModule::EmitDeferred() /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenModule.cpp:3368:31
+#31 0x0000555558f5212e clang::CodeGen::CodeGenModule::EmitDeferred() /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenModule.cpp:3370:7
+#32 0x0000555558f44040 clang::CodeGen::CodeGenModule::Release() /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenModule.cpp:856:29
+#33 0x000055555964ca6b (anonymous namespace)::CodeGeneratorImpl::HandleTranslationUnit(clang::ASTContext&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/ModuleBuilder.cpp:291:11
+#34 0x0000555559635595 clang::BackendConsumer::HandleTranslationUnit(clang::ASTContext&) /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenAction.cpp:243:9
+#35 0x000055555bdc263c clang::ParseAST(clang::Sema&, bool, bool) /tmp/llvm-gh-137276/build/clang/lib/Parse/ParseAST.cpp:191:14
+#36 0x000055555999e2aa clang::ASTFrontendAction::ExecuteAction() /tmp/llvm-gh-137276/build/clang/lib/Frontend/FrontendAction.cpp:1343:11
+#37 0x000055555963a3ba clang::CodeGenAction::ExecuteAction() /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenAction.cpp:1112:5
+#38 0x000055555999db65 clang::FrontendAction::Execute() /tmp/llvm-gh-137276/build/clang/lib/Frontend/FrontendAction.cpp:1229:38
+#39 0x00005555598ae425 clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) /tmp/llvm-gh-137276/build/clang/lib/Frontend/CompilerInstance.cpp:1058:42
+#40 0x0000555559b76c04 clang::ExecuteCompilerInvocation(clang::CompilerInstance*) /tmp/llvm-gh-137276/build/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+#41 0x00005555565ecac1 cc1_main(llvm::ArrayRef<char const*>, char const*, void*) /tmp/llvm-gh-137276/build/clang/tools/driver/cc1_main.cpp:294:40
+#42 0x00005555565dd1fe ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) /tmp/llvm-gh-137276/build/clang/tools/driver/driver.cpp:223:20
+#43 0x00005555565dd76b clang_main(int, char**, llvm::ToolContext const&) /tmp/llvm-gh-137276/build/clang/tools/driver/driver.cpp:264:26
+#44 0x0000555556613cac main /tmp/llvm-gh-137276/build/build/tools/clang/tools/driver/clang-driver.cpp:17:20
+#45 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#46 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#47 0x00005555565dc4e5 _start (/tmp/llvm-gh-137276/build/build/bin/clang-21+0x10884e5)
+clang: error: unable to execute command: Aborted (core dumped)
+clang: error: clang frontend command failed due to signal (use -v to see invocation)
+clang version 21.0.0git (https://github.com/llvm/llvm-project.git 475531b884a1a203af6367df35f1722fe2383e06)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /tmp/llvm-gh-137276/build/build/bin
+Build config: +unoptimized, +assertions
+clang: note: diagnostic msg: 
+********************
+
+PLEASE ATTACH THE FOLLOWING FILES TO THE BUG REPORT:
+Preprocessed source(s) and associated run script(s) are located at:
+clang: note: diagnostic msg: /tmp/poc-7069bb.cpp
+clang: note: diagnostic msg: /tmp/poc-7069bb.sh
+clang: note: diagnostic msg: 
+
+********************

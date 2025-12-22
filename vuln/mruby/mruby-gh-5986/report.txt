@@ -1,0 +1,14 @@
+runtime error: signed integer overflow: 8 + 9223372036854775807 cannot be represented in type 'mrb_int' (aka 'long')
+    #0 0x5fdd33193cf5 in str_bytesplice /tmp/mruby-gh-5986/build/src/string.c:2953:26
+    #1 0x5fdd3318c698 in mrb_str_bytesplice /tmp/mruby-gh-5986/build/src/string.c:3007:14
+    #2 0x5fdd331dd44f in mrb_vm_exec /tmp/mruby-gh-5986/build/src/vm.c:1809:18
+    #3 0x5fdd331ba8c1 in mrb_vm_run /tmp/mruby-gh-5986/build/src/vm.c:1300:12
+    #4 0x5fdd331b4e61 in mrb_top_run /tmp/mruby-gh-5986/build/src/vm.c:3125:10
+    #5 0x5fdd332eb520 in mrb_load_exec /tmp/mruby-gh-5986/build/mrbgems/mruby-compiler/core/parse.y:6917:7
+    #6 0x5fdd332ebce7 in mrb_load_detect_file_cxt /tmp/mruby-gh-5986/build/mrbgems/mruby-compiler/core/parse.y:6960:12
+    #7 0x5fdd330e5df7 in main /tmp/mruby-gh-5986/build/mrbgems/mruby-bin-mruby/tools/mruby/mruby.c:356:11
+    #8 0x7292e6b251c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x7292e6b2528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x5fdd330b9cf4 in _start (/tmp/mruby-gh-5986/build/build/host/bin/mruby+0x22fcf4) (BuildId: 29f69a19cd8b63b1490767990128ecf81fab23fb)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /tmp/mruby-gh-5986/build/src/string.c:2953:26 

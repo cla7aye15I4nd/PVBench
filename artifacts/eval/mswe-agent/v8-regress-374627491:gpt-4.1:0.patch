@@ -1,0 +1,32 @@
+
+diff --git a/.gclient b/.gclient
+new file mode 100644
+index 00000000000..270d4f3cdb0
+--- /dev/null
++++ b/.gclient
+@@ -0,0 +1,8 @@
++solutions = [
++  {
++    "url": "https://chromium.googlesource.com/v8/v8.git",
++    "managed": False,
++    "name": "v8",
++    "custom_deps": {},
++  },
++]
+diff --git a/.gitignore b/.gitignore
+index fa8fbb49d9d..d9670c75cbc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,3 +126,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib

@@ -1,0 +1,223 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/exiv2/types.hpp b/include/exiv2/types.hpp
+index 33ee3720b..12cffe68b 100644
+--- a/include/exiv2/types.hpp
++++ b/include/exiv2/types.hpp
+@@ -291,11 +291,14 @@ namespace Exiv2 {
+ // free functions
+ 
+     //! Read a 2 byte unsigned short value from the data buffer
+-    EXIV2API uint16_t getUShort(const byte* buf, ByteOrder byteOrder);
+-    //! Read a 2 byte unsigned short value from a Slice
++    EXIV2API uint16_t getUShort(const byte* buf, size_t size, ByteOrder byteOrder);
++    EXIV2API uint16_t getUShort(const byte* buf, ByteOrder byteOrder); // legacy overload for compatibility
+     template <typename T>
+     uint16_t getUShort(const Slice<T>& buf, ByteOrder byteOrder)
+     {
++        if (buf.size() < 2) {
++            throw std::out_of_range("getUShort: buffer too small");
++        }
+         if (byteOrder == littleEndian) {
+             return static_cast<byte>(buf.at(1)) << 8 | static_cast<byte>(buf.at(0));
+         } else {
+diff --git a/src/asfvideo.cpp b/src/asfvideo.cpp
+index 6fd9060b6..70cb80771 100644
+--- a/src/asfvideo.cpp
++++ b/src/asfvideo.cpp
+@@ -413,7 +413,7 @@ namespace Exiv2 {
+         else if(compareTag( exvGettext(tv->label_), "Language_List")) {
+             std::memset(buf.pData_, 0x0, buf.size_);
+             io_->read(buf.pData_, 2);
+-            count = Exiv2::getUShort(buf.pData_, littleEndian);
++            count = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+ 
+             while(count--) {
+                 std::memset(buf.pData_, 0x0, buf.size_);
+@@ -438,7 +438,7 @@ namespace Exiv2 {
+ 
+         std::memset(buf.pData_, 0x0, buf.size_);
+         io_->read(buf.pData_, 2);
+-        streamNumber_ = Exiv2::getUShort(buf.pData_, littleEndian);
++        streamNumber_ = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+ 
+         io_->read(buf.pData_, 2);
+         io_->read(buf.pData_, 8);
+@@ -460,7 +460,7 @@ namespace Exiv2 {
+             byte buf[2];
+             io_->read(buf, 2);
+             if (io_->error() || io_->eof()) throw Error(kerFailedToReadImageData);
+-            length[i] = getUShort(buf, littleEndian);
++            length[i] = getUShort(buf, 2, littleEndian);
+         }
+         for (int i = 0 ; i < 5 ; ++i) {
+             DataBuf buf(length[i]);
+@@ -513,7 +513,7 @@ namespace Exiv2 {
+         io_->read(buf.pData_, 5);
+         std::memset(buf.pData_, 0x0, buf.size_);
+         io_->read(buf.pData_, 2);
+-        long temp = Exiv2::getUShort(buf.pData_, littleEndian);
++        long temp = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+ 
+         if(stream == 2) {
+             xmpData_["Xmp.video.Width"] = temp;
+@@ -524,7 +524,7 @@ namespace Exiv2 {
+         }
+ 
+         io_->read(buf.pData_, 2);
+-        temp = Exiv2::getUShort(buf.pData_, littleEndian);
++        temp = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+         if(stream == 1)
+             xmpData_["Xmp.audio.ChannelType"] = temp;
+ 
+@@ -551,10 +551,10 @@ namespace Exiv2 {
+         while(codecCount--) {
+             std::memset(buf.pData_, 0x0, buf.size_);
+             io_->read(buf.pData_, 2);
+-            codecType = Exiv2::getUShort(buf.pData_, littleEndian);
++            codecType = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+ 
+             io_->read(buf.pData_, 2);
+-            descLength = Exiv2::getUShort(buf.pData_, littleEndian) * 2;
++            descLength = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian) * 2;
+ 
+             if (descLength < 0) {
+             #ifndef SUPPRESS_WARNINGS
+@@ -572,7 +572,7 @@ namespace Exiv2 {
+ 
+             std::memset(buf.pData_, 0x0, buf.size_);
+             io_->read(buf.pData_, 2);
+-            descLength = Exiv2::getUShort(buf.pData_, littleEndian) * 2;
++            descLength = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian) * 2;
+ 
+             if (descLength < 0) {
+             #ifndef SUPPRESS_WARNINGS
+@@ -591,7 +591,7 @@ namespace Exiv2 {
+ 
+             std::memset(buf.pData_, 0x0, buf.size_);
+             io_->read(buf.pData_, 2);
+-            descLength = Exiv2::getUShort(buf.pData_, littleEndian);
++            descLength = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+ 
+             if (descLength < 0) {
+             #ifndef SUPPRESS_WARNINGS
+@@ -622,7 +622,7 @@ namespace Exiv2 {
+     {
+         DataBuf buf(5000);
+         io_->read(buf.pData_, 2);
+-        int recordCount = Exiv2::getUShort(buf.pData_, littleEndian), nameLength = 0, dataLength = 0, dataType = 0;
++        int recordCount = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian), nameLength = 0, dataLength = 0, dataType = 0;
+         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::xmpSeq);
+         byte guidBuf[16];   char fileID[37] = "";
+ 
+@@ -632,9 +632,9 @@ namespace Exiv2 {
+             if(meta == 1 || meta == 3) {
+                 io_->read(buf.pData_, 4);
+                 io_->read(buf.pData_, 2);
+-                nameLength = Exiv2::getUShort(buf.pData_, littleEndian);
++                nameLength = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+                 io_->read(buf.pData_, 2);
+-                dataType = Exiv2::getUShort(buf.pData_, littleEndian);
++                dataType = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+                 io_->read(buf.pData_, 4);
+                 dataLength = Exiv2::getULong(buf.pData_, littleEndian);
+ 
+@@ -668,7 +668,7 @@ namespace Exiv2 {
+ 
+             else if(meta == 2) {
+                 io_->read(buf.pData_, 2);
+-                nameLength = Exiv2::getUShort(buf.pData_, littleEndian);
++                nameLength = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+ 
+                 if (nameLength > 5000) {
+ #ifndef SUPPRESS_WARNINGS
+@@ -683,10 +683,10 @@ namespace Exiv2 {
+                 v->read(toString16(buf));
+ 
+                 io_->read(buf.pData_, 2);
+-                dataType = Exiv2::getUShort(buf.pData_, littleEndian);
++                dataType = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+ 
+                 io_->read(buf.pData_, 2);
+-                dataLength = Exiv2::getUShort(buf.pData_, littleEndian);
++                dataLength = Exiv2::getUShort(buf.pData_, buf.size_, littleEndian);
+ 
+                 // Sanity check with an "unreasonably" large number
+                 if (dataLength > 5000) {
+@@ -704,7 +704,7 @@ namespace Exiv2 {
+                 v->read(toString16(buf));
+             }
+             else if(dataType == 2 || dataType == 5) { // 16-bit Unsigned Integer
+-                v->read( Exiv2::toString( Exiv2::getUShort(buf.pData_, littleEndian)));
++                v->read( Exiv2::toString( Exiv2::getUShort(buf.pData_, buf.size_, littleEndian)));
+             }
+             else if(dataType == 3) {                  // 32-bit Unsigned Integer
+                 v->read( Exiv2::toString( Exiv2::getULong( buf.pData_, littleEndian)));
+diff --git a/src/crwimage_int.cpp b/src/crwimage_int.cpp
+index c2fd5f3a5..5c2d0a473 100644
+--- a/src/crwimage_int.cpp
++++ b/src/crwimage_int.cpp
+@@ -283,7 +283,7 @@ namespace Exiv2 {
+         uint32_t o = getULong(pData + size - 4, byteOrder);
+         if ( o+2 > size )
+             throw Error(kerCorruptedMetadata);
+-        uint16_t count = getUShort(pData + o, byteOrder);
++        uint16_t count = getUShort(pData + o, size - o, byteOrder);
+ #ifdef DEBUG
+         std::cout << "Directory at offset " << std::dec << o
+                   <<", " << count << " entries \n";
+@@ -293,7 +293,7 @@ namespace Exiv2 {
+             throw Error(kerCorruptedMetadata);
+ 
+         for (uint16_t i = 0; i < count; ++i) {
+-            uint16_t tag = getUShort(pData + o, byteOrder);
++            uint16_t tag = getUShort(pData + o, size - o, byteOrder);
+             CiffComponent::AutoPtr m;
+             switch (CiffComponent::typeId(tag)) {
+             case directory: m = CiffComponent::AutoPtr(new CiffDirectory); break;
+diff --git a/src/types.cpp b/src/types.cpp
+index 17ab051e5..77d8347ce 100644
+--- a/src/types.cpp
++++ b/src/types.cpp
+@@ -275,11 +275,20 @@ namespace Exiv2 {
+         return is;
+     }
+ 
+-    uint16_t getUShort(const byte* buf, ByteOrder byteOrder)
+-    {
+-        return getUShort(makeSliceUntil(buf, 2), byteOrder);
++uint16_t getUShort(const byte* buf, size_t size, ByteOrder byteOrder)
++{
++    if (!buf) {
++        throw std::runtime_error("Null pointer passed to getUShort");
+     }
+-
++    if (size < 2) {
++        throw std::out_of_range("getUShort: buffer too small");
++    }
++    return getUShort(makeSliceUntil(buf, 2), byteOrder);
++}
++uint16_t getUShort(const byte* buf, ByteOrder byteOrder)
++{
++    return getUShort(buf, 2, byteOrder);
++}
+     uint32_t getULong(const byte* buf, ByteOrder byteOrder)
+     {
+         if (byteOrder == littleEndian) {

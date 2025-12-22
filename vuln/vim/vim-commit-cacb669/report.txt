@@ -1,0 +1,88 @@
+==25007==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x5020000081db at pc 0x6174898ca277 bp 0x7ffd5148a630 sp 0x7ffd51489df0
+READ of size 27 at 0x5020000081db thread T0
+    #0 0x6174898ca276 in __asan_memmove (/tmp/vim-commit-cacb669/build/src/vim+0x1fd276) (BuildId: fa6539aad1e600570d549d4a47b995debc5034a8)
+    #1 0x617489eec26b in do_search /tmp/vim-commit-cacb669/build/src/search.c:1555:8
+    #2 0x617489d289e2 in normal_search /tmp/vim-commit-cacb669/build/src/normal.c:4209:9
+    #3 0x617489d19bf0 in nv_next /tmp/vim-commit-cacb669/build/src/normal.c:4164:17
+    #4 0x617489cf8d37 in normal_cmd /tmp/vim-commit-cacb669/build/src/normal.c:949:5
+    #5 0x617489b16213 in exec_normal /tmp/vim-commit-cacb669/build/src/ex_docmd.c:9105:6
+    #6 0x617489b15eb3 in exec_normal_cmd /tmp/vim-commit-cacb669/build/src/ex_docmd.c:9068:5
+    #7 0x617489b15c21 in ex_normal /tmp/vim-commit-cacb669/build/src/ex_docmd.c:8986:6
+    #8 0x617489af3701 in do_one_cmd /tmp/vim-commit-cacb669/build/src/ex_docmd.c:2616:2
+    #9 0x617489aebcfd in do_cmdline /tmp/vim-commit-cacb669/build/src/ex_docmd.c:1028:17
+    #10 0x617489edd0b7 in do_source_ext /tmp/vim-commit-cacb669/build/src/scriptfile.c:1806:5
+    #11 0x617489edb010 in do_source /tmp/vim-commit-cacb669/build/src/scriptfile.c:1952:12
+    #12 0x617489edabaf in cmd_source /tmp/vim-commit-cacb669/build/src/scriptfile.c:1298:14
+    #13 0x617489eda6ad in ex_source /tmp/vim-commit-cacb669/build/src/scriptfile.c:1324:2
+    #14 0x617489af3701 in do_one_cmd /tmp/vim-commit-cacb669/build/src/ex_docmd.c:2616:2
+    #15 0x617489aebcfd in do_cmdline /tmp/vim-commit-cacb669/build/src/ex_docmd.c:1028:17
+    #16 0x617489aee260 in do_cmdline_cmd /tmp/vim-commit-cacb669/build/src/ex_docmd.c:622:12
+    #17 0x61748a2cdd00 in exe_commands /tmp/vim-commit-cacb669/build/src/main.c:3173:2
+    #18 0x61748a2cbaaa in vim_main2 /tmp/vim-commit-cacb669/build/src/main.c:790:2
+    #19 0x61748a2c63a7 in main /tmp/vim-commit-cacb669/build/src/main.c:441:12
+    #20 0x79861766f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #21 0x79861766f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #22 0x617489831054 in _start (/tmp/vim-commit-cacb669/build/src/vim+0x164054) (BuildId: fa6539aad1e600570d549d4a47b995debc5034a8)
+
+0x5020000081db is located 0 bytes after 11-byte region [0x5020000081d0,0x5020000081db)
+allocated by thread T0 here:
+    #0 0x6174898cbea3 in malloc (/tmp/vim-commit-cacb669/build/src/vim+0x1feea3) (BuildId: fa6539aad1e600570d549d4a47b995debc5034a8)
+    #1 0x61748990a806 in lalloc /tmp/vim-commit-cacb669/build/src/alloc.c:246:11
+    #2 0x61748990a769 in alloc /tmp/vim-commit-cacb669/build/src/alloc.c:151:12
+    #3 0x617489f97955 in reverse_text /tmp/vim-commit-cacb669/build/src/strings.c:783:19
+    #4 0x617489eec112 in do_search /tmp/vim-commit-cacb669/build/src/search.c:1546:8
+    #5 0x617489d289e2 in normal_search /tmp/vim-commit-cacb669/build/src/normal.c:4209:9
+    #6 0x617489d19bf0 in nv_next /tmp/vim-commit-cacb669/build/src/normal.c:4164:17
+    #7 0x617489cf8d37 in normal_cmd /tmp/vim-commit-cacb669/build/src/normal.c:949:5
+    #8 0x617489b16213 in exec_normal /tmp/vim-commit-cacb669/build/src/ex_docmd.c:9105:6
+    #9 0x617489b15eb3 in exec_normal_cmd /tmp/vim-commit-cacb669/build/src/ex_docmd.c:9068:5
+    #10 0x617489b15c21 in ex_normal /tmp/vim-commit-cacb669/build/src/ex_docmd.c:8986:6
+    #11 0x617489af3701 in do_one_cmd /tmp/vim-commit-cacb669/build/src/ex_docmd.c:2616:2
+    #12 0x617489aebcfd in do_cmdline /tmp/vim-commit-cacb669/build/src/ex_docmd.c:1028:17
+    #13 0x617489edd0b7 in do_source_ext /tmp/vim-commit-cacb669/build/src/scriptfile.c:1806:5
+    #14 0x617489edb010 in do_source /tmp/vim-commit-cacb669/build/src/scriptfile.c:1952:12
+    #15 0x617489edabaf in cmd_source /tmp/vim-commit-cacb669/build/src/scriptfile.c:1298:14
+    #16 0x617489eda6ad in ex_source /tmp/vim-commit-cacb669/build/src/scriptfile.c:1324:2
+    #17 0x617489af3701 in do_one_cmd /tmp/vim-commit-cacb669/build/src/ex_docmd.c:2616:2
+    #18 0x617489aebcfd in do_cmdline /tmp/vim-commit-cacb669/build/src/ex_docmd.c:1028:17
+    #19 0x617489aee260 in do_cmdline_cmd /tmp/vim-commit-cacb669/build/src/ex_docmd.c:622:12
+    #20 0x61748a2cdd00 in exe_commands /tmp/vim-commit-cacb669/build/src/main.c:3173:2
+    #21 0x61748a2cbaaa in vim_main2 /tmp/vim-commit-cacb669/build/src/main.c:790:2
+    #22 0x61748a2c63a7 in main /tmp/vim-commit-cacb669/build/src/main.c:441:12
+    #23 0x79861766f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #24 0x79861766f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #25 0x617489831054 in _start (/tmp/vim-commit-cacb669/build/src/vim+0x164054) (BuildId: fa6539aad1e600570d549d4a47b995debc5034a8)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow (/tmp/vim-commit-cacb669/build/src/vim+0x1fd276) (BuildId: fa6539aad1e600570d549d4a47b995debc5034a8) in __asan_memmove
+Shadow bytes around the buggy address:
+  0x502000007f00: fa fa fd fa fa fa fd fa fa fa 00 fa fa fa 00 fa
+  0x502000007f80: fa fa 00 03 fa fa 00 03 fa fa 01 fa fa fa fd fa
+  0x502000008000: fa fa fd fa fa fa fd fa fa fa 00 00 fa fa 05 fa
+  0x502000008080: fa fa fd fa fa fa fd fa fa fa fd fa fa fa fd fa
+  0x502000008100: fa fa fd fa fa fa fd fa fa fa fd fa fa fa fd fa
+=>0x502000008180: fa fa 02 fa fa fa 02 fa fa fa 00[03]fa fa fa fa
+  0x502000008200: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000008280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000008300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000008380: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000008400: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==25007==ABORTING

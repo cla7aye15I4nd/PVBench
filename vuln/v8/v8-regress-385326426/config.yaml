@@ -1,0 +1,13 @@
+id: v8-regress-385326426
+project: v8
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+trigger_commit: 4de5b807c038cf28066848f9af3ca5f008896ba9
+binary: d8
+patch:
+  commit: fb40808ea6f1c5e46af6fc60a7384ded712a2e9e
+  date: 2024-12-23 04:25:47-08:00
+reference:
+- https://chromium.googlesource.com/v8/v8.git
+- https://chromium.googlesource.com/v8/v8.git/+/4de5b807c038cf28066848f9af3ca5f008896ba9
+- https://chromium.googlesource.com/v8/v8.git/+/fb40808ea6f1c5e46af6fc60a7384ded712a2e9e

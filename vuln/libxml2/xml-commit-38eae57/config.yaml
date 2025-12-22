@@ -1,0 +1,13 @@
+id: xml-commit-38eae57
+project: libxml2
+sanitizer: AddressSanitizer
+type: Use After Free
+binary: xmllint
+trigger_commit: 11ed4a7a90d5ce156a18980a4ad4e53e77384852
+patch:
+  commit: 38eae571111db3b43ffdeb05487c9f60551906fb
+  date: '2016-05-23T15:01:07+08:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/11ed4a7a90d5ce156a18980a4ad4e53e77384852
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/38eae571111db3b43ffdeb05487c9f60551906fb

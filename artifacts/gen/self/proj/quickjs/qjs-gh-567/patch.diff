@@ -1,0 +1,29 @@
+diff --git a/quickjs.c b/quickjs.c
+index 7d80009..401c48a 100644
+--- a/quickjs.c
++++ b/quickjs.c
+@@ -26774,6 +26774,11 @@ static JSValue js_build_module_ns(JSContext *ctx, JSModuleDef *m)
+         case EXPORTED_NAME_NORMAL:
+             {
+                 JSVarRef *var_ref = en->u.var_ref;
++                if (!var_ref) {
++                    js_resolve_export_throw_error(ctx, JS_RESOLVE_RES_CIRCULAR,
++                                                  m, en->export_name);
++                    goto fail;
++                }
+                 pr = add_property(ctx, p, en->export_name,
+                                   JS_PROP_ENUMERABLE | JS_PROP_WRITABLE |
+                                   JS_PROP_VARREF);
+diff --git a/run-test262.c b/run-test262.c
+index e9ff83b..58f3fb8 100644
+--- a/run-test262.c
++++ b/run-test262.c
+@@ -1836,7 +1836,7 @@ int run_test(const char *filename, int *msec)
+             if (q) {
+                 while (isspace((unsigned char)*q))
+                     q++;
+-                error_type = strdup_len(q, strcspn(q, " \n"));
++                error_type = strdup_len(q, strcspn(q, " \r\n"));
+             }
+             is_negative = TRUE;
+         }

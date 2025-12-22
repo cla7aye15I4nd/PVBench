@@ -1,0 +1,83 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_directory.c b/ext/spl/spl_directory.c
+index 0dcb34b6a69..ca5b304db99 100644
+--- a/ext/spl/spl_directory.c
++++ b/ext/spl/spl_directory.c
+@@ -925,8 +925,13 @@ PHP_METHOD(SplFileInfo, getFilename)
+ 
+ 	path = spl_filesystem_object_get_path(intern);
+ 
+-	ZEND_ASSERT(path);
+-	if (path && ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
++	if (path == NULL) {
++		/* If path is NULL, just return the full file name */
++		RETVAL_STR_COPY(intern->file_name);
++		return;
++	}
++	
++	if (ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
+ 		/* +1 to skip the trailing / of the path in the file name */
+ 		size_t path_len = ZSTR_LEN(path) + 1;
+ 		RETVAL_STRINGL(ZSTR_VAL(intern->file_name) + path_len, ZSTR_LEN(intern->file_name) - path_len);
+@@ -973,14 +978,19 @@ PHP_METHOD(SplFileInfo, getExtension)
+ 
+ 	path = spl_filesystem_object_get_path(intern);
+ 
+-	if (ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
++	if (path == NULL) {
++		/* If path is NULL, use the full file name */
++		fname = ZSTR_VAL(intern->file_name);
++		flen = ZSTR_LEN(intern->file_name);
++	} else if (ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
+ 		fname = ZSTR_VAL(intern->file_name) + ZSTR_LEN(path) + 1;
+ 		flen = ZSTR_LEN(intern->file_name) - (ZSTR_LEN(path) + 1);
++		zend_string_release_ex(path, /* persistent */ false);
+ 	} else {
+ 		fname = ZSTR_VAL(intern->file_name);
+ 		flen = ZSTR_LEN(intern->file_name);
++		zend_string_release_ex(path, /* persistent */ false);
+ 	}
+-	zend_string_release_ex(path, /* persistent */ false);
+ 
+ 	ret = php_basename(fname, flen, NULL, 0);
+ 
+@@ -1044,15 +1054,20 @@ PHP_METHOD(SplFileInfo, getBasename)
+ 
+ 	path = spl_filesystem_object_get_path(intern);
+ 
+-	if (path && ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
++	if (path == NULL) {
++		/* If path is NULL, use the full file name */
++		fname = ZSTR_VAL(intern->file_name);
++		flen = ZSTR_LEN(intern->file_name);
++	} else if (ZSTR_LEN(path) && ZSTR_LEN(path) < ZSTR_LEN(intern->file_name)) {
+ 		/* +1 to skip the trailing / of the path in the file name */
+ 		fname = ZSTR_VAL(intern->file_name) + ZSTR_LEN(path) + 1;
+ 		flen = ZSTR_LEN(intern->file_name) - (ZSTR_LEN(path) + 1);
++		zend_string_release_ex(path, /* persistent */ false);
+ 	} else {
+ 		fname = ZSTR_VAL(intern->file_name);
+ 		flen = ZSTR_LEN(intern->file_name);
++		zend_string_release_ex(path, /* persistent */ false);
+ 	}
+-	zend_string_release_ex(path, /* persistent */ false);
+ 
+ 	RETURN_STR(php_basename(fname, flen, suffix, slen));
+ }

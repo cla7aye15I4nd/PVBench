@@ -1,0 +1,222 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ec7961f..87231784 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -64,3 +64,12 @@ Makefile.in
+ /m4/lt*.m4
+ /py-compile
+ /stamp-h1
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/poc.c b/poc.c
+new file mode 100644
+index 00000000..314a16d1
+--- /dev/null
++++ b/poc.c
+@@ -0,0 +1,88 @@
++#include <stdio.h>
++#include <string.h>
++#include <libxml/parser.h>
++#include <libxml/schematron.h>
++
++// Minimal PoC to reproduce the null pointer dereference in libxml2
++int main() {
++    const char* schema_xml = 
++        "<sch:schema xmlns:sch=\"http://purl.oclc.org/dsdl/schematron\">\n"
++        "  <sch:pattern id=\"TestPattern\">\n"
++        "    <sch:rule context=\"book\">\n"
++        "      <sch:report test=\"not(@available)\">Book <sch:value-of select=\"falae()\"/> test</sch:report>\n"
++        "    </sch:rule>\n"
++        "  </sch:pattern>\n"
++        "</sch:schema>";
++
++    const char* instance_xml = 
++        "<library>\n"
++        "  <book title=\"Test Book\" id=\"bk101\">\n"
++        "    <author>Test Author</author>\n"
++        "  </book>\n"
++        "</library>";
++
++    xmlInitParser();
++    
++    // Parse schema
++    xmlDocPtr schemaDoc = xmlReadMemory(schema_xml, strlen(schema_xml), "schema.xml", NULL, 
++                                       XML_PARSE_NOENT | XML_PARSE_NONET);
++    if (!schemaDoc) {
++        printf("Failed to parse schema\n");
++        return 1;
++    }
++
++    // Create schematron parser context
++    xmlSchematronParserCtxtPtr parserCtxt = xmlSchematronNewDocParserCtxt(schemaDoc);
++    if (!parserCtxt) {
++        printf("Failed to create parser context\n");
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Parse schematron schema
++    xmlSchematronPtr schema = xmlSchematronParse(parserCtxt);
++    if (!schema) {
++        printf("Failed to parse schematron\n");
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Parse instance document
++    xmlDocPtr instanceDoc = xmlReadMemory(instance_xml, strlen(instance_xml), "instance.xml", NULL,
++                                         XML_PARSE_NOENT | XML_PARSE_NONET);
++    if (!instanceDoc) {
++        printf("Failed to parse instance\n");
++        xmlSchematronFree(schema);
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Create validation context
++    xmlSchematronValidCtxtPtr validCtxt = xmlSchematronNewValidCtxt(schema, 0);
++    if (!validCtxt) {
++        printf("Failed to create validation context\n");
++        xmlFreeDoc(instanceDoc);
++        xmlSchematronFree(schema);
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    printf("Validating document...\n");
++    // This should trigger the crash in xmlSchematronFormatReport due to falae() function
++    int result = xmlSchematronValidateDoc(validCtxt, instanceDoc);
++    printf("Validation result: %d\n", result);
++
++    // Cleanup
++    xmlSchematronFreeValidCtxt(validCtxt);
++    xmlFreeDoc(instanceDoc);
++    xmlSchematronFree(schema);
++    xmlSchematronFreeParserCtxt(parserCtxt);
++    xmlFreeDoc(schemaDoc);
++    xmlCleanupParser();
++
++    printf("Script completed successfully, no errors.\n");
++    return 0;
++}
+diff --git a/schematron.c b/schematron.c
+index 5c1a27bf..8d64a1e1 100644
+--- a/schematron.c
++++ b/schematron.c
+@@ -1453,6 +1453,12 @@ xmlSchematronFormatReport(xmlSchematronValidCtxtPtr ctxt,
+             select = xmlGetNoNsProp(child, BAD_CAST "select");
+             comp = xmlXPathCtxtCompile(ctxt->xctxt, select);
+             eval = xmlXPathCompiledEval(comp, ctxt->xctxt);
++            if (eval == NULL) {
++                xmlXPathFreeCompExpr(comp);
++                xmlFree(select);
++                child = child->next;
++                continue;
++            }
+ 
+             switch (eval->type) {
+             case XPATH_NODESET: {
+diff --git a/test_valid.c b/test_valid.c
+new file mode 100644
+index 00000000..4b93d4aa
+--- /dev/null
++++ b/test_valid.c
+@@ -0,0 +1,87 @@
++#include <stdio.h>
++#include <string.h>
++#include <libxml/parser.h>
++#include <libxml/schematron.h>
++
++// Test with valid XPath to ensure normal functionality still works
++int main() {
++    const char* schema_xml = 
++        "<sch:schema xmlns:sch=\"http://purl.oclc.org/dsdl/schematron\">\n"
++        "  <sch:pattern id=\"TestPattern\">\n"
++        "    <sch:rule context=\"book\">\n"
++        "      <sch:report test=\"not(@available)\">Book <sch:value-of select=\"@title\"/> is not available</sch:report>\n"
++        "    </sch:rule>\n"
++        "  </sch:pattern>\n"
++        "</sch:schema>";
++
++    const char* instance_xml = 
++        "<library>\n"
++        "  <book title=\"Test Book\" id=\"bk101\">\n"
++        "    <author>Test Author</author>\n"
++        "  </book>\n"
++        "</library>";
++
++    xmlInitParser();
++    
++    // Parse schema
++    xmlDocPtr schemaDoc = xmlReadMemory(schema_xml, strlen(schema_xml), "schema.xml", NULL, 
++                                       XML_PARSE_NOENT | XML_PARSE_NONET);
++    if (!schemaDoc) {
++        printf("Failed to parse schema\n");
++        return 1;
++    }
++
++    // Create schematron parser context
++    xmlSchematronParserCtxtPtr parserCtxt = xmlSchematronNewDocParserCtxt(schemaDoc);
++    if (!parserCtxt) {
++        printf("Failed to create parser context\n");
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Parse schematron schema
++    xmlSchematronPtr schema = xmlSchematronParse(parserCtxt);
++    if (!schema) {
++        printf("Failed to parse schematron\n");
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Parse instance document
++    xmlDocPtr instanceDoc = xmlReadMemory(instance_xml, strlen(instance_xml), "instance.xml", NULL,
++                                         XML_PARSE_NOENT | XML_PARSE_NONET);
++    if (!instanceDoc) {
++        printf("Failed to parse instance\n");
++        xmlSchematronFree(schema);
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Create validation context
++    xmlSchematronValidCtxtPtr validCtxt = xmlSchematronNewValidCtxt(schema, 0);
++    if (!validCtxt) {
++        printf("Failed to create validation context\n");
++        xmlFreeDoc(instanceDoc);
++        xmlSchematronFree(schema);
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    printf("Validating document with valid XPath...\n");
++    int result = xmlSchematronValidateDoc(validCtxt, instanceDoc);
++    printf("Validation result: %d\n", result);
++
++    // Cleanup
++    xmlSchematronFreeValidCtxt(validCtxt);
++    xmlFreeDoc(instanceDoc);
++    xmlSchematronFree(schema);
++    xmlSchematronFreeParserCtxt(parserCtxt);
++    xmlFreeDoc(schemaDoc);
++    xmlCleanupParser();
++
++    printf("Valid XPath test completed successfully, no errors.\n");
++    return 0;
++}

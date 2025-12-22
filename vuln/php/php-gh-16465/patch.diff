@@ -1,0 +1,81 @@
+diff --git a/NEWS b/NEWS
+index 2b0f98f7b8..10864e4bfa 100644
+--- a/NEWS
++++ b/NEWS
+@@ -26,6 +26,8 @@ PHP                                                                        NEWS
+   . Fixed bug GH-16316 (DOMXPath breaks when not initialized properly).
+     (nielsdos)
+   . Add missing hierarchy checks to replaceChild. (nielsdos)
++  . Fixed bug GH-16465 (Heap buffer overflow in DOMNode->getElementByTagName).
++    (nielsdos)
+ 
+ - EXIF:
+   . Fixed bug GH-16409 (Segfault in exif_thumbnail when not dealing with a
+diff --git a/ext/dom/element.c b/ext/dom/element.c
+index d3bcad34ed..6fcaee5888 100644
+--- a/ext/dom/element.c
++++ b/ext/dom/element.c
+@@ -816,7 +816,12 @@ static void dom_element_get_elements_by_tag_name(INTERNAL_FUNCTION_PARAMETERS, b
+ 	dom_object *intern, *namednode;
+ 	char *name;
+ 
+-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &name, &name_len) == FAILURE) {
++	if (zend_parse_parameters(ZEND_NUM_ARGS(), "p", &name, &name_len) == FAILURE) {
++		RETURN_THROWS();
++	}
++
++	if (name_len > INT_MAX) {
++		zend_argument_value_error(1, "is too long");
+ 		RETURN_THROWS();
+ 	}
+ 
+@@ -1239,7 +1244,17 @@ static void dom_element_get_elements_by_tag_name_ns(INTERNAL_FUNCTION_PARAMETERS
+ 	dom_object *intern, *namednode;
+ 	char *uri, *name;
+ 
+-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s!s", &uri, &uri_len, &name, &name_len) == FAILURE) {
++	if (zend_parse_parameters(ZEND_NUM_ARGS(), "p!p", &uri, &uri_len, &name, &name_len) == FAILURE) {
++		RETURN_THROWS();
++	}
++
++	if (uri_len > INT_MAX) {
++		zend_argument_value_error(1, "is too long");
++		RETURN_THROWS();
++	}
++
++	if (name_len > INT_MAX) {
++		zend_argument_value_error(2, "is too long");
+ 		RETURN_THROWS();
+ 	}
+ 
+diff --git a/ext/dom/php_dom.c b/ext/dom/php_dom.c
+index 939c179452..9c3922ab5f 100644
+--- a/ext/dom/php_dom.c
++++ b/ext/dom/php_dom.c
+@@ -1473,7 +1473,7 @@ void dom_namednode_iter(dom_object *basenode, int ntype, dom_object *intern, xml
+ 	const xmlChar* tmp;
+ 
+ 	if (local) {
+-		int len = local_len > INT_MAX ? -1 : (int) local_len;
++		int len = (int) local_len;
+ 		if (doc != NULL && (tmp = xmlDictExists(doc->dict, (const xmlChar *)local, len)) != NULL) {
+ 			mapptr->local = BAD_CAST tmp;
+ 		} else {
+@@ -1481,15 +1481,11 @@ void dom_namednode_iter(dom_object *basenode, int ntype, dom_object *intern, xml
+ 			mapptr->free_local = true;
+ 		}
+ 		mapptr->local_lower = BAD_CAST estrdup(local);
+-		if (len < 0) {
+-			zend_str_tolower((char *) mapptr->local_lower, strlen((const char *) mapptr->local_lower));
+-		} else {
+-			zend_str_tolower((char *) mapptr->local_lower, len);
+-		}
++		zend_str_tolower((char *) mapptr->local_lower, len);
+ 	}
+ 
+ 	if (ns) {
+-		int len = ns_len > INT_MAX ? -1 : (int) ns_len;
++		int len = (int) ns_len;
+ 		if (doc != NULL && (tmp = xmlDictExists(doc->dict, (const xmlChar *)ns, len)) != NULL) {
+ 			mapptr->ns = BAD_CAST tmp;
+ 		} else {

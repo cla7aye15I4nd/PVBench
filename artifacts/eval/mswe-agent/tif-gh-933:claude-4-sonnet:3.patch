@@ -1,0 +1,60 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ec7961f..87231784 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -64,3 +64,12 @@ Makefile.in
+ /m4/lt*.m4
+ /py-compile
+ /stamp-h1
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/schematron.c b/schematron.c
+index 85b46282..13c346d2 100644
+--- a/schematron.c
++++ b/schematron.c
+@@ -36,6 +36,7 @@
+ #include <libxml/schematron.h>
+ 
+ #include "private/error.h"
++#include <stdint.h>
+ 
+ #define SCHEMATRON_PARSE_OPTIONS XML_PARSE_NOENT
+ 
+@@ -1439,12 +1440,24 @@ xmlSchematronFormatReport(xmlSchematronValidCtxtPtr ctxt,
+                 xmlFree(path);
+             }
+ 
+-            if ((node->ns == NULL) || (node->ns->prefix == NULL))
+-                ret = xmlStrcat(ret, node->name);
+-            else {
+-                ret = xmlStrcat(ret, node->ns->prefix);
+-                ret = xmlStrcat(ret, BAD_CAST ":");
++            if (node->ns == NULL) {
+                 ret = xmlStrcat(ret, node->name);
++            } else {
++                /* Validate that ns pointer is reasonable before dereferencing */
++                xmlNsPtr ns = node->ns;
++                
++                /* Basic pointer sanity check - ensure it's not obviously corrupted */
++                if ((uintptr_t)ns < 0x1000 || (uintptr_t)ns == (uintptr_t)-1 || 
++                    ((uintptr_t)ns & 0x7) != 0) {
++                    /* Pointer looks corrupted, treat as if no namespace */
++                    ret = xmlStrcat(ret, node->name);
++                } else if (ns->prefix == NULL) {
++                    ret = xmlStrcat(ret, node->name);
++                } else {
++                    ret = xmlStrcat(ret, ns->prefix);
++                    ret = xmlStrcat(ret, BAD_CAST ":");
++                    ret = xmlStrcat(ret, node->name);
++                }
+             }
+         } else if (IS_SCHEMATRON(child, "value-of")) {
+             xmlChar *select;

@@ -1,0 +1,32 @@
+clang-format: /tmp/llvm-gh-136814/build/clang/lib/Format/UnwrappedLineParser.cpp:1189: void clang::format::UnwrappedLineParser::parsePPDefine(): Assertion `(int)Line->PPLevel >= 0' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ./build/bin/clang-format /testcases/llvm-gh-136814/input/poc.cpp "--style={IndentPPDirectives: BeforeHash}"
+ #0 0x0000555555759c5a llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-136814/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x000055555575a071 PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-136814/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x000055555575741f llvm::sys::RunSignalHandlers() /tmp/llvm-gh-136814/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x00005555557594dc SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-136814/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a55330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7aaeb2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a5527e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a388ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a3881b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a4b517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x00005555558d2f3f clang::format::UnwrappedLineParser::parsePPDefine() /tmp/llvm-gh-136814/build/clang/lib/Format/UnwrappedLineParser.cpp:1190:7
+#11 0x00005555558d21c4 clang::format::UnwrappedLineParser::parsePPDirective() /tmp/llvm-gh-136814/build/clang/lib/Format/UnwrappedLineParser.cpp:1010:5
+#12 0x00005555558e0a5a clang::format::UnwrappedLineParser::readToken(int) /tmp/llvm-gh-136814/build/clang/lib/Format/UnwrappedLineParser.cpp:4886:28
+#13 0x00005555558ce778 clang::format::UnwrappedLineParser::parse() /tmp/llvm-gh-136814/build/clang/lib/Format/UnwrappedLineParser.cpp:212:14
+#14 0x0000555555890ff1 clang::format::TokenAnalyzer::process(bool) /tmp/llvm-gh-136814/build/clang/lib/Format/TokenAnalyzer.cpp:114:3
+#15 0x0000555555833c38 clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*)::'lambda5'(clang::format::Environment const&)::operator()(clang::format::Environment const&) const /tmp/llvm-gh-136814/build/clang/lib/Format/Format.cpp:3866:16
+#16 0x00005555558414d3 std::pair<clang::tooling::Replacements, unsigned int> std::__invoke_impl<std::pair<clang::tooling::Replacements, unsigned int>, clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*)::'lambda5'(clang::format::Environment const&)&, clang::format::Environment const&>(std::__invoke_other, clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*)::'lambda5'(clang::format::Environment const&)&, clang::format::Environment const&) /usr/include/c++/13/bits/invoke.h:61:70
+#17 0x000055555583eb9d std::enable_if<is_invocable_r_v<std::pair<clang::tooling::Replacements, unsigned int>, clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*)::'lambda5'(clang::format::Environment const&)&, clang::format::Environment const&>, std::pair<clang::tooling::Replacements, unsigned int>>::type std::__invoke_r<std::pair<clang::tooling::Replacements, unsigned int>, clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*)::'lambda5'(clang::format::Environment const&)&, clang::format::Environment const&>(clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*)::'lambda5'(clang::format::Environment const&)&, clang::format::Environment const&) /usr/include/c++/13/bits/invoke.h:117:5
+#18 0x000055555583cecd std::_Function_handler<std::pair<clang::tooling::Replacements, unsigned int> (clang::format::Environment const&), clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*)::'lambda5'(clang::format::Environment const&)>::_M_invoke(std::_Any_data const&, clang::format::Environment const&) /usr/include/c++/13/bits/std_function.h:292:7
+#19 0x0000555555859084 std::function<std::pair<clang::tooling::Replacements, unsigned int> (clang::format::Environment const&)>::operator()(clang::format::Environment const&) const /usr/include/c++/13/bits/std_function.h:592:7
+#20 0x0000555555834cf2 clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*) /tmp/llvm-gh-136814/build/clang/lib/Format/Format.cpp:3914:9
+#21 0x00005555558352e4 clang::format::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, llvm::StringRef, clang::format::FormattingAttemptStatus*) /tmp/llvm-gh-136814/build/clang/lib/Format/Format.cpp:3956:28
+#22 0x0000555555650ed0 clang::format::format(llvm::StringRef, bool) /tmp/llvm-gh-136814/build/clang/tools/clang-format/ClangFormat.cpp:510:76
+#23 0x0000555555652807 main /tmp/llvm-gh-136814/build/clang/tools/clang-format/ClangFormat.cpp:738:11
+#24 0x00007ffff7a3a1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#25 0x00007ffff7a3a28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#26 0x000055555564eaa5 _start (./build/bin/clang-format+0xfaaa5)
+/testcases/llvm-gh-136814/exp.sh: line 2: 49046 Aborted                 (core dumped) ./build/bin/clang-format $1 --style="{IndentPPDirectives: BeforeHash}"

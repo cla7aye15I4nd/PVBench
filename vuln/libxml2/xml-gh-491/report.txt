@@ -1,0 +1,14 @@
+==33780==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000020 (pc 0x5f36ae4e23a2 bp 0x7ffcb413e840 sp 0x7ffcb413e0d0 T0)
+==33780==The signal is caused by a READ memory access.
+==33780==Hint: address points to the zero page.
+    #0 0x5f36ae4e23a2 in xmlSchemaFixupComplexType /tmp/xml-gh-491/build/xmlschemas.c:18663:49
+    #1 0x5f36ae492d3f in xmlSchemaFixupComponents /tmp/xml-gh-491/build/xmlschemas.c:21333:7
+    #2 0x5f36ae48e68b in xmlSchemaParse /tmp/xml-gh-491/build/xmlschemas.c:21522:9
+    #3 0x5f36ae1ba052 in main /tmp/xml-gh-491/build/xmllint.c:3568:14
+    #4 0x7e448c4761c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x7e448c47628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x5f36ae0dc6a4 in _start (/tmp/xml-gh-491/build/xmllint+0x9b6a4) (BuildId: dce4736df18c1b56ab8848600c3767a702044eee)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/xml-gh-491/build/xmlschemas.c:18663:49 in xmlSchemaFixupComplexType
+==33780==ABORTING

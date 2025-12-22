@@ -1,0 +1,29 @@
+diff --git a/NEWS b/NEWS
+index 22d40b50e9..bd6ff55966 100644
+--- a/NEWS
++++ b/NEWS
+@@ -2,6 +2,9 @@ PHP                                                                        NEWS
+ |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ ?? ??? ????, PHP 8.4.0RC2
+ 
++- Core:
++  . Fixed bug GH-16040 (Use-after-free of object released in hook). (ilutov)
++
+ - DOM:
+   . Fixed bug GH-16039 (Segmentation fault (access null pointer) in
+     ext/dom/parentnode/tree.c). (nielsdos)
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index 64e494200e..106ce27830 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -828,8 +828,8 @@ ZEND_API zval *zend_std_read_property(zend_object *zobj, zend_string *name, int
+ 
+ 		if (EXPECTED(cache_slot
+ 		 && zend_execute_ex == execute_ex
+-		 && zobj->ce->default_object_handlers->read_property == zend_std_read_property
+-		 && !zobj->ce->create_object
++		 && ce->default_object_handlers->read_property == zend_std_read_property
++		 && !ce->create_object
+ 		 && !zend_is_in_hook(prop_info)
+ 		 && !(prop_info->hooks[ZEND_PROPERTY_HOOK_GET]->common.fn_flags & ZEND_ACC_RETURN_REFERENCE))) {
+ 			ZEND_SET_PROPERTY_HOOK_SIMPLE_GET(cache_slot);

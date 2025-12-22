@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+22|fmt->formatStringsToValue(inputs.data(), static_cast<int32_t>(inputs.size()), status)|status == U_INPUT_TOO_LONG_ERROR|Should produce error due to int32 overflow

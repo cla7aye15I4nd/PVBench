@@ -1,0 +1,31 @@
+diff --git a/clang/include/clang/AST/DeclCXX.h b/clang/include/clang/AST/DeclCXX.h
+index f0e25c4105f8..49d48bf711f3 100644
+--- a/clang/include/clang/AST/DeclCXX.h
++++ b/clang/include/clang/AST/DeclCXX.h
+@@ -4281,7 +4281,7 @@ public:
+         [](BindingDecl *BD) { return BD->isParameterPack(); });
+ 
+     Bindings = Bindings.drop_front(BeforePackBindings.size());
+-    if (!Bindings.empty()) {
++    if (!Bindings.empty() && Bindings.front()->getBinding()) {
+       PackBindings = Bindings.front()->getBindingPackDecls();
+       Bindings = Bindings.drop_front();
+     }
+diff --git a/clang/lib/Sema/SemaTemplateInstantiateDecl.cpp b/clang/lib/Sema/SemaTemplateInstantiateDecl.cpp
+index 8b8db36c1077..3f619b3fb3da 100644
+--- a/clang/lib/Sema/SemaTemplateInstantiateDecl.cpp
++++ b/clang/lib/Sema/SemaTemplateInstantiateDecl.cpp
+@@ -1597,11 +1597,10 @@ Decl *TemplateDeclInstantiator::VisitDecompositionDecl(DecompositionDecl *D) {
+   auto *NewDD = cast_if_present<DecompositionDecl>(
+       VisitVarDecl(D, /*InstantiatingVarTemplate=*/false, &NewBindingArray));
+ 
+-  if (!NewDD || NewDD->isInvalidDecl())
++  if (!NewDD || NewDD->isInvalidDecl()) {
+     for (auto *NewBD : NewBindings)
+       NewBD->setInvalidDecl();
+-
+-  if (OldBindingPack) {
++  } else if (OldBindingPack) {
+     // Mark the bindings in the pack as instantiated.
+     auto Bindings = NewDD->bindings();
+     BindingDecl *NewBindingPack = *llvm::find_if(

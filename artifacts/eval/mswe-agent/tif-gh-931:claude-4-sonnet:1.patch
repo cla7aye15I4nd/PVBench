@@ -1,0 +1,173 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ec7961f..87231784 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -64,3 +64,12 @@ Makefile.in
+ /m4/lt*.m4
+ /py-compile
+ /stamp-h1
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/poc.c b/poc.c
+new file mode 100644
+index 00000000..18f95dd6
+--- /dev/null
++++ b/poc.c
+@@ -0,0 +1,98 @@
++#include <stdio.h>
++#include <string.h>
++#include <libxml/parser.h>
++#include <libxml/schematron.h>
++
++// PoC to reproduce the heap-use-after-free in libxml2 schematron
++int main() {
++    const char* schema_xml = 
++        "<sch:schema xmlns:sch=\"http://purl.oclc.org/dsdl/schematron\">"
++        "<sch:pattern id=\"\">"
++        "<sch:rule context=\"boo0\">"
++        "<sch:report test=\"not(0)\">"
++        "<sch:name path=\"&#9;e|namespace::*|e\"/>"
++        "</sch:report>"
++        "<sch:report test=\"0\"></sch:report>"
++        "</sch:rule>"
++        "</sch:pattern>"
++        "</sch:schema>";
++
++    // Real instance document from schematron6.txt
++    const char* instance_xml = 
++        "<librar0>"
++        "<boo0 t=\"\">"
++        "<author></author>"
++        "</boo0>"
++        "<ins></ins>"
++        "</librar0>";
++
++    xmlInitParser();
++    
++    // Parse schema
++    xmlDocPtr schemaDoc = xmlReadMemory(schema_xml, strlen(schema_xml), "schema.xml", NULL, 
++                                       XML_PARSE_NOENT | XML_PARSE_NONET);
++    if (!schemaDoc) {
++        printf("Failed to parse schema\n");
++        return 1;
++    }
++
++    // Create schematron parser context
++    xmlSchematronParserCtxtPtr parserCtxt = xmlSchematronNewDocParserCtxt(schemaDoc);
++    if (!parserCtxt) {
++        printf("Failed to create parser context\n");
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Parse schematron schema
++    xmlSchematronPtr schema = xmlSchematronParse(parserCtxt);
++    if (!schema) {
++        printf("Failed to parse schematron\n");
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Parse instance document
++    xmlDocPtr instanceDoc = xmlReadMemory(instance_xml, strlen(instance_xml), "instance.xml", NULL,
++                                         XML_PARSE_NOENT | XML_PARSE_NONET);
++    if (!instanceDoc) {
++        printf("Failed to parse instance\n");
++        xmlSchematronFree(schema);
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Create validation context
++    xmlSchematronValidCtxtPtr validCtxt = xmlSchematronNewValidCtxt(schema, 0);
++    if (!validCtxt) {
++        printf("Failed to create validation context\n");
++        xmlFreeDoc(instanceDoc);
++        xmlSchematronFree(schema);
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++    
++    // This should trigger the heap-use-after-free:
++    // 1. Rule context "boo0" matches the <boo0> element
++    // 2. test="not(0)" evaluates to true (not(false) = true)
++    // 3. Report is triggered and xmlSchematronFormatReport is called
++    // 4. Processing <sch:name path="&#9;e|namespace::*|e"/> calls xmlSchematronGetNode
++    // 5. The complex XPath creates a nodeset that gets freed immediately
++    // 6. Access to returned node->ns causes heap-use-after-free
++    int result = xmlSchematronValidateDoc(validCtxt, instanceDoc);
++    printf("Validation completed - result: %d\n", result);
++
++    // Cleanup
++    xmlSchematronFreeValidCtxt(validCtxt);
++    xmlFreeDoc(instanceDoc);
++    xmlSchematronFree(schema);
++    xmlSchematronFreeParserCtxt(parserCtxt);
++    xmlFreeDoc(schemaDoc);
++    xmlCleanupParser();
++
++    printf("Script completed successfully, no errors.\n");
++    return 0;
++}
+diff --git a/schematron.c b/schematron.c
+index 85b46282..e2f85b34 100644
+--- a/schematron.c
++++ b/schematron.c
+@@ -1380,13 +1380,45 @@ xmlSchematronGetNode(xmlSchematronValidCtxtPtr ctxt,
+         return(NULL);
+ 
+     if ((ret->type == XPATH_NODESET) &&
+-        (ret->nodesetval != NULL) && (ret->nodesetval->nodeNr > 0))
++        (ret->nodesetval != NULL) && (ret->nodesetval->nodeNr > 0)) {
+         node = ret->nodesetval->nodeTab[0];
++        
++        /* 
++         * If the XPath result contains namespace nodes, they will be freed
++         * when we free the XPath object. To avoid use-after-free, we need to
++         * clear the namespace pointer of any regular node we return if there's
++         * any risk it might point to freed memory.
++         */
++        if (node != NULL && node->type != XML_NAMESPACE_DECL) {
++            int hasNsNodes = 0;
++            int i;
++            
++            /* Check if there are namespace nodes in the result that will be freed */
++            for (i = 0; i < ret->nodesetval->nodeNr; i++) {
++                if (ret->nodesetval->nodeTab[i]->type == XML_NAMESPACE_DECL) {
++                    hasNsNodes = 1;
++                    break;
++                }
++            }
++            
++            /* If there are namespace nodes in the result, clear the namespace
++             * pointer to avoid any risk of use-after-free */
++            if (hasNsNodes) {
++            if (hasNsNodes) {
++                node->ns = NULL;
++            }
++        }
++    }
+ 
+     xmlXPathFreeObject(ret);
+     return(node);
+ }
+ 
++
++
++
++
++
+ /**
+  * Output part of the report to whatever channel the user selected
+  *

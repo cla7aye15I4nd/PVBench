@@ -1,0 +1,44 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/getchar.c b/src/getchar.c
+index 29323fa32..396c1095f 100644
+--- a/src/getchar.c
++++ b/src/getchar.c
+@@ -4,9 +4,9 @@
+  *
+  * Do ":help uganda"  in Vim to read copying and usage conditions.
+  * Do ":help credits" in Vim to see a list of people who contributed.
+- * See README.txt for an overview of the Vim source code.
+- */
+-
++-    if (offset == 0 && addlen <= typebuf.tb_off)
+++    if (offset == 0 && addlen <= typebuf.tb_off 
+++        && typebuf.tb_off - addlen + addlen <= typebuf.tb_buflen)
+ /*
+  * getchar.c: Code related to getting a character from the user or a script
+  * file, manipulations with redo buffer and stuff buffer.
+@@ -1037,7 +1037,8 @@ ins_typebuf(
+ 
+     addlen = (int)STRLEN(str);
+ 
+-    if (offset == 0 && addlen <= typebuf.tb_off)
++    if (offset == 0 && addlen <= typebuf.tb_off 
++        && typebuf.tb_off + typebuf.tb_len <= typebuf.tb_buflen)
+     {
+ 	/*
+ 	 * Easy case: there is room in front of typebuf.tb_buf[typebuf.tb_off]

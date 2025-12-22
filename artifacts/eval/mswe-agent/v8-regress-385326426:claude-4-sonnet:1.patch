@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index ff67337416c..7afe9789038 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/numbers/conversions.cc b/src/numbers/conversions.cc
+index 9aab71e00a2..874f1df511d 100644
+--- a/src/numbers/conversions.cc
++++ b/src/numbers/conversions.cc
+@@ -118,6 +118,7 @@ class SimpleStringBuilder final {
+     for (uint32_t factor = 10; digits < 10; digits++, factor *= 10) {
+       if (factor > number) break;
+     }
++    DCHECK_LE(position() + digits, buffer_.length());
+     cursor_ += digits;
+     for (int i = 1; i <= digits; i++) {
+       *(cursor_ - i) = '0' + static_cast<char>(number % 10);

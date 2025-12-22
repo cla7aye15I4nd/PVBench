@@ -1,0 +1,10 @@
+<?php
+
+class C {
+    public $a = 42;
+    public $b = 42 { get => $this->b * 2; }
+    public $c { get => 42; }
+}
+var_dump(get_class_vars(C::class));
+
+?>

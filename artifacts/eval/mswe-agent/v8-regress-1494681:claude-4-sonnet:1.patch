@@ -1,0 +1,64 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 66190522e70..59ac3d1a7af 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -451,6 +451,19 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+     base::Vector<const Handle<String>> args) {
+   const char* template_string = TemplateString(index);
+ 
++  // Helper function to escape % characters for safe use in FATAL macro
++  auto escape_template_string = [](const char* str) -> std::string {
++    std::string safe_string;
++    for (const char* c = str; *c != '\0'; c++) {
++      if (*c == '%') {
++        safe_string += "%%";
++      } else {
++        safe_string += *c;
++      }
++    }
++    return safe_string;
++  };
++
+   IncrementalStringBuilder builder(isolate);
+ 
+   // TODO(14386): Get this list empty.
+@@ -512,8 +525,9 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+                          std::end(kTemplatesWithMismatchedArguments), index)) {
+             builder.AppendCString("undefined");
+           } else {
++            std::string safe_template_string = escape_template_string(template_string);
+             FATAL("Missing argument to template (got %zu): %s", args.size(),
+-                  template_string);
++                  safe_template_string.c_str());
+           }
+         } else {
+           Handle<String> arg = remaining_args[0];
+@@ -528,8 +542,9 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+   if (!remaining_args.empty() &&
+       std::count(std::begin(kTemplatesWithMismatchedArguments),
+                  std::end(kTemplatesWithMismatchedArguments), index) == 0) {
++    std::string safe_template_string = escape_template_string(template_string);
+     FATAL("Too many arguments to template (expected %zu, got %zu): %s",
+-          args.size() - remaining_args.size(), args.size(), template_string);
++          args.size() - remaining_args.size(), args.size(), safe_template_string.c_str());
+   }
+ 
+   return builder.Finish();

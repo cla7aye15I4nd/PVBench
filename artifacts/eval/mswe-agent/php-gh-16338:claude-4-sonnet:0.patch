@@ -1,0 +1,147 @@
+
+diff --git a/.gitignore b/.gitignore
+index 49acc9f2e17..de22b095dfc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/node.c b/ext/dom/node.c
+index 242e56ad2d3..2d0fe0dbb43 100644
+--- a/ext/dom/node.c
++++ b/ext/dom/node.c
+@@ -824,7 +824,7 @@ int dom_node_text_content_write(dom_object *obj, zval *newval)
+ static bool dom_set_document_ref_obj_single(xmlNodePtr node, xmlDocPtr doc, php_libxml_ref_obj *document)
+ {
+ 	dom_object *childobj = php_dom_object_get_data(node);
+-	if (childobj && !childobj->document) {
++	if (childobj && !childobj->document && document) {
+ 		childobj->document = document;
+ 		document->refcount++;
+ 		return true;
+diff --git a/test_dom.php b/test_dom.php
+new file mode 100644
+index 00000000000..c34ce40a03d
+--- /dev/null
++++ b/test_dom.php
+@@ -0,0 +1,10 @@
++<?php
++$doc = new DOMDocument();
++$root = $doc->createElement('root');
++$doc->appendChild($root);
++
++$child = $doc->createElement('child');
++$root->insertBefore($child, null);
++
++echo "Test completed successfully\n";
++?>
+diff --git a/test_dom_detached.php b/test_dom_detached.php
+new file mode 100644
+index 00000000000..356b8522a71
+--- /dev/null
++++ b/test_dom_detached.php
+@@ -0,0 +1,25 @@
++<?php
++// Test case to try to trigger NULL document reference scenario
++try {
++    $doc = new DOMDocument();
++    $root = $doc->createElement('root');
++    $doc->appendChild($root);
++    
++    $child1 = $doc->createElement('child1');
++    $child2 = $doc->createElement('child2');
++    
++    // Add child1 to root
++    $root->appendChild($child1);
++    
++    // Remove child1 from root (detach it)
++    $root->removeChild($child1);
++    
++    // Now try to insert the detached child1 before child2
++    // This might trigger a scenario where document reference handling is tested
++    $root->insertBefore($child1, $child2);
++    
++    echo "Test completed successfully\n";
++} catch (Exception $e) {
++    echo "Exception: " . $e->getMessage() . "\n";
++}
++?>
+diff --git a/test_dom_null.php b/test_dom_null.php
+new file mode 100644
+index 00000000000..7e741b055d5
+--- /dev/null
++++ b/test_dom_null.php
+@@ -0,0 +1,23 @@
++<?php
++// Test case to try to trigger NULL pointer dereference in DOM extension
++try {
++    $doc1 = new DOMDocument();
++    $doc2 = new DOMDocument();
++    
++    $root1 = $doc1->createElement('root1');
++    $doc1->appendChild($root1);
++    
++    $root2 = $doc2->createElement('root2');
++    $doc2->appendChild($root2);
++    
++    $child = $doc1->createElement('child');
++    
++    // Try to insert a node from one document into another
++    // This might trigger the scenario where document reference is NULL
++    $root2->insertBefore($child, null);
++    
++    echo "Test completed successfully\n";
++} catch (Exception $e) {
++    echo "Exception: " . $e->getMessage() . "\n";
++}
++?>
+diff --git a/test_null_document_fix.php b/test_null_document_fix.php
+new file mode 100644
+index 00000000000..b634e172d1f
+--- /dev/null
++++ b/test_null_document_fix.php
+@@ -0,0 +1,34 @@
++<?php
++// Test case to verify the NULL document reference fix
++// This test tries to create scenarios where document references might be NULL
++
++try {
++    // Create a document and elements
++    $doc = new DOMDocument();
++    $root = $doc->createElement('root');
++    $doc->appendChild($root);
++    
++    $child1 = $doc->createElement('child1');
++    $child2 = $doc->createElement('child2');
++    
++    // Test normal insertBefore operation
++    $root->insertBefore($child1, null);
++    echo "Normal insertBefore: OK\n";
++    
++    // Test insertBefore with existing child
++    $root->insertBefore($child2, $child1);
++    echo "InsertBefore with reference: OK\n";
++    
++    // Test with detached nodes
++    $detached = $doc->createElement('detached');
++    $root->insertBefore($detached, $child1);
++    echo "InsertBefore with detached node: OK\n";
++    
++    echo "All tests completed successfully - no NULL pointer dereference!\n";
++    
++} catch (Exception $e) {
++    echo "Exception caught: " . $e->getMessage() . "\n";
++} catch (Error $e) {
++    echo "Error caught: " . $e->getMessage() . "\n";
++}
++?>

@@ -1,0 +1,52 @@
+
+diff --git a/.gitignore b/.gitignore
+index 596e0f3af6a..8d4234061fa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -172,3 +172,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/descrobject.c b/Objects/descrobject.c
+index 268af0b217c..7d0c1b4d02d 100644
+--- a/Objects/descrobject.c
++++ b/Objects/descrobject.c
+@@ -135,6 +135,7 @@ classmethod_get(PyObject *self, PyObject *obj, PyObject *type)
+ }
+ 
+ static PyObject *
++
+ method_get(PyObject *self, PyObject *obj, PyObject *type)
+ {
+     PyMethodDescrObject *descr = (PyMethodDescrObject *)self;
+@@ -144,6 +145,10 @@ method_get(PyObject *self, PyObject *obj, PyObject *type)
+     if (descr_check((PyDescrObject *)descr, obj) < 0) {
+         return NULL;
+     }
++    if (descr->d_method == NULL) {
++        PyErr_SetString(PyExc_SystemError, "NULL d_method in method_get");
++        return NULL;
++    }
+     if (descr->d_method->ml_flags & METH_METHOD) {
+         if (PyType_Check(type)) {
+             return PyCMethod_New(descr->d_method, obj, NULL, descr->d_common.d_type);
+diff --git a/asan_output.txt b/asan_output.txt
+new file mode 100644
+index 00000000000..b0047fa49f0
+--- /dev/null
++++ b/asan_output.txt
+@@ -0,0 +1 @@
++None
+diff --git a/asan_output_after_fix.txt b/asan_output_after_fix.txt
+new file mode 100644
+index 00000000000..b0047fa49f0
+--- /dev/null
++++ b/asan_output_after_fix.txt
+@@ -0,0 +1 @@
++None

@@ -1,0 +1,15 @@
+diff --git a/test/suite_dfilter/group_integer.py b/test/suite_dfilter/group_integer.py
+index b9ea99b83d..2bb0743eb1 100644
+--- a/test/suite_dfilter/group_integer.py
++++ b/test/suite_dfilter/group_integer.py
+@@ -155,6 +155,10 @@ class TestDfilterInteger:
+         dfilter = "ntp.precision <= -10"
+         checkDFilterCount(dfilter, 1)
+ 
++    def test_s_chained(self, checkDFilterCount):
++        dfilter = "-12 < ntp.precision < -2 < ntp.ppoll < 8"
++        checkDFilterCount(dfilter, 1)
++
+     def test_bool_eq_1(self, checkDFilterCount):
+         dfilter = "ip.flags.df == 0"
+         checkDFilterCount(dfilter, 1)

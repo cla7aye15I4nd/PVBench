@@ -1,0 +1,21 @@
+diff --git a/Misc/NEWS.d/next/Core_and_Builtins/2025-04-21-07-39-59.gh-issue-132747.L-cnej.rst b/Misc/NEWS.d/next/Core_and_Builtins/2025-04-21-07-39-59.gh-issue-132747.L-cnej.rst
+new file mode 100644
+index 00000000000..c6d45b09f64
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core_and_Builtins/2025-04-21-07-39-59.gh-issue-132747.L-cnej.rst
+@@ -0,0 +1,2 @@
++Fix a crash when calling :meth:`~object.__get__` of a :term:`method` with a
++:const:`None` second argument.
+diff --git a/Objects/descrobject.c b/Objects/descrobject.c
+index 268af0b217c..5ff36edd3dd 100644
+--- a/Objects/descrobject.c
++++ b/Objects/descrobject.c
+@@ -145,7 +145,7 @@ method_get(PyObject *self, PyObject *obj, PyObject *type)
+         return NULL;
+     }
+     if (descr->d_method->ml_flags & METH_METHOD) {
+-        if (PyType_Check(type)) {
++        if (type == NULL || PyType_Check(type)) {
+             return PyCMethod_New(descr->d_method, obj, NULL, descr->d_common.d_type);
+         } else {
+             PyErr_Format(PyExc_TypeError,

@@ -1,0 +1,55 @@
+
+diff --git a/.gitignore b/.gitignore
+index d42e111666f..6df96840d41 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -151,3 +151,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Lib/asyncio/__init__.py b/Lib/asyncio/__init__.py
+index fed16ec7c67..07c8588b4e8 100644
+--- a/Lib/asyncio/__init__.py
++++ b/Lib/asyncio/__init__.py
+@@ -21,6 +21,12 @@
+ from .timeouts import *
+ from .threads import *
+ from .transports import *
++from .tasks import Task
++def eager_task_factory(loop, coro):
++    # Use the default Task constructor to avoid recursion
++    return Task(coro, loop=loop)
++
++
+ 
+ __all__ = (base_events.__all__ +
+            coroutines.__all__ +
+diff --git a/Modules/getpath.c b/Modules/getpath.c
+index ceacf36d896..234d3937431 100644
+--- a/Modules/getpath.c
++++ b/Modules/getpath.c
+@@ -1,4 +1,5 @@
+-/* Return the initial module search path. */
++/* Dummy definition for _Py_M__getpath to allow build without frozen modules */
++const char _Py_M__getpath[] = {0};
+ 
+ #include "Python.h"
+ #include "marshal.h"              // PyMarshal_ReadObjectFromString
+diff --git a/Programs/_bootstrap_python.c b/Programs/_bootstrap_python.c
+index 6ecbf0c72b5..6f14037ab85 100644
+--- a/Programs/_bootstrap_python.c
++++ b/Programs/_bootstrap_python.c
+@@ -1,4 +1,6 @@
+-
++/* Dummy definitions for frozen module symbols to allow build without frozen modules */
++const unsigned char _Py_M__importlib__bootstrap[] = {0};
++const unsigned char _Py_M__importlib__bootstrap_external[] = {0};
+ /* Frozen modules bootstrap
+  *
+  * Limited and restricted Python interpreter to run

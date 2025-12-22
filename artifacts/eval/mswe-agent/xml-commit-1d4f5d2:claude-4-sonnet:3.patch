@@ -1,0 +1,56 @@
+
+diff --git a/.gitignore b/.gitignore
+index 842be311..59bd51ea 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -117,3 +117,12 @@ xstc/Makefile
+ xstc/Makefile.in
+ xstc/Tests
+ xstc/xsts-*.tar.gz
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/test.xml b/test.xml
+new file mode 100644
+index 00000000..10a7e703
+--- /dev/null
++++ b/test.xml
+@@ -0,0 +1 @@
++<e/>
+diff --git a/xmlschemas.c b/xmlschemas.c
+index ade10f78..14031e3f 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -14955,7 +14955,7 @@ xmlSchemaCheckCOSSTDerivedOK(xmlSchemaAbstractCtxtPtr actxt,
+     if (WXS_IS_TYPE_NOT_FIXED(type))
+ 	if (xmlSchemaTypeFixup(type, actxt) == -1)
+ 	    return(-1);
+-    if (WXS_IS_TYPE_NOT_FIXED(baseType))
++    if (baseType && WXS_IS_TYPE_NOT_FIXED(baseType))
+ 	if (xmlSchemaTypeFixup(baseType, actxt) == -1)
+ 	    return(-1);
+     if ((subset & SUBSET_RESTRICTION) ||
+@@ -14984,7 +14984,7 @@ xmlSchemaCheckCOSSTDerivedOK(xmlSchemaAbstractCtxtPtr actxt,
+     * 2.2.3 D's {variety} is list or union and B is the `simple ur-type
+     * definition`.
+     */
+-    if (WXS_IS_ANY_SIMPLE_TYPE(baseType) &&
++    if (baseType && WXS_IS_ANY_SIMPLE_TYPE(baseType) &&
+ 	(WXS_IS_LIST(type) || WXS_IS_UNION(type))) {
+ 	return (0);
+     }
+@@ -14996,7 +14996,7 @@ xmlSchemaCheckCOSSTDerivedOK(xmlSchemaAbstractCtxtPtr actxt,
+     * NOTE: This seems not to involve built-in types, since there is no
+     * built-in Union Simple Type.
+     */
+-    if (WXS_IS_UNION(baseType)) {
++    if (baseType && WXS_IS_UNION(baseType)) {
+ 	xmlSchemaTypeLinkPtr cur;
+ 
+ 	cur = baseType->memberTypes;

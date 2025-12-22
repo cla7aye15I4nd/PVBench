@@ -1,0 +1,14 @@
+id: wabt-gh-1524
+project: wabt
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: wasm-objdump
+trigger_commit: 40f6a8a9354f335f9bbe05b1962172873c2913f0
+patch:
+  commit: 713becedfe45e7b7a993d7efb6fd2994f064b234
+  date: '2020-08-19T11:28:42-07:00'
+reference:
+- https://github.com/WebAssembly/wabt
+- https://github.com/WebAssembly/wabt/issues/1524
+- https://github.com/WebAssembly/wabt/commit/40f6a8a9354f335f9bbe05b1962172873c2913f0
+- https://github.com/WebAssembly/wabt/commit/713becedfe45e7b7a993d7efb6fd2994f064b234

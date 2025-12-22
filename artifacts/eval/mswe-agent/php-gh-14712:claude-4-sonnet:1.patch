@@ -1,0 +1,138 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..e4178c008d3 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -418,7 +418,9 @@ static zval *spl_array_read_dimension_ex(int check_inherited, zend_object *objec
+ 				ZVAL_UNDEF(&tmp);
+ 				offset = &tmp;
+ 			}
++			GC_ADDREF(object);
+ 			zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_get, "offsetGet", rv, offset);
++			OBJ_RELEASE(object);
+ 
+ 			if (!Z_ISUNDEF_P(rv)) {
+ 				return rv;
+@@ -477,7 +479,9 @@ static void spl_array_write_dimension_ex(int check_inherited, zend_object *objec
+ 			ZVAL_NULL(&tmp);
+ 			offset = &tmp;
+ 		}
++		GC_ADDREF(object);
+ 		zend_call_method_with_2_params(object, object->ce, &intern->fptr_offset_set, "offsetSet", NULL, offset, value);
++		OBJ_RELEASE(object);
+ 		return;
+ 	}
+ 
+@@ -532,10 +536,13 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	spl_hash_key key;
+ 
+ 	if (check_inherited && intern->fptr_offset_del) {
++		GC_ADDREF(object);
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
++		OBJ_RELEASE(object);
+ 		return;
+ 	}
+ 
++
+ 	if (intern->nApplyCount > 0) {
+ 		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
+ 		return;
+@@ -591,7 +598,9 @@ static bool spl_array_has_dimension_ex(bool check_inherited, zend_object *object
+ 	zval rv, *value = NULL, *tmp;
+ 
+ 	if (check_inherited && intern->fptr_offset_has) {
++		GC_ADDREF(object);
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_has, "offsetExists", &rv, offset);
++		OBJ_RELEASE(object);
+ 
+ 		if (!zend_is_true(&rv)) {
+ 			zval_ptr_dtor(&rv);
+@@ -603,6 +612,8 @@ static bool spl_array_has_dimension_ex(bool check_inherited, zend_object *object
+ 		if (!check_empty) {
+ 			return 1;
+ 		} else if (intern->fptr_offset_get) {
++			/* Re-fetch intern pointer in case object was reallocated during method call */
++			intern = spl_array_from_obj(object);
+ 			value = spl_array_read_dimension_ex(1, object, offset, BP_VAR_R, &rv);
+ 		}
+ 	}
+diff --git a/poc_readable.php b/poc_readable.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/poc_readable.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
+diff --git a/run_test.sh b/run_test.sh
+new file mode 100755
+index 00000000000..f87f5f114ca
+--- /dev/null
++++ b/run_test.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++USE_TRACKED_ALLOC=1 USE_ZEND_ALLOC=0 sapi/cli/php -f $1
+diff --git a/test_debug.php b/test_debug.php
+new file mode 100644
+index 00000000000..9738c3927b9
+--- /dev/null
++++ b/test_debug.php
+@@ -0,0 +1,21 @@
++<?php
++class C extends ArrayObject {
++    public function __destruct() {
++        echo "C::__destruct\n";
++    }
++    
++    public function offsetUnset($offset) {
++        echo "C::offsetUnset called with offset: $offset\n";
++        // Clear all references to trigger destruction
++        $this->exchangeArray([]);
++        // Try to trigger some memory operations
++        for ($i = 0; $i < 100; $i++) {
++            $temp = new stdClass();
++        }
++    }
++}
++
++$c = new C();
++$c['test'] = 'value';
++unset($c['test']);
++echo "Script completed successfully, no errors.\n";

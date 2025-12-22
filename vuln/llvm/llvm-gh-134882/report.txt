@@ -1,0 +1,62 @@
+/testcases/llvm-gh-134882/input/poc.c:3:1: error: decomposition declaration cannot be declared 'constexpr'
+    3 | constexpr auto [...m] = t;
+      | ^~~~~~~~~
+/testcases/llvm-gh-134882/input/poc.c:3:17: error: pack declaration outside of template
+    3 | constexpr auto [...m] = t;
+      |                 ^
+clang-21: /tmp/llvm-gh-134882/build/clang/lib/AST/DeclCXX.cpp:3519: llvm::ArrayRef<clang::BindingDecl*> clang::BindingDecl::getBindingPackDecls() const: Assertion `Binding && "expecting a pack expr"' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace, preprocessed source, and associated run script.
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-134882/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-134882/build -fcoverage-compilation-dir=/tmp/llvm-gh-134882/build -resource-dir /tmp/llvm-gh-134882/build/build/lib/clang/21 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/backward -internal-isystem /tmp/llvm-gh-134882/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -std=c++26 -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-187e42.o -x c++ /testcases/llvm-gh-134882/input/poc.c
+1.	/testcases/llvm-gh-134882/input/poc.c:3:26: current parser token ';'
+ #0 0x00005555586b272a llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-134882/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x00005555586b2b41 PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-134882/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x00005555586afeef llvm::sys::RunSignalHandlers() /tmp/llvm-gh-134882/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x00005555586b1fac SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-134882/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x000055555d67e28c clang::BindingDecl::getBindingPackDecls() const /tmp/llvm-gh-134882/build/clang/lib/AST/DeclCXX.cpp:3520:41
+#11 0x0000555558c2252a clang::DecompositionDecl::flat_bindings() const /tmp/llvm-gh-134882/build/clang/include/clang/AST/DeclCXX.h:4285:59
+#12 0x000055555d32f195 clang::ASTContext::DeclMustBeEmitted(clang::Decl const*) /tmp/llvm-gh-134882/build/clang/lib/AST/ASTContext.cpp:12869:45
+#13 0x000055555c2db122 clang::Sema::CheckCompleteVariableDeclaration(clang::VarDecl*) /tmp/llvm-gh-134882/build/clang/lib/Sema/SemaDecl.cpp:14780:38
+#14 0x000055555c2d7a65 clang::Sema::AddInitializerToDecl(clang::Decl*, clang::Expr*, bool) /tmp/llvm-gh-134882/build/clang/lib/Sema/SemaDecl.cpp:14056:7
+#15 0x000055555be8c165 clang::Parser::ParseDeclarationAfterDeclaratorAndAttributes(clang::Declarator&, clang::Parser::ParsedTemplateInfo const&, clang::Parser::ForRangeInit*) /tmp/llvm-gh-134882/build/clang/lib/Parse/ParseDecl.cpp:2859:5
+#16 0x000055555be8ab1b clang::Parser::ParseDeclGroup(clang::ParsingDeclSpec&, clang::DeclaratorContext, clang::ParsedAttributes&, clang::Parser::ParsedTemplateInfo&, clang::SourceLocation*, clang::Parser::ForRangeInit*) /tmp/llvm-gh-134882/build/clang/lib/Parse/ParseDecl.cpp:2550:51
+#17 0x000055555be4ffc2 clang::Parser::ParseDeclOrFunctionDefInternal(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec&, clang::AccessSpecifier) /tmp/llvm-gh-134882/build/clang/lib/Parse/Parser.cpp:1260:24
+#18 0x000055555be501bb clang::Parser::ParseDeclarationOrFunctionDefinition(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*, clang::AccessSpecifier) /tmp/llvm-gh-134882/build/clang/lib/Parse/Parser.cpp:1282:42
+#19 0x000055555be4f3c5 clang::Parser::ParseExternalDeclaration(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*) /tmp/llvm-gh-134882/build/clang/lib/Parse/Parser.cpp:1085:50
+#20 0x000055555be4e17d clang::Parser::ParseTopLevelDecl(clang::OpaquePtr<clang::DeclGroupRef>&, clang::Sema::ModuleImportState&) /tmp/llvm-gh-134882/build/clang/lib/Parse/Parser.cpp:771:36
+#21 0x000055555be48fdf clang::ParseAST(clang::Sema&, bool, bool) /tmp/llvm-gh-134882/build/clang/lib/Parse/ParseAST.cpp:171:37
+#22 0x0000555559a4bb5c clang::ASTFrontendAction::ExecuteAction() /tmp/llvm-gh-134882/build/clang/lib/Frontend/FrontendAction.cpp:1144:11
+#23 0x00005555596ea8ea clang::CodeGenAction::ExecuteAction() /tmp/llvm-gh-134882/build/clang/lib/CodeGen/CodeGenAction.cpp:1112:5
+#24 0x0000555559a4b417 clang::FrontendAction::Execute() /tmp/llvm-gh-134882/build/clang/lib/Frontend/FrontendAction.cpp:1030:38
+#25 0x000055555995dbeb clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) /tmp/llvm-gh-134882/build/clang/lib/Frontend/CompilerInstance.cpp:1055:42
+#26 0x0000555559c1e21a clang::ExecuteCompilerInvocation(clang::CompilerInstance*) /tmp/llvm-gh-134882/build/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+#27 0x00005555566c2a71 cc1_main(llvm::ArrayRef<char const*>, char const*, void*) /tmp/llvm-gh-134882/build/clang/tools/driver/cc1_main.cpp:294:40
+#28 0x00005555566b31ae ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) /tmp/llvm-gh-134882/build/clang/tools/driver/driver.cpp:218:20
+#29 0x00005555566b371b clang_main(int, char**, llvm::ToolContext const&) /tmp/llvm-gh-134882/build/clang/tools/driver/driver.cpp:259:26
+#30 0x00005555566e97d8 main /tmp/llvm-gh-134882/build/build/tools/clang/tools/driver/clang-driver.cpp:17:20
+#31 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#32 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#33 0x00005555566b24e5 _start (/tmp/llvm-gh-134882/build/build/bin/clang-21+0x115e4e5)
+clang: error: unable to execute command: Aborted (core dumped)
+clang: error: clang frontend command failed due to signal (use -v to see invocation)
+clang version 21.0.0git (https://github.com/llvm/llvm-project.git a62b9b387fab85ae8ad63992b002c333069d87ae)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /tmp/llvm-gh-134882/build/build/bin
+Build config: +unoptimized, +assertions
+clang: note: diagnostic msg: 
+********************
+
+PLEASE ATTACH THE FOLLOWING FILES TO THE BUG REPORT:
+Preprocessed source(s) and associated run script(s) are located at:
+clang: note: diagnostic msg: /tmp/poc-2441e2.cpp
+clang: note: diagnostic msg: /tmp/poc-2441e2.sh
+clang: note: diagnostic msg: 
+
+********************

@@ -1,0 +1,83 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/AST/RecursiveVisitor.h b/include/hermes/AST/RecursiveVisitor.h
+index cd61e622a..0119c65e6 100644
+--- a/include/hermes/AST/RecursiveVisitor.h
++++ b/include/hermes/AST/RecursiveVisitor.h
+@@ -134,13 +134,7 @@ using llvh::cast;
+ /// patterns.
+ ///
+ /// There are two important methods:
+-/// - visit(Visitor,Node):
+-///     dispatches to the apropriate visitor based on type
+-/// - visitChildren(Visitor,Node):
+-///     recursively visits all children of the node.
+-///
+-/// This class is not intended to be used directly. Instead two global wrapper
+-/// functions: visitESTreeNode() and visitESTreeChildren() have been defined.
++
+ ///
+ /// The visitor class must at least implement the method `visit(Node *)` and
+ /// in addition to that any node-specific overloads. Each overload can have one
+diff --git a/lib/AST/ES6Class.cpp b/lib/AST/ES6Class.cpp
+index 42155e587..a99939381 100644
+--- a/lib/AST/ES6Class.cpp
++++ b/lib/AST/ES6Class.cpp
+@@ -136,9 +136,11 @@ namespace hermes {
+ /// enabling the ES6Class option.
+ class ES6ClassesTransformations {
+  public:
++  static constexpr int kMaxRecursionDepth = 512;
+   ES6ClassesTransformations(Context &context)
+       : context_(context),
+-        identVar_(context.getIdentifier("var").getUnderlyingPointer()) {}
++        identVar_(context.getIdentifier("var").getUnderlyingPointer()),
++        recursionDepth_(0) {}
+ 
+   ESTree::VisitResult visit(ESTree::ClassDeclarationNode *classDecl) {
+     auto *classBody = llvh::dyn_cast<ESTree::ClassBodyNode>(classDecl->_body);
+@@ -223,16 +225,25 @@ class ES6ClassesTransformations {
+   }
+ 
+   bool incRecursionDepth(ESTree::Node *) {
++    if (++recursionDepth_ > kMaxRecursionDepth) {
++      // Optionally, print an error or throw if supported
++      return false;
++    }
+     return true;
+   }
+ 
+-  void decRecursionDepth() {}
++  void decRecursionDepth() {
++    --recursionDepth_;
++  }
+ 
+  private:
+   Context &context_;
+   UniqueString *const identVar_;
+   VisitedClass *_currentProcessingClass = nullptr;
+   const ResolvedClassMember *_currentClassMember = nullptr;
++  int recursionDepth_ = 0;
++ private:
++
+ 
+   ESTree::VisitResult doVisitChildren(ESTree::Node *node) {
+     visitESTreeChildren(*this, node);

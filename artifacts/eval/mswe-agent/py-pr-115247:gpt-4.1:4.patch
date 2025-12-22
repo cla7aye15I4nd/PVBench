@@ -1,0 +1,27 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6ed7197e3ab..0c0663b8668 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -161,3 +161,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_collectionsmodule.c b/Modules/_collectionsmodule.c
+index ef77d34b10e..8f2b04ba811 100644
+--- a/Modules/_collectionsmodule.c
++++ b/Modules/_collectionsmodule.c
+@@ -1229,6 +1229,7 @@ deque_index_impl(dequeobject *deque, PyObject *v, Py_ssize_t start,
+                             "deque mutated during iteration");
+             return NULL;
+         }
++
+         index++;
+         if (index == BLOCKLEN) {
+             b = b->rightlink;

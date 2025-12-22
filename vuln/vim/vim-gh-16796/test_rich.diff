@@ -1,0 +1,28 @@
+diff --git a/src/testdir/test_tagjump.vim b/src/testdir/test_tagjump.vim
+index 67bd95fe1..c2cdb71d5 100644
+--- a/src/testdir/test_tagjump.vim
++++ b/src/testdir/test_tagjump.vim
+@@ -1633,4 +1633,23 @@ func Test_tag_guess_short()
+   set tags& cpoptions-=t
+ endfunc
+ 
++func Test_tag_excmd_with_nostartofline()
++  call writefile(["!_TAG_FILE_ENCODING\tutf-8\t//",
++        \ "f\tXfile\tascii"],
++        \ 'Xtags', 'D')
++  call writefile(['f', 'foobar'], 'Xfile', 'D')
++
++  set nostartofline
++  new Xfile
++  setlocal tags=Xtags
++  normal! G$
++  " This used to cause heap-buffer-overflow
++  tag f
++  call assert_equal(line('.'),1)
++  call assert_equal(col('.'),1)
++
++  bwipe!
++  set startofline&
++endfunc
++
+ " vim: shiftwidth=2 sts=2 expandtab

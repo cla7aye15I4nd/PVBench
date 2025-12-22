@@ -1,0 +1,82 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..61592edf3d7 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -166,19 +166,23 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 		return;
+ 	}
+ 
++	/* Check if we're already in the process of destroying this object */
++	if (OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED) {
++		/* Object is already being destroyed, avoid recursive destruction */
++		return;
++	}
++
+ 	/*	Make sure we hold a reference count during the destructor call
+ 		otherwise, when the destructor ends the storage might be freed
+ 		when the refcount reaches 0 a second time
+ 	 */
+-	if (!(OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED)) {
+-		GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
++	GC_ADD_FLAGS(object, IS_OBJ_DESTRUCTOR_CALLED);
+ 
+-		if (object->handlers->dtor_obj != zend_objects_destroy_object
+-				|| object->ce->destructor) {
+-			GC_SET_REFCOUNT(object, 1);
+-			object->handlers->dtor_obj(object);
+-			GC_DELREF(object);
+-		}
++	if (object->handlers->dtor_obj != zend_objects_destroy_object
++			|| object->ce->destructor) {
++		GC_SET_REFCOUNT(object, 1);
++		object->handlers->dtor_obj(object);
++		GC_DELREF(object);
+ 	}
+ 
+ 	if (GC_REFCOUNT(object) == 0) {
+@@ -199,4 +203,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
+ 	}
+ }
+-/* }}} */
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 0be317c173e..47ae54470c7 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -553,7 +553,18 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
++					/* Increment object refcount to prevent it from being freed during zval_ptr_dtor */
++					GC_ADDREF(object);
+ 					zval_ptr_dtor(data);
++					
++					/* Check if object was freed during zval_ptr_dtor */
++					if (GC_DELREF(object) == 0) {
++						/* Object was freed, nothing more to do */
++						spl_hash_key_release(&key);
++						return;
++					}
++					
++					/* Object is still alive, continue with cleanup */
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));

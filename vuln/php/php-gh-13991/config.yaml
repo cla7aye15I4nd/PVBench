@@ -1,0 +1,14 @@
+id: php-gh-13991
+project: php
+sanitizer: LeakAddressSanitizer
+type: Heap Buffer Overflow
+trigger_commit: 1acd7a09190daad70624684b9024287479cbc073
+binary: php
+patch:
+  commit: fda91a054301605ac89049c13e2b3aba07e60319
+  date: '2024-04-18T08:35:50+09:00'
+reference:
+- https://github.com/php/php-src.git
+- https://github.com/php/php-src/issues/13991
+- https://github.com/php/php-src/commit/1acd7a09190daad70624684b9024287479cbc073
+- https://github.com/php/php-src/commit/fda91a054301605ac89049c13e2b3aba07e60319

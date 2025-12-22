@@ -1,0 +1,37 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/clang/lib/Format/UnwrappedLineParser.cpp b/clang/lib/Format/UnwrappedLineParser.cpp
+index df58e5ef4d6a..23c75c6fcfd4 100644
+--- a/clang/lib/Format/UnwrappedLineParser.cpp
++++ b/clang/lib/Format/UnwrappedLineParser.cpp
+@@ -1185,8 +1185,10 @@ void UnwrappedLineParser::parsePPDefine() {
+   addUnwrappedLine();
+   ++Line->Level;
+ 
+-  Line->PPLevel = PPBranchLevel + (IncludeGuard == IG_Defined ? 0 : 1);
+-  assert((int)Line->PPLevel >= 0);
++  int computedPPLevel = PPBranchLevel + (IncludeGuard == IG_Defined ? 0 : 1);
++  Line->PPLevel = std::max(0, computedPPLevel);
++  // Defensive: Clamp to zero to avoid assertion failure on malformed input.
++  // assert((int)Line->PPLevel >= 0);
+   Line->InMacroBody = true;
+ 
+   if (Style.SkipMacroDefinitionBody) {

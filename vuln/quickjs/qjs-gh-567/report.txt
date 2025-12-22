@@ -1,0 +1,20 @@
+==832==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x560d1debeb3a bp 0x7ffd5e5ec040 sp 0x7ffd5e5ebca0 T0)
+==832==The signal is caused by a READ memory access.
+==832==Hint: address points to the zero page.
+    #0 0x560d1debeb3a in js_build_module_ns /qjs-gh-567/build/quickjs.c:26782:42
+    #1 0x560d1debdc2b in JS_GetModuleNamespace /qjs-gh-567/build/quickjs.c:26817:15
+    #2 0x560d1df1cdb8 in js_inner_module_linking /qjs-gh-567/build/quickjs.c:27086:23
+    #3 0x560d1df1c44b in js_inner_module_linking /qjs-gh-567/build/quickjs.c:27019:17
+    #4 0x560d1df1a9ca in js_link_module /qjs-gh-567/build/quickjs.c:27195:9
+    #5 0x560d1debfdda in JS_EvalFunctionInternal /qjs-gh-567/build/quickjs.c:33165:13
+    #6 0x560d1debfcbb in JS_EvalFunction /qjs-gh-567/build/quickjs.c:33181:12
+    #7 0x560d1de39ee4 in eval_buf /qjs-gh-567/build/qjs.c:63:19
+    #8 0x560d1de3a14d in eval_file /qjs-gh-567/build/qjs.c:99:11
+    #9 0x560d1de39265 in main /qjs-gh-567/build/qjs.c:547:17
+    #10 0x7f1069f0a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7f1069f0a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x560d1dd5e8c4 in _start (/qjs-gh-567/build/build/qjs+0x558c4) (BuildId: 4089ba36bbf1615db9d34c8eb2ed66c9387aa32d)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /qjs-gh-567/build/quickjs.c:26782:42 in js_build_module_ns
+==832==ABORTING

@@ -1,0 +1,633 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/test_overflow.c b/test_overflow.c
+new file mode 100644
+index 000000000..7e224f8eb
+--- /dev/null
++++ b/test_overflow.c
+@@ -0,0 +1,82 @@
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++// Simulate the typebuf structure
++typedef struct {
++    char *tb_buf;
++    int tb_len;
++    int tb_off;
++    int tb_maplen;
++} typebuf_T;
++
++#define MAXMAPLEN 50
++#define TYPELEN_INIT (5 * (MAXMAPLEN + 3))
++
++// Global typebuf
++typebuf_T typebuf;
++
++// Simulate mch_memmove
++#define mch_memmove(to, from, len) memmove(to, from, len)
++
++// Simulate ins_typebuf function
++int ins_typebuf(char *str, int noremap, int offset, int nottyped, int silent)
++{
++    int addlen = strlen(str);
++    int newlen;
++    
++    printf("ins_typebuf called with string length: %d\n", addlen);
++    printf("Current typebuf.tb_off: %d\n", typebuf.tb_off);
++    printf("Current typebuf.tb_len: %d\n", typebuf.tb_len);
++    
++    if (offset == 0 && addlen <= typebuf.tb_off) {
++        printf("Taking first branch (offset == 0 && addlen <= typebuf.tb_off)\n");
++        typebuf.tb_off -= addlen;
++        printf("New typebuf.tb_off: %d\n", typebuf.tb_off);
++        printf("Copying %d bytes to position %p\n", addlen, typebuf.tb_buf + typebuf.tb_off);
++        
++        // Check if we're writing within bounds
++        if (typebuf.tb_off < 0) {
++            printf("ERROR: tb_off is negative! This would cause buffer underflow.\n");
++            return -1;
++        }
++        
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, addlen);
++        return 0;
++    }
++    
++    printf("Taking other branch - would need to reallocate buffer\n");
++    return 0;
++}
++
++// Initialize typebuf
++void init_typebuf()
++{
++    typebuf.tb_len = TYPELEN_INIT;
++    typebuf.tb_buf = malloc(typebuf.tb_len);
++    typebuf.tb_off = MAXMAPLEN + 4;  // 54
++    typebuf.tb_maplen = 0;
++    
++    printf("Initialized typebuf:\n");
++    printf("  tb_len: %d\n", typebuf.tb_len);
++    printf("  tb_off: %d\n", typebuf.tb_off);
++    printf("  tb_buf: %p\n", typebuf.tb_buf);
++}
++
++int main()
++{
++    init_typebuf();
++    
++    // Test with a string that's longer than tb_off
++    char *long_string = malloc(1000);
++    memset(long_string, '0', 987);
++    long_string[987] = '\0';
++    
++    printf("\nTesting with 987-character string...\n");
++    ins_typebuf(long_string, 0, 0, 0, 0);
++    
++    free(long_string);
++    free(typebuf.tb_buf);
++    
++    return 0;
++}
+diff --git a/test_overflow2.c b/test_overflow2.c
+new file mode 100644
+index 000000000..6198d5820
+--- /dev/null
++++ b/test_overflow2.c
+@@ -0,0 +1,184 @@
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++// Simulate the typebuf structure
++typedef struct {
++    char *tb_buf;
++    char *tb_noremap;
++    int tb_len;
++    int tb_off;
++    int tb_buflen;
++    int tb_maplen;
++    int tb_silent;
++    int tb_no_abbr_cnt;
++    int tb_change_cnt;
++} typebuf_T;
++
++#define MAXMAPLEN 50
++#define TYPELEN_INIT (5 * (MAXMAPLEN + 3))
++#define REMAP_NONE 0
++#define RM_NONE 0
++#define RM_YES 1
++#define OK 0
++#define FAIL 1
++
++// Global typebuf
++typebuf_T typebuf;
++char typebuf_init[TYPELEN_INIT];
++char noremapbuf_init[TYPELEN_INIT];
++
++// Simulate mch_memmove
++#define mch_memmove(to, from, len) memmove(to, from, len)
++#define STRLEN(s) strlen(s)
++
++void init_typebuf()
++{
++    if (typebuf.tb_buf == NULL) {
++        typebuf.tb_buf = typebuf_init;
++        typebuf.tb_noremap = noremapbuf_init;
++        typebuf.tb_buflen = TYPELEN_INIT;
++        typebuf.tb_off = MAXMAPLEN + 4;
++        typebuf.tb_len = 0;
++        typebuf.tb_maplen = 0;
++        typebuf.tb_silent = 0;
++        typebuf.tb_no_abbr_cnt = 0;
++        typebuf.tb_change_cnt = 0;
++    }
++}
++
++char *alloc(int size) {
++    return malloc(size);
++}
++
++void vim_free(void *ptr) {
++    free(ptr);
++}
++
++// Simulate ins_typebuf function (focusing on the problematic part)
++int ins_typebuf(char *str, int noremap, int offset, int nottyped, int silent)
++{
++    char *s1, *s2;
++    int newlen;
++    int addlen;
++    int i;
++    int newoff;
++    int val = RM_NONE;
++    int nrm;
++
++    init_typebuf();
++    if (++typebuf.tb_change_cnt == 0)
++        typebuf.tb_change_cnt = 1;
++
++    addlen = (int)STRLEN(str);
++    
++    printf("ins_typebuf called:\n");
++    printf("  addlen: %d\n", addlen);
++    printf("  offset: %d\n", offset);
++    printf("  typebuf.tb_off: %d\n", typebuf.tb_off);
++    printf("  typebuf.tb_len: %d\n", typebuf.tb_len);
++    printf("  typebuf.tb_buflen: %d\n", typebuf.tb_buflen);
++
++    if (offset == 0 && addlen <= typebuf.tb_off)
++    {
++        printf("Taking first branch\n");
++        typebuf.tb_off -= addlen;
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
++    }
++    else if (typebuf.tb_len == 0 && typebuf.tb_buflen >= addlen + 3 * (MAXMAPLEN + 4))
++    {
++        printf("Taking second branch\n");
++        typebuf.tb_off = (typebuf.tb_buflen - addlen - 3 * (MAXMAPLEN + 4)) / 2;
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
++    }
++    else
++    {
++        printf("Taking third branch - allocating new buffer\n");
++        int extra;
++
++        newoff = MAXMAPLEN + 4;
++        extra = addlen + newoff + 4 * (MAXMAPLEN + 4);
++        newlen = typebuf.tb_len + extra;
++        
++        printf("  newoff: %d\n", newoff);
++        printf("  extra: %d\n", extra);
++        printf("  newlen: %d\n", newlen);
++        
++        s1 = alloc(newlen);
++        if (s1 == NULL)
++            return FAIL;
++        s2 = alloc(newlen);
++        if (s2 == NULL)
++        {
++            vim_free(s1);
++            return FAIL;
++        }
++        typebuf.tb_buflen = newlen;
++
++        // copy operations (simplified)
++        if (typebuf.tb_buf != typebuf_init)
++            vim_free(typebuf.tb_buf);
++        typebuf.tb_buf = s1;
++
++        if (typebuf.tb_noremap != noremapbuf_init)
++            vim_free(typebuf.tb_noremap);
++        typebuf.tb_noremap = s2;
++
++        typebuf.tb_off = newoff;
++    }
++    typebuf.tb_len += addlen;
++
++    // This is the potentially problematic part
++    if (noremap == REMAP_NONE)
++        nrm = addlen;
++    else
++        nrm = noremap;
++        
++    printf("Setting noremap values:\n");
++    printf("  typebuf.tb_off: %d\n", typebuf.tb_off);
++    printf("  addlen: %d\n", addlen);
++    printf("  offset: %d\n", offset);
++    printf("  Buffer allocated size: %d\n", typebuf.tb_buflen);
++    
++    for (i = 0; i < addlen; ++i)
++    {
++        int index = typebuf.tb_off + i + offset;
++        if (i < 5 || i >= addlen - 5) {  // Only print first and last few
++            printf("  Setting noremap[%d] (buffer size: %d)\n", index, typebuf.tb_buflen);
++        }
++        
++        if (index >= typebuf.tb_buflen) {
++            printf("ERROR: Buffer overflow! Trying to access index %d in buffer of size %d\n", 
++                   index, typebuf.tb_buflen);
++            return FAIL;
++        }
++        
++        typebuf.tb_noremap[index] = (--nrm >= 0) ? val : RM_YES;
++    }
++
++    return OK;
++}
++
++int main()
++{
++    // Initialize
++    memset(&typebuf, 0, sizeof(typebuf));
++    
++    // Test with a string that's longer than tb_off
++    char *long_string = malloc(1000);
++    memset(long_string, '0', 987);
++    long_string[987] = '\0';
++    
++    printf("Testing with 987-character string...\n");
++    int result = ins_typebuf(long_string, REMAP_NONE, 0, 0, 0);
++    
++    printf("Result: %s\n", result == OK ? "OK" : "FAIL");
++    
++    free(long_string);
++    if (typebuf.tb_buf != typebuf_init)
++        free(typebuf.tb_buf);
++    if (typebuf.tb_noremap != noremapbuf_init)
++        free(typebuf.tb_noremap);
++    
++    return 0;
++}
+diff --git a/test_overflow3.c b/test_overflow3.c
+new file mode 100644
+index 000000000..3c475f92c
+--- /dev/null
++++ b/test_overflow3.c
+@@ -0,0 +1,154 @@
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++// Simulate the typebuf structure
++typedef struct {
++    char *tb_buf;
++    char *tb_noremap;
++    int tb_len;
++    int tb_off;
++    int tb_buflen;
++    int tb_maplen;
++    int tb_silent;
++    int tb_no_abbr_cnt;
++    int tb_change_cnt;
++} typebuf_T;
++
++#define MAXMAPLEN 50
++#define TYPELEN_INIT (5 * (MAXMAPLEN + 3))
++#define REMAP_NONE 0
++#define RM_NONE 0
++#define RM_YES 1
++#define OK 0
++#define FAIL 1
++
++// Global typebuf
++typebuf_T typebuf;
++char typebuf_init[TYPELEN_INIT];
++char noremapbuf_init[TYPELEN_INIT];
++
++#define mch_memmove(to, from, len) memmove(to, from, len)
++#define STRLEN(s) strlen(s)
++
++void init_typebuf()
++{
++    if (typebuf.tb_buf == NULL) {
++        typebuf.tb_buf = typebuf_init;
++        typebuf.tb_noremap = noremapbuf_init;
++        typebuf.tb_buflen = TYPELEN_INIT;
++        typebuf.tb_off = MAXMAPLEN + 4;
++        typebuf.tb_len = 0;
++        typebuf.tb_maplen = 0;
++        typebuf.tb_silent = 0;
++        typebuf.tb_no_abbr_cnt = 0;
++        typebuf.tb_change_cnt = 0;
++    }
++}
++
++// Test the second branch scenario
++int ins_typebuf_test(char *str, int noremap, int offset, int nottyped, int silent)
++{
++    int addlen;
++    int i;
++    int val = RM_NONE;
++    int nrm;
++
++    init_typebuf();
++    if (++typebuf.tb_change_cnt == 0)
++        typebuf.tb_change_cnt = 1;
++
++    addlen = (int)STRLEN(str);
++    
++    printf("ins_typebuf called:\n");
++    printf("  addlen: %d\n", addlen);
++    printf("  offset: %d\n", offset);
++    printf("  typebuf.tb_off: %d\n", typebuf.tb_off);
++    printf("  typebuf.tb_len: %d\n", typebuf.tb_len);
++    printf("  typebuf.tb_buflen: %d\n", typebuf.tb_buflen);
++    printf("  Required for second branch: %d\n", addlen + 3 * (MAXMAPLEN + 4));
++
++    if (offset == 0 && addlen <= typebuf.tb_off)
++    {
++        printf("Taking first branch\n");
++        typebuf.tb_off -= addlen;
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
++    }
++    else if (typebuf.tb_len == 0 && typebuf.tb_buflen >= addlen + 3 * (MAXMAPLEN + 4))
++    {
++        printf("Taking second branch\n");
++        typebuf.tb_off = (typebuf.tb_buflen - addlen - 3 * (MAXMAPLEN + 4)) / 2;
++        printf("  New typebuf.tb_off: %d\n", typebuf.tb_off);
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
++    }
++    else
++    {
++        printf("Taking third branch - would allocate new buffer\n");
++        return OK; // Skip for this test
++    }
++    
++    typebuf.tb_len += addlen;
++    printf("  New typebuf.tb_len: %d\n", typebuf.tb_len);
++
++    // This is the potentially problematic part
++    if (noremap == REMAP_NONE)
++        nrm = addlen;
++    else
++        nrm = noremap;
++        
++    printf("Setting noremap values:\n");
++    printf("  typebuf.tb_off: %d\n", typebuf.tb_off);
++    printf("  addlen: %d\n", addlen);
++    printf("  offset: %d\n", offset);
++    printf("  Buffer size: %d\n", typebuf.tb_buflen);
++    
++    for (i = 0; i < addlen; ++i)
++    {
++        int index = typebuf.tb_off + i + offset;
++        if (i < 5 || i >= addlen - 5) {  // Only print first and last few
++            printf("  Setting noremap[%d] (buffer size: %d)\n", index, typebuf.tb_buflen);
++        }
++        
++        if (index >= typebuf.tb_buflen) {
++            printf("ERROR: Buffer overflow! Trying to access index %d in buffer of size %d\n", 
++                   index, typebuf.tb_buflen);
++            return FAIL;
++        }
++        
++        typebuf.tb_noremap[index] = (--nrm >= 0) ? val : RM_YES;
++    }
++
++    return OK;
++}
++
++int main()
++{
++    // Initialize
++    memset(&typebuf, 0, sizeof(typebuf));
++    
++    printf("TYPELEN_INIT = %d\n", TYPELEN_INIT);
++    printf("MAXMAPLEN + 4 = %d\n", MAXMAPLEN + 4);
++    printf("3 * (MAXMAPLEN + 4) = %d\n", 3 * (MAXMAPLEN + 4));
++    
++    // Test with different string lengths to see which branch is taken
++    int test_lengths[] = {50, 100, 103, 104, 105, 200};
++    int num_tests = sizeof(test_lengths) / sizeof(test_lengths[0]);
++    
++    for (int t = 0; t < num_tests; t++) {
++        printf("\n=== Testing with string length %d ===\n", test_lengths[t]);
++        
++        // Reset typebuf
++        memset(&typebuf, 0, sizeof(typebuf));
++        
++        char *test_string = malloc(test_lengths[t] + 1);
++        memset(test_string, '0', test_lengths[t]);
++        test_string[test_lengths[t]] = '\0';
++        
++        int result = ins_typebuf_test(test_string, REMAP_NONE, 0, 0, 0);
++        printf("Result: %s\n", result == OK ? "OK" : "FAIL");
++        
++        free(test_string);
++    }
++    
++    return 0;
++}
+diff --git a/test_overflow4.c b/test_overflow4.c
+new file mode 100644
+index 000000000..43e99c028
+--- /dev/null
++++ b/test_overflow4.c
+@@ -0,0 +1,165 @@
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++// Simulate the typebuf structure
++typedef struct {
++    char *tb_buf;
++    char *tb_noremap;
++    int tb_len;
++    int tb_off;
++    int tb_buflen;
++    int tb_maplen;
++    int tb_silent;
++    int tb_no_abbr_cnt;
++    int tb_change_cnt;
++} typebuf_T;
++
++#define MAXMAPLEN 50
++#define TYPELEN_INIT (5 * (MAXMAPLEN + 3))
++#define REMAP_NONE 0
++#define RM_NONE 0
++#define RM_YES 1
++#define OK 0
++#define FAIL 1
++
++// Global typebuf
++typebuf_T typebuf;
++char typebuf_init[TYPELEN_INIT];
++char noremapbuf_init[TYPELEN_INIT];
++
++#define mch_memmove(to, from, len) memmove(to, from, len)
++#define STRLEN(s) strlen(s)
++
++void init_typebuf()
++{
++    if (typebuf.tb_buf == NULL) {
++        typebuf.tb_buf = typebuf_init;
++        typebuf.tb_noremap = noremapbuf_init;
++        typebuf.tb_buflen = TYPELEN_INIT;
++        typebuf.tb_off = MAXMAPLEN + 4;
++        typebuf.tb_len = 0;
++        typebuf.tb_maplen = 0;
++        typebuf.tb_silent = 0;
++        typebuf.tb_no_abbr_cnt = 0;
++        typebuf.tb_change_cnt = 0;
++    }
++}
++
++// Test with different offset values
++int ins_typebuf_test(char *str, int noremap, int offset, int nottyped, int silent)
++{
++    int addlen;
++    int i;
++    int val = RM_NONE;
++    int nrm;
++
++    init_typebuf();
++    if (++typebuf.tb_change_cnt == 0)
++        typebuf.tb_change_cnt = 1;
++
++    addlen = (int)STRLEN(str);
++    
++    printf("ins_typebuf called:\n");
++    printf("  addlen: %d\n", addlen);
++    printf("  offset: %d\n", offset);
++    printf("  typebuf.tb_off: %d\n", typebuf.tb_off);
++    printf("  typebuf.tb_len: %d\n", typebuf.tb_len);
++    printf("  typebuf.tb_buflen: %d\n", typebuf.tb_buflen);
++    printf("  Required for second branch: %d\n", addlen + 3 * (MAXMAPLEN + 4));
++
++    if (offset == 0 && addlen <= typebuf.tb_off)
++    {
++        printf("Taking first branch\n");
++        typebuf.tb_off -= addlen;
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
++    }
++    else if (typebuf.tb_len == 0 && typebuf.tb_buflen >= addlen + 3 * (MAXMAPLEN + 4))
++    {
++        printf("Taking second branch\n");
++        typebuf.tb_off = (typebuf.tb_buflen - addlen - 3 * (MAXMAPLEN + 4)) / 2;
++        printf("  New typebuf.tb_off: %d\n", typebuf.tb_off);
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
++    }
++    else
++    {
++        printf("Taking third branch - would allocate new buffer\n");
++        return OK; // Skip for this test
++    }
++    
++    typebuf.tb_len += addlen;
++    printf("  New typebuf.tb_len: %d\n", typebuf.tb_len);
++
++    // This is the potentially problematic part
++    if (noremap == REMAP_NONE)
++        nrm = addlen;
++    else
++        nrm = noremap;
++        
++    printf("Setting noremap values:\n");
++    printf("  typebuf.tb_off: %d\n", typebuf.tb_off);
++    printf("  addlen: %d\n", addlen);
++    printf("  offset: %d\n", offset);
++    printf("  Buffer size: %d\n", typebuf.tb_buflen);
++    printf("  Max index will be: %d\n", typebuf.tb_off + addlen - 1 + offset);
++    
++    for (i = 0; i < addlen; ++i)
++    {
++        int index = typebuf.tb_off + i + offset;
++        if (i < 5 || i >= addlen - 5) {  // Only print first and last few
++            printf("  Setting noremap[%d] (buffer size: %d)\n", index, typebuf.tb_buflen);
++        }
++        
++        if (index >= typebuf.tb_buflen) {
++            printf("ERROR: Buffer overflow! Trying to access index %d in buffer of size %d\n", 
++                   index, typebuf.tb_buflen);
++            return FAIL;
++        }
++        
++        typebuf.tb_noremap[index] = (--nrm >= 0) ? val : RM_YES;
++    }
++
++    return OK;
++}
++
++int main()
++{
++    printf("TYPELEN_INIT = %d\n", TYPELEN_INIT);
++    printf("MAXMAPLEN + 4 = %d\n", MAXMAPLEN + 4);
++    printf("3 * (MAXMAPLEN + 4) = %d\n", 3 * (MAXMAPLEN + 4));
++    
++    // Test scenarios that might cause buffer overflow
++    struct {
++        int addlen;
++        int offset;
++        const char* description;
++    } test_cases[] = {
++        {100, 0, "Normal case - should work"},
++        {100, 50, "With offset - might overflow"},
++        {100, 100, "With large offset - should overflow"},
++        {103, 0, "Edge case - tb_off becomes 0"},
++        {103, 1, "Edge case with offset - should overflow"},
++        {50, 200, "Small string, large offset - should overflow"}
++    };
++    
++    int num_tests = sizeof(test_cases) / sizeof(test_cases[0]);
++    
++    for (int t = 0; t < num_tests; t++) {
++        printf("\n=== Test %d: %s ===\n", t+1, test_cases[t].description);
++        printf("String length: %d, Offset: %d\n", test_cases[t].addlen, test_cases[t].offset);
++        
++        // Reset typebuf
++        memset(&typebuf, 0, sizeof(typebuf));
++        
++        char *test_string = malloc(test_cases[t].addlen + 1);
++        memset(test_string, '0', test_cases[t].addlen);
++        test_string[test_cases[t].addlen] = '\0';
++        
++        int result = ins_typebuf_test(test_string, REMAP_NONE, test_cases[t].offset, 0, 0);
++        printf("Result: %s\n", result == OK ? "OK" : "FAIL");
++        
++        free(test_string);
++    }
++    
++    return 0;
++}
+diff --git a/test_reproduce.c b/test_reproduce.c
+new file mode 100644
+index 000000000..8b1378917
+--- /dev/null
++++ b/test_reproduce.c
+@@ -0,0 +1 @@
++

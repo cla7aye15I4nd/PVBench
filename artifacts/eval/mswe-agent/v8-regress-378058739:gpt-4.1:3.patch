@@ -1,0 +1,18 @@
+
+diff --git a/.gitignore b/.gitignore
+index fa8fbb49d9d..d9670c75cbc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,3 +126,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib

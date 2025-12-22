@@ -1,0 +1,123 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+index 034612427..0727314c5 100644
+--- a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
++++ b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+@@ -4,9 +4,8 @@
+  * This source code is licensed under the MIT license found in the
+  * LICENSE file in the root directory of this source tree.
+  */
+-
+-#include "SerialExecutor.h"
+-
++#include <stdexcept>
++#include "hermes/Regex/RegexTraits.h"
+ namespace facebook {
+ namespace hermes {
+ namespace inspector_modern {
+diff --git a/lib/Regex/Executor.cpp b/lib/Regex/Executor.cpp
+index fb73b8e56..9ddb1e363 100644
+--- a/lib/Regex/Executor.cpp
++++ b/lib/Regex/Executor.cpp
+@@ -4,11 +4,11 @@
+  * This source code is licensed under the MIT license found in the
+  * LICENSE file in the root directory of this source tree.
+  */
+-
+-#include "hermes/Regex/Executor.h"
+ #include "hermes/Regex/RegexTraits.h"
++#include "hermes/Regex/Executor.h"
+ #include "hermes/Support/OptValue.h"
+ 
++
+ #include "llvh/ADT/SmallVector.h"
+ #include "llvh/Support/TrailingObjects.h"
+ 
+@@ -251,7 +251,7 @@ template <class Traits>
+ struct Context {
+   using CodeUnit = typename Traits::CodeUnit;
+   using CodePoint = typename Traits::CodePoint;
+-
++  int recursionDepth = 0;
+   /// The set of backtracking opcodes. These are interpreted by the backtrack()
+   /// function.
+   enum class BacktrackOp : uint8_t {
+@@ -961,8 +961,12 @@ inline size_t Context<Traits>::advanceStringIndex(
+ template <class Traits>
+ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+     -> ExecutorResult<const CodeUnit *> {
+-  using State = State<Traits>;
+-  BacktrackStack backtrackStack;
++  recursionDepth++;
++  if (recursionDepth > 1000) {
++    // Exceeded safe recursion depth, abort to prevent stack overflow.
++    recursionDepth--;
++    return ExecutorResult<const CodeUnit *>(ExecutionStatus::STACK_OVERFLOW);
++  }
+ 
+   // We'll refer to the cursor often.
+   Cursor<Traits> &c = s->cursor_;
+@@ -978,7 +982,7 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+   // Use offsetFromRight() instead of remaining() here so that the length passed
+   // to advanceStringIndex is accurate even when the cursor is going backwards.
+   const size_t charsToRight = c.offsetFromRight();
+-
++  BacktrackStack backtrackStack;
+   // Decide how many locations we'll need to check.
+   // Note that we do want to check the empty range at the end, so add one to
+   // charsToRight.
+@@ -992,14 +996,16 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+ 
+   // Macro used when a state fails to match.
+ #define BACKTRACK()                            \
+-  do {                                         \
+-    auto btRes = backtrack(backtrackStack, s); \
+-    if (LLVM_UNLIKELY(!btRes))                 \
+-      return btRes.getStatus();                \
+-    if (*btRes)                                \
+-      goto backtrackingSucceeded;              \
+-    goto backtrackingExhausted;                \
+-  } while (0)
++  {                                            \
++    auto btRes = backtrack(backtrackStack, s);  \
++    if (LLVM_UNLIKELY(!btRes)) {                \
++      recursionDepth--;                         \
++      return btRes.getStatus();                 \
++    }                                           \
++    if (*btRes)                                 \
++      goto backtrackingSucceeded;               \
++    goto backtrackingExhausted;                 \
++  }
+ 
+   for (size_t locIndex = 0; locIndex < locsToCheckCount;
+        locIndex = advanceStringIndex(startLoc, locIndex, charsToRight)) {
+@@ -1010,7 +1016,9 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+     for (;;) {
+       const Insn *base = reinterpret_cast<const Insn *>(&bytecode[s->ip_]);
+       switch (base->opcode) {
+-        case Opcode::Goal:
++        recursionDepth--;
++        return potentialMatchLocation;
++          recursionDepth--;
+           return potentialMatchLocation;
+ 
+         case Opcode::LeftAnchor:

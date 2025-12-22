@@ -1,0 +1,65 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/html5_serializer.c b/ext/dom/html5_serializer.c
+index 3970fb059c1..a4ab0b92b0a 100644
+--- a/ext/dom/html5_serializer.c
++++ b/ext/dom/html5_serializer.c
+@@ -137,7 +137,7 @@ static zend_result dom_html5_serialize_text_node(dom_html5_serialize_context *ct
+ 		return SUCCESS;
+ 	}
+ 
+-	if (node->parent->type == XML_ELEMENT_NODE && php_dom_ns_is_fast(node->parent, php_dom_ns_is_html_magic_token)) {
++	if (node->parent && node->parent->type == XML_ELEMENT_NODE && php_dom_ns_is_fast(node->parent, php_dom_ns_is_html_magic_token)) {
+ 		const xmlNode *parent = node->parent;
+ 		size_t name_length = strlen((const char *) parent->name);
+ 		/* Spec tells us to only emit noscript content as-is if scripting is enabled.
+diff --git a/test_null_parent.php b/test_null_parent.php
+new file mode 100644
+index 00000000000..078175c149a
+--- /dev/null
++++ b/test_null_parent.php
+@@ -0,0 +1,28 @@
++<?php
++// Create a test case that triggers the null pointer dereference
++// by creating a text node without a parent and trying to serialize it
++
++$doc = new DOMDocument();
++
++// Create a text node but don't attach it to any parent
++$textNode = $doc->createTextNode('Hello World');
++
++// Try to trigger HTML5 serialization on an orphaned text node
++// This should trigger the code path where node->parent is NULL
++try {
++    // We need to create a scenario where the HTML5 serializer is called
++    // Let's create a document fragment and add the text node
++    $fragment = $doc->createDocumentFragment();
++    $fragment->appendChild($textNode);
++    
++    // Now remove the text node from the fragment to make it orphaned
++    $fragment->removeChild($textNode);
++    
++    // Try to serialize - this might trigger the serializer
++    echo $doc->saveHTML($textNode);
++} catch (Exception $e) {
++    echo "Exception: " . $e->getMessage() . "\n";
++}
++
++echo "Test completed\n";
++?>

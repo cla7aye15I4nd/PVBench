@@ -1,0 +1,15 @@
+id: py-pr-134100
+project: cpython
+sanitizer: AddressSanitizer
+type: Use After Free
+trigger_commit: fa4e088668d4a41f9be5babe7edd5409290ee92a
+binary: python
+patch:
+  commit: 4e9005d32ff466925f40af410f2ea6bf2329bcf8
+  date: '2025-05-18T12:41:38+05:30'
+reference:
+- https://github.com/python/cpython.git
+- https://github.com/python/cpython/pull/134117
+- https://github.com/python/cpython/issues/134100
+- https://github.com/python/cpython/commit/fa4e088668d4a41f9be5babe7edd5409290ee92a
+- https://github.com/python/cpython/commit/4e9005d32ff466925f40af410f2ea6bf2329bcf8

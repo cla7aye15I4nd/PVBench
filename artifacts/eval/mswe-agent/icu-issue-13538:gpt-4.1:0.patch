@@ -1,0 +1,1021 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1d2af48c714..fc3141c31e3 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -978,3 +978,14 @@ tools/unicode/c/genuca/release
+ tools/unicode/c/genuca/x64
+ tools/unicode/c/genuca/x86
+ tools/unicodetools/com/ibm/rbm/lib
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 00000000000..4b9b1de493c
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,407 @@
++# Copyright (C) 2016 and later: Unicode, Inc. and others.
++# License & terms of use: http://www.unicode.org/copyright.html
++#******************************************************************************
++#
++#   Copyright (C) 1998-2016, International Business Machines
++#   Corporation and others.  All Rights Reserved.
++#
++#******************************************************************************
++## Top-level Makefile.in for ICU
++## Stephen F. Booth
++
++srcdir = ./icu4c/source
++top_srcdir = ./icu4c/source
++
++top_builddir = .
++
++include $(top_builddir)/icudefs.mk
++
++docdir = $(datadir)/doc
++docsubdir = $(PACKAGE)$(ICULIBDASHSUFFIX)/html
++docfilesdir = doc/html
++docfiles = $(docfilesdir)/*.png $(docfilesdir)/*.html $(docfilesdir)/*.css $(docfilesdir)/*.tag 
++docsrchdir = $(docfilesdir)/search
++docsrchfiles = $(docsrchdir)/*
++
++##
++
++## Build directory information
++subdir = .
++
++#AUTOCONF = @AUTOCONF@
++
++## Optional directory setup
++#LAYOUTEX = layoutex
++ICUIO = io
++EXTRA = extra
++# need tools for tests
++TEST = test
++SAMPLE = samples
++TOOLS = tools
++DATASUBDIR = data
++
++## pkgconfig setup. Always have uc and i18n. Others are optional.
++ALL_PKGCONFIG_SUFFIX=uc i18n
++#ALL_PKGCONFIG_SUFFIX+= lx
++ALL_PKGCONFIG_SUFFIX+= io
++
++DOXYGEN = 
++DOCZIP = icu-docs.zip
++
++## Files to remove for 'make clean'
++CLEANFILES = *~
++
++ALL_PKGCONFIG_FILES=$(ALL_PKGCONFIG_SUFFIX:%=$(top_builddir)/config/icu-%.pc)
++
++## Files built (autoconfed) and installed
++INSTALLED_BUILT_FILES = $(top_builddir)/config/Makefile.inc $(top_builddir)/config/pkgdata.inc $(top_builddir)/config/icu-config $(top_srcdir)/config/mh-linux $(EXTRA_DATA:%=$(DESTDIR)$(pkglibdir)/%) $(ALL_PKGCONFIG_FILES)
++
++## Files built (autoconfed) but not installed
++LOCAL_BUILT_FILES = icudefs.mk config/icucross.mk config/icucross.inc
++
++DOCDIRS = common i18n
++SUBDIRS =  stubdata common i18n $(LAYOUTEX) $(ICUIO) $(TOOLS) $(DATASUBDIR) $(EXTRA) $(SAMPLE) $(TEST)
++
++SECTION = 1
++
++MANX_FILES = config/icu-config.$(SECTION)
++
++ALL_MAN_FILES = $(MANX_FILES)
++
++## Extra files to install [nothing at present]
++EXTRA_DATA =
++
++## List of phony targets
++.PHONY : all all-local all-recursive install install-local install-udata install-udata-files install-udata-dlls		\
++install-recursive clean clean-local clean-recursive distclean		\
++distclean-local distclean-recursive doc dist dist-local dist-recursive	\
++check check-local check-recursive clean-recursive-with-twist install-icu \
++doc install-doc tests icu4j-data icu4j-data-install update-windows-makefiles xcheck-local xcheck-recursive xperf xcheck xperf-recursive \
++check-exhaustive check-exhaustive-local check-exhaustive-recursive releaseDist
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local all-recursive
++install: install-recursive install-local
++clean: clean-recursive-with-twist clean-local
++distclean : distclean-recursive distclean-local
++dist: dist-recursive
++check: all check-recursive
++check-recursive: all
++xcheck: all xcheck-recursive
++xperf: all xperf-recursive
++check-exhaustive: all check-exhaustive-recursive
++
++pcheck: all tests
++	@$(MAKE) -C test pcheck
++
++check-exhaustive-local: check-local
++
++xcheck-recursive: all xcheck-local
++	@$(MAKE) -C test xcheck
++
++xperf-recursive: all tests
++	@$(MAKE) -C test/perf xperf
++
++$(top_builddir)/config/icuinfo.xml: all
++	@$(MAKE) -C tools/icuinfo check
++
++ifeq ($(DOXYGEN),)
++doc doc-searchengine:
++	@echo you need Doxygen to generate documentation. Doxygen can be found on the Web
++	@echo at http://www.doxygen.org/
++else
++doc: doc/html/index.html
++
++doc-searchengine: Doxyfile $(wildcard ./common/unicode/platform.h $(srcdir)/common/unicode/*.h $(srcdir)/i18n/unicode/*.h $(srcdir)/io/unicode/*.h)
++	sed < Doxyfile -e 's%[^#]*SEARCHENGINE.*%SEARCHENGINE=YES%' | $(DOXYGEN) -
++	@echo adding links from non-namespaced class files
++	find doc/html -name 'classicu_1_1*' -print | sed -e 's%^\(.*class\)icu_1_1\(.*\)$$%ln & \1\2%' | sh
++	@echo Docs created - WARNING, probably contains non-GPL .js files
++
++doc/html/index.html: Doxyfile $(wildcard ./common/unicode/platform.h $(srcdir)/common/unicode/*.h $(srcdir)/i18n/unicode/*.h $(srcdir)/io/unicode/*.h)
++	$(DOXYGEN)
++	@echo adding links from non-namespaced class files
++	find doc/html -name 'classicu_1_1*' -print | sed -e 's%^\(.*class\)icu_1_1\(.*\)$$%ln & \1\2%' | sh
++
++Doxyfile: $(srcdir)/Doxyfile.in
++	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(DOCZIP): doc
++	-$(RMV) $(DOCZIP)
++	( cd doc/html ; zip -r ../../$(DOCZIP) * )
++endif
++
++LOCAL_SUBDIRS = $(SUBDIRS)
++CLEAN_FIRST_SUBDIRS = $(TOOLS)
++
++$(LIBDIR) $(BINDIR):
++	-$(MKINSTALLDIRS) $@
++
++## Recursive targets
++all-recursive install-recursive clean-recursive distclean-recursive dist-recursive check-recursive check-exhaustive-recursive: $(LIBDIR) $(BINDIR)
++ifneq ($(NEED_ESCAPING),)
++	@echo "building tools/escapesrc (Needed for this platform with NEED_ESCAPING)"
++	@(cd tools/escapesrc && $(MAKE) RECURSIVE=YES $$local_target) || exit
++endif
++	@dot_seen=no; \
++	target=`echo $@ | sed s/-recursive//`; \
++	list='$(LOCAL_SUBDIRS)'; for subdir in $$list; do \
++	  echo "$(MAKE)[$(MAKELEVEL)]: Making \`$$target' in \`$$subdir'"; \
++	  if test "$$subdir" = "."; then \
++	    dot_seen=yes; \
++	    local_target="$$target-local"; \
++	  else \
++	    local_target="$$target"; \
++	  fi; \
++	  (cd $$subdir && $(MAKE) RECURSIVE=YES $$local_target) || exit; \
++	done; \
++	if test "$$dot_seen" = "no"; then \
++	  $(MAKE) "$$target-local" || exit; \
++	fi
++
++clean-recursive-with-twist:
++	$(MAKE) clean-recursive LOCAL_SUBDIRS='$(CLEAN_FIRST_SUBDIRS) $(filter-out $(CLEAN_FIRST_SUBDIRS),$(LOCAL_SUBDIRS))'
++
++all-local: $(srcdir)/configure $(LOCAL_BUILT_FILES) $(INSTALLED_BUILT_FILES)
++ifndef VERBOSE
++	@echo "Note: rebuild with \"$(MAKE) VERBOSE=1 $(MAKECMDGOALS)\" to show all compiler parameters."
++endif
++install-local: install-icu install-manx
++
++# always installs. Used by layoutex.
++install-pkgconfig: $(ALL_PKGCONFIG_FILES)
++	@$(MKINSTALLDIRS) $(DESTDIR)$(libdir)/pkgconfig
++	$(INSTALL_DATA) $(ALL_PKGCONFIG_FILES) $(DESTDIR)$(libdir)/pkgconfig/
++
++install-icu: $(INSTALLED_BUILT_FILES)
++	@$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/config
++	@$(MKINSTALLDIRS) $(DESTDIR)$(pkglibdir)
++	@$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
++	@$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
++	$(INSTALL_DATA) $(top_srcdir)/config/mh-linux $(DESTDIR)$(pkgdatadir)/config/mh-linux
++	$(INSTALL_SCRIPT) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(pkgdatadir)/mkinstalldirs
++	$(INSTALL_SCRIPT) $(top_srcdir)/install-sh $(DESTDIR)$(pkgdatadir)/install-sh
++	@$(MKINSTALLDIRS) $(DESTDIR)$(libdir)/pkgconfig
++	$(INSTALL_DATA) $(ALL_PKGCONFIG_FILES) $(DESTDIR)$(libdir)/pkgconfig/
++	$(INSTALL_DATA) $(top_srcdir)/../LICENSE $(DESTDIR)$(pkgdatadir)/LICENSE
++	$(INSTALL_SCRIPT) $(top_builddir)/config/icu-config $(DESTDIR)$(bindir)/icu-config
++	$(INSTALL_DATA) $(top_builddir)/config/Makefile.inc $(DESTDIR)$(pkglibdir)/Makefile.inc
++	$(INSTALL_DATA) $(top_builddir)/config/pkgdata.inc $(DESTDIR)$(pkglibdir)/pkgdata.inc
++#	@echo icuinfo.xml is built after make check.
++#	-$(INSTALL_DATA) $(top_builddir)/config/icuinfo.xml $(DESTDIR)$(pkglibdir)/icuinfo.xml
++	cd $(DESTDIR)$(pkglibdir)/..; \
++	    $(RM) current && ln -s $(VERSION) current; \
++	    $(RM) Makefile.inc && ln -s current/Makefile.inc Makefile.inc; \
++	    $(RM) pkgdata.inc && ln -s current/pkgdata.inc pkgdata.inc
++
++ifeq ($(DOXYGEN),)
++install-doc:
++else
++install-doc: doc
++	$(RM) -r $(DESTDIR)$(docdir)/$(docsubdir)
++	$(MKINSTALLDIRS) $(DESTDIR)$(docdir)/$(docsubdir)
++	$(INSTALL_DATA) $(docfiles) $(DESTDIR)$(docdir)/$(docsubdir)
++
++endif
++
++$(DESTDIR)$(pkglibdir)/%: $(top_srcdir)/../data/%
++	$(INSTALL_DATA) $< $@
++
++# Build the tests, but don't run them.
++tests: all
++	$(MAKE) -C $(top_builddir)/test
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	-$(RMV) "test-*.xml"
++	-$(RMV) "perf-*.xml"
++	-$(RMV) $(ALL_PKGCONFIG_FILES) $(top_builddir)/config/icuinfo.xml
++	$(RMV) Doxyfile doc $(DOCZIP)
++
++distclean-local: clean-local
++	$(RMV) $(top_builddir)/config/Makefile.inc $(top_builddir)/config/pkgdata.inc $(top_builddir)/config/icu-config $(top_builddir)/config/icu.pc $(ALL_PKGCONFIG_FILES)
++	$(RMV) config.cache config.log config.status $(top_builddir)/config/icucross.mk $(top_builddir)/config/icucross.inc autom4te.cache uconfig.h.prepend
++	$(RMV) Makefile config/Makefile icudefs.mk $(LIBDIR) $(BINDIR)
++	-$(RMV) dist
++
++check-local: xcheck-local
++	-$(RMV) test-local.xml
++
++xcheck-local: $(top_builddir)/config/icu-config $(top_builddir)/config/Makefile.inc $(top_builddir)/config/pkgdata.inc
++	@echo verifying that icu-config --selfcheck can operate
++	@test "passed" = "$(shell $(top_builddir)/config/icu-config --selfcheck 2>&1)" || (echo "FAIL: icu-config could not run properly." ; exit 1)
++	@echo verifying that $(MAKE) -f Makefile.inc selfcheck can operate
++	@test "passed" = "$(shell $(MAKE) --no-print-directory -f $(top_builddir)/config/Makefile.inc SELFCHECK=1 selfcheck)" || (echo "FAIL: Makefile.inc could not run properly." ; exit 1 )
++	@echo "PASS: config selfcheck OK"
++
++#$(srcdir)/configure : $(srcdir)/configure.ac $(top_srcdir)/aclocal.m4
++#	cd $(srcdir) && aclocal && $(AUTOCONF)
++
++icudefs.mk: $(srcdir)/icudefs.mk.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++		&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++config/icucross.mk: $(top_builddir)/icudefs.mk  $(top_builddir)/Makefile
++	@echo rebuilding $@
++	@(echo "CROSS_ICU_VERSION=$(VERSION)" ;\
++	  echo "TOOLEXEEXT=$(EXEEXT)" \
++	   ) > $@
++	@(echo 'TOOLBINDIR=$$(cross_buildroot)/bin' ;\
++	  echo 'TOOLLIBDIR=$$(cross_buildroot)/lib' ;\
++	  echo "INVOKE=$(LDLIBRARYPATH_ENVVAR)=$(LIBRARY_PATH_PREFIX)"'$$(TOOLLIBDIR):$$(cross_buildroot)/stubdata:$$(cross_buildroot)/tools/ctestfw:$$$$'"$(LDLIBRARYPATH_ENVVAR)" ;\
++	  echo "PKGDATA_INVOKE=$(LDLIBRARYPATH_ENVVAR)=$(LIBRARY_PATH_PREFIX)"'$$(cross_buildroot)/stubdata:$$(cross_buildroot)/tools/ctestfw:$$(TOOLLIBDIR):$$$$'"$(LDLIBRARYPATH_ENVVAR) " ;\
++	  echo ) >> $@
++
++config/icucross.inc: $(top_builddir)/icudefs.mk  $(top_builddir)/Makefile $(top_srcdir)/config/mh-linux
++	@echo rebuilding $@
++	@(grep '^CURR_FULL_DIR' $(top_builddir)/icudefs.mk ; \
++	  grep '^CURR_FULL_DIR' $(top_srcdir)/config/mh-linux || echo ""; \
++	   ) > $@
++
++config/icu.pc: $(srcdir)/config/icu.pc.in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++config/icu-uc.pc: config/icu.pc Makefile icudefs.mk
++	@cat config/icu.pc > $@
++	@echo "Description: $(PACKAGE_ICU_DESCRIPTION): Common and Data libraries" >> $@
++	@echo "Name: $(PACKAGE)-uc" >> $@
++	@echo "Libs:" '-L$${libdir}' "${ICULIBS_UC}" "${ICULIBS_DT}" >> $@
++	@echo "Libs.private:" '$${baselibs}' >> $@
++	@echo $@ updated.
++
++config/icu-i18n.pc: config/icu.pc Makefile icudefs.mk
++	@cat config/icu.pc > $@
++	@echo "Description: $(PACKAGE_ICU_DESCRIPTION): Internationalization library" >> $@
++	@echo "Name: $(PACKAGE)-i18n" >> $@
++	@echo "Requires: icu-uc" >> $@
++	@echo "Libs:" "${ICULIBS_I18N}" >> $@
++	@echo $@ updated.
++
++config/icu-io.pc: config/icu.pc Makefile icudefs.mk
++	@cat config/icu.pc > $@
++	@echo "Description: $(PACKAGE_ICU_DESCRIPTION): Stream and I/O Library" >> $@
++	@echo "Name: $(PACKAGE)-io" >> $@
++	@echo "Requires: icu-i18n" >> $@
++	@echo "Libs:" "${ICULIBS_IO}" >> $@
++	@echo $@ updated.
++
++ICULEHB_LIBS=
++USING_HB=
++ifneq ($(ICULEHB_LIBS),)
++USING_HB=(Using HarfBuzz)
++endif
++
++
++config/icu-lx.pc: config/icu.pc Makefile icudefs.mk
++	@cat config/icu.pc > $@
++	@echo "Description: $(PACKAGE_ICU_DESCRIPTION): Paragraph Layout library $(USING_HB)" >> $@
++	@echo "Name: $(PACKAGE)-lx" >> $@
++ifneq ($(ICULEHB_LIBS),)
++	@echo "Requires: icu-le-hb icu-uc" >> $@
++else
++	@echo "Requires: icu-le" >> $@
++endif
++	@echo "Libs:" "${ICULIBS_LX}" >> $@
++	@echo $@ updated.
++
++
++Makefile: $(srcdir)/Makefile.in icudefs.mk $(top_builddir)/config.status
++	cd $(top_builddir) \
++		&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(top_builddir)/config/Makefile.inc: $(srcdir)/config/Makefile.inc.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++		&& CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(top_builddir)/config/pkgdata.inc: icudefs.mk $(top_builddir)/config/pkgdataMakefile
++	cd $(top_builddir)/config; \
++		$(MAKE) -f pkgdataMakefile
++
++$(top_builddir)/config/pkgdataMakefile:
++	cd $(top_builddir) \
++		&& CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(top_builddir)/config/icu-config: $(top_builddir)/Makefile $(top_srcdir)/config/icu-config-top $(top_srcdir)/config/icu-config-bottom $(top_builddir)/config/Makefile.inc $(top_srcdir)/config/mh-linux $(top_srcdir)/config/make2sh.sed
++	-$(RMV) $@
++	$(INSTALL_SCRIPT) $(top_srcdir)/config/icu-config-top $@
++	chmod u+w $@
++	@echo "# Following from icu/icu4c/source/config/Makefile.inc" >> $@
++	LC_ALL=C $(SED) -f $(top_srcdir)/config/make2sh.sed < $(top_builddir)/config/Makefile.inc | grep -v '#M#' | uniq >> $@
++	@echo "# Following from $(top_srcdir)/config/mh-linux" >> $@
++	LC_ALL=C $(SED) -f $(top_srcdir)/config/make2sh.sed < $(top_srcdir)/config/mh-linux | grep -v '#M#' | uniq >> $@
++	cat $(top_srcdir)/config/icu-config-bottom >> $@
++	chmod u-w $@
++
++config.status: $(srcdir)/configure $(srcdir)/common/unicode/uvernum.h
++	@echo
++	@echo
++	@echo "*** config.status has become stale ***"
++	@echo "   'configure' and/or 'uvernum.h' have changed, please"
++	@echo "  do 'runConfigureICU' (or 'configure') again, as per"
++	@echo "  the readme.html."
++	@echo
++	@echo
++	exit 1
++
++
++install-manx: $(MANX_FILES)
++	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
++	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
++
++config/%.$(SECTION): $(srcdir)/config/%.$(SECTION).in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++icu4j-data-install icu4j-data: all tests
++	@echo ICU4J_ROOT=$(ICU4J_ROOT)
++	@$(MAKE) -C test/testdata $@
++	@$(MAKE) -C data $@
++
++# For updating Windows makefiles
++
++WINDOWS_UPDATEFILES=$(srcdir)/data/makedata.mak $(shell find $(srcdir) -name '*.vcproj' -o -name '*.vcxproj')
++
++WINDOWS_UPDATEFILES_SED=config/windows-update.sed
++
++update-windows-makefiles: config.status
++	@echo Updating Windows Makefiles for ICU $(VERSION)
++	CONFIG_FILES=$(WINDOWS_UPDATEFILES_SED) CONFIG_HEADERS= $(SHELL) ./config.status
++	@for file in $(WINDOWS_UPDATEFILES); do \
++	  echo "Updating $$file"; \
++	  mv "$${file}" "$${file}.bak" && \
++	  sed -f $(WINDOWS_UPDATEFILES_SED) < "$${file}.bak" > "$${file}" && \
++	  rm "$${file}.bak"; \
++	done;
++	$(RMV) $(WINDOWS_UPDATEFILES_SED)
++	@echo Please check over the changes carefully before checking them in.
++
++# For building a source distribution.
++distcheck dist-local:
++	$(MAKE) -C . -f $(top_srcdir)/config/dist.mk srcdir="$(srcdir)" top_srcdir="$(top_srcdir)" $@
++
++ifeq ($(DESTDIR),)
++releaseDist:
++	@echo "Please provide DESTDIR when calling the target releaseDist."
++else
++releaseDist: install
++	@echo -n "ICU Version: " > $(DESTDIR)/readme.txt
++	@echo `./config/icu-config --noverify --version` >> $(DESTDIR)/readme.txt
++	@echo -n "HOST: " >> $(DESTDIR)/readme.txt
++	@echo `./config/icu-config --noverify --host` >> $(DESTDIR)/readme.txt
++	@echo -n "CC Compiler: " >> $(DESTDIR)/readme.txt
++	@echo `./config/icu-config --noverify --cc` >> $(DESTDIR)/readme.txt
++	@echo -n "CXX Compiler: " >> $(DESTDIR)/readme.txt
++	@echo `./config/icu-config --noverify --cxx` >> $(DESTDIR)/readme.txt
++endif
++
++check-installed-icu: install
++	@echo "Testing ICU installed in $(prefix)"
++	$(INSTALLED_INVOKE) $(bindir)/icuinfo$(EXEEXT)
++	$(INSTALLED_INVOKE) $(bindir)/uconv$(EXEEXT) -V
++	$(INSTALLED_INVOKE) $(bindir)/genrb$(EXEEXT) -V
++	$(INSTALLED_INVOKE) $(bindir)/gencnval$(EXEEXT) -h
++	@echo INSTALLED ICU IN "$(prefix)" OK!
+diff --git a/common/Makefile b/common/Makefile
+new file mode 100644
+index 00000000000..b4bc6b60569
+--- /dev/null
++++ b/common/Makefile
+@@ -0,0 +1,232 @@
++# Copyright (C) 2016 and later: Unicode, Inc. and others.
++# License & terms of use: http://www.unicode.org/copyright.html
++#******************************************************************************
++#
++#   Copyright (C) 1999-2016, International Business Machines
++#   Corporation and others.  All Rights Reserved.
++#
++#******************************************************************************
++## Makefile.in for ICU - icuuc.so
++## Stephen F. Booth
++
++## Source directory information
++srcdir = .././icu4c/source/common
++top_srcdir = .././icu4c/source
++
++top_builddir = ..
++
++## All the flags and other definitions are included here.
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = common
++
++# for service hook
++LOCALSVC_CPP=localsvc.cpp
++SVC_HOOK_INC=$(top_builddir)/common/svchook.mk
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(IMPORT_LIB) $(MIDDLE_IMPORT_LIB) $(FINAL_IMPORT_LIB) $(SVC_HOOK_INC)
++
++## Target information
++
++TARGET_STUBNAME=$(COMMON_STUBNAME)
++
++ifneq ($(ENABLE_STATIC),)
++TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++endif
++
++ifneq ($(ENABLE_SHARED),)
++SO_TARGET = $(LIBDIR)/$(LIBICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(SO)
++ALL_SO_TARGETS = $(SO_TARGET) $(MIDDLE_SO_TARGET) $(FINAL_SO_TARGET) $(SHARED_OBJECT)
++
++ifeq ($(ENABLE_SO_VERSION_DATA),1)
++SO_VERSION_DATA = common.res
++endif
++
++ifeq ($(OS390BATCH),1)
++BATCH_TARGET = $(BATCH_COMMON_TARGET)
++BATCH_LIBS = $(BATCH_LIBICUDT) -lm
++endif   # OS390BATCH
++
++endif   # ENABLE_SHARED
++
++ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++
++DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
++DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
++DYNAMICCXXFLAGS = $(SHAREDLIBCXXFLAGS)
++CFLAGS += $(LIBCFLAGS)
++CXXFLAGS += $(LIBCXXFLAGS)
++ifeq ($(OS390BATCH),1)
++CFLAGS += -WI
++CXXFLAGS += -WI
++endif
++
++CPPFLAGS += -I$(srcdir) $(LIBCPPFLAGS) $(CPPFLAGSICUUC)
++# we want DEFS here
++DEFS += -DU_COMMON_IMPLEMENTATION 
++LDFLAGS += $(LDFLAGSICUUC)
++
++# for plugin configuration
++CPPFLAGS += "-DDEFAULT_ICU_PLUGINS=\"$(libdir)/icu\" "
++
++# for icu data location
++ifeq ($(PKGDATA_MODE),common)
++CPPFLAGS += "-DU_ICU_DATA_DEFAULT_DIR=\"$(ICUDATA_DIR)\""
++endif
++
++# $(LIBICUDT) is either stub data or the real DLL common data.
++LIBS = $(LIBICUDT) $(DEFAULT_LIBS)
++
++OBJECTS = errorcode.o putil.o umath.o utypes.o uinvchar.o umutex.o ucln_cmn.o \
++uinit.o uobject.o cmemory.o charstr.o cstr.o \
++udata.o ucmndata.o udatamem.o umapfile.o udataswp.o ucol_swp.o utrace.o \
++uhash.o uhash_us.o uenum.o ustrenum.o uvector.o ustack.o uvectr32.o uvectr64.o \
++ucnv.o ucnv_bld.o ucnv_cnv.o ucnv_io.o ucnv_cb.o ucnv_err.o ucnvlat1.o \
++ucnv_u7.o ucnv_u8.o ucnv_u16.o ucnv_u32.o ucnvscsu.o ucnvbocu.o \
++ucnv_e...v/null
++++ b/tools/toolutil/ucln_tu.d
+@@ -0,0 +1,11 @@
++ucln_tu.o ucln_tu.d : ../.././icu4c/source/tools/toolutil/ucln_tu.cpp \
++  ../.././icu4c/source/common/ucln_imp.h \
++  ../.././icu4c/source/common/ucln.h \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h
+diff --git a/tools/toolutil/ucm.ao b/tools/toolutil/ucm.ao
+new file mode 100644
+index 00000000000..9a97b8c360f
+Binary files /dev/null and b/tools/toolutil/ucm.ao differ
+diff --git a/tools/toolutil/ucm.d b/tools/toolutil/ucm.d
+new file mode 100644
+index 00000000000..139101c6990
+--- /dev/null
++++ b/tools/toolutil/ucm.d
+@@ -0,0 +1,33 @@
++ucm.o ucm.d : ../.././icu4c/source/tools/toolutil/ucm.cpp \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h \
++  ../.././icu4c/source/common/unicode/ustring.h \
++  ../.././icu4c/source/common/unicode/putil.h \
++  ../.././icu4c/source/common/unicode/uiter.h \
++  ../.././icu4c/source/common/cstring.h \
++  ../.././icu4c/source/common/cmemory.h \
++  ../.././icu4c/source/common/unicode/localpointer.h \
++  ../.././icu4c/source/tools/toolutil/filestrm.h \
++  ../.././icu4c/source/common/uarrsort.h \
++  ../.././icu4c/source/common/ucnvmbcs.h \
++  ../.././icu4c/source/common/unicode/ucnv.h \
++  ../.././icu4c/source/common/unicode/ucnv_err.h \
++  ../.././icu4c/source/common/unicode/uenum.h \
++  ../.././icu4c/source/common/ucnv_cnv.h \
++  ../.././icu4c/source/common/unicode/uset.h \
++  ../.././icu4c/source/common/unicode/uchar.h \
++  ../.././icu4c/source/common/unicode/stringoptions.h \
++  ../.././icu4c/source/common/uset_imp.h \
++  ../.././icu4c/source/common/ucnv_ext.h \
++  ../.././icu4c/source/common/ucnv_bld.h \
++  ../.././icu4c/source/common/unicode/utf16.h \
++  ../.././icu4c/source/common/unicode/utf.h \
++  ../.././icu4c/source/common/udataswp.h \
++  ../.././icu4c/source/tools/toolutil/uparse.h \
++  ../.././icu4c/source/tools/toolutil/ucm.h
+diff --git a/tools/toolutil/ucmstate.ao b/tools/toolutil/ucmstate.ao
+new file mode 100644
+index 00000000000..948b192ea51
+Binary files /dev/null and b/tools/toolutil/ucmstate.ao differ
+diff --git a/tools/toolutil/ucmstate.d b/tools/toolutil/ucmstate.d
+new file mode 100644
+index 00000000000..16a8bf75d45
+--- /dev/null
++++ b/tools/toolutil/ucmstate.d
+@@ -0,0 +1,26 @@
++ucmstate.o ucmstate.d : ../.././icu4c/source/tools/toolutil/ucmstate.cpp \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h \
++  ../.././icu4c/source/common/cstring.h \
++  ../.././icu4c/source/common/cmemory.h \
++  ../.././icu4c/source/common/unicode/localpointer.h \
++  ../.././icu4c/source/common/uarrsort.h \
++  ../.././icu4c/source/common/ucnvmbcs.h \
++  ../.././icu4c/source/common/unicode/ucnv.h \
++  ../.././icu4c/source/common/unicode/ucnv_err.h \
++  ../.././icu4c/source/common/unicode/uenum.h \
++  ../.././icu4c/source/common/ucnv_cnv.h \
++  ../.././icu4c/source/common/unicode/uset.h \
++  ../.././icu4c/source/common/unicode/uchar.h \
++  ../.././icu4c/source/common/unicode/stringoptions.h \
++  ../.././icu4c/source/common/uset_imp.h \
++  ../.././icu4c/source/common/ucnv_ext.h \
++  ../.././icu4c/source/tools/toolutil/uparse.h \
++  ../.././icu4c/source/tools/toolutil/ucm.h \
++  ../.././icu4c/source/tools/toolutil/filestrm.h
+diff --git a/tools/toolutil/udbgutil.ao b/tools/toolutil/udbgutil.ao
+new file mode 100644
+index 00000000000..9a353301090
+Binary files /dev/null and b/tools/toolutil/udbgutil.ao differ
+diff --git a/tools/toolutil/udbgutil.d b/tools/toolutil/udbgutil.d
+new file mode 100644
+index 00000000000..ec5b6d6f5a1
+--- /dev/null
++++ b/tools/toolutil/udbgutil.d
+@@ -0,0 +1,50 @@
++udbgutil.o udbgutil.d : ../.././icu4c/source/tools/toolutil/udbgutil.cpp \
++  ../.././icu4c/source/tools/toolutil/udbgutil.h \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h \
++  ../.././icu4c/source/common/ustr_imp.h \
++  ../.././icu4c/source/common/unicode/utf8.h \
++  ../.././icu4c/source/common/unicode/utf.h \
++  ../.././icu4c/source/common/cmemory.h \
++  ../.././icu4c/source/common/unicode/localpointer.h \
++  ../.././icu4c/source/common/cstring.h \
++  ../.././icu4c/source/common/putilimp.h \
++  ../.././icu4c/source/common/unicode/putil.h \
++  ../.././icu4c/source/i18n/unicode/ulocdata.h \
++  ../.././icu4c/source/common/unicode/ures.h \
++  ../.././icu4c/source/common/unicode/uloc.h \
++  ../.././icu4c/source/common/unicode/uenum.h \
++  ../.././icu4c/source/common/unicode/unistr.h \
++  ../.././icu4c/source/common/unicode/char16ptr.h \
++  ../.././icu4c/source/common/unicode/rep.h \
++  ../.././icu4c/source/common/unicode/uobject.h \
++  ../.././icu4c/source/common/unicode/std_string.h \
++  ../.././icu4c/source/common/unicode/stringpiece.h \
++  ../.././icu4c/source/common/unicode/bytestream.h \
++  ../.././icu4c/source/common/unicode/uset.h \
++  ../.././icu4c/source/common/unicode/uchar.h \
++  ../.././icu4c/source/common/unicode/stringoptions.h \
++  ../.././icu4c/source/common/unicode/ucnv.h \
++  ../.././icu4c/source/common/unicode/ucnv_err.h \
++  ../.././icu4c/source/common/cstr.h \
++  ../.././icu4c/source/common/charstr.h \
++  ../.././icu4c/source/i18n/unicode/ucal.h \
++  ../.././icu4c/source/i18n/unicode/udat.h \
++  ../.././icu4c/source/i18n/unicode/unum.h \
++  ../.././icu4c/source/common/unicode/ucurr.h \
++  ../.././icu4c/source/common/unicode/umisc.h \
++  ../.././icu4c/source/common/unicode/parseerr.h \
++  ../.././icu4c/source/i18n/unicode/uformattable.h \
++  ../.././icu4c/source/common/unicode/udisplaycontext.h \
++  ../.././icu4c/source/i18n/unicode/ufieldpositer.h \
++  ../.././icu4c/source/i18n/unicode/ucol.h \
++  ../.././icu4c/source/common/unicode/unorm.h \
++  ../.././icu4c/source/common/unicode/uiter.h \
++  ../.././icu4c/source/common/unicode/unorm2.h \
++  ../.././icu4c/source/common/unicode/uscript.h
+diff --git a/tools/toolutil/unewdata.ao b/tools/toolutil/unewdata.ao
+new file mode 100644
+index 00000000000..bc31a50afb6
+Binary files /dev/null and b/tools/toolutil/unewdata.ao differ
+diff --git a/tools/toolutil/unewdata.d b/tools/toolutil/unewdata.d
+new file mode 100644
+index 00000000000..cc923642500
+--- /dev/null
++++ b/tools/toolutil/unewdata.d
+@@ -0,0 +1,18 @@
++unewdata.o unewdata.d : ../.././icu4c/source/tools/toolutil/unewdata.cpp \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h \
++  ../.././icu4c/source/common/unicode/putil.h \
++  ../.././icu4c/source/common/unicode/ustring.h \
++  ../.././icu4c/source/common/unicode/uiter.h \
++  ../.././icu4c/source/common/cmemory.h \
++  ../.././icu4c/source/common/unicode/localpointer.h \
++  ../.././icu4c/source/common/cstring.h \
++  ../.././icu4c/source/tools/toolutil/filestrm.h \
++  ../.././icu4c/source/common/unicode/udata.h \
++  ../.././icu4c/source/tools/toolutil/unewdata.h
+diff --git a/tools/toolutil/uoptions.ao b/tools/toolutil/uoptions.ao
+new file mode 100644
+index 00000000000..0612b607747
+Binary files /dev/null and b/tools/toolutil/uoptions.ao differ
+diff --git a/tools/toolutil/uoptions.d b/tools/toolutil/uoptions.d
+new file mode 100644
+index 00000000000..698f17f14df
+--- /dev/null
++++ b/tools/toolutil/uoptions.d
+@@ -0,0 +1,13 @@
++uoptions.o uoptions.d : ../.././icu4c/source/tools/toolutil/uoptions.cpp \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h \
++  ../.././icu4c/source/common/cstring.h \
++  ../.././icu4c/source/common/cmemory.h \
++  ../.././icu4c/source/common/unicode/localpointer.h \
++  ../.././icu4c/source/tools/toolutil/uoptions.h
+diff --git a/tools/toolutil/uparse.ao b/tools/toolutil/uparse.ao
+new file mode 100644
+index 00000000000..20ad4f3c70c
+Binary files /dev/null and b/tools/toolutil/uparse.ao differ
+diff --git a/tools/toolutil/uparse.d b/tools/toolutil/uparse.d
+new file mode 100644
+index 00000000000..72af711e6c0
+--- /dev/null
++++ b/tools/toolutil/uparse.d
+@@ -0,0 +1,23 @@
++uparse.o uparse.d : ../.././icu4c/source/tools/toolutil/uparse.cpp \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h \
++  ../.././icu4c/source/common/unicode/uchar.h \
++  ../.././icu4c/source/common/unicode/stringoptions.h \
++  ../.././icu4c/source/common/unicode/ustring.h \
++  ../.././icu4c/source/common/unicode/putil.h \
++  ../.././icu4c/source/common/unicode/uiter.h \
++  ../.././icu4c/source/common/unicode/utf16.h \
++  ../.././icu4c/source/common/unicode/utf.h \
++  ../.././icu4c/source/common/cstring.h \
++  ../.././icu4c/source/common/cmemory.h \
++  ../.././icu4c/source/common/unicode/localpointer.h \
++  ../.././icu4c/source/tools/toolutil/filestrm.h \
++  ../.././icu4c/source/tools/toolutil/uparse.h \
++  ../.././icu4c/source/common/ustr_imp.h \
++  ../.././icu4c/source/common/unicode/utf8.h
+diff --git a/tools/toolutil/writesrc.ao b/tools/toolutil/writesrc.ao
+new file mode 100644
+index 00000000000..8cf2d30ae2b
+Binary files /dev/null and b/tools/toolutil/writesrc.ao differ
+diff --git a/tools/toolutil/writesrc.d b/tools/toolutil/writesrc.d
+new file mode 100644
+index 00000000000..34bf3fa706c
+--- /dev/null
++++ b/tools/toolutil/writesrc.d
+@@ -0,0 +1,23 @@
++writesrc.o writesrc.d : ../.././icu4c/source/tools/toolutil/writesrc.cpp \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h \
++  ../.././icu4c/source/common/unicode/putil.h \
++  ../.././icu4c/source/common/utrie2.h \
++  ../.././icu4c/source/common/unicode/utf8.h \
++  ../.././icu4c/source/common/unicode/utf.h \
++  ../.././icu4c/source/common/putilimp.h \
++  ../.././icu4c/source/common/udataswp.h \
++  ../.././icu4c/source/common/mutex.h \
++  ../.././icu4c/source/common/unicode/uobject.h \
++  ../.././icu4c/source/common/umutex.h \
++  ../.././icu4c/source/common/unicode/uclean.h \
++  ../.././icu4c/source/common/cstring.h \
++  ../.././icu4c/source/common/cmemory.h \
++  ../.././icu4c/source/common/unicode/localpointer.h \
++  ../.././icu4c/source/tools/toolutil/writesrc.h
+diff --git a/tools/toolutil/xmlparser.ao b/tools/toolutil/xmlparser.ao
+new file mode 100644
+index 00000000000..971ad8ff3ec
+Binary files /dev/null and b/tools/toolutil/xmlparser.ao differ
+diff --git a/tools/toolutil/xmlparser.d b/tools/toolutil/xmlparser.d
+new file mode 100644
+index 00000000000..db6ee998967
+--- /dev/null
++++ b/tools/toolutil/xmlparser.d
+@@ -0,0 +1,34 @@
++xmlparser.o xmlparser.d : ../.././icu4c/source/tools/toolutil/xmlparser.cpp \
++  ../.././icu4c/source/common/unicode/uchar.h \
++  ../.././icu4c/source/common/unicode/utypes.h \
++  ../.././icu4c/source/common/unicode/umachine.h \
++  ../.././icu4c/source/common/unicode/ptypes.h \
++  ../.././icu4c/source/common/unicode/platform.h \
++  ../.././icu4c/source/common/unicode/uconfig.h \
++  ../.././icu4c/source/common/unicode/uvernum.h \
++  ../.././icu4c/source/common/unicode/urename.h \
++  ../.././icu4c/source/common/unicode/uversion.h \
++  ../.././icu4c/source/common/unicode/stringoptions.h \
++  ../.././icu4c/source/common/unicode/ucnv.h \
++  ../.././icu4c/source/common/unicode/ucnv_err.h \
++  ../.././icu4c/source/common/unicode/uenum.h \
++  ../.././icu4c/source/common/unicode/localpointer.h \
++  ../.././icu4c/source/i18n/unicode/regex.h \
++  ../.././icu4c/source/common/unicode/uobject.h \
++  ../.././icu4c/source/common/unicode/unistr.h \
++  ../.././icu4c/source/common/unicode/char16ptr.h \
++  ../.././icu4c/source/common/unicode/rep.h \
++  ../.././icu4c/source/common/unicode/std_string.h \
++  ../.././icu4c/source/common/unicode/stringpiece.h \
++  ../.././icu4c/source/common/unicode/bytestream.h \
++  ../.././icu4c/source/common/unicode/utext.h \
++  ../.././icu4c/source/common/unicode/chariter.h \
++  ../.././icu4c/source/common/unicode/parseerr.h \
++  ../.././icu4c/source/i18n/unicode/uregex.h \
++  ../.././icu4c/source/tools/toolutil/filestrm.h \
++  ../.././icu4c/source/tools/toolutil/xmlparser.h \
++  ../.././icu4c/source/common/uvector.h \
++  ../.././icu4c/source/common/cmemory.h \
++  ../.././icu4c/source/common/uarrsort.h \
++  ../.././icu4c/source/common/uelement.h \
++  ../.././icu4c/source/common/hash.h ../.././icu4c/source/common/uhash.h
+diff --git a/tools/tzcode/Makefile b/tools/tzcode/Makefile
+new file mode 100644
+index 00000000000..0ad4c6f9a41
+--- /dev/null
++++ b/tools/tzcode/Makefile
+@@ -0,0 +1,175 @@
++# Copyright (C) 2016 and later: Unicode, Inc. and others.
++# License & terms of use: http://www.unicode.org/copyright.html
++# Some Portions Copyright (c) 2006-2012 IBM and others. All Rights Reserved.
++
++srcdir = ../.././icu4c/source/tools/tzcode
++top_srcdir = ../.././icu4c/source
++
++top_builddir = ../..
++
++subdir = tools/tzcode
++
++include $(top_builddir)/icudefs.mk
++
++ifeq ($(TZDATA),)
++TZDATA = $(firstword $(wildcard ./tzdata*.tar.gz) $(wildcard $(srcdir)/tzdata*.tar.gz))
++endif
++ifeq ($(TZCODE),)
++TZCODE = $(firstword $(wildcard ./tzcode*.tar.gz) $(wildcard $(srcdir)/tzcode*.tar.gz))
++endif
++
++TZORIG=./tzorig
++TZORIG_TZDIR=./tzorig/tzdir
++TZORIG_ABS := $(shell pwd)/tzorig
++TZORIG_TZDIR_ABS := $(TZORIG_ABS)/tzdir
++TZORIG_OPTS := CFLAGS="-D_POSIX_C_SOURCE $(TZORIG_EXTRA_CFLAGS)" TZDIR=$(TZORIG_TZDIR_ABS)
++
++
++## Options for building zdumps
++ZDUMPOUT=$(shell pwd)/zdumpout
++ICUZDUMPOUT=$(shell pwd)/icuzdumpout
++
++ZDUMP_OPTS= -v -a -d $(ZDUMPOUT) -c 1902,2038 -i
++ICUZDUMP_OPTS= -a -d $(ICUZDUMPOUT)
++
++# Executables & objects
++OBJECTS= zic.o localtime.o asctime.o scheck.o ialloc.o
++ZICTARG=$(BINDIR)/zic$(EXEEXT)
++ZICEXEC=$(TOOLBINDIR)/zic$(TOOLEXEEXT)
++TZ2ICUTARG=$(BINDIR)/tz2icu$(EXEEXT)
++TZ2ICUEXEC=$(TOOLBINDIR)/tz2icu$(TOOLEXEEXT)
++ICUZDUMPTARG=$(BINDIR)/icuzdump$(EXEEXT)
++ICUZDUMPEXEC=$(TOOLBINDIR)/icuzdump$(TOOLEXEEXT)
++
++ifeq ($(TZDATA),)
++all: 
++	@echo ERROR "tzdata*.tar.gz" can\'t be found.
++	@false
++else
++all: icu_data
++endif
++
++TZCODE_TARGETS= tzorig check-dump
++
++ifeq ($(TZCODE),)
++# we're broken.
++$(TZCODE_TARGETS):
++	@echo ERROR "tzcode*.tar.gz" can\'t be found.
++	@false
++
++else
++ifeq ($(TZDATA),)
++# we're broken.
++$(TZCODE_TARGETS):
++	@echo ERROR "tzdata*.tar.gz" can\'t be found.
++	@false
++else
++tzorig:	$(TZCODE) $(TZDATA)
++	-$(RMV) ./tzorig/
++	mkdir $@
++	mkdir $(TZORIG_TZDIR)
++	gunzip -d < $(TZDATA) | ( cd $@ ; tar xf - )
++	gunzip -d < $(TZCODE) | ( cd $@ ; tar xf - )
++	-mv $(TZORIG)/zdump.c $(TZORIG)/zdump.c.orig
++	cp $(srcdir)/zdump.c $(TZORIG)/zdump.c
++	-mv $(TZORIG)/factory $(TZORIG)/factory.orig
++	cat $(TZORIG)/factory.orig $(srcdir)/icuzones > $(TZORIG)/factory
++	-mv $(TZORIG)/zishrink.awk $(TZORIG)/zishrink.awk.orig
++	sed -e '/if (line ~ \/^R SystemV \/) return/s/^/#/' $(TZORIG)/zishrink.awk.orig > $(TZORIG)/zishrink.awk
++	-mv $(TZORIG)/Makefile $(TZORIG)/Makefile.orig
++	sed -e "s/^BACKWARD=.*/BACKWARD= backward pacificnew/" $(TZORIG)/Makefile.orig > $(TZORIG)/Makefile
++	$(MAKE) -C $@ $(TZORIG_OPTS) zdump zones
++
++$(ZDUMPOUT): tzorig
++	( cd $(TZORIG) ; ./zdump$(EXEEXT) $(ZDUMP_OPTS) )
++	find $(ZDUMPOUT) -name '*--ICU' -exec sh -c 'mv "$${0}" $${0%--ICU}' {} \;
++
++dump-out: $(ZDUMPOUT) $(ICUZDUMPOUT)
++
++check-dump: dump-out
++	diff -r zdumpout icuzdumpout
++
++endif
++endif
++
++$(ICUZDUMPOUT): $(ICUZDUMPEXEC)
++	-$(RMV) $(ICUZDUMPOUT)
++	-mkdir $(ICUZDUMPOUT)
++	$(INVOKE) $(ICUZDUMPEXEC) $(ICUZDUMP_OPTS)
++
++
++#
++# old 'tz' rules start here
++#
++
++
++PRIMARY_YDATA=	africa antarctica asia australasia \
++		europe northamerica southamerica
++YDATA=		$(PRIMARY_YDATA) pacificnew etcetera factory backward
++NDATA=		systemv
++SDATA=		solar87 solar88 solar89
++#TDATA=		$(YDATA) $(NDATA) $(SDATA)
++TDATA=		$(YDATA) $(NDATA)
++YEARISTYPE=     ./yearistype
++
++TZDIR=zoneinfo
++
++CFLAGS+=-D_POSIX_C_SOURCE
++CPPFLAGS+= -DTZDIR=\"$(TZDIR)\" 
++
++# more data
++XDATA=zone.tab yearistype.sh leapseconds iso3166.tab
++ICUDATA=ZoneMetaData.java icu_zone.txt tz2icu zoneinfo64.txt zoneinfo.txt
++
++$(ZICTARG):		$(OBJECTS) $(TDATA) yearistype $(srcdir)/tz2icu.h
++		$(CC) $(CFLAGS) $(TZORIG_EXTRA_CFLAGS) $(LFLAGS) -I$(srcdir) $(OBJECTS) $(LDLIBS) -o $@
++
++$(TZ2ICUTARG):	$(srcdir)/tz2icu.cpp $(srcdir)/tz2icu.h
++		$(CXX) $(CXXFLAGS) -I$(srcdir) -I$(top_srcdir)/common $(srcdir)/tz2icu.cpp -o $@
++
++$(ICUZDUMPTARG):	$(srcdir)/icuzdump.cpp
++		$(LINK.cc)  -I$(srcdir) -I$(top_srcdir)/common -I$(top_srcdir)/i18n -I$(top_srcdir)/tools/toolutil -I$(top_srcdir)/io  -pedantic $(srcdir)/icuzdump.cpp $(LIBICUUC) $(LIBICUDT) $(LIBICUI18N) $(LIBICUIO) $(LIBICUTOOLUTIL) -o $@
++
++
++$(TDATA): tdatamarker
++
++tdatamarker: $(TZDATA)
++	gunzip -d < $(TZDATA) | tar xf - --exclude=Makefile
++	touch $@
++
++yearistype:	yearistype.sh
++		cp yearistype.sh yearistype
++		chmod +x yearistype
++
++posix_only:	$(ZICEXEC) $(TDATA) $(srcdir)/icuzones
++		$(ZICEXEC) -y $(YEARISTYPE) -d $(TZDIR) -L /dev/null $(TDATA) $(srcdir)/icuzones
++
++
++icu_data:	$(TZ2ICUEXEC) posix_only
++		$(TZ2ICUEXEC) $(TZDIR) zone.tab `echo $(TZDATA) | sed -e "s/.*\/tzdata//;s/\.tar\.gz$$//"`
++		$(TZ2ICUEXEC) $(TZDIR) zone.tab `echo $(TZDATA) | sed -e "s/.*\/tzdata//;s/\.tar\.gz$$//"` --old
++
++clean:
++		-rm -f core *.o *.out zdump${EXEEXT} $(ZICTARG) yearistype date $(TZ2ICUTARG)
++		@echo ICU specific cleanup:
++		-rm -f $(ICUDATA)
++		-rm -rf $(TZDIR)
++		-$(RMV) $(ICUZDUMPTARG) tzorig ./zdumpout/ ./icuzdumpout/
++ifneq ($(TZDATA),)
++		-rm -rf `gunzip -d < $(TZDATA) | tar tf - --exclude=Makefile | grep -o '[^ ]*$$' | tr '\n' ' '`
++		-rm tdatamarker
++endif
++
++checkclean:
++
++dataclean: clean
++	-rm -f $(TDATA) $(XDATA)
++
++distclean:	dataclean clean
++	-rm -f Makefile
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++

@@ -1,0 +1,41 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/readline.c b/Modules/readline.c
+index 35655c70a46..efe4849f0ba 100644
+--- a/Modules/readline.c
++++ b/Modules/readline.c
+@@ -362,8 +362,19 @@ readline_append_history_file_impl(PyObject *module, int nelements,
+         filename_bytes = NULL;
+         filename = NULL;
+     }
+-    errno = err = append_history(
+-        nelements - libedit_append_replace_history_offset, filename);
++    /* Prevent integer overflow/underflow in nelements calculation */
++    if (nelements < libedit_append_replace_history_offset) {
++        PyErr_SetString(PyExc_ValueError, "nelements is too small");
++        Py_XDECREF(filename_bytes);
++        return NULL;
++    }
++    int safe_nelements = nelements - libedit_append_replace_history_offset;
++    if (safe_nelements < 0 || safe_nelements > INT_MAX) {
++        PyErr_SetString(PyExc_OverflowError, "nelements calculation overflow");
++        Py_XDECREF(filename_bytes);
++        return NULL;
++    }
++    errno = err = append_history(safe_nelements, filename);
+     if (!err && _history_length >= 0)
+         history_truncate_file(filename, _history_length);
+     Py_XDECREF(filename_bytes);

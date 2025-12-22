@@ -1,0 +1,27 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/compiler/simplified-lowering-verifier.cc, line 178
+# SimplifiedLoweringVerifierError: invalid combination of input types Range(0, 0) and BigInt for node #46:Int64Add
+#
+#
+#
+#FailureMessage Object: 0x7fda1ac3b060
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x5b) [0x562b1fdd753b]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x562b2459d4c3]
+    out/debug_asan/d8(+0x66bddfa) [0x562b2459adfa]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x270) [0x562b2455b5c0]
+    out/debug_asan/d8(v8::internal::compiler::SimplifiedLoweringVerifier::VisitNode(v8::internal::compiler::Node*, v8::internal::compiler::OperationTyper&)+0x3def) [0x562b23806f7f]
+    out/debug_asan/d8(v8::internal::compiler::RepresentationSelector::RunVerifyPhase()+0x50f) [0x562b23824a4f]
+    out/debug_asan/d8(v8::internal::compiler::SimplifiedLowering::LowerAllNodes()+0x3fa) [0x562b238103fa]
+    out/debug_asan/d8(v8::internal::compiler::SimplifiedLoweringPhase::Run(v8::internal::compiler::PipelineData*, v8::internal::Zone*, v8::internal::compiler::Linkage*)+0x274) [0x562b23779464]
+    out/debug_asan/d8(void v8::internal::compiler::PipelineImpl::Run<v8::internal::compiler::SimplifiedLoweringPhase, v8::internal::compiler::Linkage*&>(v8::internal::compiler::Linkage*&)+0x205) [0x562b2374b6e5]
+    out/debug_asan/d8(v8::internal::compiler::PipelineImpl::OptimizeGraph(v8::internal::compiler::Linkage*)+0xbd7) [0x562b2373f2e7]
+    out/debug_asan/d8(v8::internal::compiler::PipelineCompilationJob::ExecuteJobImpl(v8::internal::RuntimeCallStats*, v8::internal::LocalIsolate*)+0x15d) [0x562b2373dd6d]
+    out/debug_asan/d8(v8::internal::OptimizedCompilationJob::ExecuteJob(v8::internal::RuntimeCallStats*, v8::internal::LocalIsolate*)+0x1f0) [0x562b2047ebf0]
+    out/debug_asan/d8(+0x25bfd5d) [0x562b2049cd5d]
+    out/debug_asan/d8(v8::internal::Compiler::CompileOptimized(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSFunction>, v8::internal::ConcurrencyMode, v8::internal::CodeKind)+0x227) [0x562b204a4c97]
+    out/debug_asan/d8(+0x3e3b48f) [0x562b21d1848f]
+    [0x562aa7a2c8bf]

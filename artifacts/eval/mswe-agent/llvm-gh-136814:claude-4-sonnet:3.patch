@@ -1,0 +1,82 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/clang/lib/Format/UnwrappedLineParser.cpp b/clang/lib/Format/UnwrappedLineParser.cpp
+index df58e5ef4d6a..19fb72fbacef 100644
+--- a/clang/lib/Format/UnwrappedLineParser.cpp
++++ b/clang/lib/Format/UnwrappedLineParser.cpp
+@@ -1130,7 +1130,8 @@ void UnwrappedLineParser::parsePPElse() {
+   if (PPBranchLevel == -1)
+     conditionalCompilationStart(/*Unreachable=*/true);
+   conditionalCompilationAlternative();
+-  --PPBranchLevel;
++  if (PPBranchLevel > -1)
++    --PPBranchLevel;
+   parsePPUnknown();
+   ++PPBranchLevel;
+ }
+diff --git a/comprehensive_test.cpp b/comprehensive_test.cpp
+new file mode 100644
+index 000000000000..61bd69cca7a9
+--- /dev/null
++++ b/comprehensive_test.cpp
+@@ -0,0 +1,13 @@
++#else
++#define MACRO1 1
++#else
++#define MACRO2 2
++#endif
++#define MACRO3 3
++#else
++#define MACRO4 4
++#if defined(TEST)
++#define MACRO5 5
++#else
++#define MACRO6 6
++#endif
+diff --git a/normal_test.cpp b/normal_test.cpp
+new file mode 100644
+index 000000000000..51987dd869d6
+--- /dev/null
++++ b/normal_test.cpp
+@@ -0,0 +1,13 @@
++#ifndef HEADER_GUARD
++#define HEADER_GUARD
++
++#if defined(DEBUG)
++#define LOG(x) printf(x)
++#else
++#define LOG(x)
++#endif
++
++#define VERSION 1
++#define NAME "test"
++
++#endif // HEADER_GUARD
+diff --git a/test_crash.cpp b/test_crash.cpp
+new file mode 100644
+index 000000000000..920b3b7a2c4f
+--- /dev/null
++++ b/test_crash.cpp
+@@ -0,0 +1,4 @@
++#else
++#define GUARD_MACRO
++#else
++#define ANOTHER_MACRO 1

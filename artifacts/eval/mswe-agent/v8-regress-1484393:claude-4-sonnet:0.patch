@@ -1,0 +1,81 @@
+
+diff --git a/.gitignore b/.gitignore
+index d35b588ef65..29d98592a37 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/compiler/backend/instruction-selector-adapter.h b/src/compiler/backend/instruction-selector-adapter.h
+index d36bacbf158..7295b5914be 100644
+--- a/src/compiler/backend/instruction-selector-adapter.h
++++ b/src/compiler/backend/instruction-selector-adapter.h
+@@ -185,8 +185,47 @@ struct TurbofanAdapter {
+     explicit LoadView(node_t node) : node_(node) {}
+ 
+     LoadRepresentation loaded_rep() const {
+-      return LoadRepresentationOf(node_->op());
++      switch (node_->opcode()) {
++        case IrOpcode::kLoad:
++        case IrOpcode::kProtectedLoad:
++        case IrOpcode::kLoadTrapOnNull:
++        case IrOpcode::kUnalignedLoad:
++        case IrOpcode::kLoadImmutable:
++          return LoadRepresentationOf(node_->op());
++        case IrOpcode::kWord32AtomicLoad:
++        case IrOpcode::kWord64AtomicLoad:
++          return AtomicLoadParametersOf(node_->op()).representation();
++        case IrOpcode::kLoadTransform: {
++          LoadTransformParameters params = LoadTransformParametersOf(node_->op());
++          // LoadTransform operations load data and transform it, so we need to
++          // determine the load representation from the transformation type
++          switch (params.transformation) {
++            case LoadTransformation::kS128Load8Splat:
++            case LoadTransformation::kS128Load8x8S:
++            case LoadTransformation::kS128Load8x8U:
++              return LoadRepresentation::Int8();
++            case LoadTransformation::kS128Load16Splat:
++            case LoadTransformation::kS128Load16x4S:
++            case LoadTransformation::kS128Load16x4U:
++              return LoadRepresentation::Int16();
++            case LoadTransformation::kS128Load32Splat:
++            case LoadTransformation::kS128Load32x2S:
++            case LoadTransformation::kS128Load32x2U:
++            case LoadTransformation::kS128Load32Zero:
++              return LoadRepresentation::Int32();
++            case LoadTransformation::kS128Load64Splat:
++            case LoadTransformation::kS128Load64Zero:
++              return LoadRepresentation::Int64();
++            default:
++              // For other transformations, assume 128-bit SIMD load
++              return LoadRepresentation::Simd128();
++          }
++        }
++        default:
++          UNREACHABLE();
++      }
+     }
++
+     bool is_protected(bool* traps_on_null) const {
+       if (node_->opcode() == IrOpcode::kLoadTrapOnNull) {
+         *traps_on_null = true;
+@@ -388,8 +427,7 @@ struct TurbofanAdapter {
+            node->opcode() == IrOpcode::kLoadTrapOnNull ||
+            node->opcode() == IrOpcode::kWord32AtomicLoad ||
+            node->opcode() == IrOpcode::kWord64AtomicLoad ||
+-           node->opcode() == IrOpcode::kLoadTransform ||
+-           node->opcode() == IrOpcode::kF64x2PromoteLowF32x4;
++           node->opcode() == IrOpcode::kLoadTransform;
+   }
+   ConstantView constant_view(node_t node) const { return ConstantView{node}; }
+   CallView call_view(node_t node) { return CallView{node}; }

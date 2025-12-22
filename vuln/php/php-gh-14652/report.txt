@@ -1,0 +1,19 @@
+==2252342==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000018 (pc 0x563759200035 bp 0x7ffc3f7fbd60 sp 0x7ffc3f7fbc50 T0)
+==2252342==The signal is caused by a WRITE memory access.
+==2252342==Hint: address points to the zero page.
+    #0 0x563759200035 in dom_objects_store_clone_obj /php-gh-14652/build/ext/dom/php_dom.c:603:34
+    #1 0x56375a34bbbc in ZEND_CLONE_SPEC_CV_HANDLER /php-gh-14652/build/Zend/zend_vm_execute.h:40024:2
+    #2 0x56375a0dfd0f in execute_ex /php-gh-14652/build/Zend/zend_vm_execute.h:57310:7
+    #3 0x56375a0e1467 in zend_execute /php-gh-14652/build/Zend/zend_vm_execute.h:62962:2
+    #4 0x563759fb02d0 in zend_execute_script /php-gh-14652/build/Zend/zend.c:1906:3
+    #5 0x563759d4237d in php_execute_script_ex /php-gh-14652/build/main/main.c:2529:13
+    #6 0x563759d42808 in php_execute_script /php-gh-14652/build/main/main.c:2569:9
+    #7 0x56375a8ea55f in do_cli /php-gh-14652/build/sapi/cli/php_cli.c:956:5
+    #8 0x56375a8e848b in main /php-gh-14652/build/sapi/cli/php_cli.c:1330:18
+    #9 0x7f54185641c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x7f541856428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x563758e03344 in _start (/php-gh-14652/build/sapi/cli/php+0x403344) (BuildId: 91b7184b53a2ed93ab36edcda8149885bfce1ddf)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-14652/build/ext/dom/php_dom.c:603:34 in dom_objects_store_clone_obj
+==2252342==ABORTING

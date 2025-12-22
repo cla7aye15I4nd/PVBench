@@ -1,0 +1,48 @@
+==2668168==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x7ffff4f2acb5 bp 0x7ffffffe82d0 sp 0x7ffffffe8280 T0)
+==2668168==The signal is caused by a READ memory access.
+==2668168==Hint: address points to the zero page.
+    #0 0x7ffff4f2acb5 in Py_INCREF /tmp/py-pr-122332/build/./Include/refcount.h:241:30
+    #1 0x7ffff4f2acb5 in _Py_NewRef /tmp/py-pr-122332/build/./Include/refcount.h:475:5
+    #2 0x7ffff4f4011d in _asyncio_Task_get_coro_impl /tmp/py-pr-122332/build/./Modules/_asynciomodule.c:2503:12
+    #3 0x7ffff4f3f498 in _asyncio_Task_get_coro /tmp/py-pr-122332/build/./Modules/clinic/_asynciomodule.c.h:898:12
+    #4 0x5555559b1b9c in method_vectorcall_NOARGS /tmp/py-pr-122332/build/Objects/descrobject.c:447:24
+    #5 0x55555598b85f in _PyObject_VectorcallTstate /tmp/py-pr-122332/build/./Include/internal/pycore_call.h:167:11
+    #6 0x55555598d309 in PyObject_Vectorcall /tmp/py-pr-122332/build/Objects/call.c:327:12
+    #7 0x555555d4ea38 in _PyEval_EvalFrameDefault /tmp/py-pr-122332/build/Python/generated_cases.c.h:857:35
+    #8 0x5555559e4131 in _PyEval_EvalFrame /tmp/py-pr-122332/build/./Include/internal/pycore_ceval.h:119:16
+    #9 0x5555559e3ca7 in gen_send_ex2 /tmp/py-pr-122332/build/Objects/genobject.c:228:24
+    #10 0x5555559e458a in PyGen_am_send /tmp/py-pr-122332/build/Objects/genobject.c:262:12
+    #11 0x55555594094a in PyIter_Send /tmp/py-pr-122332/build/Objects/abstract.c:2913:28
+    #12 0x7ffff4f2dd10 in task_step_impl /tmp/py-pr-122332/build/./Modules/_asynciomodule.c:2818:22
+    #13 0x7ffff4f2d4f6 in task_step /tmp/py-pr-122332/build/./Modules/_asynciomodule.c:3119:11
+    #14 0x7ffff4f2cecd in TaskStepMethWrapper_call /tmp/py-pr-122332/build/./Modules/_asynciomodule.c:1845:12
+    #15 0x55555598bdb7 in _PyObject_MakeTpCall /tmp/py-pr-122332/build/Objects/call.c:242:18
+    #16 0x555555dffd69 in _PyObject_VectorcallTstate /tmp/py-pr-122332/build/./Include/internal/pycore_call.h:165:16
+    #17 0x555555dff97d in context_run /tmp/py-pr-122332/build/Python/context.c:631:29
+    #18 0x555555a92333 in cfunction_vectorcall_FASTCALL_KEYWORDS /tmp/py-pr-122332/build/Objects/methodobject.c:441:24
+    #19 0x55555598d194 in _PyVectorcall_Call /tmp/py-pr-122332/build/Objects/call.c:273:16
+    #20 0x55555598d358 in _PyObject_Call /tmp/py-pr-122332/build/Objects/call.c:348:16
+    #21 0x55555598d481 in PyObject_Call /tmp/py-pr-122332/build/Objects/call.c:373:12
+    #22 0x555555d53285 in _PyEval_EvalFrameDefault /tmp/py-pr-122332/build/Python/generated_cases.c.h:1464:26
+    #23 0x555555d468f1 in _PyEval_EvalFrame /tmp/py-pr-122332/build/./Include/internal/pycore_ceval.h:119:16
+    #24 0x555555d467ee in _PyEval_Vector /tmp/py-pr-122332/build/Python/ceval.c:1823:12
+    #25 0x555555d4617f in PyEval_EvalCode /tmp/py-pr-122332/build/Python/ceval.c:621:21
+    #26 0x555555ef3243 in run_eval_code_obj /tmp/py-pr-122332/build/Python/pythonrun.c:1292:9
+    #27 0x555555ef2f7b in run_mod /tmp/py-pr-122332/build/Python/pythonrun.c:1377:19
+    #28 0x555555eeecb2 in pyrun_file /tmp/py-pr-122332/build/Python/pythonrun.c:1210:15
+    #29 0x555555eed652 in _PyRun_SimpleFileObject /tmp/py-pr-122332/build/Python/pythonrun.c:459:13
+    #30 0x555555eece08 in _PyRun_AnyFileObject /tmp/py-pr-122332/build/Python/pythonrun.c:77:15
+    #31 0x555555f88ed6 in pymain_run_file_obj /tmp/py-pr-122332/build/Modules/main.c:409:15
+    #32 0x555555f87c1b in pymain_run_file /tmp/py-pr-122332/build/Modules/main.c:428:15
+    #33 0x555555f85b22 in pymain_run_python /tmp/py-pr-122332/build/Modules/main.c:696:21
+    #34 0x555555f84f48 in Py_RunMain /tmp/py-pr-122332/build/Modules/main.c:775:5
+    #35 0x555555f85f68 in pymain_main /tmp/py-pr-122332/build/Modules/main.c:805:12
+    #36 0x555555f86077 in Py_BytesMain /tmp/py-pr-122332/build/Modules/main.c:829:12
+    #37 0x5555557c8511 in main /tmp/py-pr-122332/build/./Programs/python.c:15:12
+    #38 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #39 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #40 0x5555556ef104 in _start (/tmp/py-pr-122332/build/python+0x19b104) (BuildId: dafc232327805915d69024362c982342d0dbb42f)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/py-pr-122332/build/./Include/refcount.h:241:30 in Py_INCREF
+==2668168==ABORTING

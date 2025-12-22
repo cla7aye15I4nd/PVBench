@@ -1,0 +1,18 @@
+==11754==ERROR: AddressSanitizer: SEGV on unknown address 0x753aa061201a (pc 0x7539a133ba97 bp 0x7ffed94af3a0 sp 0x7ffed94af380 T0)
+==11754==The signal is caused by a READ memory access.
+    #0 0x7539a133ba96 in unsigned short Exiv2::getUShort<unsigned char const*>(Exiv2::Slice<unsigned char const*> const&, Exiv2::ByteOrder) /tmp/exiv2-commit-c0ecc2a/build/include/exiv2/types.hpp:300
+    #1 0x7539a13ba461 in Exiv2::getUShort(unsigned char const*, Exiv2::ByteOrder) /tmp/exiv2-commit-c0ecc2a/build/src/types.cpp:280
+    #2 0x7539a1445375 in Exiv2::Internal::CiffDirectory::readDirectory(unsigned char const*, unsigned int, Exiv2::ByteOrder) /tmp/exiv2-commit-c0ecc2a/build/src/crwimage_int.cpp:286
+    #3 0x7539a1444c67 in Exiv2::Internal::CiffHeader::read(unsigned char const*, unsigned int) /tmp/exiv2-commit-c0ecc2a/build/src/crwimage_int.cpp:221
+    #4 0x7539a12ba2c0 in Exiv2::CrwParser::decode(Exiv2::CrwImage*, unsigned char const*, unsigned int) /tmp/exiv2-commit-c0ecc2a/build/src/crwimage.cpp:150
+    #5 0x7539a12b9772 in Exiv2::CrwImage::readMetadata() /tmp/exiv2-commit-c0ecc2a/build/src/crwimage.cpp:107
+    #6 0x5de99d327066 in Action::Print::printSummary() /tmp/exiv2-commit-c0ecc2a/build/src/actions.cpp:286
+    #7 0x5de99d3262c5 in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-commit-c0ecc2a/build/src/actions.cpp:246
+    #8 0x5de99d305887 in main /tmp/exiv2-commit-c0ecc2a/build/src/exiv2.cpp:169
+    #9 0x7539a0ac21c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    #10 0x7539a0ac228a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)
+    #11 0x5de99d304fd4 in _start (/tmp/exiv2-commit-c0ecc2a/build/build/bin/exiv2+0x1ffd4)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/exiv2-commit-c0ecc2a/build/include/exiv2/types.hpp:300 in unsigned short Exiv2::getUShort<unsigned char const*>(Exiv2::Slice<unsigned char const*> const&, Exiv2::ByteOrder)
+==11754==ABORTING

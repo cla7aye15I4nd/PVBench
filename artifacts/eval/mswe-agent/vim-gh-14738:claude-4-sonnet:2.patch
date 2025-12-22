@@ -1,0 +1,105 @@
+
+diff --git a/.gitignore b/.gitignore
+index 241e96eaf..6bdb4f440 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -117,3 +117,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/xxd/xxd.c b/src/xxd/xxd.c
+index cf8b4ea6a..ff4dd4706 100644
+--- a/src/xxd/xxd.c
++++ b/src/xxd/xxd.c
+@@ -257,6 +257,23 @@ l[c++] = 'm';
+ #define COLOR_YELLOW '3'
+ #define COLOR_BLUE '4'
+ #define COLOR_WHITE '7'
++/* Safe buffer writing macros to prevent overflow */
++#define SAFE_COLOR_PROLOGUE \
++if (c + 5 < LLEN) { \
++  l[c++] = '\033'; \
++  l[c++] = '['; \
++  l[c++] = '1'; \
++  l[c++] = ';'; \
++  l[c++] = '3'; \
++}
++
++#define SAFE_COLOR_EPILOGUE \
++if (c + 4 < LLEN) { \
++  l[c++] = '\033'; \
++  l[c++] = '['; \
++  l[c++] = '0'; \
++  l[c++] = 'm'; \
++}
+ 
+ static char *pname;
+ 
+@@ -1062,11 +1079,11 @@ main(int argc, char *argv[])
+ 	{
+           if (color)
+             {
+-	      COLOR_PROLOGUE
++	      SAFE_COLOR_PROLOGUE
+ 	      begin_coloring_char(l,&c,e,ebcdic);
+ 	      l[c++] = hexx[(e >> 4) & 0xf];
+ 	      l[c++] = hexx[e & 0xf];
+-	      COLOR_EPILOGUE
++	      SAFE_COLOR_EPILOGUE
+ 	    }
+           else /*No colors*/
+ 	    {
+@@ -1098,7 +1115,7 @@ main(int argc, char *argv[])
+           if (hextype == HEX_LITTLEENDIAN)
+             c += 1;
+ 
+-          COLOR_PROLOGUE
++          SAFE_COLOR_PROLOGUE
+           begin_coloring_char(l,&c,e,ebcdic);
+ #if defined(__MVS__) && __CHARSET_LIB == 0
+           if (e >= 64)
+@@ -1110,7 +1127,7 @@ main(int argc, char *argv[])
+             e = (e < 64) ? '.' : etoa64[e-64];
+           l[c++] = (e > 31 && e < 127) ? e : '.';
+ #endif
+-          COLOR_EPILOGUE
++          SAFE_COLOR_EPILOGUE
+           n++;
+           if (++p == cols)
+             {
+@@ -1163,11 +1180,11 @@ main(int argc, char *argv[])
+ 
+               for (i = 0; i < fill;i++)
+                 {
+-                  COLOR_PROLOGUE
++                  SAFE_COLOR_PROLOGUE
+                   l[c++] = COLOR_RED;
+                   l[c++] = 'm';
+                   l[c++] = ' '; /* empty space */
+-                  COLOR_EPILOGUE
++                  SAFE_COLOR_EPILOGUE
+                   x++;
+                   p++;
+                 }
+@@ -1181,11 +1198,11 @@ main(int argc, char *argv[])
+ 
+               for (i = cols - p; i > 0;i--)
+                 {
+-                  COLOR_PROLOGUE
++                  SAFE_COLOR_PROLOGUE
+                   l[c++] = COLOR_RED;
+                   l[c++] = 'm';
+                   l[c++] = ' '; /* empty space */
+-                  COLOR_EPILOGUE
++                  SAFE_COLOR_EPILOGUE
+                 }
+             }
+         }

@@ -1,0 +1,53 @@
+
+diff --git a/.gitignore b/.gitignore
+index 85b3571c..3a8a8b43 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -78,3 +78,8 @@ venv/**
+ 
+ #MacOS system files
+ **/.DS_Store
++Build/
++bin/
++lib/
++*.out
++*.exe
+diff --git a/Packet++/src/GtpLayer.cpp b/Packet++/src/GtpLayer.cpp
+index 2e935cf5..05e04867 100644
+--- a/Packet++/src/GtpLayer.cpp
++++ b/Packet++/src/GtpLayer.cpp
+@@ -405,19 +405,21 @@ namespace pcpp
+ 			PCPP_LOG_ERROR("Add extension failed: cannot extend layer");
+ 			return {};
+ 		}
+-
+-		// lastExt != null means layer contains 1 or more extensions
+-		if (!lastExt.isNull())
+-		{
+-			// set the next header type in the last extension
+-			lastExt.setNextHeaderType(extensionType);
+-		}
+-		else
+-		{
+-			// mark extension flags in the layer
+-			header->extensionHeaderFlag = 1;
+-			headerExtra->nextExtensionHeader = extensionType;
+-		}
++        // lastExt != null means layer contains 1 or more extensions
++        if (!lastExt.isNull())
++        {
++            // set the next header type in the last extension
++            lastExt.setNextHeaderType(extensionType);
++        }
++        else
++        {
++            // Reacquire header pointers after extendLayer to avoid use-after-free
++            header = getHeader();
++            headerExtra = getHeaderExtra();
++            // mark extension flags in the layer
++            header->extensionHeaderFlag = 1;
++            headerExtra->nextExtensionHeader = extensionType;
++        }
+ 
+ 		// create the extension data and return the extension object to the user
+ 		return GtpV1Layer::GtpExtension::createGtpExtension(

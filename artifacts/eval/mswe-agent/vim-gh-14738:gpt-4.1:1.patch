@@ -1,0 +1,126 @@
+
+diff --git a/.gitignore b/.gitignore
+index 241e96eaf..6bdb4f440 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -117,3 +117,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/xxd/xxd.c b/src/xxd/xxd.c
+index cf8b4ea6a..c7af0936a 100644
+--- a/src/xxd/xxd.c
++++ b/src/xxd/xxd.c
+@@ -98,7 +98,7 @@
+ #endif
+ #ifdef UNIX
+ # include <unistd.h>
+-#endif
++
+ #include <stdlib.h>
+ #include <string.h>
+ #include <ctype.h>
+@@ -108,10 +108,8 @@
+ #endif
+ 
+ 
+-/*  This corrects the problem of missing prototypes for certain functions
+- *  in some GNU installations (e.g. SunOS 4.1.x).
+- *  Darren Hiebert <darren@hmi.com> (sparc-sun-sunos4.1.3_U1/2.7.2.2)
+- */
++
++
+ #if defined(__GNUC__) && defined(__STDC__)
+ # ifndef __USE_FIXED_PROTOTYPES__
+ #  define __USE_FIXED_PROTOTYPES__
+@@ -143,7 +141,8 @@ extern void perror __P((char *));
+ #endif
+ 
+ char version[] = "xxd 2024-02-10 by Juergen Weigert et al.";
+-#ifdef WIN32
++static char hexxa[] = "0123456789abcdef0123456789ABCDEF";
++static char *hexx = hexxa;
+ char osver[] = " (Win32)";
+ #else
+ char osver[] = "";
+@@ -229,7 +228,7 @@ char osver[] = "";
+ 	     1 +                                     /* new line */    \
+ 	     1)                                      /* zero */
+ 
+-char hexxa[] = "0123456789abcdef0123456789ABCDEF", *hexx = hexxa;
++#define SAFE_L_PUT(ch) do { if (c < LLEN) l[c++] = (ch); } while(0)
+ 
+ /* the different hextypes known by this program: */
+ #define HEX_NORMAL 0
+@@ -241,17 +240,17 @@ char hexxa[] = "0123456789abcdef0123456789ABCDEF", *hexx = hexxa;
+ #define CONDITIONAL_CAPITALIZE(c) (capitalize ? toupper((unsigned char)(c)) : (c))
+ 
+ #define COLOR_PROLOGUE \
+-l[c++] = '\033'; \
+-l[c++] = '['; \
+-l[c++] = '1'; \
+-l[c++] = ';'; \
+-l[c++] = '3';
++    SAFE_L_PUT('\033'); \
++    SAFE_L_PUT('['); \
++    SAFE_L_PUT('1'); \
++    SAFE_L_PUT(';'); \
++    SAFE_L_PUT('3');
+ 
+ #define COLOR_EPILOGUE \
+-l[c++] = '\033'; \
+-l[c++] = '['; \
+-l[c++] = '0'; \
+-l[c++] = 'm';
++    SAFE_L_PUT('\033'); \
++    SAFE_L_PUT('['); \
++    SAFE_L_PUT('0'); \
++    SAFE_L_PUT('m');
+ #define COLOR_RED '1'
+ #define COLOR_GREEN '2'
+ #define COLOR_YELLOW '3'
+@@ -1099,27 +1098,22 @@ main(int argc, char *argv[])
+             c += 1;
+ 
+           COLOR_PROLOGUE
+-          begin_coloring_char(l,&c,e,ebcdic);
++          begin_coloring_char(l, &c, e, ebcdic);
+ #if defined(__MVS__) && __CHARSET_LIB == 0
+           if (e >= 64)
+-            l[c++] = e;
++            SAFE_L_PUT(e);
+           else
+-            l[c++] = '.';
++            SAFE_L_PUT('.');
+ #else
+           if (ebcdic)
+             e = (e < 64) ? '.' : etoa64[e-64];
+-          l[c++] = (e > 31 && e < 127) ? e : '.';
++          SAFE_L_PUT((e > 31 && e < 127) ? e : '.');
+ #endif
+-          COLOR_EPILOGUE
+-          n++;
+-          if (++p == cols)
+-            {
+-              l[c++] = '\n';
+-              l[c++] = '\0';
+-              xxdline(fpo, l, autoskip ? nonzero : 1);
+-              nonzero = 0;
+-              p = 0;
+-            }
++          SAFE_L_PUT('\n');
++          SAFE_L_PUT('\0');
++          xxdline(fpo, l, autoskip ? nonzero : 1);
++          nonzero = 0;
++          p = 0;
+         }
+       else /*no colors*/
+         {

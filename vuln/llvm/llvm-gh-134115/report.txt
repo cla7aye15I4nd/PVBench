@@ -1,0 +1,35 @@
+opt: /tmp/llvm-gh-134115/build/llvm/include/llvm/IR/ConstantRangeList.h:36: llvm::ConstantRangeList::ConstantRangeList(llvm::ArrayRef<llvm::ConstantRange>): Assertion `isOrderedRanges(RangesRef)' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ./build/bin/opt -p function-attrs /testcases/llvm-gh-134115/input/poc.ll -disable-output
+1.	Running pass "cgscc(function-attrs)" on module "/testcases/llvm-gh-134115/input/poc.ll"
+ #0 0x000055555a331a98 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-134115/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x000055555a331eaf PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-134115/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x000055555a32f25d llvm::sys::RunSignalHandlers() /tmp/llvm-gh-134115/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x000055555a33131a SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-134115/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x0000555557a81bd2 llvm::ConstantRangeList::ConstantRangeList(llvm::ArrayRef<llvm::ConstantRange>) /tmp/llvm-gh-134115/build/llvm/include/llvm/IR/ConstantRangeList.h:37:35
+#11 0x0000555557a65cc8 (anonymous namespace)::getArgumentAccessInfo(llvm::Instruction const*, (anonymous namespace)::ArgumentUse const&, llvm::DataLayout const&) /tmp/llvm-gh-134115/build/llvm/lib/Transforms/IPO/FunctionAttrs.cpp:700:73
+#12 0x0000555557a66b8a (anonymous namespace)::collectArgumentUsesPerBlock(llvm::Argument&, llvm::Function&) /tmp/llvm-gh-134115/build/llvm/lib/Transforms/IPO/FunctionAttrs.cpp:809:34
+#13 0x0000555557a683ad inferInitializes(llvm::Argument&, llvm::Function&) /tmp/llvm-gh-134115/build/llvm/lib/Transforms/IPO/FunctionAttrs.cpp:1108:21
+#14 0x0000555557a690c2 addArgumentAttrs(llvm::SmallSetVector<llvm::Function*, 8u> const&, llvm::SmallSet<llvm::Function*, 8u, std::less<llvm::Function*>>&, bool) /tmp/llvm-gh-134115/build/llvm/lib/Transforms/IPO/FunctionAttrs.cpp:1305:9
+#15 0x0000555557a6fa78 llvm::SmallSet<llvm::Function*, 8u, std::less<llvm::Function*>> deriveAttrsInPostOrder<llvm::PostOrderFunctionAttrsPass::run(llvm::LazyCallGraph::SCC&, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>&, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&)::'lambda'(llvm::Function&)&>(llvm::ArrayRef<llvm::Function*>, llvm::PostOrderFunctionAttrsPass::run(llvm::LazyCallGraph::SCC&, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>&, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&)::'lambda'(llvm::Function&)&, bool) /tmp/llvm-gh-134115/build/llvm/lib/Transforms/IPO/FunctionAttrs.cpp:2266:18
+#16 0x0000555557a6cfb2 llvm::PostOrderFunctionAttrsPass::run(llvm::LazyCallGraph::SCC&, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>&, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&) /tmp/llvm-gh-134115/build/llvm/lib/Transforms/IPO/FunctionAttrs.cpp:2323:29
+#17 0x0000555556d85dcd llvm::detail::PassModel<llvm::LazyCallGraph::SCC, llvm::PostOrderFunctionAttrsPass, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&>::run(llvm::LazyCallGraph::SCC&, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>&, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&) /tmp/llvm-gh-134115/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#18 0x00005555590b2ff1 llvm::PassManager<llvm::LazyCallGraph::SCC, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&>::run(llvm::LazyCallGraph::SCC&, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>&, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&) /tmp/llvm-gh-134115/build/llvm/lib/Analysis/CGSCCPassManager.cpp:93:12
+#19 0x0000555556d8d463 llvm::detail::PassModel<llvm::LazyCallGraph::SCC, llvm::PassManager<llvm::LazyCallGraph::SCC, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&>, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&>::run(llvm::LazyCallGraph::SCC&, llvm::AnalysisManager<llvm::LazyCallGraph::SCC, llvm::LazyCallGraph&>&, llvm::LazyCallGraph&, llvm::CGSCCUpdateResult&) /tmp/llvm-gh-134115/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#20 0x00005555590b397b llvm::ModuleToPostOrderCGSCCPassAdaptor::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-134115/build/llvm/lib/Analysis/CGSCCPassManager.cpp:280:18
+#21 0x0000555556d8d37d llvm::detail::PassModel<llvm::Module, llvm::ModuleToPostOrderCGSCCPassAdaptor, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-134115/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#22 0x000055555a05ee41 llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-134115/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#23 0x0000555555de7f2b llvm::runPassPipeline(llvm::StringRef, llvm::Module&, llvm::TargetMachine*, llvm::TargetLibraryInfoImpl*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::StringRef, llvm::ArrayRef<llvm::PassPlugin>, llvm::ArrayRef<std::function<void (llvm::PassBuilder&)>>, llvm::opt_tool::OutputKind, llvm::opt_tool::VerifierKind, bool, bool, bool, bool, bool, bool, bool) /tmp/llvm-gh-134115/build/llvm/tools/opt/NewPMDriver.cpp:557:10
+#24 0x0000555555db9902 optMain /tmp/llvm-gh-134115/build/llvm/tools/opt/optdriver.cpp:725:27
+#25 0x0000555555db7081 main /tmp/llvm-gh-134115/build/llvm/tools/opt/opt.cpp:25:64
+#26 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#27 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#28 0x0000555555db6f65 _start (./build/bin/opt+0x862f65)
+/testcases/llvm-gh-134115/exp.sh: line 2: 2161896 Aborted                 (core dumped) ./build/bin/opt -p function-attrs $1 -disable-output

@@ -1,0 +1,188 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/exiv2/types.hpp b/include/exiv2/types.hpp
+index 33ee3720b..3597498b0 100644
+--- a/include/exiv2/types.hpp
++++ b/include/exiv2/types.hpp
+@@ -296,6 +296,9 @@ namespace Exiv2 {
+     template <typename T>
+     uint16_t getUShort(const Slice<T>& buf, ByteOrder byteOrder)
+     {
++        if (buf.size() < 2) {
++            throw std::out_of_range("getUShort: buffer too small (need at least 2 bytes)");
++        }
+         if (byteOrder == littleEndian) {
+             return static_cast<byte>(buf.at(1)) << 8 | static_cast<byte>(buf.at(0));
+         } else {
+diff --git a/src/types.cpp b/src/types.cpp
+index 17ab051e5..1e2cf9afd 100644
+--- a/src/types.cpp
++++ b/src/types.cpp
+@@ -282,6 +282,10 @@ namespace Exiv2 {
+ 
+     uint32_t getULong(const byte* buf, ByteOrder byteOrder)
+     {
++        if (!buf) {
++            throw std::invalid_argument("getULong: null buffer pointer");
++        }
++        // We cannot check the actual buffer size here, so this function should only be called with valid buffers of at least 4 bytes.
+         if (byteOrder == littleEndian) {
+             return   (byte)buf[3] << 24 | (byte)buf[2] << 16
+                    | (byte)buf[1] <<  8 | (byte)buf[0];
+@@ -294,6 +298,9 @@ namespace Exiv2 {
+ 
+     uint64_t getULongLong(const byte* buf, ByteOrder byteOrder)
+     {
++        if (!buf) {
++            throw std::invalid_argument("getULongLong: null buffer pointer");
++        }
+         if (byteOrder == littleEndian) {
+             return   (uint64_t)buf[7] << 56 | (uint64_t)buf[6] << 48
+                    | (uint64_t)buf[5] << 40 | (uint64_t)buf[4] << 32
+@@ -314,9 +321,11 @@ namespace Exiv2 {
+         uint32_t denominator = getULong(buf + 4, byteOrder);
+         return std::make_pair(nominator, denominator);
+     }
+-
+     int16_t getShort(const byte* buf, ByteOrder byteOrder)
+     {
++        if (!buf) {
++            throw std::invalid_argument("getShort: null buffer pointer");
++        }
+         if (byteOrder == littleEndian) {
+             return (byte)buf[1] << 8 | (byte)buf[0];
+         }
+@@ -327,6 +336,9 @@ namespace Exiv2 {
+ 
+     int32_t getLong(const byte* buf, ByteOrder byteOrder)
+     {
++        if (!buf) {
++            throw std::invalid_argument("getLong: null buffer pointer");
++        }
+         if (byteOrder == littleEndian) {
+             return   (byte)buf[3] << 24 | (byte)buf[2] << 16
+                    | (byte)buf[1] <<  8 | (byte)buf[0];
+@@ -337,15 +349,11 @@ namespace Exiv2 {
+         }
+     }
+ 
+-    Rational getRational(const byte* buf, ByteOrder byteOrder)
+-    {
+-        int32_t nominator = getLong(buf, byteOrder);
+-        int32_t denominator = getLong(buf + 4, byteOrder);
+-        return std::make_pair(nominator, denominator);
+-    }
+-
+     float getFloat(const byte* buf, ByteOrder byteOrder)
+     {
++        if (!buf) {
++            throw std::invalid_argument("getFloat: null buffer pointer");
++        }
+         // This algorithm assumes that the internal representation of the float
+         // type is the 4-byte IEEE 754 binary32 format, which is common but not
+         // required by the C++ standard.
+@@ -360,6 +368,9 @@ namespace Exiv2 {
+ 
+     double getDouble(const byte* buf, ByteOrder byteOrder)
+     {
++        if (!buf) {
++            throw std::invalid_argument("getDouble: null buffer pointer");
++        }
+         // This algorithm assumes that the internal representation of the double
+         // type is the 8-byte IEEE 754 binary64 format, which is common but not
+         // required by the C++ standard.
+@@ -392,62 +403,29 @@ namespace Exiv2 {
+         return u.d_;
+     }
+ 
+-    long us2Data(byte* buf, uint16_t s, ByteOrder byteOrder)
++    long l2Data(byte* buf, int32_t l, ByteOrder byteOrder)
+     {
+         if (byteOrder == littleEndian) {
+-            buf[0] = (byte) (s & 0x00ff);
+-            buf[1] = (byte)((s & 0xff00) >> 8);
+-        }
+-        else {
+-            buf[0] = (byte)((s & 0xff00) >> 8);
+-            buf[1] = (byte) (s & 0x00ff);
+-        }
+-        return 2;
+-    }
+-
++            buf[0] =  (byte)(l & 0x000000ff);
++            buf[1] = (byte)((l & 0x0000ff00) >> 8);
+     long ul2Data(byte* buf, uint32_t l, ByteOrder byteOrder)
+     {
+-        if (byteOrder == littleEndian) {
+-            buf[0] = (byte) (l & 0x000000ff);
+-            buf[1] = (byte)((l & 0x0000ff00) >> 8);
+-            buf[2] = (byte)((l & 0x00ff0000) >> 16);
+-            buf[3] = (byte)((l & 0xff000000) >> 24);
++        if (!buf) {
++            throw std::invalid_argument("ul2Data: null buffer pointer");
+         }
+-        else {
+-            buf[0] = (byte)((l & 0xff000000) >> 24);
+-            buf[1] = (byte)((l & 0x00ff0000) >> 16);
+-            buf[2] = (byte)((l & 0x0000ff00) >> 8);
+-            buf[3] = (byte) (l & 0x000000ff);
+-        }
+-        return 4;
+-    }
+-
+-    long ur2Data(byte* buf, URational l, ByteOrder byteOrder)
+-    {
+-        long o = ul2Data(buf, l.first, byteOrder);
+-        o += ul2Data(buf+o, l.second, byteOrder);
+-        return o;
+-    }
+-
+-    long s2Data(byte* buf, int16_t s, ByteOrder byteOrder)
+-    {
+         if (byteOrder == littleEndian) {
+-            buf[0] =  (byte)(s & 0x00ff);
+-            buf[1] = (byte)((s & 0xff00) >> 8);
+-        }
+-        else {
+-            buf[0] = (byte)((s & 0xff00) >> 8);
+-            buf[1] =  (byte)(s & 0x00ff);
++            buf[0] = static_cast<byte>(l & 0xff);
++            buf[1] = static_cast<byte>((l >> 8) & 0xff);
++            buf[2] = static_cast<byte>((l >> 16) & 0xff);
++            buf[3] = static_cast<byte>((l >> 24) & 0xff);
++        } else {
++            buf[0] = static_cast<byte>((l >> 24) & 0xff);
++            buf[1] = static_cast<byte>((l >> 16) & 0xff);
++            buf[2] = static_cast<byte>((l >> 8) & 0xff);
++            buf[3] = static_cast<byte>(l & 0xff);
+         }
+-        return 2;
++        return 4;
+     }
+-
+-    long l2Data(byte* buf, int32_t l, ByteOrder byteOrder)
+-    {
+-        if (byteOrder == littleEndian) {
+-            buf[0] =  (byte)(l & 0x000000ff);
+-            buf[1] = (byte)((l & 0x0000ff00) >> 8);
+-            buf[2] = (byte)((l & 0x00ff0000) >> 16);
+             buf[3] = (byte)((l & 0xff000000) >> 24);
+         }
+         else {

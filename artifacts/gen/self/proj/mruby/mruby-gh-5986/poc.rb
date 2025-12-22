@@ -1,0 +1,1 @@
+"0123456789".bytesplice(8, ~(-1 << 63), "ab") # for MRB_INT64

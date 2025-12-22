@@ -1,0 +1,41 @@
+diff --git a/test/data/issue_2345_poc.mp4 b/test/data/issue_2345_poc.mp4
+new file mode 100644
+index 0000000000000000000000000000000000000000..d79efcf6acd7c736b4676b517284c6e9bff707bf
+GIT binary patch
+literal 80
+ecmZQzVBk$FsVpc?DN|5jU|>)vEy_`#0000p;0#d!
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/bugfixes/github/test_issue_2345.py b/tests/bugfixes/github/test_issue_2345.py
+new file mode 100644
+index 000000000..6bb7713f6
+--- /dev/null
++++ b/tests/bugfixes/github/test_issue_2345.py
+@@ -0,0 +1,13 @@
++# -*- coding: utf-8 -*-
++
++from system_tests import CaseMeta, check_no_ASAN_UBSAN_errors
++
++class issue_2345_QuickTimeVideo_tagDecoder_buffer_overflow(metaclass=CaseMeta):
++    url      = "https://github.com/Exiv2/exiv2/issues/2345"
++    filename = "$data_path/issue_2345_poc.mp4"
++    commands = ["$exiv2 -q -pa $filename"]
++    retval   = [1]
++    stderr   = ["""$exiv2_exception_message $filename:
++$kerCorruptedMetadata
++"""]
++    compare_stdout = check_no_ASAN_UBSAN_errors
+diff --git a/tests/regression_tests/test_regression_allfiles.py b/tests/regression_tests/test_regression_allfiles.py
+index b1dce5fa6..85b772f45 100644
+--- a/tests/regression_tests/test_regression_allfiles.py
++++ b/tests/regression_tests/test_regression_allfiles.py
+@@ -59,6 +59,7 @@ def get_valid_files(data_dir):
+         # non-zero return code files, most of them are security POC so we don't
+         # really need to worry about them here
+         "issue_2340_poc.mp4",
++        "issue_2345_poc.mp4",
+         "2018-01-09-exiv2-crash-001.tiff",
+         "cve_2017_1000126_stack-oob-read.webp",
+         "exiv2-bug1247.jpg",

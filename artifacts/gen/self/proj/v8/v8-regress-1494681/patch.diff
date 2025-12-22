@@ -1,0 +1,12 @@
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 66190522e70..b367d5ab1ac 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -496,6 +496,7 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+       MessageTemplate::kTopLevelAwaitStalled,
+       MessageTemplate::kUndefinedOrNullToObject,
+       MessageTemplate::kUnexpectedStrictReserved,
++      MessageTemplate::kUnexpectedTokenIdentifier,
+       MessageTemplate::kWeakRefsCleanupMustBeCallable};
+ 
+   base::Vector<const Handle<String>> remaining_args = args;

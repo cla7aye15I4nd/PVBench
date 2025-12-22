@@ -1,0 +1,36 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+llc: /tmp/llvm-gh-138944/build/llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp:7789: llvm::SDValue llvm::SelectionDAG::getNode(unsigned int, const llvm::SDLoc&, llvm::EVT, llvm::SDValue, llvm::SDValue, llvm::SDValue, llvm::SDNodeFlags): Assertion `N1.getOpcode() != ISD::DELETED_NODE && N2.getOpcode() != ISD::DELETED_NODE && N3.getOpcode() != ISD::DELETED_NODE && "Operand is DELETED_NODE!"' failed.
+Stack dump:
+0.	Program arguments: ./build/bin/llc /testcases/llvm-gh-138944/input/poc.ll
+1.	Running pass 'Function Pass Manager' on module '/testcases/llvm-gh-138944/input/poc.ll'.
+2.	Running pass 'X86 DAG->DAG Instruction Selection' on function '@_Z3foo4fVec'
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:888:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - llvm::SelectionDAG::getNode(unsigned int, llvm::SDLoc const&, llvm::EVT, llvm::SDValue, llvm::SDValue, llvm::SDValue, llvm::SDNodeFlags) llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp:7794:3
+    - llvm::SelectionDAG::getNode(unsigned int, llvm::SDLoc const&, llvm::EVT, llvm::ArrayRef<llvm::SDValue>, llvm::SDNodeFlags) llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp:10407:25
+    - llvm::SelectionDAG::getNode(unsigned int, llvm::SDLoc const&, llvm::EVT, llvm::ArrayRef<llvm::SDValue>) llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp:10397:17
+    - llvm::X86TargetLowering::getNegatedExpression(llvm::SDValue, llvm::SelectionDAG&, bool, bool, llvm::TargetLoweringBase::NegatibleCost&, unsigned int) const llvm/lib/Target/X86/X86ISelLowering.cpp:54748:0
+    - llvm::TargetLowering::getCheaperOrNeutralNegatedExpression(llvm::SDValue, llvm::SelectionDAG&, bool, bool, llvm::TargetLoweringBase::NegatibleCost, unsigned int) const llvm/include/llvm/CodeGen/TargetLowering.h:4553:29
+    - llvm::TargetLowering::getCheaperNegatedExpression(llvm::SDValue, llvm::SelectionDAG&, bool, bool, unsigned int) const llvm/include/llvm/CodeGen/TargetLowering.h:4571:48
+    - llvm::SDValue (anonymous namespace)::DAGCombiner::visitFMA<llvm::EmptyMatchContext>(llvm::SDNode*) llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:17894:54
+    - (anonymous namespace)::DAGCombiner::visit(llvm::SDNode*) llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:1940:69
+    - (anonymous namespace)::DAGCombiner::combine(llvm::SDNode*) llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:2029:15
+    - (anonymous namespace)::DAGCombiner::Run(llvm::CombineLevel) llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:1797:25
+    - llvm::SelectionDAG::Combine(llvm::CombineLevel, llvm::BatchAAResults*, llvm::CodeGenOptLevel) llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp:29533:3
+    - llvm::SelectionDAGISel::CodeGenAndEmitDAG() llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:1098:3
+    - llvm::SelectionDAGISel::SelectBasicBlock(llvm::ilist_iterator_w_bits<llvm::ilist_detail::node_options<llvm::Instruction, true, false, void, true, llvm::BasicBlock>, false, true>, llvm::ilist_iterator_w_bits<llvm::ilist_detail::node_options<llvm::Instruction, true, false, void, true, llvm::BasicBlock>, false, true>, bool&) llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:877:1
+    - llvm::SelectionDAGISel::SelectAllBasicBlocks(llvm::Function const&) llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:1906:33
+    - llvm::SelectionDAGISel::runOnMachineFunction(llvm::MachineFunction&) llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:615:7
+    - (anonymous namespace)::X86DAGToDAGISel::runOnMachineFunction(llvm::MachineFunction&) llvm/lib/Target/X86/X86ISelDAGToDAG.cpp:188:0
+    - llvm::SelectionDAGISelLegacy::runOnMachineFunction(llvm::MachineFunction&) llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp:374:40
+    - llvm::MachineFunctionPass::runOnFunction(llvm::Function&) llvm/lib/CodeGen/MachineFunctionPass.cpp:108:30
+    - llvm::FPPassManager::runOnFunction(llvm::Function&) llvm/lib/IR/LegacyPassManager.cpp:1406:20
+    - llvm::FPPassManager::runOnModule(llvm::Module&) llvm/lib/IR/LegacyPassManager.cpp:1452:13
+    - (anonymous namespace)::MPPassManager::runOnModule(llvm::Module&) llvm/lib/IR/LegacyPassManager.cpp:1521:20
+    - llvm::legacy::PassManagerImpl::run(llvm::Module&) llvm/lib/IR/LegacyPassManager.cpp:539:13
+    - llvm::legacy::PassManager::run(llvm::Module&) llvm/lib/IR/LegacyPassManager.cpp:1649:1
+    - compileModule(char**, llvm::LLVMContext&) llvm/tools/llc/llc.cpp:755:34
+    - main llvm/tools/llc/llc.cpp:400:35

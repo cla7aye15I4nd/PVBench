@@ -1,0 +1,46 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f5dc0b4..07196a6f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ xstc/Makefile
+ xstc/Makefile.in
+ xstc/Tests
+ xstc/xsts-*.tar.gz
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/test.xml b/test.xml
+new file mode 100644
+index 00000000..e2b2fc2e
+--- /dev/null
++++ b/test.xml
+@@ -0,0 +1 @@
++<Child xmlns="http://www.test.com">5</Child>
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 6a353858..c1259a6c 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -18657,7 +18657,15 @@ xmlSchemaFixupComplexType(xmlSchemaParserCtxtPtr pctxt,
+ 		    * Create a duplicate of the base type's particle
+ 		    * and assign its "term" to it.
+ 		    */
+-		    particle->children->children =
++                    /* Prevent NULL dereference of baseType or baseType->subtypes */
++                    if (baseType == NULL || baseType->subtypes == NULL) {
++                        goto exit_failure;
++                    }
++                    particle->children->children =
++                        (xmlSchemaTreeItemPtr) xmlSchemaAddParticle(pctxt,
++                        type->node,
++                        ((xmlSchemaParticlePtr) baseType->subtypes)->minOccurs,
++                        ((xmlSchemaParticlePtr) baseType->subtypes)->maxOccurs);
+ 			(xmlSchemaTreeItemPtr) xmlSchemaAddParticle(pctxt,
+ 			type->node,
+ 			((xmlSchemaParticlePtr) baseType->subtypes)->minOccurs,

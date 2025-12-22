@@ -1,0 +1,74 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index ece6b13c788..5ff2191e057 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3003,7 +3003,12 @@ De-initialize the library, and return terminal to normal status.
+ static PyObject *
+ _curses_endwin_impl(PyObject *module)
+ /*[clinic end generated code: output=c0150cd96d2f4128 input=e172cfa43062f3fa]*/
+-NoArgNoReturnFunctionBody(endwin)
++{
++    PyCursesStatefulInitialised(module);
++    int result = endwin();
++    curses_initscr_called = FALSE;  // Reset the flag when endwin is called
++    return PyCursesCheckERR(module, result, "endwin");
++}
+ 
+ /*[clinic input]
+ _curses.erasechar
+@@ -3366,10 +3371,13 @@ _curses_initscr_impl(PyObject *module)
+     WINDOW *win;
+ 
+     if (curses_initscr_called) {
+-        wrefresh(stdscr);
++        if (stdscr != NULL) {
++            wrefresh(stdscr);
++        }
+         return (PyObject *)PyCursesWindow_New(stdscr, NULL);
+     }
+ 
++
+     win = initscr();
+ 
+     if (win == NULL) {
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..4e33d0f7382
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,20 @@
++#!/usr/bin/env python3
++import curses
++
++# Initialize curses
++stdscr = curses.initscr()
++print("First initscr() called successfully")
++
++# End curses
++curses.endwin()
++print("endwin() called successfully")
++
++# Try to initialize again - this should cause the crash
++try:
++    stdscr2 = curses.initscr()
++    print("Second initscr() called successfully")
++    curses.endwin()
++except Exception as e:
++    print(f"Error occurred: {e}")
++    
++print("Script completed successfully, no errors.")

@@ -1,0 +1,25 @@
+diff --git a/src/search.c b/src/search.c
+index 01c143f69..e5936d829 100644
+--- a/src/search.c
++++ b/src/search.c
+@@ -1548,6 +1548,7 @@ do_search(
+ 			{
+ 			    vim_free(msgbuf);
+ 			    msgbuf = r;
++			    msgbuflen = STRLEN(msgbuf);
+ 			    // move reversed text to beginning of buffer
+ 			    while (*r != NUL && *r == ' ')
+ 				r++;
+diff --git a/src/version.c b/src/version.c
+index e77ef0f4c..05ae6ca2a 100644
+--- a/src/version.c
++++ b/src/version.c
+@@ -704,6 +704,8 @@ static char *(features[]) =
+ 
+ static int included_patches[] =
+ {   /* Add new patch number below this line */
++/**/
++    689,
+ /**/
+     688,
+ /**/

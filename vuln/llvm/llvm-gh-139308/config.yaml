@@ -1,0 +1,14 @@
+id: llvm-gh-139308
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: Stack Buffer Overflow
+trigger_commit: 77d1db6df757ff86c69661e02dd5b402e120e5f5
+binary: clang
+patch:
+  commit: 05f1e313948768fdd8527969cd79809cbd0654ff
+  date: '2025-05-10T21:48:26+08:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/139308
+- https://github.com/llvm/llvm-project/commit/77d1db6df757ff86c69661e02dd5b402e120e5f5
+- https://github.com/llvm/llvm-project/commit/05f1e313948768fdd8527969cd79809cbd0654ff

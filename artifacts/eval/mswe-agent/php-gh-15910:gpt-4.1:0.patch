@@ -1,0 +1,47 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/element.c b/ext/dom/element.c
+index b4495559830..22d6ec6da09 100644
+--- a/ext/dom/element.c
++++ b/ext/dom/element.c
+@@ -689,7 +689,12 @@ static void dom_element_set_attribute_node_common(INTERNAL_FUNCTION_PARAMETERS,
+ 
+ 	DOM_GET_OBJ(nodep, id, xmlNodePtr, intern);
+ 	DOM_GET_OBJ(attrp, node, xmlAttrPtr, attrobj);
+-
++    if (nodep == NULL || attrp == NULL) {
++        RETURN_THROWS();
++    }
++    if (attrp->name == NULL) {
++        RETURN_THROWS();
++    }
+ 	/* ZPP Guarantees that a DOMAttr class is given, as it is converted to a xmlAttr
+ 	 * to pass to libxml (see http://www.xmlsoft.org/html/libxml-tree.html#xmlAttr)
+ 	 * if it is not of type XML_ATTRIBUTE_NODE it indicates a bug somewhere */
+@@ -710,7 +715,9 @@ static void dom_element_set_attribute_node_common(INTERNAL_FUNCTION_PARAMETERS,
+ 		}
+ 	}
+ 
+-	nsp = attrp->ns;
++    if (use_ns && (nsp == NULL || nsp->href == NULL)) {
++        RETURN_THROWS();
++    }
+ 	if (use_ns && nsp != NULL) {
+ 		existattrp = xmlHasNsProp(nodep, attrp->name, nsp->href);
+ 	} else {

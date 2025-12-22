@@ -1,0 +1,857 @@
+networks:
+  bridge:
+    driver: bridge
+
+x-base-service: &base-service
+  networks:
+    - bridge
+  deploy:
+    resources:
+      reservations:
+        cpus: ${RESERVE_CPU:-6}
+        memory: ${RESERVE_MEMORY:-8G}
+      limits:
+        cpus: ${LIMIT_CPU:-8}
+        memory: ${LIMIT_MEMORY:-12G}
+
+x-check-service: &check-service
+  <<: *base-service
+  profiles: [ "check", "full" ]
+  environment:
+    PATCH_DEBUG: ${PATCH_DEBUG:-0}
+    COLD_ACTION: check
+    COLD_MAX_PROC: ${COLD_MAX_PROC:-4}
+
+x-gentest-service: &gentest-service
+  <<: *base-service
+  profiles: [ "gentest" ]
+  environment:
+    PATCH_DEBUG: ${PATCH_DEBUG:-0}
+    COLD_ACTION: gentest
+    COLD_MAX_PROC: ${COLD_MAX_PROC:-4}
+    OPENAI_API_KEY: ${OPENAI_API_KEY}
+    OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5}
+
+x-patchagent-gpt-service: &patchagent-gpt-service
+  <<: *base-service
+  profiles: [ "patchagent-gpt", "full" ]
+  environment:
+    OPENAI_BASE_URL: http://litellm:4000
+    OPENAI_API_KEY: ${LITELLM_MASTER_KEY}
+    PATCH_DEBUG: ${PATCH_DEBUG:-0}
+    COLD_ACTION: patchagent
+    COLD_MODEL: gpt-4.1
+    COLD_MAX_PROC: ${COLD_MAX_PROC:-4}
+
+x-patchagent-claude-service: &patchagent-claude-service
+  <<: *base-service
+  profiles: [ "patchagent-claude", "full" ]
+  environment:
+    OPENAI_BASE_URL: http://litellm:4000
+    OPENAI_API_KEY: ${LITELLM_MASTER_KEY}
+    PATCH_DEBUG: ${PATCH_DEBUG:-0}
+    COLD_ACTION: patchagent
+    COLD_MODEL: claude-4-sonnet
+    COLD_MAX_PROC: ${COLD_MAX_PROC:-4}
+
+x-san2patch-gpt-service: &san2patch-gpt-service
+  <<: *base-service
+  profiles: [ "san2patch-gpt" ]
+  environment:
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    OPENAI_API_KEY: ${OPENAI_API_KEY}
+    COLD_ACTION: san2patch
+    COLD_MODEL: gpt-4.1
+    COLD_MAX_PROC: ${COLD_MAX_PROC:-4}
+
+x-san2patch-claude-service: &san2patch-claude-service
+  <<: *base-service
+  profiles: [ "san2patch-claude" ]
+  environment:
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    OPENAI_API_KEY: ${OPENAI_API_KEY}
+    COLD_ACTION: san2patch
+    COLD_MODEL: claude-4-sonnet
+    COLD_MAX_PROC: ${COLD_MAX_PROC:-4}
+
+# Application templates
+x-php-patchagent-app: &php-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/php/common/Dockerfile
+  volumes:
+    - ./vuln/php:/testcases
+    - ./data:/archive
+
+x-cpython-patchagent-app: &cpython-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/cpython/common/Dockerfile
+  volumes:
+    - ./vuln/cpython:/testcases
+    - ./data:/archive
+
+x-quickjs-patchagent-app: &quickjs-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/quickjs/common/Dockerfile
+  volumes:
+    - ./vuln/quickjs:/testcases
+    - ./data:/archive
+
+x-llvm-patchagent-app: &llvm-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/llvm/common/Dockerfile
+  volumes:
+    - ./vuln/llvm:/testcases
+    - ./data:/archive
+
+x-v8-patchagent-app: &v8-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/v8/common/Dockerfile
+  volumes:
+    - ./vuln/v8:/testcases
+    - ./data:/archive
+    - ./pvbench-v8:/v8-dependencies
+
+x-libtiff-patchagent-app: &libtiff-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/libtiff/common/Dockerfile
+  volumes:
+    - ./vuln/libtiff:/testcases
+    - ./data:/archive
+
+x-libtiff-gentest-app: &libtiff-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/libtiff/common/Dockerfile
+  volumes:
+    - ./vuln/libtiff:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/intermediate:/gentest
+
+x-libxml2-patchagent-app: &libxml2-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/libxml2/common/Dockerfile
+  volumes:
+    - ./vuln/libxml2:/testcases
+    - ./data:/archive
+
+x-pcapplusplus-patchagent-app: &pcapplusplus-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/pcapplusplus/common/Dockerfile
+  volumes:
+    - ./vuln/pcapplusplus:/testcases
+    - ./data:/archive
+
+x-pcapplusplus-gentest-app: &pcapplusplus-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/pcapplusplus/common/Dockerfile
+  volumes:
+    - ./vuln/pcapplusplus:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/intermediate:/gentest
+
+x-jasper-patchagent-app: &jasper-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/jasper/common/Dockerfile
+  volumes:
+    - ./vuln/jasper:/testcases
+    - ./data:/archive
+
+x-hdf5-patchagent-app: &hdf5-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/hdf5/common/Dockerfile
+  volumes:
+    - ./vuln/hdf5:/testcases
+    - ./data:/archive
+
+x-hdf5-gentest-app: &hdf5-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/hdf5/common/Dockerfile
+  volumes:
+    - ./vuln/hdf5:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/intermediate:/gentest
+
+x-vim-patchagent-app: &vim-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/vim/common/Dockerfile
+  volumes:
+    - ./vuln/vim:/testcases
+    - ./data:/archive
+
+x-exiv2-patchagent-app: &exiv2-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/exiv2/common/Dockerfile
+  volumes:
+    - ./vuln/exiv2:/testcases
+    - ./data:/archive
+
+x-icu-patchagent-app: &icu-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/icu/common/Dockerfile
+  volumes:
+    - ./vuln/icu:/testcases
+    - ./data:/archive
+
+x-icu-gentest-app: &icu-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/icu/common/Dockerfile
+  volumes:
+    - ./vuln/icu:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/intermediate:/gentest
+
+x-cpython-gentest-app: &cpython-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/cpython/common/Dockerfile
+  volumes:
+    - ./vuln/cpython:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/self/proj/cpython:/gentest-cpython
+
+x-mruby-gentest-app: &mruby-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/mruby/common/Dockerfile
+  volumes:
+    - ./vuln/mruby:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/self/proj/mruby:/gentest-mruby
+
+x-quickjs-gentest-app: &quickjs-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/quickjs/common/Dockerfile
+  volumes:
+    - ./vuln/quickjs:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/self/proj/quickjs:/gentest-quickjs
+
+x-v8-gentest-app: &v8-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/v8/common/Dockerfile
+  volumes:
+    - ./vuln/v8:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/self/proj/v8:/gentest-v8
+    - ./pvbench-v8:/v8-dependencies
+
+x-vim-gentest-app: &vim-gentest-app
+  build:
+    context: .
+    dockerfile: vuln/vim/common/Dockerfile
+  volumes:
+    - ./vuln/vim:/testcases
+    - ./artifacts/eval:/archive
+    - ./artifacts/gen/self/proj/vim:/gentest-vim
+
+x-simdjson-patchagent-app: &simdjson-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/simdjson/common/Dockerfile
+  volumes:
+    - ./vuln/simdjson:/testcases
+    - ./data:/archive
+
+x-mruby-patchagent-app: &mruby-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/mruby/common/Dockerfile
+  volumes:
+    - ./vuln/mruby:/testcases
+    - ./data:/archive
+
+x-wabt-patchagent-app: &wabt-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/wabt/common/Dockerfile
+  volumes:
+    - ./vuln/wabt:/testcases
+    - ./data:/archive
+
+x-hermes-patchagent-app: &hermes-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/hermes/common/Dockerfile
+  volumes:
+    - ./vuln/hermes:/testcases
+    - ./data:/archive
+
+x-jq-patchagent-app: &jq-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/jq/common/Dockerfile
+  volumes:
+    - ./vuln/jq:/testcases
+    - ./data:/archive
+
+x-htslib-patchagent-app: &htslib-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/htslib/common/Dockerfile
+  volumes:
+    - ./vuln/htslib:/testcases
+    - ./data:/archive
+
+x-wireshark-patchagent-app: &wireshark-patchagent-app
+  build:
+    context: .
+    dockerfile: vuln/wireshark/common/Dockerfile
+  volumes:
+    - ./vuln/wireshark:/testcases
+    - ./data:/archive
+
+x-php-san2patch-app: &php-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/php/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/php:/testcases
+    - ./data:/archive
+
+x-cpython-san2patch-app: &cpython-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/cpython/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/cpython:/testcases
+    - ./data:/archive
+
+x-quickjs-san2patch-app: &quickjs-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/quickjs/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/quickjs:/testcases
+    - ./data:/archive
+
+x-llvm-san2patch-app: &llvm-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/llvm/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/llvm:/testcases
+    - ./data:/archive
+
+x-v8-san2patch-app: &v8-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/v8/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/v8:/testcases
+    - ./data:/archive
+    - ./v8-dependencies:/v8-dependencies
+
+x-libtiff-san2patch-app: &libtiff-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/libtiff/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/libtiff:/testcases
+    - ./data:/archive
+
+x-libxml2-san2patch-app: &libxml2-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/libxml2/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/libxml2:/testcases
+    - ./data:/archive
+
+x-pcapplusplus-san2patch-app: &pcapplusplus-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/pcapplusplus/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/pcapplusplus:/testcases
+    - ./data:/archive
+
+x-jasper-san2patch-app: &jasper-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/jasper/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/jasper:/testcases
+    - ./data:/archive
+
+x-hdf5-san2patch-app: &hdf5-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/hdf5/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/hdf5:/testcases
+    - ./data:/archive
+
+x-vim-san2patch-app: &vim-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/vim/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/vim:/testcases
+    - ./data:/archive
+
+x-exiv2-san2patch-app: &exiv2-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/exiv2/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/exiv2:/testcases
+    - ./data:/archive
+
+x-icu-san2patch-app: &icu-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/icu/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/icu:/testcases
+    - ./data:/archive
+
+x-simdjson-san2patch-app: &simdjson-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/simdjson/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/simdjson:/testcases
+    - ./data:/archive
+
+x-mruby-san2patch-app: &mruby-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/mruby/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/mruby:/testcases
+    - ./data:/archive
+
+x-wabt-san2patch-app: &wabt-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/wabt/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/wabt:/testcases
+    - ./data:/archive
+
+x-hermes-san2patch-app: &hermes-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/hermes/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/hermes:/testcases
+    - ./data:/archive
+
+x-jq-san2patch-app: &jq-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/jq/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/jq:/testcases
+    - ./data:/archive
+
+x-htslib-san2patch-app: &htslib-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/htslib/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/htslib:/testcases
+    - ./data:/archive
+
+x-wireshark-san2patch-app: &wireshark-san2patch-app
+  build:
+    context: .
+    dockerfile: vuln/wireshark/common/Dockerfile.san2patch
+  volumes:
+    - ./vuln/wireshark:/testcases
+    - ./data:/archive
+
+services:
+  # LiteLLM services
+  litellm-postgres:
+    image: postgres:16
+    profiles: [ "litellm", "full" ]
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: litellm
+    networks:
+      - bridge
+    restart: always
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "root", "-d", "litellm" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  litellm:
+    build:
+      context: litellm
+      dockerfile: Dockerfile
+    profiles: [ "litellm" ]
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      UI_USERNAME: ${UI_USERNAME:-admin}
+      UI_PASSWORD: ${UI_PASSWORD:-admin}
+      DATABASE_URL: postgresql://root:root@litellm-postgres:5432/litellm
+      STORE_MODEL_IN_DB: "True"
+    ports:
+      - "4000:4000"
+    networks:
+      - bridge
+    command:
+      - "--config=/litellm.yaml"
+      - "--num_workers=8"
+    depends_on:
+      litellm-postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+  # PatchAgent (GPT) services
+  php-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *php-patchagent-app ]
+
+  php-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *php-san2patch-app ]
+
+  cpython-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *cpython-patchagent-app ]
+
+  cpython-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *cpython-san2patch-app ]
+
+  quickjs-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *quickjs-patchagent-app ]
+
+  quickjs-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *quickjs-san2patch-app ]
+
+  llvm-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *llvm-patchagent-app ]
+
+  llvm-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *llvm-san2patch-app ]
+
+  v8-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *v8-patchagent-app ]
+
+  v8-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *v8-san2patch-app ]
+
+  libtiff-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *libtiff-patchagent-app ]
+
+  libtiff-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *libtiff-san2patch-app ]
+
+  libxml2-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *libxml2-patchagent-app ]
+
+  libxml2-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *libxml2-san2patch-app ]
+
+  pcapplusplus-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *pcapplusplus-patchagent-app ]
+
+  pcapplusplus-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *pcapplusplus-san2patch-app ]
+
+  jasper-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *jasper-patchagent-app ]
+
+  jasper-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *jasper-san2patch-app ]
+
+  hdf5-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *hdf5-patchagent-app ]
+
+  hdf5-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *hdf5-san2patch-app ]
+
+  vim-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *vim-patchagent-app ]
+
+  vim-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *vim-san2patch-app ]
+
+  exiv2-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *exiv2-patchagent-app ]
+
+  exiv2-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *exiv2-san2patch-app ]
+
+  icu-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *icu-patchagent-app ]
+
+  icu-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *icu-san2patch-app ]
+
+  simdjson-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *simdjson-patchagent-app ]
+
+  simdjson-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *simdjson-san2patch-app ]
+
+  mruby-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *mruby-patchagent-app ]
+
+  mruby-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *mruby-san2patch-app ]
+
+  wabt-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *wabt-patchagent-app ]
+
+  wabt-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *wabt-san2patch-app ]
+
+  hermes-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *hermes-patchagent-app ]
+
+  hermes-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *hermes-san2patch-app ]
+
+  jq-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *jq-patchagent-app ]
+
+  jq-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *jq-san2patch-app ]
+
+  htslib-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *htslib-patchagent-app ]
+
+  htslib-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *htslib-san2patch-app ]
+
+  wireshark-patchagent-gpt:
+    <<: [ *patchagent-gpt-service, *wireshark-patchagent-app ]
+
+  wireshark-san2patch-gpt:
+    <<: [ *san2patch-gpt-service, *wireshark-san2patch-app ]
+  # PatchAgent (Claude) services
+  php-patchagent-claude:
+    <<: [ *patchagent-claude-service, *php-patchagent-app ]
+
+  php-san2patch-claude:
+    <<: [ *san2patch-claude-service, *php-san2patch-app ]
+
+  cpython-patchagent-claude:
+    <<: [ *patchagent-claude-service, *cpython-patchagent-app ]
+
+  cpython-san2patch-claude:
+    <<: [ *san2patch-claude-service, *cpython-san2patch-app ]
+
+  quickjs-patchagent-claude:
+    <<: [ *patchagent-claude-service, *quickjs-patchagent-app ]
+
+  quickjs-san2patch-claude:
+    <<: [ *san2patch-claude-service, *quickjs-san2patch-app ]
+
+  llvm-patchagent-claude:
+    <<: [ *patchagent-claude-service, *llvm-patchagent-app ]
+
+  llvm-san2patch-claude:
+    <<: [ *san2patch-claude-service, *llvm-san2patch-app ]
+
+  v8-patchagent-claude:
+    <<: [ *patchagent-claude-service, *v8-patchagent-app ]
+
+  v8-san2patch-claude:
+    <<: [ *san2patch-claude-service, *v8-san2patch-app ]
+
+  libtiff-patchagent-claude:
+    <<: [ *patchagent-claude-service, *libtiff-patchagent-app ]
+
+  libtiff-san2patch-claude:
+    <<: [ *san2patch-claude-service, *libtiff-san2patch-app ]
+
+  libxml2-patchagent-claude:
+    <<: [ *patchagent-claude-service, *libxml2-patchagent-app ]
+
+  libxml2-san2patch-claude:
+    <<: [ *san2patch-claude-service, *libxml2-san2patch-app ]
+
+  pcapplusplus-patchagent-claude:
+    <<: [ *patchagent-claude-service, *pcapplusplus-patchagent-app ]
+
+  pcapplusplus-san2patch-claude:
+    <<: [ *san2patch-claude-service, *pcapplusplus-san2patch-app ]
+
+  jasper-patchagent-claude:
+    <<: [ *patchagent-claude-service, *jasper-patchagent-app ]
+
+  jasper-san2patch-claude:
+    <<: [ *san2patch-claude-service, *jasper-san2patch-app ]
+
+  hdf5-patchagent-claude:
+    <<: [ *patchagent-claude-service, *hdf5-patchagent-app ]
+
+  hdf5-san2patch-claude:
+    <<: [ *san2patch-claude-service, *hdf5-san2patch-app ]
+
+  vim-patchagent-claude:
+    <<: [ *patchagent-claude-service, *vim-patchagent-app ]
+
+  vim-san2patch-claude:
+    <<: [ *san2patch-claude-service, *vim-san2patch-app ]
+
+  exiv2-patchagent-claude:
+    <<: [ *patchagent-claude-service, *exiv2-patchagent-app ]
+
+  exiv2-san2patch-claude:
+    <<: [ *san2patch-claude-service, *exiv2-san2patch-app ]
+
+  icu-patchagent-claude:
+    <<: [ *patchagent-claude-service, *icu-patchagent-app ]
+
+  icu-san2patch-claude:
+    <<: [ *san2patch-claude-service, *icu-san2patch-app ]
+
+  simdjson-patchagent-claude:
+    <<: [ *patchagent-claude-service, *simdjson-patchagent-app ]
+
+  simdjson-san2patch-claude:
+    <<: [ *san2patch-claude-service, *simdjson-san2patch-app ]
+
+  mruby-patchagent-claude:
+    <<: [ *patchagent-claude-service, *mruby-patchagent-app ]
+
+  mruby-san2patch-claude:
+    <<: [ *san2patch-claude-service, *mruby-san2patch-app ]
+
+  wabt-patchagent-claude:
+    <<: [ *patchagent-claude-service, *wabt-patchagent-app ]
+
+  wabt-san2patch-claude:
+    <<: [ *san2patch-claude-service, *wabt-san2patch-app ]
+
+  hermes-patchagent-claude:
+    <<: [ *patchagent-claude-service, *hermes-patchagent-app ]
+
+  hermes-san2patch-claude:
+    <<: [ *san2patch-claude-service, *hermes-san2patch-app ]
+
+  jq-patchagent-claude:
+    <<: [ *patchagent-claude-service, *jq-patchagent-app ]
+
+  jq-san2patch-claude:
+    <<: [ *san2patch-claude-service, *jq-san2patch-app ]
+
+  htslib-patchagent-claude:
+    <<: [ *patchagent-claude-service, *htslib-patchagent-app ]
+
+  htslib-san2patch-claude:
+    <<: [ *san2patch-claude-service, *htslib-san2patch-app ]
+
+  wireshark-patchagent-claude:
+    <<: [ *patchagent-claude-service, *wireshark-patchagent-app ]
+
+  wireshark-san2patch-claude:
+    <<: [ *san2patch-claude-service, *wireshark-san2patch-app ]
+
+  # Check services
+  php-base:
+    <<: [ *check-service, *php-patchagent-app ]
+
+  cpython-base:
+    <<: [ *check-service, *cpython-patchagent-app ]
+
+  quickjs-base:
+    <<: [ *check-service, *quickjs-patchagent-app ]
+
+  llvm-base:
+    <<: [ *check-service, *llvm-patchagent-app ]
+
+  v8-base:
+    <<: [ *check-service, *v8-patchagent-app ]
+
+  libtiff-base:
+    <<: [ *check-service, *libtiff-patchagent-app ]
+
+  libxml2-base:
+    <<: [ *check-service, *libxml2-patchagent-app ]
+
+  pcapplusplus-base:
+    <<: [ *check-service, *pcapplusplus-patchagent-app ]
+
+  jasper-base:
+    <<: [ *check-service, *jasper-patchagent-app ]
+
+  hdf5-base:
+    <<: [ *check-service, *hdf5-patchagent-app ]
+
+  vim-base:
+    <<: [ *check-service, *vim-patchagent-app ]
+
+  exiv2-base:
+    <<: [ *check-service, *exiv2-patchagent-app ]
+
+  icu-base:
+    <<: [ *check-service, *icu-patchagent-app ]
+
+  simdjson-base:
+    <<: [ *check-service, *simdjson-patchagent-app ]
+
+  mruby-base:
+    <<: [ *check-service, *mruby-patchagent-app ]
+
+  wabt-base:
+    <<: [ *check-service, *wabt-patchagent-app ]
+
+  hermes-base:
+    <<: [ *check-service, *hermes-patchagent-app ]
+
+  jq-base:
+    <<: [ *check-service, *jq-patchagent-app ]
+
+  htslib-base:
+    <<: [ *check-service, *htslib-patchagent-app ]
+
+  wireshark-base:
+    <<: [ *check-service, *wireshark-patchagent-app ]
+
+  # Gentest services
+  icu-gentest:
+    <<: [ *gentest-service, *icu-gentest-app ]
+
+  hdf5-gentest:
+    <<: [ *gentest-service, *hdf5-gentest-app ]
+
+  libtiff-gentest:
+    <<: [ *gentest-service, *libtiff-gentest-app ]
+
+  pcapplusplus-gentest:
+    <<: [ *gentest-service, *pcapplusplus-gentest-app ]
+
+  cpython-gentest:
+    <<: [ *gentest-service, *cpython-gentest-app ]
+
+  mruby-gentest:
+    <<: [ *gentest-service, *mruby-gentest-app ]
+
+  quickjs-gentest:
+    <<: [ *gentest-service, *quickjs-gentest-app ]
+
+  v8-gentest:
+    <<: [ *gentest-service, *v8-gentest-app ]
+
+  vim-gentest:
+    <<: [ *gentest-service, *vim-gentest-app ]

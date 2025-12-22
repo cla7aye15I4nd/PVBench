@@ -1,0 +1,42 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/php_dom.c b/ext/dom/php_dom.c
+index 939c1794520..03461b40591 100644
+--- a/ext/dom/php_dom.c
++++ b/ext/dom/php_dom.c
+@@ -1480,12 +1480,13 @@ void dom_namednode_iter(dom_object *basenode, int ntype, dom_object *intern, xml
+ 			mapptr->local = xmlCharStrndup(local, len);
+ 			mapptr->free_local = true;
+ 		}
+-		mapptr->local_lower = BAD_CAST estrdup(local);
+-		if (len < 0) {
+-			zend_str_tolower((char *) mapptr->local_lower, strlen((const char *) mapptr->local_lower));
+-		} else {
+-			zend_str_tolower((char *) mapptr->local_lower, len);
+-		}
++        if (len < 0) {
++            mapptr->local_lower = BAD_CAST estrdup(local);
++            zend_str_tolower((char *) mapptr->local_lower, strlen((const char *) mapptr->local_lower));
++        } else {
++            mapptr->local_lower = BAD_CAST estrndup(local, len);
++            zend_str_tolower((char *) mapptr->local_lower, len);
++        }
+ 	}
+ 
+ 	if (ns) {

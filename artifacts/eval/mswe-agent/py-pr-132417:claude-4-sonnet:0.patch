@@ -1,0 +1,48 @@
+
+diff --git a/.gitignore b/.gitignore
+index 596e0f3af6a..8d4234061fa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -172,3 +172,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_ctypes/callproc.c b/Modules/_ctypes/callproc.c
+index 352487ed964..27756ec12a1 100644
+--- a/Modules/_ctypes/callproc.c
++++ b/Modules/_ctypes/callproc.c
+@@ -1020,13 +1020,22 @@ static PyObject *GetResult(ctypes_state *st,
+     }
+ 
+     if (info->getfunc && !_ctypes_simple_instance(st, restype)) {
+-        retval = info->getfunc(result, info->size);
+-        /* If restype is py_object (detected by comparing getfunc with
+-           O_get), we have to call Py_DECREF because O_get has already
+-           called Py_INCREF.
++    retval = info->getfunc(result, info->size);
++    /* The 'errcheck' protocol */
++    if (info->errcheck) {
++        PyObject *v = PyObject_CallFunction(info->errcheck,
++                                            "OOO",
++                                            retval,
++                                            info->callable,
++                                            info->argtuple);
++        /* If the errcheck function failed, return NULL.
++           If the errcheck function returned Py_None, return the result.
++           For any other return value, return the check result.
+         */
+-        if (info->getfunc == _ctypes_get_fielddesc("O")->getfunc) {
+-            Py_DECREF(retval);
++        if (v == NULL || v != Py_None) {
++            if (retval != NULL) {
++                Py_DECREF(retval);
++            }
+         }
+     }
+     else {

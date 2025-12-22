@@ -1,0 +1,13 @@
+runtime error: signed integer overflow: -2147418336 - 65535 cannot be represented in type 'int'
+    #0 0x78aa3c0fb8ce in Exiv2::Internal::PanasonicMakerNote::printAccelerometer(std::ostream&, Exiv2::Value const&, Exiv2::ExifData const*) /tmp/exiv2-gh-2007/build/src/panasonicmn_int.cpp:696
+    #1 0x78aa3bd55f19 in Exiv2::Exifdatum::write(std::ostream&, Exiv2::ExifData const*) const /tmp/exiv2-gh-2007/build/src/exif.cpp:240
+    #2 0x78aa3be1f309 in Exiv2::Metadatum::print[abi:cxx11](Exiv2::ExifData const*) const /tmp/exiv2-gh-2007/build/src/metadatum.cpp:41
+    #3 0x5a873ce6b3fc in Action::Print::printMetadatum(Exiv2::Metadatum const&, Exiv2::Image const*) /tmp/exiv2-gh-2007/build/src/actions.cpp:610
+    #4 0x5a873ce65f31 in Action::Print::printMetadata(Exiv2::Image const*) /tmp/exiv2-gh-2007/build/src/actions.cpp:447
+    #5 0x5a873ce65a08 in Action::Print::printList() /tmp/exiv2-gh-2007/build/src/actions.cpp:437
+    #6 0x5a873ce5f2c8 in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-2007/build/src/actions.cpp:260
+    #7 0x5a873cdb21fa in main /tmp/exiv2-gh-2007/build/src/exiv2.cpp:170
+    #8 0x78aa3a82f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x78aa3a82f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x5a873cdb0cc4 in _start (/tmp/exiv2-gh-2007/build/build/bin/exiv2+0x13ecc4) (BuildId: 2139a9b512e387d20db68375b1d3fab67bb61943)
+

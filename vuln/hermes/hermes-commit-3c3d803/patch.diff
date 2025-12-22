@@ -1,0 +1,628 @@
+diff --git a/include/hermes/Regex/Executor.h b/include/hermes/Regex/Executor.h
+index de6ace6f4..e713c6eb7 100644
+--- a/include/hermes/Regex/Executor.h
++++ b/include/hermes/Regex/Executor.h
+@@ -10,6 +10,7 @@
+ 
+ #include "hermes/Regex/RegexBytecode.h"
+ #include "hermes/Regex/RegexTypes.h"
++#include "hermes/Support/StackOverflowGuard.h"
+ 
+ // This file contains the machinery for executing a regexp compiled to bytecode.
+ 
+@@ -57,16 +58,25 @@ struct CapturedRange {
+ /// Search using the compiled regex represented by \p bytecode with the flags \p
+ /// matchFlags. If the search succeeds, populate \p captures with the capture
+ /// groups.
+-/// \return true if some portion of the string matched the regex represented by
+-/// the bytecode, false otherwise.
+-/// This is the char16_t overload.
++/// \param guard is used to implement stack overflow prevention.
++/// \return true if some portion of the string matched the regex
++/// represented by the bytecode, false otherwise. This is the char16_t overload.
+ MatchRuntimeResult searchWithBytecode(
+     llvh::ArrayRef<uint8_t> bytecode,
+     const char16_t *first,
+     uint32_t start,
+     uint32_t length,
+     std::vector<CapturedRange> *captures,
+-    constants::MatchFlagType matchFlags);
++    constants::MatchFlagType matchFlags,
++    StackOverflowGuard guard =
++#ifdef HERMES_CHECK_NATIVE_STACK
++        StackOverflowGuard::nativeStackGuard(
++            512 * 1024) // this is a conservative gap that should work in
++                        // sanitizer builds
++#else
++        StackOverflowGuard::depthCounterGuard(128)
++#endif
++);
+ 
+ /// This is the ASCII overload.
+ MatchRuntimeResult searchWithBytecode(
+@@ -75,7 +85,16 @@ MatchRuntimeResult searchWithBytecode(
+     uint32_t start,
+     uint32_t length,
+     std::vector<CapturedRange> *captures,
+-    constants::MatchFlagType matchFlags);
++    constants::MatchFlagType matchFlags,
++    StackOverflowGuard guard =
++#ifdef HERMES_CHECK_NATIVE_STACK
++        StackOverflowGuard::nativeStackGuard(
++            512 * 1024) // this is a conservative gap that should work in
++                        // sanitizer builds
++#else
++        StackOverflowGuard::depthCounterGuard(128)
++#endif
++);
+ 
+ } // namespace regex
+ } // namespace hermes
+diff --git a/include/hermes/Support/StackOverflowGuard.h b/include/hermes/Support/StackOverflowGuard.h
+new file mode 100644
+index 000000000..dd4561d1b
+--- /dev/null
++++ b/include/hermes/Support/StackOverflowGuard.h
+@@ -0,0 +1,131 @@
++/*
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * This source code is licensed under the MIT license found in the
++ * LICENSE file in the root directory of this source tree.
++ */
++
++//===----------------------------------------------------------------------===//
++/// \file
++///
++/// OverflowGuard is designed to catch imminent native stack overflow. It does
++/// this using two different heuristics, depending on HERMES_CHECK_NATIVE_STACK.
++///
++/// If HERMES_CHECK_NATIVE_STACK is defined, it will use real stack checking. It
++/// calls into platform-specific APIs to obtain the upper stack bound of the
++/// currently executing thread. It will then check the current stack address
++/// against the upper limit, along with some user-defined gap. Overflow is
++/// reported if the current stack address is close enough to the upper bound,
++/// accounting for the supplied gap value.
++///
++/// If HERMES_CHECK_NATIVE_STACK is not defined, a simple depth counter is used.
++/// Every time a recursive call is made, the counter should be bumped. Overflow
++/// is reported if the counter reaches some user-defined max.
++///
++//===----------------------------------------------------------------------===//
++
++#ifndef HERMES_SUPPORT_STACKOVERFLOWGUARD_H
++#define HERMES_SUPPORT_STACKOVERFLOWGUARD_H
++
++#include <cstddef>
++#include "hermes/Support/OSCompat.h"
++#include "llvh/Support/Compiler.h"
++#include "llvh/Support/raw_ostream.h"
++
++namespace hermes {
++
++#ifdef HERMES_CHECK_NATIVE_STACK
++
++class StackOverflowGuard {
++  explicit StackOverflowGuard(unsigned stackGap) : nativeStackGap(stackGap) {}
++
++ public:
++  /// Upper bound on the stack, nullptr if currently unknown.
++  const void *nativeStackHigh{nullptr};
++  /// This has already taken \c nativeStackGap into account,
++  /// so any stack outside [nativeStackHigh-nativeStackSize, nativeStackHigh]
++  /// is overflowing.
++  size_t nativeStackSize{0};
++  /// Native stack remaining before assuming overflow.
++  unsigned nativeStackGap;
++
++  static StackOverflowGuard nativeStackGuard(unsigned stackGap) {
++    return StackOverflowGuard(stackGap);
++  }
++
++  /// \return true if the native stack is overflowing the bounds of the
++  ///   current thread. Updates the stack bounds if the thread which Runtime
++  ///   is executing on changes.
++  inline bool isOverflowing() {
++    // Check for overflow by subtracting the sp from the high pointer.
++    // If the sp is outside the valid stack range, the difference will
++    // be greater than the known stack size.
++    // This is clearly true when 0 < sp < nativeStackHigh_ - size.
++    // If nativeStackHigh_ < sp, then the subtraction will wrap around.
++    // We know that nativeStackSize_ <= nativeStackHigh_
++    // (because otherwise the stack wouldn't fit in the memory),
++    // so the overflowed difference will be greater than nativeStackSize_.
++    if (LLVM_LIKELY(!(
++            (uintptr_t)nativeStackHigh - (uintptr_t)__builtin_frame_address(0) >
++            nativeStackSize))) {
++      // Fast path: quickly check the stored stack bounds.
++      // NOTE: It is possible to have a false negative here (highly unlikely).
++      // If the program creates many threads and destroys them, a new
++      // thread's stack could overlap the saved stack so we'd be checking
++      // against the wrong bounds.
++      return false;
++    }
++    // Slow path: might be overflowing, but update the stack bounds first
++    // in case execution has changed threads.
++    return isStackOverflowingSlowPath();
++  }
++
++  /// Clear the native stack bounds and force recomputation.
++  inline void clearStackBounds() {
++    nativeStackHigh = nullptr;
++    nativeStackSize = 0;
++  }
++
++ private:
++  /// Slow path for \c isOverflowing.
++  /// Sets \c stackLow_ \c stackHigh_.
++  /// \return true if the native stack is overflowing the bounds of the
++  ///   current thread.
++  bool isStackOverflowingSlowPath() {
++    auto [highPtr, size] = oscompat::thread_stack_bounds(nativeStackGap);
++    nativeStackHigh = (const char *)highPtr;
++    nativeStackSize = size;
++    return LLVM_UNLIKELY(
++        (uintptr_t)nativeStackHigh - (uintptr_t)__builtin_frame_address(0) >
++        nativeStackSize);
++  }
++};
++
++#else
++
++class StackOverflowGuard {
++  explicit StackOverflowGuard(size_t max) : maxCallDepth(max) {}
++
++ public:
++  /// This is how many recursive calls have already been made.
++  /// This grows towards maxCallDepth.
++  size_t callDepth{0};
++  /// If callDepth exceeds this value, it is considered overflow.
++  size_t maxCallDepth;
++
++  static StackOverflowGuard depthCounterGuard(unsigned stackGap) {
++    return StackOverflowGuard(stackGap);
++  }
++
++  /// \return true if \c callDepth has exceeded the budget set by \c
++  /// maxCallDepth.
++  inline bool isOverflowing() {
++    return callDepth > maxCallDepth;
++  }
++};
++
++#endif
++
++} // namespace hermes
++
++#endif // HERMES_SUPPORT_STACKOVERFLOWGUARD_H
+diff --git a/include/hermes/VM/Runtime.h b/include/hermes/VM/Runtime.h
+index 2d539a39c..4342e40b7 100644
+--- a/include/hermes/VM/Runtime.h
++++ b/include/hermes/VM/Runtime.h
+@@ -12,6 +12,7 @@
+ #include "hermes/Public/RuntimeConfig.h"
+ #include "hermes/Support/Compiler.h"
+ #include "hermes/Support/ErrorHandling.h"
++#include "hermes/Support/StackOverflowGuard.h"
+ #include "hermes/VM/AllocOptions.h"
+ #include "hermes/VM/AllocResult.h"
+ #include "hermes/VM/BasicBlockExecutionInfo.h"
+@@ -549,14 +550,12 @@ class HERMES_EMPTY_BASES Runtime : public PointerBase,
+ 
+   /// \return true if the native stack is overflowing the bounds of the
+   ///   current thread. Updates the stack bounds if the thread which Runtime
+-  ///   is executing on changes. Will use nativeCallFrameDepth_ if Runtime
++  ///   is executing on changes. Will use simple depth counter if Runtime
+   ///   has been compiled without \c HERMES_CHECK_NATIVE_STACK.
+-  inline bool isNativeStackOverflowing();
++  inline bool isStackOverflowing();
+ 
+-#ifdef HERMES_CHECK_NATIVE_STACK
+-  /// Clear the native stack bounds and force recomputation.
+-  inline void clearStackBounds();
+-#endif
++  /// \return the overflow guard to be used in the regex engine.
++  inline StackOverflowGuard getOverflowGuardForRegex();
+ 
+   /// \return `thrownValue`.
+   HermesValue getThrownValue() const {
+@@ -1138,13 +1137,6 @@ class HERMES_EMPTY_BASES Runtime : public PointerBase,
+   /// Write a JS stack trace as part of a \c crashCallback() run.
+   void crashWriteCallStack(JSONEmitter &json);
+ 
+-  /// Out-of-line slow path for \c isNativeStackOverflowing.
+-  /// Sets \c stackLow_ \c stackHigh_.
+-  /// \return true if the native stack is overflowing the bounds of the
+-  ///   current thread. Will always return false when Runtime
+-  ///   has been compiled without \c HERMES_CHECK_NATIVE_STACK.
+-  bool isNativeStackOverflowingSlowPath();
+-
+  private:
+   GCStorage heapStorage_;
+ 
+@@ -1263,22 +1255,9 @@ class HERMES_EMPTY_BASES Runtime : public PointerBase,
+   /// including \c stackPointer_.
+   StackFramePtr currentFrame_{nullptr};
+ 
+-#ifdef HERMES_CHECK_NATIVE_STACK
+-  /// Native stack remaining before assuming overflow.
+-  unsigned nativeStackGap_;
+-
+-  /// Upper bound on the stack, nullptr if currently unknown.
+-  const void *nativeStackHigh_{nullptr};
+-
+-  /// This has already taken \c nativeStackGap_ into account,
+-  /// so any stack outside [nativeStackHigh_-nativeStackSize_, nativeStackHigh_]
+-  /// is overflowing.
+-  size_t nativeStackSize_{0};
+-#else
+-  /// Current depth of native call frames, including recursive interpreter
+-  /// calls.
+-  unsigned nativeCallFrameDepth_{0};
+-#endif
++  /// Used to guard against stack overflow. Either uses real stack checking or
++  /// call depth counter checking.
++  StackOverflowGuard overflowGuard_;
+ 
+   /// rootClazzes_[i] is a PinnedHermesValue pointing to a hidden class with
+   /// its i first slots pre-reserved.
+@@ -1613,13 +1592,13 @@ class ScopedNativeDepthTracker {
+   explicit ScopedNativeDepthTracker(Runtime &runtime) : runtime_(runtime) {
+     (void)runtime_;
+ #ifndef HERMES_CHECK_NATIVE_STACK
+-    ++runtime.nativeCallFrameDepth_;
++    ++runtime.overflowGuard_.callDepth;
+ #endif
+-    overflowed_ = runtime.isNativeStackOverflowing();
++    overflowed_ = runtime.isStackOverflowing();
+   }
+   ~ScopedNativeDepthTracker() {
+ #ifndef HERMES_CHECK_NATIVE_STACK
+-    --runtime_.nativeCallFrameDepth_;
++    --runtime_.overflowGuard_.callDepth;
+ #endif
+   }
+ 
+@@ -1653,31 +1632,32 @@ class ScopedNativeDepthReducer {
+  public:
+ #ifdef HERMES_CHECK_NATIVE_STACK
+   explicit ScopedNativeDepthReducer(Runtime &runtime)
+-      : runtime_(runtime), nativeStackGapOld(runtime.nativeStackGap_) {
++      : runtime_(runtime),
++        nativeStackGapOld(runtime.overflowGuard_.nativeStackGap) {
+     // Temporarily reduce the gap to use that headroom for gathering the error.
+     // If overflow is detected, the recomputation of the stack bounds will
+     // result in no gap for the duration of the ScopedNativeDepthReducer's
+     // lifetime.
+-    runtime_.nativeStackGap_ = kReducedNativeStackGap;
++    runtime_.overflowGuard_.nativeStackGap = kReducedNativeStackGap;
+   }
+   ~ScopedNativeDepthReducer() {
+     assert(
+-        runtime_.nativeStackGap_ == kReducedNativeStackGap &&
++        runtime_.overflowGuard_.nativeStackGap == kReducedNativeStackGap &&
+         "ScopedNativeDepthReducer gap was overridden");
+-    runtime_.nativeStackGap_ = nativeStackGapOld;
++    runtime_.overflowGuard_.nativeStackGap = nativeStackGapOld;
+     // Force the bounds to be recomputed the next time.
+-    runtime_.clearStackBounds();
++    runtime_.overflowGuard_.clearStackBounds();
+   }
+ #else
+   explicit ScopedNativeDepthReducer(Runtime &runtime) : runtime_(runtime) {
+-    if (runtime.nativeCallFrameDepth_ >= kDepthAdjustment) {
+-      runtime.nativeCallFrameDepth_ -= kDepthAdjustment;
++    if (runtime.overflowGuard_.callDepth >= kDepthAdjustment) {
++      runtime.overflowGuard_.callDepth -= kDepthAdjustment;
+       undo = true;
+     }
+   }
+   ~ScopedNativeDepthReducer() {
+     if (undo) {
+-      runtime_.nativeCallFrameDepth_ += kDepthAdjustment;
++      runtime_.overflowGuard_.callDepth += kDepthAdjustment;
+     }
+   }
+ #endif
+@@ -1721,7 +1701,7 @@ class ScopedNativeCallFrame {
+       Runtime &runtime,
+       uint32_t registersNeeded) {
+     return runtime.checkAvailableStack(registersNeeded) &&
+-        !runtime.isNativeStackOverflowing();
++        !runtime.isStackOverflowing();
+   }
+ 
+  public:
+@@ -1743,7 +1723,7 @@ class ScopedNativeCallFrame {
+       HermesValue thisArg)
+       : runtime_(runtime), savedSP_(runtime.getStackPointer()) {
+ #ifndef HERMES_CHECK_NATIVE_STACK
+-    runtime.nativeCallFrameDepth_++;
++    runtime.overflowGuard_.callDepth++;
+ #endif
+     uint32_t registersNeeded =
+         StackFrameLayout::callerOutgoingRegisters(argCount);
+@@ -1799,7 +1779,7 @@ class ScopedNativeCallFrame {
+     // Note that we unconditionally increment the native call frame depth and
+     // save the SP to avoid branching in the dtor.
+ #ifndef HERMES_CHECK_NATIVE_STACK
+-    runtime_.nativeCallFrameDepth_--;
++    runtime_.overflowGuard_.callDepth--;
+ #endif
+     runtime_.popToSavedStackPointer(savedSP_);
+ #ifndef NDEBUG
+@@ -2130,41 +2110,24 @@ inline llvh::iterator_range<ConstStackFrameIterator> Runtime::getStackFrames()
+       ConstStackFrameIterator{registerStackStart_}};
+ };
+ 
+-inline bool Runtime::isNativeStackOverflowing() {
+-#ifdef HERMES_CHECK_NATIVE_STACK
+-  // Check for overflow by subtracting the sp from the high pointer.
+-  // If the sp is outside the valid stack range, the difference will
+-  // be greater than the known stack size.
+-  // This is clearly true when 0 < sp < nativeStackHigh_ - size.
+-  // If nativeStackHigh_ < sp, then the subtraction will wrap around.
+-  // We know that nativeStackSize_ <= nativeStackHigh_
+-  // (because otherwise the stack wouldn't fit in the memory),
+-  // so the overflowed difference will be greater than nativeStackSize_.
+-  bool overflowing =
+-      (uintptr_t)nativeStackHigh_ - (uintptr_t)__builtin_frame_address(0) >
+-      nativeStackSize_;
+-  if (LLVM_LIKELY(!overflowing)) {
+-    // Fast path: quickly check the stored stack bounds.
+-    // NOTE: It is possible to have a false negative here (highly unlikely).
+-    // If the program creates many threads and destroys them, a new
+-    // thread's stack could overlap the saved stack so we'd be checking
+-    // against the wrong bounds.
+-    return false;
+-  }
+-  // Slow path: might be overflowing, but update the stack bounds first
+-  // in case execution has changed threads.
+-  return isNativeStackOverflowingSlowPath();
+-#else
+-  return nativeCallFrameDepth_ > Runtime::MAX_NATIVE_CALL_FRAME_DEPTH;
++inline StackOverflowGuard Runtime::getOverflowGuardForRegex() {
++  StackOverflowGuard copy = overflowGuard_;
++#ifndef HERMES_CHECK_NATIVE_STACK
++  // We should take into account the approximate difference in sizes between the
++  // stack size of the interpreter vs the regex executor. The max call depth in
++  // use here was calculated using call stack sizes of the interpreter. Since
++  // the executor has a smaller stack size, it should be allowed to recurse more
++  // than the interpreter could have. So we multiply the max allowed depth by
++  // some number larger than 1.
++  constexpr uint32_t kRegexMaxDepthMult = 5;
++  copy.maxCallDepth *= kRegexMaxDepthMult;
+ #endif
++  return copy;
+ }
+ 
+-#ifdef HERMES_CHECK_NATIVE_STACK
+-inline void Runtime::clearStackBounds() {
+-  nativeStackHigh_ = nullptr;
+-  nativeStackSize_ = 0;
++inline bool Runtime::isStackOverflowing() {
++  return overflowGuard_.isOverflowing();
+ }
+-#endif
+ 
+ inline ExecutionStatus Runtime::setThrownValue(HermesValue value) {
+   thrownValue_ = value;
+diff --git a/lib/Regex/Executor.cpp b/lib/Regex/Executor.cpp
+index fb73b8e56..55d636445 100644
+--- a/lib/Regex/Executor.cpp
++++ b/lib/Regex/Executor.cpp
+@@ -11,6 +11,7 @@
+ 
+ #include "llvh/ADT/SmallVector.h"
+ #include "llvh/Support/TrailingObjects.h"
++#include "llvh/Support/raw_ostream.h"
+ 
+ // This file contains the machinery for executing a regexp compiled to bytecode.
+ 
+@@ -400,6 +401,10 @@ struct Context {
+   /// This is effectively a timeout on the regexp execution.
+   uint32_t backtracksRemaining_ = kBacktrackLimit;
+ 
++  /// Used to guard against stack overflow. Either uses real stack
++  /// checking or call depth counter checking.
++  StackOverflowGuard overflowGuard_;
++
+   Context(
+       llvh::ArrayRef<uint8_t> bytecodeStream,
+       constants::MatchFlagType flags,
+@@ -407,14 +412,16 @@ struct Context {
+       const CodeUnit *first,
+       const CodeUnit *last,
+       uint32_t markedCount,
+-      uint32_t loopCount)
++      uint32_t loopCount,
++      StackOverflowGuard guard)
+       : bytecodeStream_(bytecodeStream),
+         flags_(flags),
+         syntaxFlags_(syntaxFlags),
+         first_(first),
+         last_(last),
+         markedCount_(markedCount),
+-        loopCount_(loopCount) {}
++        loopCount_(loopCount),
++        overflowGuard_(guard) {}
+ 
+   /// Run the given State \p state, by starting at its cursor and acting on its
+   /// ip_ until the match succeeds or fails. If \p onlyAtStart is set, only
+@@ -467,6 +474,15 @@ struct Context {
+       BacktrackStack &bts);
+ 
+  private:
++  /// \return true if the native stack is overflowing. This will either use real
++  /// stack checking or a simple depth counter.
++  bool isStackOverflowing() {
++#ifndef HERMES_CHECK_NATIVE_STACK
++    overflowGuard_.callDepth++;
++#endif
++    return overflowGuard_.isOverflowing();
++  }
++
+   /// Do initialization of the given state before it enters the loop body
+   /// described by the LoopInsn \p loop, including setting up any backtracking
+   /// state.
+@@ -990,6 +1006,12 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+       (c.forwards() || locsToCheckCount == 1) &&
+       "Can only check one location when cursor is backwards");
+ 
++  // Make sure we are not exceeding the set limit of the amount of times we can
++  // recurse.
++  if (isStackOverflowing()) {
++    return ExecutionStatus::STACK_OVERFLOW;
++  }
++
+   // Macro used when a state fails to match.
+ #define BACKTRACK()                            \
+   do {                                         \
+@@ -1317,9 +1339,13 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+             // anything.
+             s->ip_ += sizeof(LookaroundInsn);
+             auto match = this->match(s, true /* onlyAtStart */);
+-            // There were no errors and we matched something (so non-null
+-            // return)
+-            matched = match && match.getValue();
++            // If the match errored out due to stack overflow, then we need to
++            // return an error here as well.
++            if (LLVM_UNLIKELY(!match)) {
++              return match.getStatus();
++            }
++            // We got a match if the value is non-null.
++            matched = match.getValue() != nullptr;
+             c.setCurrentPointer(savedState.cursor_.currentPointer());
+             c.setForwards(savedState.cursor_.forwards());
+ 
+@@ -1514,7 +1540,8 @@ MatchRuntimeResult searchWithBytecodeImpl(
+     uint32_t start,
+     uint32_t length,
+     std::vector<CapturedRange> *m,
+-    constants::MatchFlagType matchFlags) {
++    constants::MatchFlagType matchFlags,
++    StackOverflowGuard guard) {
+   assert(
+       bytecode.size() >= sizeof(RegexBytecodeHeader) && "Bytecode too small");
+   auto header = reinterpret_cast<const RegexBytecodeHeader *>(bytecode.data());
+@@ -1535,7 +1562,8 @@ MatchRuntimeResult searchWithBytecodeImpl(
+       first,
+       first + length,
+       header->markedCount,
+-      header->loopCount);
++      header->loopCount,
++      guard);
+   State<Traits> state{cursor, markedCount, loopCount};
+ 
+   // We check only one location if either the regex pattern constrains us to, or
+@@ -1571,9 +1599,10 @@ MatchRuntimeResult searchWithBytecode(
+     uint32_t start,
+     uint32_t length,
+     std::vector<CapturedRange> *m,
+-    constants::MatchFlagType matchFlags) {
++    constants::MatchFlagType matchFlags,
++    StackOverflowGuard guard) {
+   return searchWithBytecodeImpl<char16_t, UTF16RegexTraits>(
+-      bytecode, first, start, length, m, matchFlags);
++      bytecode, first, start, length, m, matchFlags, guard);
+ }
+ 
+ MatchRuntimeResult searchWithBytecode(
+@@ -1582,9 +1611,10 @@ MatchRuntimeResult searchWithBytecode(
+     uint32_t start,
+     uint32_t length,
+     std::vector<CapturedRange> *m,
+-    constants::MatchFlagType matchFlags) {
++    constants::MatchFlagType matchFlags,
++    StackOverflowGuard guard) {
+   return searchWithBytecodeImpl<char, ASCIIRegexTraits>(
+-      bytecode, first, start, length, m, matchFlags);
++      bytecode, first, start, length, m, matchFlags, guard);
+ }
+ 
+ } // namespace regex
+diff --git a/lib/VM/JSLib/JSLibInternal.cpp b/lib/VM/JSLib/JSLibInternal.cpp
+index 4ea3d7400..7e558d767 100644
+--- a/lib/VM/JSLib/JSLibInternal.cpp
++++ b/lib/VM/JSLib/JSLibInternal.cpp
+@@ -290,7 +290,8 @@ static bool isReturnThis(Handle<StringPrimitive> str, Runtime &runtime) {
+         0,
+         input.length(),
+         nullptr,
+-        regex::constants::matchDefault | regex::constants::matchInputAllAscii);
++        regex::constants::matchDefault | regex::constants::matchInputAllAscii,
++        runtime.getOverflowGuardForRegex());
+   } else {
+     const char16_t *begin = input.castToChar16Ptr();
+     result = regex::searchWithBytecode(
+@@ -299,7 +300,8 @@ static bool isReturnThis(Handle<StringPrimitive> str, Runtime &runtime) {
+         0,
+         input.length(),
+         nullptr,
+-        regex::constants::matchDefault);
++        regex::constants::matchDefault,
++        runtime.getOverflowGuardForRegex());
+   }
+   return result == regex::MatchRuntimeResult::Match;
+ }
+diff --git a/lib/VM/JSRegExp.cpp b/lib/VM/JSRegExp.cpp
+index 3f66da3ff..1ac3ec96c 100644
+--- a/lib/VM/JSRegExp.cpp
++++ b/lib/VM/JSRegExp.cpp
+@@ -272,7 +272,8 @@ CallResult<RegExpMatch> performSearch(
+       searchStartOffset,
+       stringLength,
+       &nativeMatchRanges,
+-      matchFlags);
++      matchFlags,
++      runtime.getOverflowGuardForRegex());
+   if (matchResult == regex::MatchRuntimeResult::StackOverflow) {
+     return runtime.raiseRangeError("Maximum regex stack depth reached");
+   } else if (matchResult == regex::MatchRuntimeResult::NoMatch) {
+diff --git a/lib/VM/Runtime.cpp b/lib/VM/Runtime.cpp
+index 2b44b6a91..e002d546e 100644
+--- a/lib/VM/Runtime.cpp
++++ b/lib/VM/Runtime.cpp
+@@ -5,6 +5,7 @@
+  * LICENSE file in the root directory of this source tree.
+  */
+ 
++#include "hermes/Support/StackOverflowGuard.h"
+ #define DEBUG_TYPE "vm"
+ #include "hermes/VM/Runtime.h"
+ 
+@@ -265,9 +266,12 @@ Runtime::Runtime(
+       stackPointer_(),
+       crashMgr_(runtimeConfig.getCrashMgr()),
+ #ifdef HERMES_CHECK_NATIVE_STACK
+-      nativeStackGap_(std::max(
++      overflowGuard_(StackOverflowGuard::nativeStackGuard(std::max(
+           runtimeConfig.getNativeStackGap(),
+-          kMinSupportedNativeStackGap)),
++          kMinSupportedNativeStackGap))),
++#else
++      overflowGuard_(StackOverflowGuard::depthCounterGuard(
++          Runtime::MAX_NATIVE_CALL_FRAME_DEPTH)),
+ #endif
+       crashCallbackKey_(
+           crashMgr_->registerCallback([this](int fd) { crashCallback(fd); })),
+@@ -1962,19 +1966,6 @@ static std::string &llvmStreamableToString(const T &v) {
+   return buf;
+ }
+ 
+-bool Runtime::isNativeStackOverflowingSlowPath() {
+-#ifdef HERMES_CHECK_NATIVE_STACK
+-  auto [highPtr, size] = oscompat::thread_stack_bounds(nativeStackGap_);
+-  nativeStackHigh_ = (const char *)highPtr;
+-  nativeStackSize_ = size;
+-  return LLVM_UNLIKELY(
+-      (uintptr_t)nativeStackHigh_ - (uintptr_t)__builtin_frame_address(0) >
+-      nativeStackSize_);
+-#else
+-  return false;
+-#endif
+-}
+-
+ /****************************************************************************
+  * WARNING: This code is run after a crash. Avoid walking data structures,
+  *          doing memory allocation, or using libc etc. as much as possible

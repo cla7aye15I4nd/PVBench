@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/text.c b/ext/dom/text.c
+index fe0cc8cd5a5..ca8fcf63d3a 100644
+--- a/ext/dom/text.c
++++ b/ext/dom/text.c
+@@ -77,7 +77,9 @@ zend_result dom_text_whole_text_read(dom_object *obj, zval *retval)
+ 
+ 	/* concatenate all adjacent text and cdata nodes */
+ 	while (node && ((node->type == XML_TEXT_NODE) || (node->type == XML_CDATA_SECTION_NODE))) {
+-		smart_str_appends(&str, (const char *) node->content);
++		if (node->content) {
++			smart_str_appends(&str, (const char *) node->content);
++		}
+ 		node = node->next;
+ 	}
+ 

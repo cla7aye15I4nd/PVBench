@@ -1,0 +1,175 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..3131bde8e6e 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -139,9 +139,11 @@ static void spl_array_object_free_storage(zend_object *object)
+ 
+ 	zend_object_std_dtor(&intern->std);
+ 
+-	zval_ptr_dtor(&intern->array);
++	if (Z_TYPE(intern->array) != IS_UNDEF) {
++		zval_ptr_dtor(&intern->array);
++		ZVAL_UNDEF(&intern->array);
++	}
+ }
+-/* }}} */
+ 
+ /* {{{ spl_array_object_new_ex */
+ static zend_object *spl_array_object_new_ex(zend_class_entry *class_type, zend_object *orig, int clone_orig)
+@@ -1051,58 +1053,71 @@ static HashTable *spl_array_it_get_gc(zend_object_iterator *iter, zval **table,
+ /* {{{ spl_array_set_array */
+ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *array, zend_long ar_flags, bool just_array) {
+ 	/* Handled by ZPP prior to this, or for __unserialize() before passing to here */
+-	ZEND_ASSERT(Z_TYPE_P(array) == IS_ARRAY || Z_TYPE_P(array) == IS_OBJECT);
+-	if (Z_TYPE_P(array) == IS_ARRAY) {
++	bool duplicated = 0;
++
++	zval tmp_array;
++	zval *array_to_use = array;
++
++	if (Z_TYPE(intern->array) == IS_ARRAY && Z_TYPE_P(array) == IS_ARRAY &&
++	    Z_ARR_P(&intern->array) == Z_ARR_P(array)) {
++		// Duplicate the array to avoid use-after-free
++		array_init(&tmp_array);
++		ZVAL_ARR(&tmp_array, zend_array_dup(Z_ARR_P(array)));
++		array_to_use = &tmp_array;
++	} else {
++		array_to_use = array;
++	}
++	if (Z_TYPE_P(array_to_use) == IS_ARRAY) {
+ 		zval_ptr_dtor(&intern->array);
+-		if (Z_REFCOUNT_P(array) == 1) {
+-			ZVAL_COPY(&intern->array, array);
++		ZVAL_UNDEF(&intern->array);
++		if (Z_REFCOUNT_P(array_to_use) == 1) {
++			ZVAL_COPY(&intern->array, array_to_use);
+ 		} else {
+ 			//??? TODO: try to avoid array duplication
+-			ZVAL_ARR(&intern->array, zend_array_dup(Z_ARR_P(array)));
+-
+-			if (intern->is_child) {
+-				Z_TRY_DELREF(intern->bucket->val);
+-				/*
+-				 * replace bucket->val with copied array, so the changes between
+-				 * parent and child object can affect each other.
+-				 */
+-				ZVAL_COPY(&intern->bucket->val, &intern->array);
+-			}
++			ZVAL_ARR(&intern->array, zend_array_dup(Z_ARR_P(array_to_use)));
++
++		}
++		if (intern->is_child) {
++			Z_TRY_DELREF(intern->bucket->val);
++			/*
++			 * replace bucket->val with copied array, so the changes between
++			 * parent and child object can affect each other.
++			 */
++			ZVAL_COPY(&intern->bucket->val, &intern->array);
+ 		}
++
+ 	} else {
+-		if (Z_OBJ_HT_P(array) == &spl_handler_ArrayObject || Z_OBJ_HT_P(array) == &spl_handler_ArrayIterator) {
+-			zval_ptr_dtor(&intern->array);
+-			if (just_array)	{
+-				spl_array_object *other = Z_SPLARRAY_P(array);
+-				ar_flags = other->ar_flags & ~SPL_ARRAY_INT_MASK;
+-			}
+-			if (Z_OBJ_P(object) == Z_OBJ_P(array)) {
++		zval_ptr_dtor(&intern->array);
++		ZVAL_UNDEF(&intern->array);
++		if (just_array) {
++			spl_array_object *other = Z_SPLARRAY_P(array_to_use);
++			ar_flags = other->ar_flags & ~SPL_ARRAY_INT_MASK;
++			if (Z_OBJ_P(object) == Z_OBJ_P(array_to_use)) {
+ 				ar_flags |= SPL_ARRAY_IS_SELF;
+ 				ZVAL_UNDEF(&intern->array);
+ 			} else {
+ 				ar_flags |= SPL_ARRAY_USE_OTHER;
+-				ZVAL_COPY(&intern->array, array);
++				ZVAL_COPY(&intern->array, array_to_use);
+ 			}
+ 		} else {
+-			zend_object_get_properties_t handler = Z_OBJ_HANDLER_P(array, get_properties);
++			zend_object_get_properties_t handler = Z_OBJ_HANDLER_P(array_to_use, get_properties);
+ 			if (handler != zend_std_get_properties) {
+ 				zend_throw_exception_ex(spl_ce_InvalidArgumentException, 0,
+-					"Overloaded object of type %s is not compatible with %s",
+-					ZSTR_VAL(Z_OBJCE_P(array)->name), ZSTR_VAL(intern->std.ce->name));
+-				return;
++					ZSTR_VAL(Z_OBJCE_P(array_to_use)->name), ZSTR_VAL(intern->std.ce->name));
++				zval_ptr_dtor(&intern->array);
++				ZVAL_UNDEF(&intern->array);
+ 			}
+-			zval_ptr_dtor(&intern->array);
+-			ZVAL_COPY(&intern->array, array);
++			ZVAL_COPY(&intern->array, array_to_use);
+ 		}
+ 	}
+-
+ 	intern->ar_flags &= ~SPL_ARRAY_IS_SELF & ~SPL_ARRAY_USE_OTHER;
+ 	intern->ar_flags |= ar_flags;
+-	if (intern->ht_iter != (uint32_t)-1) {
+-		zend_hash_iterator_del(intern->ht_iter);
+-		intern->ht_iter = (uint32_t)-1;
++
++
++	if (duplicated) {
++		zval_ptr_dtor(&tmp_array);
+ 	}
+-}
++
+ /* }}} */
+ 
+ /* iterator handler table */
+@@ -1689,7 +1704,8 @@ PHP_METHOD(ArrayObject, unserialize)
+ 	++p;
+ 
+ 	if (flags & SPL_ARRAY_IS_SELF) {
+-		/* If IS_SELF is used, the flags are not followed by an array/object */
++			zval_ptr_dtor(&intern->array);
++			ZVAL_UNDEF(&intern->array);
+ 		intern->ar_flags &= ~SPL_ARRAY_CLONE_MASK;
+ 		intern->ar_flags |= flags & SPL_ARRAY_CLONE_MASK;
+ 		zval_ptr_dtor(&intern->array);
+@@ -1707,6 +1723,9 @@ PHP_METHOD(ArrayObject, unserialize)
+ 
+ 		intern->ar_flags &= ~SPL_ARRAY_CLONE_MASK;
+ 		intern->ar_flags |= flags & SPL_ARRAY_CLONE_MASK;
++		zval_ptr_dtor(&intern->array);
++		ZVAL_UNDEF(&intern->array);
++		intern->ar_flags |= flags & SPL_ARRAY_CLONE_MASK;
+ 
+ 		if (Z_TYPE_P(array) == IS_ARRAY) {
+ 			zval_ptr_dtor(&intern->array);
+@@ -1827,6 +1846,7 @@ PHP_METHOD(ArrayObject, __unserialize)
+ 			zend_throw_exception(spl_ce_InvalidArgumentException, "Passed variable is not an array or object", 0);
+ 			RETURN_THROWS();
+ 		}
++		ZVAL_UNDEF(&intern->array);
+ 		spl_array_set_array(ZEND_THIS, intern, storage_zv, 0L, 1);
+ 	}
+ 
+@@ -1907,4 +1927,4 @@ PHP_MINIT_FUNCTION(spl_array)
+ 
+ 	return SUCCESS;
+ }
+-/* }}} */
++

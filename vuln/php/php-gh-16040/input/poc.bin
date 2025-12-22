@@ -1,0 +1,15 @@
+<?php
+
+class A {
+    public $bar {
+        get {
+            $GLOBALS['a'] = null;
+            return 42;
+        }
+    }
+}
+
+$a = new A();
+var_dump($a->bar);
+
+?>

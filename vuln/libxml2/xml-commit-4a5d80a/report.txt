@@ -1,0 +1,55 @@
+==12643==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x5250000000ff at pc 0x6307f1e4668e bp 0x7ffd8b54f030 sp 0x7ffd8b54f028
+READ of size 1 at 0x5250000000ff thread T0
+    #0 0x6307f1e4668d in xmlParseTryOrFinish /tmp/xml-commit-4a5d80a/build/parser.c:12228:4
+    #1 0x6307f1e38600 in xmlParseChunk /tmp/xml-commit-4a5d80a/build/parser.c:12410:13
+    #2 0x6307f1d818a1 in parseAndPrintFile /tmp/xml-commit-4a5d80a/build/xmllint.c:2284:4
+    #3 0x6307f1d7dace in main /tmp/xml-commit-4a5d80a/build/xmllint.c:3759:7
+    #4 0x798ca24ab1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x798ca24ab28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x6307f1c9f5f4 in _start (/tmp/xml-commit-4a5d80a/build/xmllint+0x9b5f4) (BuildId: f1e2bb5df904091604a206dc633db42b08302121)
+
+0x5250000000ff is located 1 bytes before 8194-byte region [0x525000000100,0x525000002102)
+allocated by thread T0 here:
+    #0 0x6307f1d3a443 in malloc (/tmp/xml-commit-4a5d80a/build/xmllint+0x136443) (BuildId: f1e2bb5df904091604a206dc633db42b08302121)
+    #1 0x6307f202c662 in xmlBufCreateSize /tmp/xml-commit-4a5d80a/build/buf.c:172:36
+    #2 0x6307f1eaa71c in xmlAllocParserInputBuffer /tmp/xml-commit-4a5d80a/build/xmlIO.c:2432:19
+    #3 0x6307f1e46de0 in xmlCreatePushParserCtxt /tmp/xml-commit-4a5d80a/build/parser.c:12515:11
+    #4 0x6307f1d8183f in parseAndPrintFile /tmp/xml-commit-4a5d80a/build/xmllint.c:2280:14
+    #5 0x6307f1d7dace in main /tmp/xml-commit-4a5d80a/build/xmllint.c:3759:7
+    #6 0x798ca24ab1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x798ca24ab28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x6307f1c9f5f4 in _start (/tmp/xml-commit-4a5d80a/build/xmllint+0x9b5f4) (BuildId: f1e2bb5df904091604a206dc633db42b08302121)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/xml-commit-4a5d80a/build/parser.c:12228:4 in xmlParseTryOrFinish
+Shadow bytes around the buggy address:
+  0x524ffffffe00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x524ffffffe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x524fffffff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x524fffffff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x525000000000: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x525000000080: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa[fa]
+  0x525000000100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x525000000180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x525000000200: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x525000000280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x525000000300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12643==ABORTING

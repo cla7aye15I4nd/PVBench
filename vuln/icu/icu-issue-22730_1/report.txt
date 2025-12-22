@@ -1,0 +1,17 @@
+runtime error: signed integer overflow: -1946154886 - 2147483647 cannot be represented in type 'int32_t' (aka 'int')
+    #0 0x7ff1e97701f4 in icu_75::JapaneseCalendar::handleComputeFields(int, UErrorCode&) /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/japancal.cpp:231:33
+    #1 0x7ff1e94200ce in icu_75::Calendar::computeFields(UErrorCode&) /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:1476:5
+    #2 0x7ff1e941aded in icu_75::Calendar::complete(UErrorCode&) /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:1349:9
+    #3 0x7ff1e941a81c in icu_75::Calendar::get(UCalendarDateFields, UErrorCode&) const /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:1194:47
+    #4 0x7ff1e943c0d5 in icu_75::Calendar::getActualMaximum(UCalendarDateFields, UErrorCode&) const /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:3864:48
+    #5 0x7ff1e9758b16 in icu_75::GregorianCalendar::getActualMaximum(UCalendarDateFields, UErrorCode&) const /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/gregocal.cpp:1176:26
+    #6 0x7ff1e97709ed in icu_75::JapaneseCalendar::getActualMaximum(UCalendarDateFields, UErrorCode&) const /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/japancal.cpp:287:35
+    #7 0x7ff1e941e88f in icu_75::Calendar::pinField(UCalendarDateFields, UErrorCode&) /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:1399:19
+    #8 0x7ff1e94279f6 in icu_75::Calendar::roll(UCalendarDateFields, int, UErrorCode&) /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:1876:9
+    #9 0x7ff1e9757655 in icu_75::GregorianCalendar::roll(UCalendarDateFields, int, UErrorCode&) /tmp/icu-issue-22730_1/build/i18n/.././icu4c/source/i18n/gregocal.cpp:1041:19
+    #10 0x5edafc41f9df in main /tmp/icu-issue-22730_1/build/poc.cpp:14:13
+    #11 0x7ff1e679e1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x7ff1e679e28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x5edafc3f4444 in _start (/tmp/icu-issue-22730_1/build/poc+0x6444) (BuildId: f33fdb93efac0c3b6827315745ba6e4a92f37a12)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/japancal.cpp:231:33 

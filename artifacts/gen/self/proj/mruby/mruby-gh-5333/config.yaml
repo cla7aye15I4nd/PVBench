@@ -1,0 +1,14 @@
+id: mruby-gh-5333
+project: mruby
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: mruby
+trigger_commit: 20342714ea2d01687909aea3dbd2d43877e5a571
+patch:
+  commit: 28eb6271ba231fb8a6bfc2110b06e24c410bf8e1
+  date: '2021-02-10T20:03:34+09:00'
+reference:
+- https://github.com/mruby/mruby
+- https://github.com/mruby/mruby/issues/None
+- https://github.com/mruby/mruby/commit/20342714ea2d01687909aea3dbd2d43877e5a571
+- https://github.com/mruby/mruby/commit/28eb6271ba231fb8a6bfc2110b06e24c410bf8e1

@@ -1,0 +1,77 @@
+==20806==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50800000a38f at pc 0x6038cc868c13 bp 0x7ffcac79b860 sp 0x7ffcac79b008
+READ of size 1 at 0x50800000a38f thread T0
+    #0 0x6038cc868c12 in strcmp (/tmp/hdf5-commit-b07eb6e/build/poc+0x44c12) (BuildId: 5b3c0d73a148efb9eb6dcb794392cde0cb2b3cf0)
+    #1 0x73a7a7db3776 in H5G_node_cmp3 /tmp/hdf5-commit-b07eb6e/build/src/H5Gnode.c:484:12
+    #2 0x73a7a7a2957c in H5B_find /tmp/hdf5-commit-b07eb6e/build/src/H5B.c:347:12
+    #3 0x73a7a7dd7871 in H5G__stab_lookup /tmp/hdf5-commit-b07eb6e/build/src/H5Gstab.c:904:21
+    #4 0x73a7a7dc8b27 in H5G__obj_lookup /tmp/hdf5-commit-b07eb6e/build/src/H5Gobj.c:1155:25
+    #5 0x73a7a7de5b14 in H5G_traverse_real /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:593:29
+    #6 0x73a7a7de21b8 in H5G_traverse_slink /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:359:8
+    #7 0x73a7a7de15ad in H5G__traverse_special /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:417:12
+    #8 0x73a7a7de5dda in H5G_traverse_real /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:614:16
+    #9 0x73a7a7de47f8 in H5G_traverse /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:866:8
+    #10 0x73a7a7daa156 in H5G_loc_info /tmp/hdf5-commit-b07eb6e/build/src/H5Gloc.c:744:8
+    #11 0x73a7a7f0d3d2 in H5Oget_info_by_name /tmp/hdf5-commit-b07eb6e/build/src/H5O.c:671:8
+    #12 0x6038cc929b2b in main /tmp/hdf5-commit-b07eb6e/build/poc.c:20:15
+    #13 0x73a7a75551c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x73a7a755528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x6038cc8503e4 in _start (/tmp/hdf5-commit-b07eb6e/build/poc+0x2c3e4) (BuildId: 5b3c0d73a148efb9eb6dcb794392cde0cb2b3cf0)
+
+0x50800000a38f is located 911 bytes after 96-byte region [0x508000009fa0,0x50800000a000)
+allocated by thread T0 here:
+    #0 0x6038cc8eb233 in malloc (/tmp/hdf5-commit-b07eb6e/build/poc+0xc7233) (BuildId: 5b3c0d73a148efb9eb6dcb794392cde0cb2b3cf0)
+    #1 0x73a7a7f023b7 in H5MM_malloc /tmp/hdf5-commit-b07eb6e/build/src/H5MM.c:324:21
+    #2 0x73a7a7d3549e in H5FL_malloc /tmp/hdf5-commit-b07eb6e/build/src/H5FL.c:243:25
+    #3 0x73a7a7d3632a in H5FL_blk_malloc /tmp/hdf5-commit-b07eb6e/build/src/H5FL.c:921:47
+    #4 0x73a7a7e9407f in H5HL__cache_prefix_deserialize /tmp/hdf5-commit-b07eb6e/build/src/H5HLcache.c:458:44
+    #5 0x73a7a7aba967 in H5C_load_entry /tmp/hdf5-commit-b07eb6e/build/src/H5C.c:6876:25
+    #6 0x73a7a7ab4c4f in H5C_protect /tmp/hdf5-commit-b07eb6e/build/src/H5C.c:2556:29
+    #7 0x73a7a7a125b6 in H5AC_protect /tmp/hdf5-commit-b07eb6e/build/src/H5AC.c:1762:25
+    #8 0x73a7a7e8d536 in H5HL_protect /tmp/hdf5-commit-b07eb6e/build/src/H5HL.c:348:39
+    #9 0x73a7a7dd76a0 in H5G__stab_lookup /tmp/hdf5-commit-b07eb6e/build/src/H5Gstab.c:889:24
+    #10 0x73a7a7dc8b27 in H5G__obj_lookup /tmp/hdf5-commit-b07eb6e/build/src/H5Gobj.c:1155:25
+    #11 0x73a7a7de5b14 in H5G_traverse_real /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:593:29
+    #12 0x73a7a7de21b8 in H5G_traverse_slink /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:359:8
+    #13 0x73a7a7de15ad in H5G__traverse_special /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:417:12
+    #14 0x73a7a7de5dda in H5G_traverse_real /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:614:16
+    #15 0x73a7a7de47f8 in H5G_traverse /tmp/hdf5-commit-b07eb6e/build/src/H5Gtraverse.c:866:8
+    #16 0x73a7a7daa156 in H5G_loc_info /tmp/hdf5-commit-b07eb6e/build/src/H5Gloc.c:744:8
+    #17 0x73a7a7f0d3d2 in H5Oget_info_by_name /tmp/hdf5-commit-b07eb6e/build/src/H5O.c:671:8
+    #18 0x6038cc929b2b in main /tmp/hdf5-commit-b07eb6e/build/poc.c:20:15
+    #19 0x73a7a75551c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #20 0x73a7a755528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #21 0x6038cc8503e4 in _start (/tmp/hdf5-commit-b07eb6e/build/poc+0x2c3e4) (BuildId: 5b3c0d73a148efb9eb6dcb794392cde0cb2b3cf0)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow (/tmp/hdf5-commit-b07eb6e/build/poc+0x44c12) (BuildId: 5b3c0d73a148efb9eb6dcb794392cde0cb2b3cf0) in strcmp
+Shadow bytes around the buggy address:
+  0x50800000a100: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a180: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a200: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x50800000a380: fa[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a400: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a480: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a500: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a580: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x50800000a600: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==20806==ABORTING

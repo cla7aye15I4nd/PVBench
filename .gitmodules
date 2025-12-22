@@ -1,0 +1,6 @@
+[submodule "PatchAgent"]
+	path = PatchAgent
+	url = git@github.com:cla7aye15I4nd/PatchAgent.git
+[submodule "pvbench-v8"]
+	path = pvbench-v8
+	url = git@github.com:cla7aye15I4nd/pvbench-v8.git

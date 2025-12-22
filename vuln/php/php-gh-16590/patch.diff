@@ -1,0 +1,85 @@
+diff --git a/NEWS b/NEWS
+index fe3239269e..da14c247ee 100644
+--- a/NEWS
++++ b/NEWS
+@@ -49,6 +49,9 @@ PHP                                                                        NEWS
+ - Reflection:
+   . Fixed bug GH-16601 (Memory leak in Reflection constructors). (nielsdos)
+ 
++- Session:
++  . Fixed bug GH-16590 (UAF in session_encode()). (nielsdos)
++
+ - SPL:
+   . Fixed bug GH-16588 (UAF in Observer->serialize). (nielsdos)
+   . Fix GH-16477 (Segmentation fault when calling __debugInfo() after failed
+diff --git a/UPGRADING.INTERNALS b/UPGRADING.INTERNALS
+index 36096ebdd4..a186dbf77f 100644
+--- a/UPGRADING.INTERNALS
++++ b/UPGRADING.INTERNALS
+@@ -391,6 +391,8 @@ PHP 8.4 INTERNALS UPGRADE NOTES
+      needing to create a zend_string.
+    - The ext/session/php_session.h doesn't transitively include the
+      ext/hash/php_hash.h header anymore.
++   - It is no longer allowed to return out of the PS_ENCODE_LOOP macro.
++     Instead, you should break out of the loop instead.
+ 
+  i. ext/xml
+    - Made the expat compatibility wrapper XML_GetCurrentByteIndex return a long
+diff --git a/ext/session/php_session.h b/ext/session/php_session.h
+index 65bf7de204..dfa7632e5a 100644
+--- a/ext/session/php_session.h
++++ b/ext/session/php_session.h
+@@ -291,8 +291,13 @@ PHPAPI zend_result php_session_reset_id(void);
+ 	zend_ulong num_key;													\
+ 	zval *struc;
+ 
++/* Do not use a return statement in `code` because that may leak memory.
++ * Break out of the loop instead. */
+ #define PS_ENCODE_LOOP(code) do {									\
+-	HashTable *_ht = Z_ARRVAL_P(Z_REFVAL(PS(http_session_vars)));	\
++	zval _zv;														\
++	/* protect against user interference */							\
++	ZVAL_COPY(&_zv, Z_REFVAL(PS(http_session_vars)));				\
++	HashTable *_ht = Z_ARRVAL(_zv);									\
+ 	ZEND_HASH_FOREACH_KEY(_ht, num_key, key) {						\
+ 		if (key == NULL) {											\
+ 			php_error_docref(NULL, E_WARNING,						\
+@@ -303,6 +308,7 @@ PHPAPI zend_result php_session_reset_id(void);
+ 			code;		 											\
+ 		} 															\
+ 	} ZEND_HASH_FOREACH_END();										\
++	zval_ptr_dtor(&_zv);											\
+ } while(0)
+ 
+ PHPAPI ZEND_EXTERN_MODULE_GLOBALS(ps)
+diff --git a/ext/session/session.c b/ext/session/session.c
+index b23f1fce35..86e1cfa7c4 100644
+--- a/ext/session/session.c
++++ b/ext/session/session.c
+@@ -1056,6 +1056,7 @@ PS_SERIALIZER_ENCODE_FUNC(php) /* {{{ */
+ {
+ 	smart_str buf = {0};
+ 	php_serialize_data_t var_hash;
++	bool fail = false;
+ 	PS_ENCODE_VARS;
+ 
+ 	PHP_VAR_SERIALIZE_INIT(var_hash);
+@@ -1065,12 +1066,17 @@ PS_SERIALIZER_ENCODE_FUNC(php) /* {{{ */
+ 		if (memchr(ZSTR_VAL(key), PS_DELIMITER, ZSTR_LEN(key))) {
+ 			PHP_VAR_SERIALIZE_DESTROY(var_hash);
+ 			smart_str_free(&buf);
+-			return NULL;
++			fail = true;
++			break;
+ 		}
+ 		smart_str_appendc(&buf, PS_DELIMITER);
+ 		php_var_serialize(&buf, struc, &var_hash);
+ 	);
+ 
++	if (fail) {
++		return NULL;
++	}
++
+ 	smart_str_0(&buf);
+ 
+ 	PHP_VAR_SERIALIZE_DESTROY(var_hash);

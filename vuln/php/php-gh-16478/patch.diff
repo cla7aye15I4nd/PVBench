@@ -1,0 +1,28 @@
+diff --git a/NEWS b/NEWS
+index d173e4c141..b8ba02ad62 100644
+--- a/NEWS
++++ b/NEWS
+@@ -71,6 +71,7 @@ PHP                                                                        NEWS
+   . Fixed bug GH-16464 (Use-after-free in SplDoublyLinkedList::offsetSet()).
+     (ilutov)
+   . Fixed bug GH-16479 (Use-after-free in SplObjectStorage::setInfo()). (ilutov)
++  . Fixed bug GH-16478 (Use-after-free in SplFixedArray::unset()). (ilutov)
+ 
+ - Standard:
+   . Fixed bug GH-16293 (Failed assertion when throwing in assert() callback with
+diff --git a/ext/spl/spl_fixedarray.c b/ext/spl/spl_fixedarray.c
+index 7c08a189c6..bbee2b9370 100644
+--- a/ext/spl/spl_fixedarray.c
++++ b/ext/spl/spl_fixedarray.c
+@@ -484,8 +484,10 @@ static void spl_fixedarray_object_unset_dimension_helper(spl_fixedarray_object *
+ 		return;
+ 	} else {
+ 		intern->array.should_rebuild_properties = true;
+-		zval_ptr_dtor(&(intern->array.elements[index]));
++		zval garbage;
++		ZVAL_COPY_VALUE(&garbage, &intern->array.elements[index]);
+ 		ZVAL_NULL(&intern->array.elements[index]);
++		zval_ptr_dtor(&garbage);
+ 	}
+ }
+ 

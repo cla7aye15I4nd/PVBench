@@ -1,0 +1,36 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/ceval.c b/Python/ceval.c
+index beee5325cd6..98c312d6b86 100644
+--- a/Python/ceval.c
++++ b/Python/ceval.c
+@@ -1866,6 +1866,7 @@ _PyEval_Vector(PyThreadState *tstate, PyFunctionObject *func,
+ {
+     /* _PyEvalFramePushAndInit consumes the references
+      * to func, locals and all its arguments */
++#if !defined(Py_GIL_DISABLED)
+     Py_XINCREF(locals);
+     for (size_t i = 0; i < argcount; i++) {
+         Py_INCREF(args[i]);
+@@ -1876,6 +1877,8 @@ _PyEval_Vector(PyThreadState *tstate, PyFunctionObject *func,
+             Py_INCREF(args[i+argcount]);
+         }
+     }
++#endif
++
+     _PyInterpreterFrame *frame = _PyEvalFramePushAndInit_UnTagged(
+         tstate, PyStackRef_FromPyObjectNew(func), locals,
+         args, argcount, kwnames, NULL);

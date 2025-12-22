@@ -1,0 +1,14 @@
+id: icu-issue-22962_0
+project: icu
+sanitizer: UndefinedBehaviorSanitizer
+type: Integer Overflow
+binary: poc
+trigger_commit: bc7ccb0589f952d45ad9c853af3d1d10780a34ab
+patch:
+  commit: 0112e4292e5293c6211471a131552469ad6f9595
+  date: '2025-02-04T15:39:32-08:00'
+reference:
+- https://github.com/unicode-org/icu
+- https://unicode-org.atlassian.net/browse/ICU-22962
+- https://github.com/unicode-org/icu/commit/bc7ccb0589f952d45ad9c853af3d1d10780a34ab
+- https://github.com/unicode-org/icu/commit/0112e4292e5293c6211471a131552469ad6f9595

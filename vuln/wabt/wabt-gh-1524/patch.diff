@@ -1,0 +1,198 @@
+diff --git a/src/binary-reader-logging.cc b/src/binary-reader-logging.cc
+index b95aa2f8..b74dcf43 100644
+--- a/src/binary-reader-logging.cc
++++ b/src/binary-reader-logging.cc
+@@ -130,12 +130,13 @@ Result BinaryReaderLogging::BeginSection(Index section_index,
+   return reader_->BeginSection(section_index, section_type, size);
+ }
+ 
+-Result BinaryReaderLogging::BeginCustomSection(Offset size,
++Result BinaryReaderLogging::BeginCustomSection(Index section_index,
++                                               Offset size,
+                                                string_view section_name) {
+   LOGF("BeginCustomSection('" PRIstringview "', size: %" PRIzd ")\n",
+        WABT_PRINTF_STRING_VIEW_ARG(section_name), size);
+   Indent();
+-  return reader_->BeginCustomSection(size, section_name);
++  return reader_->BeginCustomSection(section_index, size, section_name);
+ }
+ 
+ Result BinaryReaderLogging::OnFuncType(Index index,
+diff --git a/src/binary-reader-logging.h b/src/binary-reader-logging.h
+index af7a92ba..a461572b 100644
+--- a/src/binary-reader-logging.h
++++ b/src/binary-reader-logging.h
+@@ -37,7 +37,9 @@ class BinaryReaderLogging : public BinaryReaderDelegate {
+                       BinarySection section_type,
+                       Offset size) override;
+ 
+-  Result BeginCustomSection(Offset size, string_view section_name) override;
++  Result BeginCustomSection(Index section_index,
++                            Offset size,
++                            string_view section_name) override;
+   Result EndCustomSection() override;
+ 
+   Result BeginTypeSection(Offset size) override;
+diff --git a/src/binary-reader-nop.h b/src/binary-reader-nop.h
+index e186ed1e..492687bd 100644
+--- a/src/binary-reader-nop.h
++++ b/src/binary-reader-nop.h
+@@ -36,7 +36,9 @@ class BinaryReaderNop : public BinaryReaderDelegate {
+   }
+ 
+   /* Custom section */
+-  Result BeginCustomSection(Offset size, string_view section_name) override {
++  Result BeginCustomSection(Index section_index,
++                            Offset size,
++                            string_view section_name) override {
+     return Result::Ok;
+   }
+   Result EndCustomSection() override { return Result::Ok; }
+diff --git a/src/binary-reader-objdump.cc b/src/binary-reader-objdump.cc
+index 931db76a..649358d6 100644
+--- a/src/binary-reader-objdump.cc
++++ b/src/binary-reader-objdump.cc
+@@ -205,14 +205,16 @@ class BinaryReaderObjdumpPrepass : public BinaryReaderObjdumpBase {
+                       Offset size) override {
+     BinaryReaderObjdumpBase::BeginSection(section_index, section_code, size);
+     if (section_code != BinarySection::Custom) {
+-      objdump_state_->section_names.push_back(
+-          wabt::GetSectionName(section_code));
++      objdump_state_->section_names.Set(section_index,
++                                        wabt::GetSectionName(section_code));
+     }
+     return Result::Ok;
+   }
+ 
+-  Result BeginCustomSection(Offset size, string_view section_name) override {
+-    objdump_state_->section_names.push_back(section_name);
++  Result BeginCustomSection(Index section_index,
++                            Offset size,
++                            string_view section_name) override {
++    objdump_state_->section_names.Set(section_index, section_name);
+     return Result::Ok;
+   }
+ 
+@@ -734,7 +736,9 @@ class BinaryReaderObjdump : public BinaryReaderObjdumpBase {
+   Result BeginSection(Index section_index,
+                       BinarySection section_type,
+                       Offset size) override;
+-  Result BeginCustomSection(Offset size, string_view section_name) override;
++  Result BeginCustomSection(Index section_index,
++                            Offset size,
++                            string_view section_name) override;
+ 
+   Result OnTypeCount(Index count) override;
+   Result OnFuncType(Index index,
+@@ -932,7 +936,8 @@ BinaryReaderObjdump::BinaryReaderObjdump(const uint8_t* data,
+     : BinaryReaderObjdumpBase(data, size, options, objdump_state),
+       out_stream_(FileStream::CreateStdout()) {}
+ 
+-Result BinaryReaderObjdump::BeginCustomSection(Offset size,
++Result BinaryReaderObjdump::BeginCustomSection(Index section_index,
++                                               Offset size,
+                                                string_view section_name) {
+   PrintDetails(" - name: \"" PRIstringview "\"\n",
+                WABT_PRINTF_STRING_VIEW_ARG(section_name));
+@@ -1854,20 +1859,16 @@ Result BinaryReaderObjdump::OnEventType(Index index, Index sig_index) {
+ }  // end anonymous namespace
+ 
+ string_view ObjdumpNames::Get(Index index) const {
+-  return index < names.size() ? names[index] : string_view();
++  auto iter = names.find(index);
++  if (iter == names.end())
++    return string_view();
++  return iter->second;
+ }
+ 
+ void ObjdumpNames::Set(Index index, string_view name) {
+-  if (names.size() <= index) {
+-    names.resize(index + 1);
+-  }
+   names[index] = name.to_string();
+ }
+ 
+-void ObjdumpNames::push_back(string_view name) {
+-  names.push_back(name.to_string());
+-}
+-
+ Result ReadBinaryObjdump(const uint8_t* data,
+                          size_t size,
+                          ObjdumpOptions* options,
+diff --git a/src/binary-reader-objdump.h b/src/binary-reader-objdump.h
+index 8c609474..b1e24f81 100644
+--- a/src/binary-reader-objdump.h
++++ b/src/binary-reader-objdump.h
+@@ -17,8 +17,8 @@
+ #ifndef WABT_BINARY_READER_OBJDUMP_H_
+ #define WABT_BINARY_READER_OBJDUMP_H_
+ 
++#include <map>
+ #include <string>
+-#include <vector>
+ 
+ #include "src/common.h"
+ #include "src/feature.h"
+@@ -59,9 +59,8 @@ struct ObjdumpSymbol {
+ struct ObjdumpNames {
+   string_view Get(Index index) const;
+   void Set(Index index, string_view name);
+-  void push_back(string_view name);
+ 
+-  std::vector<std::string> names;
++  std::map<Index, std::string> names;
+ };
+ 
+ // read_binary_objdump uses this state to store information from previous runs
+diff --git a/src/binary-reader.cc b/src/binary-reader.cc
+index 27d6b85c..d782eabf 100644
+--- a/src/binary-reader.cc
++++ b/src/binary-reader.cc
+@@ -133,7 +133,8 @@ class BinaryReader {
+   Result ReadRelocSection(Offset section_size) WABT_WARN_UNUSED;
+   Result ReadDylinkSection(Offset section_size) WABT_WARN_UNUSED;
+   Result ReadLinkingSection(Offset section_size) WABT_WARN_UNUSED;
+-  Result ReadCustomSection(Offset section_size) WABT_WARN_UNUSED;
++  Result ReadCustomSection(Index section_index,
++                           Offset section_size) WABT_WARN_UNUSED;
+   Result ReadTypeSection(Offset section_size) WABT_WARN_UNUSED;
+   Result ReadImportSection(Offset section_size) WABT_WARN_UNUSED;
+   Result ReadFunctionSection(Offset section_size) WABT_WARN_UNUSED;
+@@ -1973,10 +1974,11 @@ Result BinaryReader::ReadEventSection(Offset section_size) {
+   return Result::Ok;
+ }
+ 
+-Result BinaryReader::ReadCustomSection(Offset section_size) {
++Result BinaryReader::ReadCustomSection(Index section_index,
++                                       Offset section_size) {
+   string_view section_name;
+   CHECK_RESULT(ReadStr(&section_name, "section name"));
+-  CALLBACK(BeginCustomSection, section_size, section_name);
++  CALLBACK(BeginCustomSection, section_index, section_size, section_name);
+   ValueRestoreGuard<bool, &BinaryReader::reading_custom_section_> guard(this);
+   reading_custom_section_ = true;
+ 
+@@ -2458,7 +2460,7 @@ Result BinaryReader::ReadSections() {
+     Result section_result = Result::Error;
+     switch (section) {
+       case BinarySection::Custom:
+-        section_result = ReadCustomSection(section_size);
++        section_result = ReadCustomSection(section_index, section_size);
+         if (options_.fail_on_custom_section_error) {
+           result |= section_result;
+         } else {
+diff --git a/src/binary-reader.h b/src/binary-reader.h
+index 9525867a..1c3fcf12 100644
+--- a/src/binary-reader.h
++++ b/src/binary-reader.h
+@@ -83,7 +83,9 @@ class BinaryReaderDelegate {
+                               Offset size) = 0;
+ 
+   /* Custom section */
+-  virtual Result BeginCustomSection(Offset size, string_view section_name) = 0;
++  virtual Result BeginCustomSection(Index section_index,
++                                    Offset size,
++                                    string_view section_name) = 0;
+   virtual Result EndCustomSection() = 0;
+ 
+   /* Type section */

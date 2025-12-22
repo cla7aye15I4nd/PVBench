@@ -1,0 +1,142 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8c8273fc7a3..bf30502d55e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -159,3 +159,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 6d06208dd1d..8e9a287cfcd 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2491,6 +2491,9 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
++    if (self->task_coro == NULL) {
++        Py_RETURN_NONE;
++    }
+     return Py_NewRef(self->task_coro);
+ }
+ 
+@@ -2502,6 +2505,9 @@ static PyObject *
+ _asyncio_Task_get_context_impl(TaskObj *self)
+ /*[clinic end generated code: output=6996f53d3dc01aef input=87c0b209b8fceeeb]*/
+ {
++    if (self->task_context == NULL) {
++        Py_RETURN_NONE;
++    }
+     return Py_NewRef(self->task_context);
+ }
+ 
+diff --git a/Objects/exceptions.c b/Objects/exceptions.c
+index 48623451c0d..08a665922b0 100644
+--- a/Objects/exceptions.c
++++ b/Objects/exceptions.c
+@@ -118,6 +118,9 @@ BaseException_traverse(PyBaseExceptionObject *self, visitproc visit, void *arg)
+ static PyObject *
+ BaseException_str(PyBaseExceptionObject *self)
+ {
++    if (self->args == NULL) {
++        return PyUnicode_FromString("");
++    }
+     switch (PyTuple_GET_SIZE(self->args)) {
+     case 0:
+         return PyUnicode_FromString("");
+@@ -132,6 +135,9 @@ static PyObject *
+ BaseException_repr(PyBaseExceptionObject *self)
+ {
+     const char *name = _PyType_Name(Py_TYPE(self));
++    if (self->args == NULL) {
++        return PyUnicode_FromFormat("%s()", name);
++    }
+     if (PyTuple_GET_SIZE(self->args) == 1)
+         return PyUnicode_FromFormat("%s(%R)", name,
+                                     PyTuple_GET_ITEM(self->args, 0));
+diff --git a/build_script.sh b/build_script.sh
+new file mode 100755
+index 00000000000..272bc9741fc
+--- /dev/null
++++ b/build_script.sh
+@@ -0,0 +1,7 @@
++#!/bin/bash -eu
++export CFLAGS="-fsanitize=address"
++export CXXFLAGS="-fsanitize=address" 
++export LDFLAGS="-fsanitize=address"
++./configure --without-pymalloc
++ASAN_OPTIONS=detect_leaks=0 make -j$(nproc)
++test -f python
+diff --git a/run_script.sh b/run_script.sh
+new file mode 100755
+index 00000000000..586d3cd0052
+--- /dev/null
++++ b/run_script.sh
+@@ -0,0 +1,3 @@
++#!/bin/bash -eu
++export ASAN_OPTIONS=detect_leaks=0,allocator_may_return_null=1
++TERM=xterm ./python $1
+diff --git a/test_fix.py b/test_fix.py
+new file mode 100644
+index 00000000000..018c0ca8968
+--- /dev/null
++++ b/test_fix.py
+@@ -0,0 +1,51 @@
++#!/usr/bin/env python3
++
++# Test that BaseException str and repr work correctly
++import asyncio
++
++# Test BaseException str/repr functionality
++try:
++    # Test normal exception
++    e = Exception("test message")
++    print(f"Normal exception str: {str(e)}")
++    print(f"Normal exception repr: {repr(e)}")
++    
++    # Test exception with no args
++    e2 = Exception()
++    print(f"No args exception str: {str(e2)}")
++    print(f"No args exception repr: {repr(e2)}")
++    
++    # Test exception with multiple args
++    e3 = Exception("arg1", "arg2", "arg3")
++    print(f"Multi args exception str: {str(e3)}")
++    print(f"Multi args exception repr: {repr(e3)}")
++    
++except Exception as e:
++    print(f"Error in exception tests: {e}")
++
++# Test asyncio Task functionality
++async def test_task():
++    try:
++        # Create a simple coroutine
++        async def simple_coro():
++            return "Hello World"
++        
++        # Create and run a task
++        task = asyncio.create_task(simple_coro())
++        result = await task
++        print(f"Task result: {result}")
++        
++        # Test task properties
++        print(f"Task coro: {task.get_coro()}")
++        print(f"Task context: {task.get_context()}")
++        
++    except Exception as e:
++        print(f"Error in asyncio tests: {e}")
++
++# Run the asyncio test
++try:
++    asyncio.run(test_task())
++except Exception as e:
++    print(f"Error running asyncio test: {e}")
++
++print("Test completed successfully!")

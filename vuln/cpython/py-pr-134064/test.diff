@@ -1,0 +1,18 @@
+diff --git a/Lib/test/test_sys.py b/Lib/test/test_sys.py
+index 8af2e3488b4..fb1c8492a64 100644
+--- a/Lib/test/test_sys.py
++++ b/Lib/test/test_sys.py
+@@ -2176,6 +2176,13 @@ def test_remote_exec_invalid_pid(self):
+         with self.assertRaises(OSError):
+             sys.remote_exec(99999, "print('should not run')")
+ 
++    def test_remote_exec_invalid_script(self):
++        """Test remote exec with invalid script type"""
++        with self.assertRaises(TypeError):
++            sys.remote_exec(0, None)
++        with self.assertRaises(TypeError):
++            sys.remote_exec(0, 123)
++
+     def test_remote_exec_syntax_error(self):
+         """Test remote exec with syntax error in script"""
+         script = '''

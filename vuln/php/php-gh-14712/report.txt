@@ -1,0 +1,18 @@
+==302227==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x000000000000 bp 0x7ffc6b2e5580 sp 0x7ffc6b2e4d98 T0)
+==302227==Hint: pc points to the zero page.
+==302227==The signal is caused by a READ memory access.
+==302227==Hint: address points to the zero page.
+    #0 0x0  (<unknown module>)
+    #1 0x5609d90ff09f in execute_ex /php-gh-14712/build/Zend/zend_vm_execute.h:55866:7
+    #2 0x5609d9100836 in zend_execute /php-gh-14712/build/Zend/zend_vm_execute.h:60439:2
+    #3 0x5609d8fe0ed6 in zend_execute_scripts /php-gh-14712/build/Zend/zend.c:1840:4
+    #4 0x5609d8d85f0b in php_execute_script /php-gh-14712/build/main/main.c:2578:13
+    #5 0x5609d9909acc in do_cli /php-gh-14712/build/sapi/cli/php_cli.c:964:5
+    #6 0x5609d9907a89 in main /php-gh-14712/build/sapi/cli/php_cli.c:1333:18
+    #7 0x7f97eb3541c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x7f97eb35428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x5609d8003164 in _start (/php-gh-14712/build/sapi/cli/php+0x403164) (BuildId: 4ca20a7a239e45df72c9584215cc9f04793d6ded)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (<unknown module>) 
+==302227==ABORTING

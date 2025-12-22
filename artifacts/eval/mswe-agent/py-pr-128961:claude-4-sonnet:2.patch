@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/arraymodule.c b/Modules/arraymodule.c
+index b80c964f20d..a77c3e26deb 100644
+--- a/Modules/arraymodule.c
++++ b/Modules/arraymodule.c
+@@ -3092,8 +3092,10 @@ array_arrayiterator___setstate__(arrayiterobject *self, PyObject *state)
+         return NULL;
+     if (index < 0)
+         index = 0;
+-    else if (index > Py_SIZE(self->ao))
++    else if (self->ao != NULL && index > Py_SIZE(self->ao))
+         index = Py_SIZE(self->ao); /* iterator exhausted */
++    else if (self->ao == NULL)
++        index = 0; /* iterator exhausted, no array object */
+     self->index = index;
+     Py_RETURN_NONE;
+ }

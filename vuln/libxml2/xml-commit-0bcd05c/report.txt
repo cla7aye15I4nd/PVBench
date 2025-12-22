@@ -1,0 +1,68 @@
+==12854==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x521000002500 at pc 0x631dc825a1ba bp 0x7ffe18167dd0 sp 0x7ffe18167dc8
+READ of size 1 at 0x521000002500 thread T0
+    #0 0x631dc825a1b9 in htmlCurrentChar /tmp/xml-commit-0bcd05c/build/HTMLparser.c:440:6
+    #1 0x631dc825eb58 in htmlParseCharDataInternal /tmp/xml-commit-0bcd05c/build/HTMLparser.c:3055:8
+    #2 0x631dc82691d6 in htmlParseCharData /tmp/xml-commit-0bcd05c/build/HTMLparser.c:3105:5
+    #3 0x631dc8243409 in htmlParseContentInternal /tmp/xml-commit-0bcd05c/build/HTMLparser.c:4678:3
+    #4 0x631dc8245505 in htmlParseDocument /tmp/xml-commit-0bcd05c/build/HTMLparser.c:4813:5
+    #5 0x631dc82582e5 in htmlDoRead /tmp/xml-commit-0bcd05c/build/HTMLparser.c:6785:5
+    #6 0x631dc825850d in htmlReadFile /tmp/xml-commit-0bcd05c/build/HTMLparser.c:6843:13
+    #7 0x631dc80ba742 in parseAndPrintFile /tmp/xml-commit-0bcd05c/build/xmllint.c:2255:8
+    #8 0x631dc80b6b2e in main /tmp/xml-commit-0bcd05c/build/xmllint.c:3767:7
+    #9 0x7f8b7c00b1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x7f8b7c00b28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x631dc7fd8654 in _start (/tmp/xml-commit-0bcd05c/build/xmllint+0x9c654) (BuildId: 06e24b53c3711a96d327e0879c6ba19d88ee967b)
+
+0x521000002500 is located 0 bytes after 4096-byte region [0x521000001500,0x521000002500)
+allocated by thread T0 here:
+    #0 0x631dc80734a3 in malloc (/tmp/xml-commit-0bcd05c/build/xmllint+0x1374a3) (BuildId: 06e24b53c3711a96d327e0879c6ba19d88ee967b)
+    #1 0x631dc83673fb in xmlBufCreate /tmp/xml-commit-0bcd05c/build/buf.c:137:32
+    #2 0x631dc80ea715 in xmlSwitchInputEncodingInt /tmp/xml-commit-0bcd05c/build/parserInternals.c:1205:34
+    #3 0x631dc80e9aed in xmlSwitchToEncodingInt /tmp/xml-commit-0bcd05c/build/parserInternals.c:1281:12
+    #4 0x631dc80e994f in xmlSwitchEncoding /tmp/xml-commit-0bcd05c/build/parserInternals.c:1101:11
+    #5 0x631dc825b205 in htmlCurrentChar /tmp/xml-commit-0bcd05c/build/HTMLparser.c:519:13
+    #6 0x631dc825dbf5 in htmlParseCharDataInternal /tmp/xml-commit-0bcd05c/build/HTMLparser.c:3016:11
+    #7 0x631dc82691d6 in htmlParseCharData /tmp/xml-commit-0bcd05c/build/HTMLparser.c:3105:5
+    #8 0x631dc8243409 in htmlParseContentInternal /tmp/xml-commit-0bcd05c/build/HTMLparser.c:4678:3
+    #9 0x631dc8245505 in htmlParseDocument /tmp/xml-commit-0bcd05c/build/HTMLparser.c:4813:5
+    #10 0x631dc82582e5 in htmlDoRead /tmp/xml-commit-0bcd05c/build/HTMLparser.c:6785:5
+    #11 0x631dc825850d in htmlReadFile /tmp/xml-commit-0bcd05c/build/HTMLparser.c:6843:13
+    #12 0x631dc80ba742 in parseAndPrintFile /tmp/xml-commit-0bcd05c/build/xmllint.c:2255:8
+    #13 0x631dc80b6b2e in main /tmp/xml-commit-0bcd05c/build/xmllint.c:3767:7
+    #14 0x7f8b7c00b1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x7f8b7c00b28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #16 0x631dc7fd8654 in _start (/tmp/xml-commit-0bcd05c/build/xmllint+0x9c654) (BuildId: 06e24b53c3711a96d327e0879c6ba19d88ee967b)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/xml-commit-0bcd05c/build/HTMLparser.c:440:6 in htmlCurrentChar
+Shadow bytes around the buggy address:
+  0x521000002280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x521000002300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x521000002380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x521000002400: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x521000002480: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x521000002500:[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000002580: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000002600: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000002680: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000002700: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x521000002780: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12854==ABORTING

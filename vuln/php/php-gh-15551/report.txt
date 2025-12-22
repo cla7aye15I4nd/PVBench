@@ -1,0 +1,19 @@
+==402798==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x55f16ae5e993 bp 0x7ffeb10e2480 sp 0x7ffeb10e2160 T0)
+==402798==The signal is caused by a READ memory access.
+==402798==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x55f16ae5e993 in php_dom_iterator_move_forward /php-gh-15551/build/ext/dom/dom_iterators.c:194:32
+    #1 0x55f16bf51b6f in zim_InternalIterator_next /php-gh-15551/build/Zend/zend_interfaces.c:600:2
+    #2 0x55f16bc9d2df in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-15551/build/Zend/zend_vm_execute.h:1842:4
+    #3 0x55f16bb0129f in execute_ex /php-gh-15551/build/Zend/zend_vm_execute.h:55866:7
+    #4 0x55f16bb02a36 in zend_execute /php-gh-15551/build/Zend/zend_vm_execute.h:60439:2
+    #5 0x55f16b9e2f76 in zend_execute_scripts /php-gh-15551/build/Zend/zend.c:1840:4
+    #6 0x55f16b786d4b in php_execute_script /php-gh-15551/build/main/main.c:2578:13
+    #7 0x55f16c30d15c in do_cli /php-gh-15551/build/sapi/cli/php_cli.c:964:5
+    #8 0x55f16c30b119 in main /php-gh-15551/build/sapi/cli/php_cli.c:1333:18
+    #9 0x7f66cc4b41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x7f66cc4b428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x55f16aa03184 in _start (/php-gh-15551/build/sapi/cli/php+0x403184) (BuildId: 43feff1cbb03b78a92ba416986ea927c52ad9a77)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-15551/build/ext/dom/dom_iterators.c:194:32 in php_dom_iterator_move_forward
+==402798==ABORTING

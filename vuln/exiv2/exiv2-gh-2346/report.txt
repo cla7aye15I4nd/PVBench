@@ -1,0 +1,68 @@
+==2399==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x602000000415 at pc 0x7d9142c4459d bp 0x7ffe7d441870 sp 0x7ffe7d441018
+WRITE of size 24 at 0x602000000415 thread T0
+    #0 0x7d9142c4459c in __interceptor_fread ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:989
+    #1 0x7d914228fc50 in Exiv2::FileIo::read(unsigned char*, unsigned long) /tmp/exiv2-gh-2346/build/src/basicio.cpp:530
+    #2 0x7d914228b148 in Exiv2::BasicIo::readOrThrow(unsigned char*, unsigned long, Exiv2::ErrorCode) /tmp/exiv2-gh-2346/build/src/basicio.cpp:63
+    #3 0x7d91424e6f96 in Exiv2::QuickTimeVideo::tagDecoder(Exiv2::DataBuf&, unsigned long) /tmp/exiv2-gh-2346/build/src/quicktimevideo.cpp:623
+    #4 0x7d91424e6856 in Exiv2::QuickTimeVideo::decodeBlock(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-2346/build/src/quicktimevideo.cpp:571
+    #5 0x7d91424e5f4d in Exiv2::QuickTimeVideo::readMetadata() /tmp/exiv2-gh-2346/build/src/quicktimevideo.cpp:529
+    #6 0x580a99b0d2fb in Action::Print::printSummary() /tmp/exiv2-gh-2346/build/app/actions.cpp:237
+    #7 0x580a99b0cb33 in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-2346/build/app/actions.cpp:204
+    #8 0x580a99a929d8 in main /tmp/exiv2-gh-2346/build/app/exiv2.cpp:168
+    #9 0x7d91419251c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    #10 0x7d914192528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)
+    #11 0x580a99a92104 in _start (/tmp/exiv2-gh-2346/build/build/bin/exiv2+0x6a104)
+
+0x602000000415 is located 0 bytes to the right of 5-byte region [0x602000000410,0x602000000415)
+allocated by thread T0 here:
+    #0 0x7d9142ce8587 in operator new(unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cc:104
+    #1 0x580a99ab848e in __gnu_cxx::new_allocator<unsigned char>::allocate(unsigned long, void const*) (/tmp/exiv2-gh-2346/build/build/bin/exiv2+0x9048e)
+    #2 0x580a99ab5e93 in std::allocator_traits<std::allocator<unsigned char> >::allocate(std::allocator<unsigned char>&, unsigned long) (/tmp/exiv2-gh-2346/build/build/bin/exiv2+0x8de93)
+    #3 0x580a99ab2ce5 in std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_allocate(unsigned long) (/tmp/exiv2-gh-2346/build/build/bin/exiv2+0x8ace5)
+    #4 0x580a99ab296a in std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_M_create_storage(unsigned long) (/tmp/exiv2-gh-2346/build/build/bin/exiv2+0x8a96a)
+    #5 0x580a99aadfc4 in std::_Vector_base<unsigned char, std::allocator<unsigned char> >::_Vector_base(unsigned long, std::allocator<unsigned char> const&) (/tmp/exiv2-gh-2346/build/build/bin/exiv2+0x85fc4)
+    #6 0x580a99aa8a74 in std::vector<unsigned char, std::allocator<unsigned char> >::vector(unsigned long, std::allocator<unsigned char> const&) (/tmp/exiv2-gh-2346/build/build/bin/exiv2+0x80a74)
+    #7 0x7d91424641f1 in Exiv2::DataBuf::DataBuf(unsigned long) /tmp/exiv2-gh-2346/build/src/types.cpp:93
+    #8 0x7d91424e63aa in Exiv2::QuickTimeVideo::decodeBlock(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-2346/build/src/quicktimevideo.cpp:536
+    #9 0x7d91424e5f4d in Exiv2::QuickTimeVideo::readMetadata() /tmp/exiv2-gh-2346/build/src/quicktimevideo.cpp:529
+    #10 0x580a99b0d2fb in Action::Print::printSummary() /tmp/exiv2-gh-2346/build/app/actions.cpp:237
+    #11 0x580a99b0cb33 in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-2346/build/app/actions.cpp:204
+    #12 0x580a99a929d8 in main /tmp/exiv2-gh-2346/build/app/exiv2.cpp:168
+    #13 0x7d91419251c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    #14 0x7d914192528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)
+    #15 0x580a99a92104 in _start (/tmp/exiv2-gh-2346/build/build/bin/exiv2+0x6a104)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:989 in __interceptor_fread
+Shadow bytes around the buggy address:
+  0x0c047fff8030: fa fa fd fd fa fa fd fd fa fa fd fd fa fa fd fd
+  0x0c047fff8040: fa fa fd fd fa fa fd fd fa fa fd fa fa fa fd fa
+  0x0c047fff8050: fa fa fd fd fa fa fd fd fa fa 00 00 fa fa 00 00
+  0x0c047fff8060: fa fa 00 00 fa fa 00 00 fa fa 00 00 fa fa 00 00
+  0x0c047fff8070: fa fa fd fd fa fa fd fd fa fa 00 00 fa fa 00 00
+=>0x0c047fff8080: fa fa[05]fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8090: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff80a0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff80b0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff80c0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff80d0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==2399==ABORTING

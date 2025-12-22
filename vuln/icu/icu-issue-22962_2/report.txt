@@ -1,0 +1,9 @@
+runtime error: signed integer overflow: 2146335658 + 2440588 cannot be represented in type 'int'
+    #0 0x7f7034547478 in icu_77::ChineseCalendar::offsetMonth(int, int, int, UErrorCode&) /tmp/icu-issue-22962_2/build/i18n/.././icu4c/source/i18n/chnsecal.cpp:1048:26
+    #1 0x7f703454450b in icu_77::ChineseCalendar::add(UCalendarDateFields, int, UErrorCode&) /tmp/icu-issue-22962_2/build/i18n/.././icu4c/source/i18n/chnsecal.cpp:413:13
+    #2 0x60697a8deccd in main /tmp/icu-issue-22962_2/build/poc.cpp:18:10
+    #3 0x7f703178f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #4 0x7f703178f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x60697a8b3434 in _start (/tmp/icu-issue-22962_2/build/poc+0x6434) (BuildId: 60eb290273b902692525a641799d6aa1e2619202)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/chnsecal.cpp:1048:26 

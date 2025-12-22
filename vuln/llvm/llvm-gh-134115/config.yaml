@@ -1,0 +1,14 @@
+id: llvm-gh-134115
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: Integer Overflow
+trigger_commit: 6388a7acf7e31fdc7b9c168bd6ce0f4d25c98cd0
+binary: opt
+patch:
+  commit: 0547e84181ff10b24d6363bbfc97f168fe245397
+  date: '2025-04-23T15:56:24-07:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/134115
+- https://github.com/llvm/llvm-project/commit/6388a7acf7e31fdc7b9c168bd6ce0f4d25c98cd0
+- https://github.com/llvm/llvm-project/commit/0547e84181ff10b24d6363bbfc97f168fe245397

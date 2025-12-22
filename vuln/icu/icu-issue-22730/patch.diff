@@ -1,0 +1,86 @@
+diff --git a/icu4c/source/i18n/cecal.cpp b/icu4c/source/i18n/cecal.cpp
+index b550684b798..7771c32efb3 100644
+--- a/icu4c/source/i18n/cecal.cpp
++++ b/icu4c/source/i18n/cecal.cpp
+@@ -110,12 +110,16 @@ CECalendar::handleGetLimit(UCalendarDateFields field, ELimitType limitType) cons
+ //-------------------------------------------------------------------------
+ 
+ void
+-CECalendar::jdToCE(int32_t julianDay, int32_t jdEpochOffset, int32_t& year, int32_t& month, int32_t& day)
++CECalendar::jdToCE(int32_t julianDay, int32_t jdEpochOffset, int32_t& year, int32_t& month, int32_t& day, UErrorCode& status)
+ {
+     int32_t c4; // number of 4 year cycle (1461 days)
+     int32_t r4; // remainder of 4 year cycle, always positive
+ 
+-    c4 = ClockMath::floorDivide(julianDay - jdEpochOffset, 1461, &r4);
++    if (uprv_add32_overflow(julianDay, -jdEpochOffset, &julianDay)) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++        return;
++    }
++    c4 = ClockMath::floorDivide(julianDay, 1461, &r4);
+ 
+     year = 4 * c4 + (r4/365 - r4/1460); // 4 * <number of 4year cycle> + <years within the last cycle>
+ 
+diff --git a/icu4c/source/i18n/cecal.h b/icu4c/source/i18n/cecal.h
+index 8f634e79635..9c3332f3b84 100644
+--- a/icu4c/source/i18n/cecal.h
++++ b/icu4c/source/i18n/cecal.h
+@@ -126,7 +126,7 @@ class U_I18N_API CECalendar : public Calendar {
+      * @internal
+      */
+     static void jdToCE(int32_t julianDay, int32_t jdEpochOffset,
+-        int32_t& year, int32_t& month, int32_t& day);
++        int32_t& year, int32_t& month, int32_t& day, UErrorCode& status);
+ };
+ 
+ U_NAMESPACE_END
+diff --git a/icu4c/source/i18n/coptccal.cpp b/icu4c/source/i18n/coptccal.cpp
+index 343bcbc3293..feb9ff6d41c 100644
+--- a/icu4c/source/i18n/coptccal.cpp
++++ b/icu4c/source/i18n/coptccal.cpp
+@@ -79,10 +79,11 @@ CopticCalendar::handleGetExtendedYear(UErrorCode& status)
+ }
+ 
+ void
+-CopticCalendar::handleComputeFields(int32_t julianDay, UErrorCode &/*status*/)
++CopticCalendar::handleComputeFields(int32_t julianDay, UErrorCode& status)
+ {
+     int32_t eyear, month, day, era, year;
+-    jdToCE(julianDay, getJDEpochOffset(), eyear, month, day);
++    jdToCE(julianDay, getJDEpochOffset(), eyear, month, day, status);
++    if (U_FAILURE(status)) return;
+ 
+     if (eyear <= 0) {
+         era = BCE;
+diff --git a/icu4c/source/i18n/ethpccal.cpp b/icu4c/source/i18n/ethpccal.cpp
+index 41b70767044..770df614afb 100644
+--- a/icu4c/source/i18n/ethpccal.cpp
++++ b/icu4c/source/i18n/ethpccal.cpp
+@@ -80,10 +80,11 @@ EthiopicCalendar::handleGetExtendedYear(UErrorCode& status)
+ }
+ 
+ void
+-EthiopicCalendar::handleComputeFields(int32_t julianDay, UErrorCode &/*status*/)
++EthiopicCalendar::handleComputeFields(int32_t julianDay, UErrorCode& status)
+ {
+     int32_t eyear, month, day;
+-    jdToCE(julianDay, getJDEpochOffset(), eyear, month, day);
++    jdToCE(julianDay, getJDEpochOffset(), eyear, month, day, status);
++    if (U_FAILURE(status)) return;
+ 
+     internalSet(UCAL_EXTENDED_YEAR, eyear);
+     internalSet(UCAL_ERA, (eyear > 0) ? AMETE_MIHRET : AMETE_ALEM);
+@@ -171,10 +172,11 @@ EthiopicAmeteAlemCalendar::handleGetExtendedYear(UErrorCode& status)
+ }
+ 
+ void
+-EthiopicAmeteAlemCalendar::handleComputeFields(int32_t julianDay, UErrorCode &/*status*/)
++EthiopicAmeteAlemCalendar::handleComputeFields(int32_t julianDay, UErrorCode& status)
+ {
+     int32_t eyear, month, day;
+-    jdToCE(julianDay, getJDEpochOffset(), eyear, month, day);
++    jdToCE(julianDay, getJDEpochOffset(), eyear, month, day, status);
++    if (U_FAILURE(status)) return;
+ 
+     internalSet(UCAL_EXTENDED_YEAR, eyear);
+     internalSet(UCAL_ERA, AMETE_ALEM);

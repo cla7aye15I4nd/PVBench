@@ -1,0 +1,14 @@
+id: llvm-gh-137152
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: Heap Buffer Overflow
+trigger_commit: 224cd50e005a9215e8c528d5ce68d4fcdfcdb98f
+binary: opt
+patch:
+  commit: 57530c23a53b5e003d389437637f61c5b9814e22
+  date: '2025-04-24T15:15:47+02:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/137152
+- https://github.com/llvm/llvm-project/commit/224cd50e005a9215e8c528d5ce68d4fcdfcdb98f
+- https://github.com/llvm/llvm-project/commit/57530c23a53b5e003d389437637f61c5b9814e22

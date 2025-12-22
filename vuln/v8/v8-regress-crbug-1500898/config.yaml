@@ -1,0 +1,13 @@
+id: v8-regress-crbug-1500898
+project: v8
+sanitizer: V8Sanitizer
+type: Reachable Assertion
+trigger_commit: 2d6e2bd5293624379214d831cdf82a336b820828
+binary: d8
+patch:
+  commit: edd9a860d2317f981cc81b230b256e0b1e28fae7
+  date: 2023-11-13 11:21:29+00:00
+reference:
+- https://chromium.googlesource.com/v8/v8.git
+- https://chromium.googlesource.com/v8/v8.git/+/2d6e2bd5293624379214d831cdf82a336b820828
+- https://chromium.googlesource.com/v8/v8.git/+/edd9a860d2317f981cc81b230b256e0b1e28fae7

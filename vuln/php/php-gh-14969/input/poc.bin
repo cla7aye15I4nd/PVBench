@@ -1,0 +1,33 @@
+<?php
+
+class C {
+    public function __toString() {
+        global $c;
+        $c = [];
+        throw new Exception(__METHOD__);
+    }
+}
+
+class D {
+    public string $prop;
+}
+
+$c = new C();
+$d = new D();
+try {
+    $d->prop = $c;
+} catch (Throwable $e) {
+    echo $e->getMessage(), "\n";
+}
+var_dump($d);
+
+$c = new C();
+$d->prop = 'foo';
+try {
+    $d->prop = $c;
+} catch (Throwable $e) {
+    echo $e->getMessage(), "\n";
+}
+var_dump($d);
+
+?>

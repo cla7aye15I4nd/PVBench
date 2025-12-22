@@ -1,0 +1,12 @@
+<?php
+$xml = '<?xml version="1.0" encoding="utf-8" ?>
+<test>
+</test>';
+$root = simplexml_load_string($xml);
+try {
+    $root->__construct("malformed");
+} catch (Exception $e) {
+    // Intentionally empty
+}
+echo $root;
+?>

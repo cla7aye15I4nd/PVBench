@@ -1,0 +1,13 @@
+id: xml-commit-7482f41
+project: libxml2
+sanitizer: UndefinedBehaviorSanitizer
+type: Integer Overflow
+binary: xmllint
+trigger_commit: 863b57925a5a2cd45a12ceb935dd82a411ab746e
+patch:
+  commit: 7482f41f61d733656d588b4d8c300b1ecdff7f5f
+  date: '2017-06-01T22:00:19+02:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/863b57925a5a2cd45a12ceb935dd82a411ab746e
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/7482f41f61d733656d588b4d8c300b1ecdff7f5f

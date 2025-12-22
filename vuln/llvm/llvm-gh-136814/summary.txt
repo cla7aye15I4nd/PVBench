@@ -1,0 +1,19 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+clang-format: /tmp/llvm-gh-136814/build/clang/lib/Format/UnwrappedLineParser.cpp:1189: void clang::format::UnwrappedLineParser::parsePPDefine(): Assertion `(int)Line->PPLevel >= 0' failed.
+Stack dump:
+0.	Program arguments: ./build/bin/clang-format /testcases/llvm-gh-136814/input/poc.cpp "--style={IndentPPDirectives: BeforeHash}"
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:880:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - clang::format::UnwrappedLineParser::parsePPDefine() clang/lib/Format/UnwrappedLineParser.cpp:1190:7
+    - clang::format::UnwrappedLineParser::parsePPDirective() clang/lib/Format/UnwrappedLineParser.cpp:1010:5
+    - clang::format::UnwrappedLineParser::readToken(int) clang/lib/Format/UnwrappedLineParser.cpp:4886:28
+    - clang::format::UnwrappedLineParser::parse() clang/lib/Format/UnwrappedLineParser.cpp:212:14
+    - clang::format::TokenAnalyzer::process(bool) clang/lib/Format/TokenAnalyzer.cpp:114:3
+    - clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*)::'lambda5'(clang::format::Environment const&)::operator()(clang::format::Environment const&) const clang/lib/Format/Format.cpp:3866:16
+    - clang::format::internal::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, unsigned int, unsigned int, unsigned int, llvm::StringRef, clang::format::FormattingAttemptStatus*) clang/lib/Format/Format.cpp:3914:9
+    - clang::format::reformat(clang::format::FormatStyle const&, llvm::StringRef, llvm::ArrayRef<clang::tooling::Range>, llvm::StringRef, clang::format::FormattingAttemptStatus*) clang/lib/Format/Format.cpp:3956:28
+    - clang::format::format(llvm::StringRef, bool) clang/tools/clang-format/ClangFormat.cpp:510:76
+    - main clang/tools/clang-format/ClangFormat.cpp:738:11

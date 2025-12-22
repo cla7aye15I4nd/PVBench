@@ -1,0 +1,90 @@
+
+diff --git a/.gitignore b/.gitignore
+index 02b6d1ad7..15fa78f8f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -28,3 +28,13 @@ contrib/vms/.vagrant
+ CMakeUserPresets.json
+ 
+ *cppcheck*
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/quicktimevideo.cpp b/src/quicktimevideo.cpp
+index 352fe4b0d..ff31c228e 100644
+--- a/src/quicktimevideo.cpp
++++ b/src/quicktimevideo.cpp
+@@ -830,7 +830,8 @@ void QuickTimeVideo::userDataDecoder(size_t size_external) {
+     else if (equalsQTimeTag(buf, "CNCV") || equalsQTimeTag(buf, "CNFV") || equalsQTimeTag(buf, "CNMN") ||
+              equalsQTimeTag(buf, "NCHD") || equalsQTimeTag(buf, "FFMV")) {
+       io_->readOrThrow(buf.data(), size - 8);
+-      xmpData_[exvGettext(tv->label_)] = Exiv2::toString(buf.data());
++      if (tv)
++        xmpData_[exvGettext(tv->label_)] = Exiv2::toString(buf.data());
+     }
+ 
+     else if (equalsQTimeTag(buf, "CMbo") || equalsQTimeTag(buf, "Cmbo")) {
+@@ -838,11 +839,14 @@ void QuickTimeVideo::userDataDecoder(size_t size_external) {
+       buf.data()[2] = '\0';
+       tv_internal = find(cameraByteOrderTags, Exiv2::toString(buf.data()));
+ 
+-      if (tv_internal)
+-        xmpData_[exvGettext(tv->label_)] = exvGettext(tv_internal->label_);
+-      else
+-        xmpData_[exvGettext(tv->label_)] = Exiv2::toString(buf.data());
++      if (tv) {
++        if (tv_internal)
++          xmpData_[exvGettext(tv->label_)] = exvGettext(tv_internal->label_);
++        else
++          xmpData_[exvGettext(tv->label_)] = Exiv2::toString(buf.data());
++      }
+     }
++    
+ 
+     else if (tv) {
+       const size_t tv_size = size - 12;
+diff --git a/test_fix.sh b/test_fix.sh
+new file mode 100755
+index 000000000..ff63a0c3c
+--- /dev/null
++++ b/test_fix.sh
+@@ -0,0 +1,32 @@
++#!/bin/bash
++echo "Testing NULL pointer dereference fix in QuickTimeVideo::userDataDecoder"
++echo "======================================================================="
++
++# Build with AddressSanitizer
++echo "Building with AddressSanitizer..."
++cd build
++CFLAGS="-fsanitize=address" CXXFLAGS="-fsanitize=address" LDFLAGS="-fsanitize=address" cmake .. -DCMAKE_INSTALL_PREFIX=$(pwd)/exiv2-build > /dev/null 2>&1
++make -j$(nproc) > /dev/null 2>&1
++
++echo "Testing with POC file that previously caused NULL pointer dereference..."
++# Test with the POC file - should handle gracefully now instead of crashing
++./bin/exiv2 /home/poc/0.bin 2>&1 | grep -q "corrupted image metadata"
++if [ $? -eq 0 ]; then
++    echo "✓ PASS: POC file handled gracefully with exception (no crash)"
++else
++    echo "✗ FAIL: Unexpected behavior with POC file"
++fi
++
++echo "Testing with valid video file..."
++# Test with a valid file to ensure normal functionality works
++./bin/exiv2 ../test/data/small_video.mp4 > /dev/null 2>&1
++if [ $? -eq 0 ]; then
++    echo "✓ PASS: Valid video file processed successfully"
++else
++    echo "✗ FAIL: Valid video file processing failed"
++fi
++
++echo "======================================================================="
++echo "Fix summary: Added NULL pointer checks before accessing tv->label_ in"
++echo "QuickTimeVideo::userDataDecoder() function at lines 833 and 842-847"
++echo "This prevents segmentation fault when 'tv' is NULL (tag not found)"

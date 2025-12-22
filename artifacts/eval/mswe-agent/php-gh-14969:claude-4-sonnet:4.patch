@@ -1,0 +1,84 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..d3493556eaf 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -555,14 +555,19 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
++					/* Copy the data to avoid use-after-free when destroying it */
++					zval tmp;
++					ZVAL_COPY_VALUE(&tmp, data);
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+ 					if (spl_array_is_object(intern)) {
+ 						spl_array_skip_protected(intern, ht);
+ 					}
++					/* Now destroy the copied data safely */
++					zval_ptr_dtor(&tmp);
+ 				}
++
+ 			} else {
+ 				zend_hash_del(ht, key.key);
+ 			}
+diff --git a/test_fix.php b/test_fix.php
+new file mode 100644
+index 00000000000..34432d748e0
+--- /dev/null
++++ b/test_fix.php
+@@ -0,0 +1,35 @@
++<?php
++// Test script to verify ArrayObject functionality still works correctly
++
++echo "Testing ArrayObject functionality...\n";
++
++// Test 1: Basic unset operation
++$arr = new ArrayObject(['a' => 1, 'b' => 2, 'c' => 3]);
++echo "Before unset: ";
++var_dump($arr->getArrayCopy());
++unset($arr['b']);
++echo "After unset: ";
++var_dump($arr->getArrayCopy());
++
++// Test 2: Unset with object references
++class TestClass {
++    public $value;
++    public function __construct($val) {
++        $this->value = $val;
++    }
++    public function __destruct() {
++        echo "TestClass with value {$this->value} destroyed\n";
++    }
++}
++
++$arr2 = new ArrayObject();
++$arr2['obj1'] = new TestClass(1);
++$arr2['obj2'] = new TestClass(2);
++echo "Before unset obj1: ";
++var_dump(array_keys($arr2->getArrayCopy()));
++unset($arr2['obj1']);
++echo "After unset obj1: ";
++var_dump(array_keys($arr2->getArrayCopy()));
++
++echo "Test completed successfully!\n";
++?>

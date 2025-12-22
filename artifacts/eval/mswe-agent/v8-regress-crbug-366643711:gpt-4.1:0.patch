@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index 9142623efa8..926f616c81e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -124,3 +124,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/js-atomics-synchronization.cc b/src/objects/js-atomics-synchronization.cc
+index d091021dbd5..bccb6bdf1b2 100644
+--- a/src/objects/js-atomics-synchronization.cc
++++ b/src/objects/js-atomics-synchronization.cc
+@@ -1236,6 +1236,8 @@ uint32_t JSAtomicsCondition::Notify(Isolate* requester,
+         if (count == kAllWaiters) {
+           old_head = *waiter_head;
+           *waiter_head = nullptr;
++        } else if (count == 0) {
++          old_head = nullptr;
+         } else {
+           old_head = WaiterQueueNode::Split(waiter_head, count);
+         }

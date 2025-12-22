@@ -1,0 +1,14 @@
+id: exiv2-gh-2007
+project: exiv2
+sanitizer: UndefinedBehaviorSanitizer
+type: Integer Overflow
+binary: exiv2
+trigger_commit: aebb3fb2c0903b5d8a70c27a3ab547f6979c5797
+patch:
+  commit: 65fad9db0e034b88cdf68983ee5079ff9459e9de
+  date: '2021-12-06T10:31:20+00:00'
+reference:
+- https://github.com/Exiv2/exiv2
+- https://github.com/Exiv2/exiv2/issues/2007
+- https://github.com/Exiv2/exiv2/commit/aebb3fb2c0903b5d8a70c27a3ab547f6979c5797
+- https://github.com/Exiv2/exiv2/commit/65fad9db0e034b88cdf68983ee5079ff9459e9de

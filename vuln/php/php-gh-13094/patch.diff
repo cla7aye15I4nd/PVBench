@@ -1,0 +1,33 @@
+diff --git a/NEWS b/NEWS
+index acb5462c57..07378d091d 100644
+--- a/NEWS
++++ b/NEWS
+@@ -4,9 +4,13 @@ PHP                                                                        NEWS
+ 
+ - Core:
+   . Fixed timer leak in zend-max-execution-timers builds. (withinboredom)
++
+ - Phar:
+   . Fixed bug #71465 (PHAR doesn't know about litespeed). (nielsdos)
+ 
++- Standard:
++  . Fixed bug GH-13094 (range(9.9, '0') causes segmentation fault). (nielsdos)
++
+ 18 Jan 2024, PHP 8.3.2
+ 
+ - Core:
+diff --git a/ext/standard/array.c b/ext/standard/array.c
+index eee260f224..76e33e9868 100644
+--- a/ext/standard/array.c
++++ b/ext/standard/array.c
+@@ -2924,8 +2924,8 @@ PHP_FUNCTION(range)
+ 
+ 	/* If the range is given as strings, generate an array of characters. */
+ 	if (start_type >= IS_STRING || end_type >= IS_STRING) {
+-		/* If one of the inputs is NOT a string */
+-		if (UNEXPECTED(start_type + end_type < 2*IS_STRING)) {
++		/* If one of the inputs is NOT a string nor single-byte string */
++		if (UNEXPECTED(start_type < IS_STRING || end_type < IS_STRING)) {
+ 			if (start_type < IS_STRING) {
+ 				if (end_type != IS_ARRAY) {
+ 					php_error_docref(NULL, E_WARNING, "Argument #1 ($start) must be a single byte string if"

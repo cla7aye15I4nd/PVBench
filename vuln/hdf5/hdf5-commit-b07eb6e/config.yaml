@@ -1,0 +1,14 @@
+id: hdf5-commit-b07eb6e
+project: hdf5
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: poc
+trigger_commit: a6d5bf1a86250cc660cd1ed420eeda6940792be5
+patch:
+  commit: b07eb6efd06bbe44562fe6c93e826f40a56c01d2
+  date: '2017-08-22T01:36:20-05:00'
+reference:
+- https://github.com/HDFGroup/hdf5
+- https://github.com/HDFGroup/hdf5/issues/None
+- https://github.com/HDFGroup/hdf5/commit/a6d5bf1a86250cc660cd1ed420eeda6940792be5
+- https://github.com/HDFGroup/hdf5/commit/b07eb6efd06bbe44562fe6c93e826f40a56c01d2

@@ -1,0 +1,29 @@
+#
+# Fatal error in ../../src/compiler/machine-operator.cc, line 199
+# Debug check failed: IrOpcode::kLoad == op->opcode() || IrOpcode::kProtectedLoad == op->opcode() || IrOpcode::kLoadTrapOnNull == op->opcode() || IrOpcode::kUnalignedLoad == op->opcode() || IrOpcode::kLoadImmutable == op->opcode().
+#
+#
+#
+#FailureMessage Object: 0x7fee435bc460
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x75) [0x55d9a99d62e5]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x55d9b034a983]
+    out/debug_asan/d8(+0x92c1f9a) [0x55d9b0347f9a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x26f) [0x55d9b03062ff]
+    out/debug_asan/d8(+0x927f22f) [0x55d9b030522f]
+    out/debug_asan/d8(v8::internal::compiler::LoadRepresentationOf(v8::internal::compiler::Operator const*)+0x8f) [0x55d9ae4c448f]
+    out/debug_asan/d8(v8::internal::compiler::InstructionSelectorT<v8::internal::compiler::TurbofanAdapter>::VisitWord32And(v8::internal::compiler::Node*)+0x479) [0x55d9ae853d99]
+    out/debug_asan/d8(v8::internal::compiler::InstructionSelectorT<v8::internal::compiler::TurbofanAdapter>::VisitBlock(v8::internal::compiler::BasicBlock*)+0x7c7) [0x55d9adbfcd97]
+    out/debug_asan/d8(v8::internal::compiler::InstructionSelectorT<v8::internal::compiler::TurbofanAdapter>::SelectInstructions()+0x7ff) [0x55d9adbfadef]
+    out/debug_asan/d8(v8::internal::compiler::InstructionSelectionPhase::Run(v8::internal::compiler::PipelineData*, v8::internal::Zone*, v8::internal::compiler::Linkage*)+0x3e9) [0x55d9ae5eef99]
+    out/debug_asan/d8(auto v8::internal::compiler::PipelineImpl::Run<v8::internal::compiler::InstructionSelectionPhase, v8::internal::compiler::Linkage*&>(v8::internal::compiler::Linkage*&)+0x205) [0x55d9ae5c1ea5]
+    out/debug_asan/d8(v8::internal::compiler::PipelineImpl::SelectInstructions(v8::internal::compiler::Linkage*)+0xc19) [0x55d9ae5a32b9]
+    out/debug_asan/d8(v8::internal::compiler::Pipeline::GenerateCodeForWasmFunction(v8::internal::OptimizedCompilationInfo*, v8::internal::wasm::CompilationEnv*, v8::internal::compiler::WasmCompilationData&, v8::internal::compiler::MachineGraph*, v8::internal::compiler::CallDescriptor*, v8::internal::ZoneVector<v8::internal::WasmInliningPosition>*, v8::internal::wasm::WasmFeatures*)+0x2cab) [0x55d9ae5b17cb]
+    out/debug_asan/d8(v8::internal::compiler::ExecuteTurbofanWasmCompilation(v8::internal::wasm::CompilationEnv*, v8::internal::compiler::WasmCompilationData&, v8::internal::Counters*, v8::internal::wasm::WasmFeatures*)+0xde1) [0x55d9aebde081]
+    out/debug_asan/d8(v8::internal::wasm::WasmCompilationUnit::ExecuteFunctionCompilation(v8::internal::wasm::CompilationEnv*, v8::internal::wasm::WireBytesStorage const*, v8::internal::Counters*, v8::internal::wasm::WasmFeatures*)+0x1429) [0x55d9acedd3a9]
+    out/debug_asan/d8(v8::internal::wasm::WasmCompilationUnit::ExecuteCompilation(v8::internal::wasm::CompilationEnv*, v8::internal::wasm::WireBytesStorage const*, v8::internal::Counters*, v8::internal::wasm::WasmFeatures*)+0x3ea) [0x55d9acedb05a]
+    out/debug_asan/d8(v8::internal::wasm::CompileLazy(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::WasmInstanceObject>, int)+0xa1d) [0x55d9acf94f5d]
+    out/debug_asan/d8(+0x5b60d0a) [0x55d9acbe6d0a]
+    out/debug_asan/d8(v8::internal::Runtime_WasmCompileLazy(int, unsigned long*, v8::internal::Isolate*)+0x146) [0x55d9acbe5a26]
+    out/debug_asan/d8(+0x8884dae) [0x55d9af90adae]

@@ -1,0 +1,25 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/ast/scopes.cc, line 2691
+# Check failed: NeedsContext().
+#
+#
+#
+#FailureMessage Object: 0x7fdcd6809060
+==== C stack trace ===============================
+
+    out/debug_asan/d8(___interceptor_backtrace+0x46) [0x555af04148d6]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x555af73e8ff3]
+    out/debug_asan/d8(+0xa639e5a) [0x555af73e6e5a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x555af73b43a0]
+    out/debug_asan/d8(void v8::internal::Scope::AllocateScopeInfosRecursively<v8::internal::Isolate>(v8::internal::Isolate*, v8::internal::MaybeHandle<v8::internal::ScopeInfo>, std::__Cr::unordered_map<int, v8::internal::Handle<v8::internal::ScopeInfo>, std::__Cr::hash<int>, std::__Cr::equal_to<int>, std::__Cr::allocator<std::__Cr::pair<int const, v8::internal::Handle<v8::internal::ScopeInfo>>>>&)+0x1669) [0x555af073a969]
+    out/debug_asan/d8(void v8::internal::DeclarationScope::AllocateScopeInfos<v8::internal::Isolate>(v8::internal::ParseInfo*, v8::internal::Handle<v8::internal::Script>, v8::internal::Isolate*)+0x9b0) [0x555af073de70]
+    out/debug_asan/d8(+0x3d4746d) [0x555af0af446d]
+    out/debug_asan/d8(+0x3d4d76c) [0x555af0afa76c]
+    out/debug_asan/d8(+0x3d78ff6) [0x555af0b25ff6]
+    out/debug_asan/d8(+0x3d54113) [0x555af0b01113]
+    out/debug_asan/d8(v8::internal::Compiler::GetSharedFunctionInfoForScript(v8::internal::Isolate*, v8::internal::Handle<v8::internal::String>, v8::internal::ScriptDetails const&, v8::ScriptCompiler::CompileOptions, v8::ScriptCompiler::NoCacheReason, v8::internal::NativesFlag, v8::ScriptCompiler::CompilationDetails*)+0x33) [0x555af0b00703]
+    out/debug_asan/d8(v8::ScriptCompiler::CompileUnboundInternal(v8::Isolate*, v8::ScriptCompiler::Source*, v8::ScriptCompiler::CompileOptions, v8::ScriptCompiler::NoCacheReason)+0x773) [0x555af05996c3]
+    out/debug_asan/d8(v8::Shell::RealmEval(v8::FunctionCallbackInfo<v8::Value> const&)+0x2d9) [0x555af04f41a9]
+    out/debug_asan/d8(+0x9936aae) [0x555af66e3aae]

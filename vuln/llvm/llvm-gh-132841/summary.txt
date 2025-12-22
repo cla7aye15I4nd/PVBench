@@ -1,0 +1,41 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+opt: /tmp/llvm-gh-132841/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:15114: llvm::Instruction& llvm::slpvectorizer::BoUpSLP::getLastInstructionInBundle(const TreeEntry*): Assertion `E->getOpcode() == Instruction::PHI && "Expected PHI"' failed.
+Stack dump:
+0.	Program arguments: ./build/bin/opt -passes slp-vectorizer /testcases/llvm-gh-132841/input/poc.ll
+1.	Running pass "function(slp-vectorizer)" on module "/testcases/llvm-gh-132841/input/poc.ll"
+2.	Running pass "slp-vectorizer" on function "_Z1sv"
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:880:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - llvm::slpvectorizer::BoUpSLP::getLastInstructionInBundle(llvm::slpvectorizer::BoUpSLP::TreeEntry const*) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:15135:8
+    - llvm::slpvectorizer::BoUpSLP::setInsertPointAfterBundle(llvm::slpvectorizer::BoUpSLP::TreeEntry const*) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:15143:56
+    - llvm::slpvectorizer::BoUpSLP::vectorizeTree(llvm::slpvectorizer::BoUpSLP::TreeEntry*) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:17064:36
+    - llvm::slpvectorizer::BoUpSLP::createBuildVector(llvm::slpvectorizer::BoUpSLP::TreeEntry const*, llvm::Type*) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:16471:3
+    - llvm::slpvectorizer::BoUpSLP::vectorizeTree(llvm::slpvectorizer::BoUpSLP::TreeEntry*) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:16506:35
+    - llvm::slpvectorizer::BoUpSLP::vectorizeOperand(llvm::slpvectorizer::BoUpSLP::TreeEntry*, unsigned int) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:15975:32
+    - llvm::slpvectorizer::BoUpSLP::vectorizeTree(llvm::slpvectorizer::BoUpSLP::TreeEntry*) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:16681:38
+    - llvm::slpvectorizer::BoUpSLP::vectorizeOperand(llvm::slpvectorizer::BoUpSLP::TreeEntry*, unsigned int) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:15908:29
+    - llvm::slpvectorizer::BoUpSLP::vectorizeTree(llvm::slpvectorizer::BoUpSLP::TreeEntry*) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:17204:41
+    - llvm::slpvectorizer::BoUpSLP::vectorizeTree(llvm::SmallDenseSet<llvm::Value*, 4u, llvm::DenseMapInfo<llvm::Value*, void>> const&, llvm::Instruction*, llvm::ArrayRef<std::tuple<llvm::Value*, unsigned int, bool>>) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:17549:76
+    - llvm::slpvectorizer::BoUpSLP::vectorizeTree() llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:17513:23
+    - llvm::SLPVectorizerPass::vectorizeStoreChain(llvm::ArrayRef<llvm::Value*>, llvm::slpvectorizer::BoUpSLP&, unsigned int, unsigned int, unsigned int&) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:19902:12
+    - llvm::SLPVectorizerPass::vectorizeStores(llvm::ArrayRef<llvm::StoreInst*>, llvm::slpvectorizer::BoUpSLP&, llvm::DenseSet<std::tuple<llvm::Value*, llvm::Value*, llvm::Value*, llvm::Value*, unsigned int>, llvm::DenseMapInfo<std::tuple<llvm::Value*, llvm::Value*, llvm::Value*, llvm::Value*, unsigned int>, void>>&)::'lambda'(std::set<std::pair<unsigned int, int>, llvm::SLPVectorizerPass::vectorizeStores(llvm::ArrayRef<llvm::StoreInst*>, llvm::slpvectorizer::BoUpSLP&, llvm::DenseSet<std::tuple<llvm::Value*, llvm::Value*, llvm::Value*, llvm::Value*, unsigned int>, llvm::DenseMapInfo<std::tuple<llvm::Value*, llvm::Value*, llvm::Value*, llvm::Value*, unsigned int>, void>>&)::StoreDistCompare, std::allocator<std::pair<unsigned int, int>>> const&)::operator()(std::set<std::pair<unsigned int, int>, llvm::SLPVectorizerPass::vectorizeStores(llvm::ArrayRef<llvm::StoreInst*>, llvm::slpvectorizer::BoUpSLP&, llvm::DenseSet<std::tuple<llvm::Value*, llvm::Value*, llvm::Value*, llvm::Value*, unsigned int>, llvm::DenseMapInfo<std::tuple<llvm::Value*, llvm::Value*, llvm::Value*, llvm::Value*, unsigned int>, void>>&)::StoreDistCompare, std::allocator<std::pair<unsigned int, int>>> const&) const llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:20112:38
+    - llvm::SLPVectorizerPass::vectorizeStores(llvm::ArrayRef<llvm::StoreInst*>, llvm::slpvectorizer::BoUpSLP&, llvm::DenseSet<std::tuple<llvm::Value*, llvm::Value*, llvm::Value*, llvm::Value*, unsigned int>, llvm::DenseMapInfo<std::tuple<llvm::Value*, llvm::Value*, llvm::Value*, llvm::Value*, unsigned int>, void>>&) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:20340:3
+    - llvm::SLPVectorizerPass::vectorizeStoreChains(llvm::slpvectorizer::BoUpSLP&)::'lambda'(llvm::ArrayRef<llvm::StoreInst*>, bool)::operator()(llvm::ArrayRef<llvm::StoreInst*>, bool) const llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:23490:9
+    - bool llvm::function_ref<bool (llvm::ArrayRef<llvm::StoreInst*>, bool)>::callback_fn<llvm::SLPVectorizerPass::vectorizeStoreChains(llvm::slpvectorizer::BoUpSLP&)::'lambda'(llvm::ArrayRef<llvm::StoreInst*>, bool)>(long, llvm::ArrayRef<llvm::StoreInst*>, bool) llvm/include/llvm/ADT/STLFunctionalExtras.h:48:3
+    - llvm::function_ref<bool (llvm::ArrayRef<llvm::StoreInst*>, bool)>::operator()(llvm::ArrayRef<llvm::StoreInst*>, bool) const llvm/include/llvm/ADT/STLFunctionalExtras.h:70:3
+    - bool tryToVectorizeSequence<llvm::StoreInst>(llvm::SmallVectorImpl<llvm::StoreInst*>&, llvm::function_ref<bool (llvm::StoreInst*, llvm::StoreInst*)>, llvm::function_ref<bool (llvm::StoreInst*, llvm::StoreInst*)>, llvm::function_ref<bool (llvm::ArrayRef<llvm::StoreInst*>, bool)>, bool, llvm::slpvectorizer::BoUpSLP&) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:22699:21
+    - llvm::SLPVectorizerPass::vectorizeStoreChains(llvm::slpvectorizer::BoUpSLP&) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:23486:49
+    - llvm::SLPVectorizerPass::runImpl(llvm::Function&, llvm::ScalarEvolution*, llvm::TargetTransformInfo*, llvm::TargetLibraryInfo*, llvm::AAResults*, llvm::LoopInfo*, llvm::DominatorTree*, llvm::AssumptionCache*, llvm::DemandedBits*, llvm::OptimizationRemarkEmitter*) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:19790:15
+    - llvm::SLPVectorizerPass::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:19722:25
+    - llvm::detail::PassModel<llvm::Function, llvm::SLPVectorizerPass, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) llvm/include/llvm/IR/PassManagerInternal.h:92:3
+    - llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) llvm/include/llvm/IR/PassManagerImpl.h:85:18
+    - llvm::detail::PassModel<llvm::Function, llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) llvm/include/llvm/IR/PassManagerInternal.h:92:3
+    - llvm::ModuleToFunctionPassAdaptor::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/lib/IR/PassManager.cpp:129:23
+    - llvm::detail::PassModel<llvm::Module, llvm::ModuleToFunctionPassAdaptor, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/include/llvm/IR/PassManagerInternal.h:92:3
+    - llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/include/llvm/IR/PassManagerImpl.h:85:18
+    - llvm::runPassPipeline(llvm::StringRef, llvm::Module&, llvm::TargetMachine*, llvm::TargetLibraryInfoImpl*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::StringRef, llvm::ArrayRef<llvm::PassPlugin>, llvm::ArrayRef<std::function<void (llvm::PassBuilder&)>>, llvm::opt_tool::OutputKind, llvm::opt_tool::VerifierKind, bool, bool, bool, bool, bool, bool, bool) llvm/tools/opt/NewPMDriver.cpp:554:10
+    - optMain llvm/tools/opt/optdriver.cpp:725:27
+    - main llvm/tools/opt/opt.cpp:25:64

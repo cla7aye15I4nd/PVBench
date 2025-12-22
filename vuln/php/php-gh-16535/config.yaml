@@ -1,0 +1,14 @@
+id: php-gh-16535
+project: php
+sanitizer: LeakAddressSanitizer
+type: Double Free
+trigger_commit: a0a7361b648eb3f528c2d22c4ac708f9bd01a336
+binary: php
+patch:
+  commit: 51b642f2c9dcb976b10e7557f5e21b020b94c7f0
+  date: '2024-10-21T20:56:14+02:00'
+reference:
+- https://github.com/php/php-src.git
+- https://github.com/php/php-src/issues/16535
+- https://github.com/php/php-src/commit/a0a7361b648eb3f528c2d22c4ac708f9bd01a336
+- https://github.com/php/php-src/commit/51b642f2c9dcb976b10e7557f5e21b020b94c7f0

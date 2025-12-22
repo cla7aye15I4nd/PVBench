@@ -1,0 +1,23 @@
+diff --git a/Lib/test/test_asyncio/test_eager_task_factory.py b/Lib/test/test_asyncio/test_eager_task_factory.py
+index 0f8212dbec4..0777f39b572 100644
+--- a/Lib/test/test_asyncio/test_eager_task_factory.py
++++ b/Lib/test/test_asyncio/test_eager_task_factory.py
+@@ -241,6 +241,18 @@ class DummyLoop:
+         _, out, err = assert_python_ok("-c", code)
+         self.assertFalse(err)
+ 
++    def test_issue122332(self):
++       async def coro():
++           pass
++
++       async def run():
++           task = self.loop.create_task(coro())
++           await task
++           self.assertIsNone(task.get_coro())
++
++       self.run_coro(run())
++
++
+ class AsyncTaskCounter:
+     def __init__(self, loop, *, task_class, eager):
+         self.suspense_count = 0

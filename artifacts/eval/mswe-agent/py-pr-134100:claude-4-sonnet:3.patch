@@ -1,0 +1,37 @@
+
+diff --git a/.gitignore b/.gitignore
+index 2a6f249275c..b3c9b7a4ed8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -173,3 +173,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/import.c b/Python/import.c
+index 9dec0f488a3..11bc9c9dc5b 100644
+--- a/Python/import.c
++++ b/Python/import.c
+@@ -3854,15 +3854,16 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
+                 }
+ 
+                 final_mod = import_get_module(tstate, to_return);
+-                Py_DECREF(to_return);
+                 if (final_mod == NULL) {
+                     if (!_PyErr_Occurred(tstate)) {
+                         _PyErr_Format(tstate, PyExc_KeyError,
+                                       "%R not in sys.modules as expected",
+                                       to_return);
+                     }
++                    Py_DECREF(to_return);
+                     goto error;
+                 }
++                Py_DECREF(to_return);
+             }
+         }
+         else {

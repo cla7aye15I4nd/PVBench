@@ -1,0 +1,35 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 257de4387c0..10df38e43d3 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -761,9 +761,13 @@ flush_unmatched(ProfilerObject *pObj)
+         if (pContext)
+             PyMem_Free(pContext);
+     }
+-
++    while (pObj->freelistProfilerContext) {
++        ProfilerContext *c = pObj->freelistProfilerContext;
++        pObj->freelistProfilerContext = c->previous;
++        PyMem_Free(c);
++    }
++    pObj->freelistProfilerContext = NULL;
+ }
+-
+ PyDoc_STRVAR(disable_doc, "\
+ disable()\n\
+ \n\

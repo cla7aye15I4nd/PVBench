@@ -1,0 +1,91 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/pdo_sqlite/sqlite_driver.c b/ext/pdo_sqlite/sqlite_driver.c
+index de5170a35a9..0cccf3f7981 100644
+--- a/ext/pdo_sqlite/sqlite_driver.c
++++ b/ext/pdo_sqlite/sqlite_driver.c
+@@ -751,7 +751,7 @@ static char *make_filename_safe(const char *filename)
+ 		}
+ 		return estrdup(filename);
+ 	}
+-	if (*filename && memcmp(filename, ":memory:", sizeof(":memory:"))) {
++        if (*filename && strcmp(filename, ":memory:")) {
+ 		char *fullpath = expand_filepath(filename, NULL);
+ 
+ 		if (!fullpath) {
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..e58f52a841c 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -27,7 +27,7 @@
+ #include "zend_exceptions.h"
+ 
+ #include "php_spl.h"
+-#include "spl_functions.h"
++#define SPL_ARRAY_INT_MASK (SPL_ARRAY_STD_PROP_LIST|SPL_ARRAY_ARRAY_AS_PROPS|SPL_ARRAY_CHILD_ARRAYS_ONLY|SPL_ARRAY_IS_SELF|SPL_ARRAY_USE_OTHER|SPL_ARRAY_IS_DESTRUCTING)
+ #include "spl_iterators.h"
+ #include "spl_array.h"
+ #include "spl_array_arginfo.h"
+@@ -132,14 +132,16 @@ static zend_always_inline uint32_t *spl_array_get_pos_ptr(HashTable *ht, spl_arr
+ static void spl_array_object_free_storage(zend_object *object)
+ {
+ 	spl_array_object *intern = spl_array_from_obj(object);
+-
++    intern->ar_flags |= SPL_ARRAY_IS_DESTRUCTING;
+ 	if (intern->ht_iter != (uint32_t) -1) {
+ 		zend_hash_iterator_del(intern->ht_iter);
+ 	}
+ 
+ 	zend_object_std_dtor(&intern->std);
+ 
+-	zval_ptr_dtor(&intern->array);
++    if (!(intern->ar_flags & SPL_ARRAY_USE_OTHER)) {
++        zval_ptr_dtor(&intern->array);
++    }
+ }
+ /* }}} */
+ 
+@@ -530,6 +532,14 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	HashTable *ht;
+ 	spl_array_object *intern = spl_array_from_obj(object);
+ 	spl_hash_key key;
++    if (intern->ar_flags & SPL_ARRAY_IS_DESTRUCTING) {
++        return;
++    }
++    if (intern->std.ce == NULL) {
++        return;
++    }
++
++
+ 
+ 	if (check_inherited && intern->fptr_offset_del) {
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
+diff --git a/ext/spl/spl_array.h b/ext/spl/spl_array.h
+index e3ea2d3a546..a556166a60e 100644
+--- a/ext/spl/spl_array.h
++++ b/ext/spl/spl_array.h
+@@ -26,7 +26,7 @@
+ #define SPL_ARRAY_CHILD_ARRAYS_ONLY  0x00000004
+ #define SPL_ARRAY_IS_SELF            0x01000000
+ #define SPL_ARRAY_USE_OTHER          0x02000000
+-#define SPL_ARRAY_INT_MASK           0xFFFF0000
++#define SPL_ARRAY_IS_DESTRUCTING     0x04000000
+ #define SPL_ARRAY_CLONE_MASK         0x0100FFFF
+ 
+ #define SPL_ARRAY_METHOD_NO_ARG				0

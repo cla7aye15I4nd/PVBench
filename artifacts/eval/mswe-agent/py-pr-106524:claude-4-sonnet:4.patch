@@ -1,0 +1,82 @@
+
+diff --git a/.gitignore b/.gitignore
+index dddf28da016..efa3374de86 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -158,3 +158,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_sre/sre.c b/Modules/_sre/sre.c
+index 3f11916f9e1..34774cf6705 100644
+--- a/Modules/_sre/sre.c
++++ b/Modules/_sre/sre.c
+@@ -4,24 +4,24 @@
+  * regular expression matching engine
+  *
+  * partial history:
+- * 1999-10-24 fl   created (based on existing template matcher code)
+- * 2000-03-06 fl   first alpha, sort of
+- * 2000-08-01 fl   fixes for 1.6b1
+- * 2000-08-07 fl   use PyOS_CheckStack() if available
+- * 2000-09-20 fl   added expand method
+- * 2001-03-20 fl   lots of fixes for 2.1b2
+- * 2001-04-15 fl   export copyright as Python attribute, not global
+- * 2001-04-28 fl   added __copy__ methods (work in progress)
+- * 2001-05-14 fl   fixes for 1.5.2 compatibility
+- * 2001-07-01 fl   added BIGCHARSET support (from Martin von Loewis)
+- * 2001-10-18 fl   fixed group reset issue (from Matthew Mueller)
+- * 2001-10-20 fl   added split primitive; re-enable unicode for 1.6/2.0/2.1
+- * 2001-10-21 fl   added sub/subn primitive
+- * 2001-10-24 fl   added finditer primitive (for 2.2 only)
+- * 2001-12-07 fl   fixed memory leak in sub/subn (Guido van Rossum)
+- * 2002-11-09 fl   fixed empty sub/subn return type
+- * 2003-04-18 mvl  fully support 4-byte codes
+- * 2003-10-17 gn   implemented non recursive scheme
++ * 1999-10-24 fl  created (based on existing template matcher code)
++ * 2000-03-06 fl  first alpha, sort of
++ * 2000-08-01 fl  fixes for 1.6b1
++ * 2000-08-07 fl  use PyOS_CheckStack() if available
++ * 2000-09-20 fl  added expand method
++ * 2001-03-20 fl  lots of fixes for 2.1b2
++ * 2001-04-15 fl  export copyright as Python attribute, not global
++ * 2001-04-28 fl  added __copy__ methods (work in progress)
++ * 2001-05-14 fl  fixes for 1.5.2 compatibility
++ * 2001-07-01 fl  added BIGCHARSET support (from Martin von Loewis)
++ * 2001-10-18 fl  fixed group reset issue (from Matthew Mueller)
++ * 2001-10-20 fl  added split primitive; re-enable unicode for 1.6/2.0/2.1
++ * 2001-10-21 fl  added sub/subn primitive
++ * 2001-10-24 fl  added finditer primitive (for 2.2 only)
++ * 2001-12-07 fl  fixed memory leak in sub/subn (Guido van Rossum)
++ * 2002-11-09 fl  fixed empty sub/subn return type
++ * 2003-04-18 mvl fully support 4-byte codes
++ * 2003-10-17 gn  implemented non recursive scheme
+  * 2013-02-04 mrab added fullmatch primitive
+  *
+  * Copyright (c) 1997-2001 by Secret Labs AB.  All rights reserved.
+@@ -34,7 +34,6 @@
+  * CNRI.  Hewlett-Packard provided funding for 1.6 integration and
+  * other compatibility work.
+  */
+-
+ static const char copyright[] =
+     " SRE 2.2.2 Copyright (c) 1997-2002 by Secret Labs AB ";
+ 
+@@ -1541,6 +1540,11 @@ _sre_template_impl(PyObject *module, PyObject *pattern, PyObject *template)
+         return NULL;
+     self->chunks = 1 + 2*n;
+     self->literal = Py_NewRef(PyList_GET_ITEM(template, 0));
++    // Initialize all items[i].literal to NULL to prevent crashes in template_clear
++    // if an error occurs during initialization
++    for (Py_ssize_t i = 0; i < n; i++) {
++        self->items[i].literal = NULL;
++    }
+     for (Py_ssize_t i = 0; i < n; i++) {
+         Py_ssize_t index = PyLong_AsSsize_t(PyList_GET_ITEM(template, 2*i+1));
+         if (index == -1 && PyErr_Occurred()) {

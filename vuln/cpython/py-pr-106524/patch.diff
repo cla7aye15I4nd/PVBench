@@ -1,0 +1,24 @@
+diff --git a/Misc/NEWS.d/next/Library/2023-07-07-17-44-03.gh-issue-106524.XkBV8h.rst b/Misc/NEWS.d/next/Library/2023-07-07-17-44-03.gh-issue-106524.XkBV8h.rst
+new file mode 100644
+index 00000000000..f3fd070e391
+--- /dev/null
++++ b/Misc/NEWS.d/next/Library/2023-07-07-17-44-03.gh-issue-106524.XkBV8h.rst
+@@ -0,0 +1 @@
++Fix crash in :func:`!_sre.template` with templates containing invalid group indices.
+diff --git a/Modules/_sre/sre.c b/Modules/_sre/sre.c
+index 3f11916f9e1..98602b4c1ea 100644
+--- a/Modules/_sre/sre.c
++++ b/Modules/_sre/sre.c
+@@ -1544,10 +1544,12 @@ _sre_template_impl(PyObject *module, PyObject *pattern, PyObject *template)
+     for (Py_ssize_t i = 0; i < n; i++) {
+         Py_ssize_t index = PyLong_AsSsize_t(PyList_GET_ITEM(template, 2*i+1));
+         if (index == -1 && PyErr_Occurred()) {
++            Py_SET_SIZE(self, i);
+             Py_DECREF(self);
+             return NULL;
+         }
+         if (index < 0) {
++            Py_SET_SIZE(self, i);
+             goto bad_template;
+         }
+         self->items[i].index = index;

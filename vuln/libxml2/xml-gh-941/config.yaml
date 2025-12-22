@@ -1,0 +1,13 @@
+id: xml-gh-941
+project: libxml2
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+binary: xmllint
+trigger_commit: c34742f3017f6d39f3e4ccae4f70172238160ef8
+patch:
+  commit: 069bcda17d8194e9582c64dd4bc9dac99b015810
+  date: '2025-07-02T13:29:19-04:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/c34742f3017f6d39f3e4ccae4f70172238160ef8
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/069bcda17d8194e9582c64dd4bc9dac99b015810

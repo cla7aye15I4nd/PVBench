@@ -1,0 +1,108 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 7483e9c0f43..b3ee9c267b1 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2243,13 +2243,13 @@ TaskObj_get_must_cancel(TaskObj *task, void *Py_UNUSED(ignored))
+     }
+ }
+ 
++
+ static PyObject *
+ TaskObj_get_coro(TaskObj *task, void *Py_UNUSED(ignored))
+ {
+     if (task->task_coro) {
+         return Py_NewRef(task->task_coro);
+     }
+-
+     Py_RETURN_NONE;
+ }
+ 
+@@ -2514,11 +2514,7 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
+-    if (self->task_coro) {
+-        return Py_NewRef(self->task_coro);
+-    }
+-
+-    Py_RETURN_NONE;
++    return Py_XNewRef(self->task_coro);
+ }
+ 
+ /*[clinic input]
+diff --git a/poc.py b/poc.py
+new file mode 100644
+index 00000000000..8f5473a6272
+--- /dev/null
++++ b/poc.py
+@@ -0,0 +1,15 @@
++import asyncio
++
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++
++    async def foo(): ...
++
++    task = asyncio.create_task(foo())
++    await task
++    print(task.get_coro())
++
++
++asyncio.run(main())
+\ No newline at end of file
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..27d4f9d44ba
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,33 @@
++import asyncio
++import threading
++import time
++
++async def simple_coro():
++    return "done"
++
++def test_race_condition():
++    # Get the event loop and set eager task factory
++    loop = asyncio.new_event_loop()
++    asyncio.set_event_loop(loop)
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    # Create multiple tasks that complete immediately
++    for i in range(1000):
++        task = loop.create_task(simple_coro())
++        
++        # Try to access the coroutine in a tight loop
++        # This might catch the race condition
++        for j in range(10):
++            try:
++                coro = task.get_coro()
++                if coro is not None:
++                    print(f"Task {i}, attempt {j}: got coro")
++            except Exception as e:
++                print(f"Task {i}, attempt {j}: exception {e}")
++        
++        # Small delay to let the task complete
++        time.sleep(0.001)
++
++if __name__ == "__main__":
++    test_race_condition()
++    print("Test completed")

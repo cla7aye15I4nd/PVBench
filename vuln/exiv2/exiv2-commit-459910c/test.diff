@@ -1,0 +1,76 @@
+diff --git a/test/data/issue_2376_poc.mp4 b/test/data/issue_2376_poc.mp4
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc2c61bd66ea172abd627cf5a7d3379f402eecef
+GIT binary patch
+literal 99
+zcmZQzV30^FsVpcgQBe5*|GxqZFfcH9ho+Py0%-+5XO9$^I1&w2j6xv{fGPwE004~a
+B77qXb
+
+literal 0
+HcmV?d00001
+
+diff --git a/test/data/issue_2377_poc.mp4 b/test/data/issue_2377_poc.mp4
+new file mode 100644
+index 0000000000000000000000000000000000000000..747351387d1d1beb070c3a2a2e9beba874e657b9
+GIT binary patch
+literal 225
+rcmZQzV30^FsVpcgQBe5*UjYsn7#L25rj#TC={<hV9xiZ+p~e6J$Uz~G
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/bugfixes/github/test_issue_2376.py b/tests/bugfixes/github/test_issue_2376.py
+new file mode 100644
+index 000000000..2afdbc965
+--- /dev/null
++++ b/tests/bugfixes/github/test_issue_2376.py
+@@ -0,0 +1,13 @@
++# -*- coding: utf-8 -*-
++
++from system_tests import CaseMeta, check_no_ASAN_UBSAN_errors
++
++class issue_2376_QuickTimeVideo_userDataDecoder_null_deref(metaclass=CaseMeta):
++    url      = "https://github.com/Exiv2/exiv2/issues/2376"
++    filename = "$data_path/issue_2376_poc.mp4"
++    commands = ["$exiv2 $filename"]
++    retval   = [1]
++    stderr   = ["""$exiv2_exception_message $filename:
++$kerCorruptedMetadata
++"""]
++    stdout   = [""]
+diff --git a/tests/bugfixes/github/test_issue_2377.py b/tests/bugfixes/github/test_issue_2377.py
+new file mode 100644
+index 000000000..010a46685
+--- /dev/null
++++ b/tests/bugfixes/github/test_issue_2377.py
+@@ -0,0 +1,17 @@
++# -*- coding: utf-8 -*-
++
++from system_tests import CaseMeta, check_no_ASAN_UBSAN_errors
++
++class issue_2377_QuickTimeVideo_userDataDecoder_buffer_overflow(metaclass=CaseMeta):
++    url      = "https://github.com/Exiv2/exiv2/issues/2377"
++    filename = "$data_path/issue_2377_poc.mp4"
++    commands = ["$exiv2 $filename"]
++    retval   = [253]
++    stderr   = ["""$filename: No Exif data found in the file
++"""]
++    stdout   = ["""File name       : $filename
++File size       : 225 Bytes
++MIME type       : video/quicktime
++Image size      : 0 x 0
++"""]
++
+diff --git a/tests/regression_tests/test_regression_allfiles.py b/tests/regression_tests/test_regression_allfiles.py
+index c9b237752..d4fb53b9f 100644
+--- a/tests/regression_tests/test_regression_allfiles.py
++++ b/tests/regression_tests/test_regression_allfiles.py
+@@ -61,6 +61,8 @@ def get_valid_files(data_dir):
+         "issue_2340_poc.mp4",
+         "issue_2345_poc.mp4",
+         "issue_2366_poc.mp4",
++        "issue_2376_poc.mp4",
++        "issue_2377_poc.mp4",
+         "2018-01-09-exiv2-crash-001.tiff",
+         "cve_2017_1000126_stack-oob-read.webp",
+         "exiv2-bug1247.jpg",

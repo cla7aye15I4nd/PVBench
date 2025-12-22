@@ -1,0 +1,29 @@
+atomic memory access' size must be byte-sized
+ i1  store atomic i1 true, ptr @g.init seq_cst, align 1
+atomic memory access' size must be byte-sized
+ i1  %g.init.val = load atomic i1, ptr @g.init seq_cst, align 1
+LLVM ERROR: Broken module found, compilation aborted!
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ./build/bin/opt -S -passes=globalopt /testcases/llvm-gh-137152/input/poc.ll
+1.	Running pass "verify" on module "/testcases/llvm-gh-137152/input/poc.ll"
+ #0 0x000055555a339218 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-137152/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x000055555a33962f PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-137152/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x000055555a3369dd llvm::sys::RunSignalHandlers() /tmp/llvm-gh-137152/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x000055555a338a9a SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-137152/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x000055555a2452da llvm::report_fatal_error(llvm::Twine const&, bool) /tmp/llvm-gh-137152/build/llvm/lib/Support/ErrorHandling.cpp:126:9
+ #9 0x000055555a2450ae llvm::report_fatal_error(llvm::StringRef, bool) /tmp/llvm-gh-137152/build/llvm/lib/Support/ErrorHandling.cpp:87:68
+#10 0x000055555a0ed352 llvm::VerifierPass::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137152/build/llvm/lib/IR/Verifier.cpp:7806:33
+#11 0x0000555555e0dec5 llvm::detail::PassModel<llvm::Module, llvm::VerifierPass, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137152/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#12 0x000055555a0664f9 llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-137152/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#13 0x0000555555de7f2b llvm::runPassPipeline(llvm::StringRef, llvm::Module&, llvm::TargetMachine*, llvm::TargetLibraryInfoImpl*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::StringRef, llvm::ArrayRef<llvm::PassPlugin>, llvm::ArrayRef<std::function<void (llvm::PassBuilder&)>>, llvm::opt_tool::OutputKind, llvm::opt_tool::VerifierKind, bool, bool, bool, bool, bool, bool, bool) /tmp/llvm-gh-137152/build/llvm/tools/opt/NewPMDriver.cpp:557:10
+#14 0x0000555555db9902 optMain /tmp/llvm-gh-137152/build/llvm/tools/opt/optdriver.cpp:725:27
+#15 0x0000555555db7081 main /tmp/llvm-gh-137152/build/llvm/tools/opt/opt.cpp:25:64
+#16 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#17 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#18 0x0000555555db6f65 _start (./build/bin/opt+0x862f65)
+/testcases/llvm-gh-137152/exp.sh: line 2: 3099576 Aborted                 (core dumped) ./build/bin/opt -S -passes=globalopt $1

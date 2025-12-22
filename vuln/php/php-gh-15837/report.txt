@@ -1,0 +1,99 @@
+==3963999==ERROR: AddressSanitizer: heap-use-after-free on address 0x50d0000bb250 at pc 0x55c5244557b3 bp 0x7ffec0363d90 sp 0x7ffec0363d88
+READ of size 8 at 0x50d0000bb250 thread T0
+    #0 0x55c5244557b2 in php_sxe_iterator_current_key /php-gh-15837/build/ext/simplexml/simplexml.c:2553:32
+    #1 0x55c5244758ae in zim_RecursiveIteratorIterator_key /php-gh-15837/build/ext/spl/spl_iterators.c:708:3
+    #2 0x55c524e9f999 in ZEND_DO_FCALL_SPEC_RETVAL_USED_HANDLER /php-gh-15837/build/Zend/zend_vm_execute.h:1951:4
+    #3 0x55c524d018df in execute_ex /php-gh-15837/build/Zend/zend_vm_execute.h:55866:7
+    #4 0x55c524d03076 in zend_execute /php-gh-15837/build/Zend/zend_vm_execute.h:60439:2
+    #5 0x55c524be3516 in zend_execute_scripts /php-gh-15837/build/Zend/zend.c:1842:4
+    #6 0x55c5249870eb in php_execute_script /php-gh-15837/build/main/main.c:2578:13
+    #7 0x55c52550dc1c in do_cli /php-gh-15837/build/sapi/cli/php_cli.c:964:5
+    #8 0x55c52550bbd9 in main /php-gh-15837/build/sapi/cli/php_cli.c:1333:18
+    #9 0x7f6b714101c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x7f6b7141028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x55c523c03184 in _start (/php-gh-15837/build/sapi/cli/php+0x403184) (BuildId: 42844db62817d83f42d6a6fe6b4474d58ce9d0fa)
+
+0x50d0000bb250 is located 0 bytes inside of 136-byte region [0x50d0000bb250,0x50d0000bb2d8)
+freed by thread T0 here:
+    #0 0x55c523c9dd3a in free (/php-gh-15837/build/sapi/cli/php+0x49dd3a) (BuildId: 42844db62817d83f42d6a6fe6b4474d58ce9d0fa)
+    #1 0x55c524acf8f7 in tracked_free /php-gh-15837/build/Zend/zend_alloc.c:2851:2
+    #2 0x55c524abc4d7 in _efree_custom /php-gh-15837/build/Zend/zend_alloc.c:2486:3
+    #3 0x55c524ac1586 in _efree /php-gh-15837/build/Zend/zend_alloc.c:2606:3
+    #4 0x55c525247755 in zend_objects_store_del /php-gh-15837/build/Zend/zend_objects_API.c:204:3
+    #5 0x55c524bcf24a in rc_dtor_func /php-gh-15837/build/Zend/zend_variables.c:57:2
+    #6 0x55c524bcf3ac in i_zval_ptr_dtor /php-gh-15837/build/Zend/zend_variables.h:44:4
+    #7 0x55c524bcf3ac in zval_ptr_dtor /php-gh-15837/build/Zend/zend_variables.c:84:2
+    #8 0x55c52444bab4 in php_sxe_move_forward_iterator /php-gh-15837/build/ext/simplexml/simplexml.c:2573:3
+    #9 0x55c524455d05 in php_sxe_iterator_move_forward /php-gh-15837/build/ext/simplexml/simplexml.c:2586:2
+    #10 0x55c524476821 in spl_recursive_it_move_forward_ex /php-gh-15837/build/ext/spl/spl_iterators.c:282:5
+    #11 0x55c5244b155d in spl_recursive_it_move_forward /php-gh-15837/build/ext/spl/spl_iterators.c:483:2
+    #12 0x55c52510b9b2 in zend_fe_fetch_object_helper_SPEC /php-gh-15837/build/Zend/zend_vm_execute.h:2848:4
+    #13 0x55c524efa597 in ZEND_FE_FETCH_R_SPEC_VAR_HANDLER /php-gh-15837/build/Zend/zend_vm_execute.h:22053:3
+    #14 0x55c524d018df in execute_ex /php-gh-15837/build/Zend/zend_vm_execute.h:55866:7
+    #15 0x55c524d03076 in zend_execute /php-gh-15837/build/Zend/zend_vm_execute.h:60439:2
+    #16 0x55c524be3516 in zend_execute_scripts /php-gh-15837/build/Zend/zend.c:1842:4
+    #17 0x55c5249870eb in php_execute_script /php-gh-15837/build/main/main.c:2578:13
+    #18 0x55c52550dc1c in do_cli /php-gh-15837/build/sapi/cli/php_cli.c:964:5
+    #19 0x55c52550bbd9 in main /php-gh-15837/build/sapi/cli/php_cli.c:1333:18
+    #20 0x7f6b714101c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #21 0x7f6b7141028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #22 0x55c523c03184 in _start (/php-gh-15837/build/sapi/cli/php+0x403184) (BuildId: 42844db62817d83f42d6a6fe6b4474d58ce9d0fa)
+
+previously allocated by thread T0 here:
+    #0 0x55c523c9dfd3 in malloc (/php-gh-15837/build/sapi/cli/php+0x49dfd3) (BuildId: 42844db62817d83f42d6a6fe6b4474d58ce9d0fa)
+    #1 0x55c524aaf7b0 in tracked_malloc /php-gh-15837/build/Zend/zend_alloc.c:2832:14
+    #2 0x55c524ab5343 in _malloc_custom /php-gh-15837/build/Zend/zend_alloc.c:2477:10
+    #3 0x55c524ac108e in _emalloc /php-gh-15837/build/Zend/zend_alloc.c:2596:10
+    #4 0x55c52444c97d in zend_object_alloc /php-gh-15837/build/Zend/zend_objects_API.h:92:14
+    #5 0x55c52444c97d in php_sxe_object_new /php-gh-15837/build/ext/simplexml/simplexml.c:2228:11
+    #6 0x55c52444303f in _node_as_zval /php-gh-15837/build/ext/simplexml/simplexml.c:63:12
+    #7 0x55c52444fa38 in php_sxe_iterator_fetch /php-gh-15837/build/ext/simplexml/simplexml.c:2459:3
+    #8 0x55c52444bb5f in php_sxe_move_forward_iterator /php-gh-15837/build/ext/simplexml/simplexml.c:2578:3
+    #9 0x55c524455d05 in php_sxe_iterator_move_forward /php-gh-15837/build/ext/simplexml/simplexml.c:2586:2
+    #10 0x55c524476821 in spl_recursive_it_move_forward_ex /php-gh-15837/build/ext/spl/spl_iterators.c:282:5
+    #11 0x55c5244b155d in spl_recursive_it_move_forward /php-gh-15837/build/ext/spl/spl_iterators.c:483:2
+    #12 0x55c52510b9b2 in zend_fe_fetch_object_helper_SPEC /php-gh-15837/build/Zend/zend_vm_execute.h:2848:4
+    #13 0x55c524efa597 in ZEND_FE_FETCH_R_SPEC_VAR_HANDLER /php-gh-15837/build/Zend/zend_vm_execute.h:22053:3
+    #14 0x55c524d018df in execute_ex /php-gh-15837/build/Zend/zend_vm_execute.h:55866:7
+    #15 0x55c524d03076 in zend_execute /php-gh-15837/build/Zend/zend_vm_execute.h:60439:2
+    #16 0x55c524be3516 in zend_execute_scripts /php-gh-15837/build/Zend/zend.c:1842:4
+    #17 0x55c5249870eb in php_execute_script /php-gh-15837/build/main/main.c:2578:13
+    #18 0x55c52550dc1c in do_cli /php-gh-15837/build/sapi/cli/php_cli.c:964:5
+    #19 0x55c52550bbd9 in main /php-gh-15837/build/sapi/cli/php_cli.c:1333:18
+    #20 0x7f6b714101c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #21 0x7f6b7141028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #22 0x55c523c03184 in _start (/php-gh-15837/build/sapi/cli/php+0x403184) (BuildId: 42844db62817d83f42d6a6fe6b4474d58ce9d0fa)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /php-gh-15837/build/ext/simplexml/simplexml.c:2553:32 in php_sxe_iterator_current_key
+Shadow bytes around the buggy address:
+  0x50d0000baf80: 00 00 00 fa fa fa fa fa fa fa fa fa fd fd fd fd
+  0x50d0000bb000: fd fd fd fd fd fd fd fd fd fd fd fd fd fa fa fa
+  0x50d0000bb080: fa fa fa fa fa fa fd fd fd fd fd fd fd fd fd fd
+  0x50d0000bb100: fd fd fd fd fd fd fd fa fa fa fa fa fa fa fa fa
+  0x50d0000bb180: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+=>0x50d0000bb200: fd fa fa fa fa fa fa fa fa fa[fd]fd fd fd fd fd
+  0x50d0000bb280: fd fd fd fd fd fd fd fd fd fd fd fa fa fa fa fa
+  0x50d0000bb300: fa fa fa fa 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50d0000bb380: 00 00 00 00 00 fa fa fa fa fa fa fa fa fa 00 00
+  0x50d0000bb400: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 fa
+  0x50d0000bb480: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==3963999==ABORTING

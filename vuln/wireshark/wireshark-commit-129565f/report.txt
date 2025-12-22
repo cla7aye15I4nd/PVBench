@@ -1,0 +1,21 @@
+==14223==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000010 (pc 0x7f1a02ac5ca2 bp 0x7ffeca134ea0 sp 0x7ffeca134da0 T0)
+==14223==The signal is caused by a READ memory access.
+==14223==Hint: address points to the zero page.
+    #0 0x7f1a02ac5ca2 in stnode_dup /tmp/wireshark-commit-129565f/build/epan/dfilter/syntax-tree.c:280:20
+    #1 0x7f1a02ac4478 in oper_dup /tmp/wireshark-commit-129565f/build/epan/dfilter/sttype-op.c:51:15
+    #2 0x7f1a02ac5f9f in stnode_dup /tmp/wireshark-commit-129565f/build/epan/dfilter/syntax-tree.c:288:15
+    #3 0x7f1a02ae8c09 in yy_reduce /tmp/wireshark-commit-129565f/build/epan/dfilter/grammar.lemon:394:51
+    #4 0x7f1a02ae5008 in Dfilter /tmp/wireshark-commit-129565f/build/build/./grammar.c:2100:15
+    #5 0x7f1a02a89bcc in dfwork_parse /tmp/wireshark-commit-129565f/build/epan/dfilter/dfilter.c:458:2
+    #6 0x7f1a02a88b4e in compile_filter /tmp/wireshark-commit-129565f/build/epan/dfilter/dfilter.c:535:7
+    #7 0x7f1a02a88442 in dfilter_compile_full /tmp/wireshark-commit-129565f/build/epan/dfilter/dfilter.c:637:11
+    #8 0x5570bdf6b90a in compile_filter /tmp/wireshark-commit-129565f/build/dftest.c:224:10
+    #9 0x5570bdf6b325 in test_filter /tmp/wireshark-commit-129565f/build/dftest.c:271:10
+    #10 0x5570bdf6a857 in main /tmp/wireshark-commit-129565f/build/dftest.c:550:27
+    #11 0x7f19f95631c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x7f19f956328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x5570bde90734 in _start (/tmp/wireshark-commit-129565f/build/build/run/dftest+0x2f734) (BuildId: 133fea5b99f32e16091a4c8c0a19895dd0e72e80)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/wireshark-commit-129565f/build/epan/dfilter/syntax-tree.c:280:20 in stnode_dup
+==14223==ABORTING

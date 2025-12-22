@@ -1,0 +1,55 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_directory.c b/ext/spl/spl_directory.c
+index 0dcb34b6a69..e7ff35b5f6a 100644
+--- a/ext/spl/spl_directory.c
++++ b/ext/spl/spl_directory.c
+@@ -933,7 +933,9 @@ PHP_METHOD(SplFileInfo, getFilename)
+ 	} else {
+ 		RETVAL_STR_COPY(intern->file_name);
+ 	}
+-	zend_string_release_ex(path, /* persistent */ false);
++	if (path) {
++		zend_string_release_ex(path, /* persistent */ false);
++	}
+ }
+ /* }}} */
+ 
+@@ -980,7 +982,9 @@ PHP_METHOD(SplFileInfo, getExtension)
+ 		fname = ZSTR_VAL(intern->file_name);
+ 		flen = ZSTR_LEN(intern->file_name);
+ 	}
+-	zend_string_release_ex(path, /* persistent */ false);
++	if (path) {
++		zend_string_release_ex(path, /* persistent */ false);
++	}
+ 
+ 	ret = php_basename(fname, flen, NULL, 0);
+ 
+@@ -1052,7 +1056,9 @@ PHP_METHOD(SplFileInfo, getBasename)
+ 		fname = ZSTR_VAL(intern->file_name);
+ 		flen = ZSTR_LEN(intern->file_name);
+ 	}
+-	zend_string_release_ex(path, /* persistent */ false);
++	if (path) {
++		zend_string_release_ex(path, /* persistent */ false);
++	}
+ 
+ 	RETURN_STR(php_basename(fname, flen, suffix, slen));
+ }

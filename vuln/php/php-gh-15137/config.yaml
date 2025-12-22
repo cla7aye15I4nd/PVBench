@@ -1,0 +1,14 @@
+id: php-gh-15137
+project: php
+sanitizer: LeakAddressSanitizer
+type: NULL Pointer Dereference
+trigger_commit: dee29442bae3dc7b7d8b98e9808a36d6b3a1c728
+binary: php
+patch:
+  commit: 9d7e6090df409c266580760044bb894313ad2240
+  date: '2024-07-28T13:53:30+02:00'
+reference:
+- https://github.com/php/php-src.git
+- https://github.com/php/php-src/issues/15137
+- https://github.com/php/php-src/commit/dee29442bae3dc7b7d8b98e9808a36d6b3a1c728
+- https://github.com/php/php-src/commit/9d7e6090df409c266580760044bb894313ad2240

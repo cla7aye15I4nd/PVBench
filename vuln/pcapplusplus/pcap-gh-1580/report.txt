@@ -1,0 +1,13 @@
+==2746==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000028 (pc 0x741972bfe239 bp 0x7ffdba06fda0 sp 0x7ffdba06fb80 T0)
+==2746==The signal is caused by a WRITE memory access.
+==2746==Hint: address points to the zero page.
+    #0 0x741972bfe239 in pcpp::Packet::setRawPacket(pcpp::RawPacket*, bool, unsigned int, pcpp::OsiModelLayer) /tmp/pcap-gh-1580/build/Packet++/src/Packet.cpp:89:29
+    #1 0x741972bff88d in pcpp::Packet::Packet(pcpp::RawPacket*, pcpp::OsiModelLayer) /tmp/pcap-gh-1580/build/Packet++/src/Packet.cpp:140:3
+    #2 0x5a8d5993a898 in main /tmp/pcap-gh-1580/build/poc.cpp:52:15
+    #3 0x7419723b01c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #4 0x7419723b028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x5a8d5985e444 in _start (/tmp/pcap-gh-1580/build/poc+0x2c444) (BuildId: 87b0d99c547f297a7f50d9b1eba596a20bdf5773)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/pcap-gh-1580/build/Packet++/src/Packet.cpp:89:29 in pcpp::Packet::setRawPacket(pcpp::RawPacket*, bool, unsigned int, pcpp::OsiModelLayer)
+==2746==ABORTING

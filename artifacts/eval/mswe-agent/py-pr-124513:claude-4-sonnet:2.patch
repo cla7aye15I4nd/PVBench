@@ -1,0 +1,47 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index 9f1c031dcb9..cb54f8a5311 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -315,7 +315,19 @@ framelocalsproxy_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+         return NULL;
+     }
+ 
++    if (PyTuple_GET_SIZE(args) < 1) {
++        PyErr_SetString(PyExc_TypeError, "framelocalsproxy_new() missing required argument");
++        Py_DECREF(self);
++        return NULL;
++    }
++
+     PyFrameObject *frame = (PyFrameObject*)PyTuple_GET_ITEM(args, 0);
++    if (frame == NULL) {
++        PyErr_SetString(PyExc_TypeError, "framelocalsproxy_new() argument cannot be NULL");
++        Py_DECREF(self);
++        return NULL;
++    }
++    
+     assert(PyFrame_Check(frame));
+ 
+     ((PyFrameLocalsProxyObject*)self)->frame = (PyFrameObject*)Py_NewRef(frame);
+@@ -323,6 +335,7 @@ framelocalsproxy_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+     return (PyObject *)self;
+ }
+ 
++
+ static int
+ framelocalsproxy_tp_clear(PyObject *self)
+ {

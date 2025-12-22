@@ -1,0 +1,110 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/comprehensive_test.php b/comprehensive_test.php
+new file mode 100644
+index 00000000000..f8dd4efd196
+--- /dev/null
++++ b/comprehensive_test.php
+@@ -0,0 +1,27 @@
++<?php
++echo "Testing DOM HTML5 serializer NULL pointer dereference fix...\n";
++
++// Test 1: Normal case with parent
++$doc = new DOMDocument();
++$doc->loadHTML('<html><body><p>Test</p></body></html>');
++$textNode = $doc->createTextNode('Normal text with parent');
++$p = $doc->getElementsByTagName('p')->item(0);
++$p->appendChild($textNode);
++echo "Test 1 (with parent): " . $doc->saveHTML($textNode) . "\n";
++
++// Test 2: Text node without parent (this would trigger the NULL pointer dereference)
++$doc2 = new DOMDocument();
++$orphanTextNode = $doc2->createTextNode('Orphan text without parent');
++echo "Test 2 (orphan node): " . $doc2->saveHTML($orphanTextNode) . "\n";
++
++// Test 3: Text node that had parent but was removed
++$doc3 = new DOMDocument();
++$doc3->loadHTML('<html><body><div>Container</div></body></html>');
++$textNode3 = $doc3->createTextNode('Text that will be orphaned');
++$div = $doc3->getElementsByTagName('div')->item(0);
++$div->appendChild($textNode3);
++$div->removeChild($textNode3); // Now it's orphaned
++echo "Test 3 (removed from parent): " . $doc3->saveHTML($textNode3) . "\n";
++
++echo "All tests completed successfully without crashes!\n";
++?>
+diff --git a/ext/dom/html5_serializer.c b/ext/dom/html5_serializer.c
+index 3970fb059c1..a4ab0b92b0a 100644
+--- a/ext/dom/html5_serializer.c
++++ b/ext/dom/html5_serializer.c
+@@ -137,7 +137,7 @@ static zend_result dom_html5_serialize_text_node(dom_html5_serialize_context *ct
+ 		return SUCCESS;
+ 	}
+ 
+-	if (node->parent->type == XML_ELEMENT_NODE && php_dom_ns_is_fast(node->parent, php_dom_ns_is_html_magic_token)) {
++	if (node->parent && node->parent->type == XML_ELEMENT_NODE && php_dom_ns_is_fast(node->parent, php_dom_ns_is_html_magic_token)) {
+ 		const xmlNode *parent = node->parent;
+ 		size_t name_length = strlen((const char *) parent->name);
+ 		/* Spec tells us to only emit noscript content as-is if scripting is enabled.
+diff --git a/test_dom_crash.php b/test_dom_crash.php
+new file mode 100644
+index 00000000000..879ffe2ab5c
+--- /dev/null
++++ b/test_dom_crash.php
+@@ -0,0 +1,17 @@
++<?php
++$doc = new DOMDocument();
++$doc->loadHTML('<html><body><p>Test</p></body></html>');
++
++// Create a text node
++$textNode = $doc->createTextNode('Hello World');
++
++// Try to trigger the issue by manipulating the DOM structure
++$p = $doc->getElementsByTagName('p')->item(0);
++$p->appendChild($textNode);
++
++// Remove the parent to potentially create a NULL parent situation
++$p->parentNode->removeChild($p);
++
++// Try to serialize - this might trigger the NULL pointer dereference
++echo $doc->saveHTML($textNode);
++?>
+diff --git a/test_null_parent.php b/test_null_parent.php
+new file mode 100644
+index 00000000000..ab13faf93c3
+--- /dev/null
++++ b/test_null_parent.php
+@@ -0,0 +1,17 @@
++<?php
++// Test case to trigger NULL pointer dereference in dom_html5_serialize_text_node
++$doc = new DOMDocument();
++$doc->loadHTML('<html><body><p>Test</p></body></html>');
++
++// Create a text node
++$textNode = $doc->createTextNode('Hello World');
++
++// Try to serialize the text node directly without a parent
++// This should trigger the NULL pointer dereference we fixed
++try {
++    echo $doc->saveHTML($textNode);
++    echo "Test completed successfully, no crash.\n";
++} catch (Exception $e) {
++    echo "Exception: " . $e->getMessage() . "\n";
++}
++?>

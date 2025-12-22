@@ -1,0 +1,56 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..d36fc343be6 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -555,12 +555,18 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
+-					ZVAL_UNDEF(data);
+-					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+-					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+-					if (spl_array_is_object(intern)) {
+-						spl_array_skip_protected(intern, ht);
++					/* Make a copy of the data before calling destructor to avoid use-after-free */
++					zval data_copy;
++					ZVAL_COPY(&data_copy, data);
++					zval_ptr_dtor(&data_copy);
++					/* Only proceed if the data is still valid after destructor */
++					if (Z_TYPE_P(data) != IS_UNDEF) {
++						ZVAL_UNDEF(data);
++						HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
++						zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
++						if (spl_array_is_object(intern)) {
++							spl_array_skip_protected(intern, ht);
++						}
+ 					}
+ 				}
+ 			} else {
+@@ -571,7 +577,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	} else {
+ 		zend_hash_index_del(ht, key.h);
+ 	}
+-
++	
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}

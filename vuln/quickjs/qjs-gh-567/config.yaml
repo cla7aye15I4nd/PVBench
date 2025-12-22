@@ -1,0 +1,14 @@
+id: qjs-gh-567
+project: quickjs
+sanitizer: LeakAddressSanitizer
+type: NULL Pointer Dereference
+trigger_commit: d9d6939b20ae6e74399ed88433b3a121afdd642d
+binary: qjs
+patch:
+  commit: 36227a5310f3a58c6be1fb1bfd1f833983c29d71
+  date: '2024-10-16T10:13:38+02:00'
+reference:
+- https://github.com/quickjs-ng/quickjs.git
+- https://github.com/quickjs-ng/quickjs/issues/567
+- https://github.com/quickjs-ng/quickjs/commit/d9d6939b20ae6e74399ed88433b3a121afdd642d
+- https://github.com/quickjs-ng/quickjs/commit/36227a5310f3a58c6be1fb1bfd1f833983c29d71

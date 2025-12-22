@@ -1,0 +1,57 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 18dc2859357..75b5dd861a2 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -352,6 +352,8 @@ future_ensure_alive(FutureObj *fut)
+ static int
+ future_schedule_callbacks(asyncio_state *state, FutureObj *fut)
+ {
++    Py_INCREF(fut);  // Keep fut alive during callback scheduling
++
+     if (fut->fut_callback0 != NULL) {
+         /* There's a 1st callback */
+ 
+@@ -365,6 +367,7 @@ future_schedule_callbacks(asyncio_state *state, FutureObj *fut)
+             /* If an error occurs in pure-Python implementation,
+                all callbacks are cleared. */
+             Py_CLEAR(fut->fut_callbacks);
++            Py_DECREF(fut);
+             return ret;
+         }
+ 
+@@ -374,6 +377,7 @@ future_schedule_callbacks(asyncio_state *state, FutureObj *fut)
+ 
+     if (fut->fut_callbacks == NULL) {
+         /* No more callbacks, return. */
++        Py_DECREF(fut);
+         return 0;
+     }
+ 
+@@ -392,10 +396,12 @@ future_schedule_callbacks(asyncio_state *state, FutureObj *fut)
+ 
+         if (call_soon(state, fut->fut_loop, cb, (PyObject *)fut, ctx)) {
+             Py_DECREF(callbacks);
++            Py_DECREF(fut);
+             return -1;
+         }
+     }
+     Py_DECREF(callbacks);
++    Py_DECREF(fut);
+     return 0;
+ }
+ 

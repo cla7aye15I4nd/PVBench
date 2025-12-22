@@ -1,0 +1,41 @@
+
+diff --git a/.gitignore b/.gitignore
+index 503e3e8135f..2006ad6e4a1 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -293,3 +293,6 @@ icu4c/build_qnx/nto-x86_64-o/*
+ icu4c/build_qnx/linux-x86_64-o/Makefile
+ icu4c/build_qnx/nto-aarch64-le/Makefile
+ icu4c/build_qnx/nto-x86_64-o/Makefile
++build/
++Build/
++*.exe
+diff --git a/icu4c/source/i18n/chnsecal.cpp b/icu4c/source/i18n/chnsecal.cpp
+index fb8e5191c52..7b835d37ca3 100644
+--- a/icu4c/source/i18n/chnsecal.cpp
++++ b/icu4c/source/i18n/chnsecal.cpp
+@@ -1045,7 +1045,23 @@ void ChineseCalendar::offsetMonth(int32_t newMoon, int32_t dayOfMonth, int32_t d
+     }
+ 
+     // Find the target dayOfMonth
+-    int32_t jd = newMoon + kEpochStartAsJulianDay - 1 + dayOfMonth;
++    int32_t jd;
++    int32_t temp;
++    // First add kEpochStartAsJulianDay - 1
++    if (uprv_add32_overflow(kEpochStartAsJulianDay, -1, &temp)) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++        return;
++    }
++    // Then add dayOfMonth
++    if (uprv_add32_overflow(temp, dayOfMonth, &temp)) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++        return;
++    }
++    // Finally add newMoon
++    if (uprv_add32_overflow(newMoon, temp, &jd)) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++        return;
++    }
+ 
+     // Pin the dayOfMonth.  In this calendar all months are 29 or 30 days
+     // so pinning just means handling dayOfMonth 30.

@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1687038dc70..12768176b4a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -113,3 +113,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index eacebe6250c..0a2cb39337f 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -2944,7 +2944,9 @@ bool Parser::SkipFunction(const AstRawString* function_name, FunctionKind kind,
+       private_name_scope_iter.GetScope()->MigrateUnresolvedPrivateNameTail(
+           factory(), unresolved_private_tail);
+     }
+-    function_scope->AnalyzePartially(this, factory(), MaybeParsingArrowhead());
++    if (!function_scope->was_lazily_parsed()) {
++      function_scope->AnalyzePartially(this, factory(), MaybeParsingArrowhead());
++    }
+   }
+ 
+   return true;

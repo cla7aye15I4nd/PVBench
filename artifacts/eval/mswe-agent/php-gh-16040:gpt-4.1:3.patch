@@ -1,0 +1,113 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 0be317c173e..972598f094b 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -36,8 +36,8 @@ PHPAPI zend_class_entry  *spl_ce_RecursiveArrayIterator;
+ 
+ /* ArrayObject class */
+ static zend_object_handlers spl_handler_ArrayObject;
+-PHPAPI zend_class_entry  *spl_ce_ArrayObject;
+ 
++// static zend_object_handlers dead_spl_handler_ArrayObject = {0};
+ typedef struct _spl_array_object {
+ 	zval              array;
+ 	uint32_t          ht_iter;
+@@ -54,13 +54,13 @@ typedef struct _spl_array_object {
+ 	zend_object       std;
+ } spl_array_object;
+ 
+-static inline spl_array_object *spl_array_from_obj(zend_object *obj) /* {{{ */ {
+-	return (spl_array_object*)((char*)(obj) - XtOffsetOf(spl_array_object, std));
+-}
+-/* }}} */
+ 
+-#define Z_SPLARRAY_P(zv)  spl_array_from_obj(Z_OBJ_P((zv)))
+ 
++static inline spl_array_object *spl_array_from_obj(zend_object *obj);
++static inline spl_array_object *spl_array_from_obj(zend_object *obj) {
++    return (spl_array_object*)((char*)(obj) - XtOffsetOf(spl_array_object, std));
++}
++static zend_object_handlers dead_spl_handler_ArrayObject = {0};
+ static inline HashTable **spl_array_get_hash_table_ptr(spl_array_object* intern) { /* {{{ */
+ 	//??? TODO: Delay duplication for arrays; only duplicate for write operations
+ 	if (intern->ar_flags & SPL_ARRAY_IS_SELF) {
+@@ -123,8 +123,8 @@ static zend_always_inline uint32_t *spl_array_get_pos_ptr(HashTable *ht, spl_arr
+ /* {{{ spl_array_object_free_storage */
+ static void spl_array_object_free_storage(zend_object *object)
+ {
++	object->handlers = &dead_spl_handler_ArrayObject;
+ 	spl_array_object *intern = spl_array_from_obj(object);
+-
+ 	if (intern->ht_iter != (uint32_t) -1) {
+ 		zend_hash_iterator_del(intern->ht_iter);
+ 	}
+@@ -525,6 +525,10 @@ static void spl_array_write_dimension(zend_object *object, zval *offset, zval *v
+ 
+ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *object, zval *offset) /* {{{ */
+ {
++	if (OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED) {
++		return;
++	}
++
+ 	HashTable *ht;
+ 	spl_array_object *intern = spl_array_from_obj(object);
+ 	spl_hash_key key;
+@@ -577,8 +581,11 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+ {
++	if (OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED) {
++		return;
++	}
+ 	spl_array_unset_dimension_ex(1, object, offset);
+-} /* }}} */
++}
+ 
+ /* check_empty can take value 0, 1, or 2
+  * 0/1 are used as normal boolean, but 2 is used for the case when this function is called from
+diff --git a/ext/spl/spl_array.h b/ext/spl/spl_array.h
+index f3577f4beea..de40ff4a4e6 100644
+--- a/ext/spl/spl_array.h
++++ b/ext/spl/spl_array.h
+@@ -33,7 +33,10 @@
+ 
+ extern PHPAPI zend_class_entry *spl_ce_ArrayObject;
+ extern PHPAPI zend_class_entry *spl_ce_ArrayIterator;
+-extern PHPAPI zend_class_entry *spl_ce_RecursiveArrayIterator;
++#include <stddef.h>
++#define Z_SPLARRAY_P(zv) spl_array_from_obj(Z_OBJ_P(zv))
++typedef struct _spl_array_object spl_array_object;
++spl_array_object *spl_array_from_obj(zend_object *obj);
+ 
+ PHP_MINIT_FUNCTION(spl_array);
+ 
+@@ -41,3 +44,11 @@ extern void spl_array_iterator_append(zval *object, zval *append_value);
+ extern void spl_array_iterator_key(zval *object, zval *return_value);
+ 
+ #endif /* SPL_ARRAY_H */
++
++
++
++
++
++spl_array_object *spl_array_from_obj(zend_object *obj) {
++    return (spl_array_object*)((char*)(obj) - XtOffsetOf(spl_array_object, std));
++}

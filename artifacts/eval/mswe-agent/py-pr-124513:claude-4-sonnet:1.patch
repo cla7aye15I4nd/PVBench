@@ -1,0 +1,96 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index 9f1c031dcb9..34641069865 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -315,7 +315,18 @@ framelocalsproxy_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+         return NULL;
+     }
+ 
++    if (PyTuple_GET_SIZE(args) < 1) {
++        PyErr_SetString(PyExc_TypeError, "framelocalsproxy_new() missing required argument");
++        Py_DECREF(self);
++        return NULL;
++    }
++
+     PyFrameObject *frame = (PyFrameObject*)PyTuple_GET_ITEM(args, 0);
++    if (frame == NULL) {
++        PyErr_SetString(PyExc_TypeError, "framelocalsproxy_new() argument cannot be NULL");
++        Py_DECREF(self);
++        return NULL;
++    }
+     assert(PyFrame_Check(frame));
+ 
+     ((PyFrameLocalsProxyObject*)self)->frame = (PyFrameObject*)Py_NewRef(frame);
+@@ -756,6 +767,11 @@ PyTypeObject PyFrameLocalsProxy_Type = {
+ PyObject *
+ _PyFrameLocalsProxy_New(PyFrameObject *frame)
+ {
++    if (frame == NULL) {
++        PyErr_SetString(PyExc_TypeError, "_PyFrameLocalsProxy_New() frame cannot be NULL");
++        return NULL;
++    }
++
+     PyObject* args = PyTuple_Pack(1, frame);
+     if (args == NULL) {
+         return NULL;
+diff --git a/test_fix.py b/test_fix.py
+new file mode 100644
+index 00000000000..c4ec985c22e
+--- /dev/null
++++ b/test_fix.py
+@@ -0,0 +1,40 @@
++import sys
++import types
++
++# Test the fix for NULL pointer dereference in framelocalsproxy_new
++print("Testing framelocalsproxy_new fix...")
++
++try:
++    # Try to create a frame locals proxy with no arguments
++    # This should trigger the validation we added
++    proxy_type = type(sys._getframe().f_locals)
++    print(f"Frame locals proxy type: {proxy_type}")
++    
++    # This should fail gracefully with our fix instead of crashing
++    try:
++        proxy = proxy_type()
++        print("ERROR: Should have failed with missing argument")
++    except TypeError as e:
++        print(f"SUCCESS: Caught expected TypeError: {e}")
++    
++    # Try with None as argument
++    try:
++        proxy = proxy_type(None)
++        print("ERROR: Should have failed with None argument")
++    except (TypeError, AssertionError) as e:
++        print(f"SUCCESS: Caught expected error with None: {e}")
++    
++    # Try with valid frame (should work)
++    try:
++        frame = sys._getframe()
++        proxy = proxy_type(frame)
++        print(f"SUCCESS: Created proxy with valid frame: {type(proxy)}")
++    except Exception as e:
++        print(f"ERROR: Failed with valid frame: {e}")
++        
++    print("All tests completed successfully!")
++    
++except Exception as e:
++    print(f"Test failed with error: {e}")
++    import traceback
++    traceback.print_exc()

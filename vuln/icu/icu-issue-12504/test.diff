@@ -1,0 +1,99 @@
+diff --git a/icu4c/source/test/intltest/calregts.cpp b/icu4c/source/test/intltest/calregts.cpp
+index 17fc81425c4..f1eb17bbed3 100644
+--- a/icu4c/source/test/intltest/calregts.cpp
++++ b/icu4c/source/test/intltest/calregts.cpp
+@@ -12,6 +12,7 @@
+ 
+ #include "calregts.h"
+ 
++#include "unicode/calendar.h"
+ #include "unicode/gregocal.h"
+ #include "unicode/simpletz.h"
+ #include "unicode/smpdtfmt.h"
+@@ -91,6 +92,7 @@ CalendarRegressionTest::runIndexedTest( int32_t index, UBool exec, const char* &
+         CASE(49,Test9019);
+         CASE(50,TestT9452);
+         CASE(51,TestT11632);
++        CASE(52,TestPersianCalOverflow);
+     default: name = ""; break;
+     }
+ }
+@@ -2985,6 +2987,36 @@ void CalendarRegressionTest::TestT11632(void) {
+             assertEquals("correct datetime displayed for hour value", UnicodeString("1970-01-13T12:00:00"), dstr);
+         }
+     }
+-} 
++}
++
++/**
++ * @bug ticket 13454
++ */
++void CalendarRegressionTest::TestPersianCalOverflow(void) {
++    const char* localeID = "bs_Cyrl@calendar=persian";
++    UErrorCode status = U_ZERO_ERROR;
++    Calendar* cal = Calendar::createInstance(Locale(localeID), status);
++    if(U_FAILURE(status)) {
++        dataerrln("FAIL: Calendar::createInstance for localeID %s: %s", localeID, u_errorName(status));
++    } else {
++        int32_t maxMonth = cal->getMaximum(UCAL_MONTH);
++        int32_t maxDayOfMonth = cal->getMaximum(UCAL_DATE);
++        int32_t jd, month, dayOfMonth;
++        for (jd = 67023580; jd <= 67023584; jd++) { // year 178171, int32_t overflow if jd >= 67023582
++            status = U_ZERO_ERROR;
++            cal->clear();
++            cal->set(UCAL_JULIAN_DAY, jd);
++            month = cal->get(UCAL_MONTH, status);
++            dayOfMonth = cal->get(UCAL_DATE, status);
++            if ( U_FAILURE(status) ) {
++                errln("FAIL: Calendar->get MONTH/DATE for localeID %s, julianDay %d, status %s\n", localeID, jd, u_errorName(status)); 
++            } else if (month > maxMonth || dayOfMonth > maxDayOfMonth) {
++                errln("FAIL: localeID %s, julianDay %d; maxMonth %d, got month %d; maxDayOfMonth %d, got dayOfMonth %d\n",
++                        localeID, jd, maxMonth, month, maxDayOfMonth, dayOfMonth); 
++            }
++        }
++        delete cal;
++    }
++}
+ 
+ #endif /* #if !UCONFIG_NO_FORMATTING */
+diff --git a/icu4c/source/test/intltest/calregts.h b/icu4c/source/test/intltest/calregts.h
+index e576b972631..15d55029093 100644
+--- a/icu4c/source/test/intltest/calregts.h
++++ b/icu4c/source/test/intltest/calregts.h
+@@ -78,6 +78,7 @@ class CalendarRegressionTest: public IntlTest {
+     void Test9019(void);
+     void TestT9452(void);
+     void TestT11632(void);
++    void TestPersianCalOverflow(void);
+ 
+     void printdate(GregorianCalendar *cal, const char *string);
+     void dowTest(UBool lenient) ;
+diff --git a/icu4j/main/tests/core/src/com/ibm/icu/dev/test/calendar/CalendarRegressionTest.java b/icu4j/main/tests/core/src/com/ibm/icu/dev/test/calendar/CalendarRegressionTest.java
+index e0ca7f7ffdd..062ac0bd7a4 100644
+--- a/icu4j/main/tests/core/src/com/ibm/icu/dev/test/calendar/CalendarRegressionTest.java
++++ b/icu4j/main/tests/core/src/com/ibm/icu/dev/test/calendar/CalendarRegressionTest.java
+@@ -2503,5 +2503,23 @@ public void TestTicket11632() {
+         assertEquals("Incorrect time for long range milliseconds","Sun Jan 25 21:00:00 PST 1970", cal.getTime().toString());
+     }
+ 
+-}
++    @Test
++    public void TestPersianCalOverflow() {
++        String localeID = "bs_Cyrl@calendar=persian";
++        Calendar cal = Calendar.getInstance(new ULocale(localeID));
++        int maxMonth = cal.getMaximum(Calendar.MONTH);
++        int maxDayOfMonth = cal.getMaximum(Calendar.DATE);
++        int jd, month, dayOfMonth;
++        for (jd = 67023580; jd <= 67023584; jd++) { // year 178171, int32_t overflow if jd >= 67023582
++            cal.clear();
++            cal.set(Calendar.JULIAN_DAY, jd);
++            month = cal.get(Calendar.MONTH);
++            dayOfMonth = cal.get(Calendar.DATE);
++            if (month > maxMonth || dayOfMonth > maxDayOfMonth) {
++                errln("Error: localeID " + localeID + ", julianDay " + jd + "; maxMonth " + maxMonth + ", got month " + month +
++                        "; maxDayOfMonth " + maxDayOfMonth + ", got dayOfMonth " + dayOfMonth);
++            }
++        }
++    }
++ }
+ //eof

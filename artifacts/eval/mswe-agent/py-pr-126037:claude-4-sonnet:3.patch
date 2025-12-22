@@ -1,0 +1,80 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_elementtree.c b/Modules/_elementtree.c
+index d20bbcd21fd..0631601dd24 100644
+--- a/Modules/_elementtree.c
++++ b/Modules/_elementtree.c
+@@ -1264,6 +1264,10 @@ _elementtree_Element_find_impl(ElementObject *self, PyTypeObject *cls,
+     if (!self->extra)
+         Py_RETURN_NONE;
+ 
++    /* Additional safety check to prevent accessing corrupted memory */
++    if (self->extra->length < 0 || self->extra->length > (Py_ssize_t)(PY_SSIZE_T_MAX / sizeof(PyObject*)))
++        Py_RETURN_NONE;
++
+     for (i = 0; i < self->extra->length; i++) {
+         PyObject* item = self->extra->children[i];
+         int rc;
+@@ -1310,6 +1314,11 @@ _elementtree_Element_findtext_impl(ElementObject *self, PyTypeObject *cls,
+         return Py_NewRef(default_value);
+     }
+ 
++    /* Additional safety check to prevent accessing corrupted memory */
++    if (self->extra->length < 0 || self->extra->length > (Py_ssize_t)(PY_SSIZE_T_MAX / sizeof(PyObject*))) {
++        return Py_NewRef(default_value);
++    }
++
+     for (i = 0; i < self->extra->length; i++) {
+         PyObject *item = self->extra->children[i];
+         int rc;
+@@ -1366,6 +1375,10 @@ _elementtree_Element_findall_impl(ElementObject *self, PyTypeObject *cls,
+     if (!self->extra)
+         return out;
+ 
++    /* Additional safety check to prevent accessing corrupted memory */
++    if (self->extra->length < 0 || self->extra->length > (Py_ssize_t)(PY_SSIZE_T_MAX / sizeof(PyObject*)))
++        return out;
++
+     for (i = 0; i < self->extra->length; i++) {
+         PyObject* item = self->extra->children[i];
+         int rc;
+@@ -1592,6 +1605,10 @@ element_length(PyObject *op)
+     if (!self->extra)
+         return 0;
+ 
++    /* Additional safety check to prevent accessing corrupted memory */
++    if (self->extra->length < 0 || self->extra->length > (Py_ssize_t)(PY_SSIZE_T_MAX / sizeof(PyObject*)))
++        return 0;
++
+     return self->extra->length;
+ }
+ 
+@@ -1649,6 +1666,15 @@ _elementtree_Element_remove_impl(ElementObject *self, PyObject *subelement)
+         return NULL;
+     }
+ 
++    /* Additional safety check to prevent accessing corrupted memory */
++    if (self->extra->length < 0 || self->extra->length > (Py_ssize_t)(PY_SSIZE_T_MAX / sizeof(PyObject*))) {
++        PyErr_SetString(
++            PyExc_ValueError,
++            "list.remove(x): x not in list"
++            );
++        return NULL;
++    }
++
+     for (i = 0; i < self->extra->length; i++) {
+         if (self->extra->children[i] == subelement)
+             break;

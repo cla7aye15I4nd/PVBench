@@ -1,0 +1,99 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Lib/test/test_richcmp.py b/Lib/test/test_richcmp.py
+index 5f449cdc05c..5366204f0d6 100644
+--- a/Lib/test/test_richcmp.py
++++ b/Lib/test/test_richcmp.py
+@@ -351,6 +351,23 @@ def __lt__(self, other):
+         for op in opmap["lt"]:
+             self.assertIs(op(x, y), True)
+ 
++    def test_mutation_during_comparison(self):
++        # This test attempts to mutate the list during comparison,
++        # which could trigger a use-after-free if not handled correctly.
++        class MutateOnCompare:
++            def __init__(self, lst):
++                self.lst = lst
++            def __eq__(self, other):
++                # Mutate the list during comparison
++                if self.lst:
++                    self.lst.pop()
++                return False
++
++        x = [MutateOnCompare(None) for _ in range(3)]
++        for item in x:
++            item.lst = x
++        # The comparison should not crash or cause a use-after-free
++        x == x  # Should not crash or cause a use-after-free
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/Objects/listobject.c b/Objects/listobject.c
+index f59abe2e644..5a47f8dedad 100644
+--- a/Objects/listobject.c
++++ b/Objects/listobject.c
+@@ -351,7 +351,23 @@ list_dealloc(PyListObject *op)
+            There's a simple test case where somehow this reduces
+            thrashing when a *very* large list is created and
+            immediately deleted. */
+-        i = Py_SIZE(op);
++    def test_mutation_during_comparison(self):
++        # This test attempts to mutate the list during comparison,
++        # which could trigger a use-after-free if not handled correctly.
++        class MutateOnCompare:
++            def __init__(self, lst):
++                self.lst = lst
++            def __eq__(self, other):
++                # Mutate the list during comparison
++                if self.lst:
++                    self.lst.pop()
++                return False
++
++        x = [MutateOnCompare(None) for _ in range(3)]
++        for item in x:
++            item.lst = x
++        # The comparison should not crash or cause a use-after-free
++        self.assertFalse(x == x)
+         while (--i >= 0) {
+             Py_XDECREF(op->ob_item[i]);
+         }
+@@ -2727,18 +2743,17 @@ list_richcompare(PyObject *v, PyObject *w, int op)
+     }
+ 
+     /* Search for the first index where items are different */
+-    for (i = 0; i < Py_SIZE(vl) && i < Py_SIZE(wl); i++) {
++    Py_ssize_t vsize = Py_SIZE(vl);
++    Py_ssize_t wsize = Py_SIZE(wl);
++    Py_ssize_t minsize = (vsize < wsize) ? vsize : wsize;
++    for (i = 0; i < minsize; i++) {
+         PyObject *vitem = vl->ob_item[i];
+         PyObject *witem = wl->ob_item[i];
+-        if (vitem == witem) {
+-            continue;
+-        }
+-
+-        Py_INCREF(vitem);
+-        Py_INCREF(witem);
++        Py_XINCREF(vitem);
++        Py_XINCREF(witem);
+         int k = PyObject_RichCompareBool(vitem, witem, Py_EQ);
+-        Py_DECREF(vitem);
+-        Py_DECREF(witem);
++        Py_XDECREF(vitem);
++        Py_XDECREF(witem);
+         if (k < 0)
+             return NULL;
+         if (!k)

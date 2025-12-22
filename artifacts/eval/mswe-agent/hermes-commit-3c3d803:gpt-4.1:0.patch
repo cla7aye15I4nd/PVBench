@@ -1,0 +1,65 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+index 034612427..f4fa61ee7 100644
+--- a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
++++ b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+@@ -6,7 +6,7 @@
+  */
+ 
+ #include "SerialExecutor.h"
+-
++#include <stdexcept>
+ namespace facebook {
+ namespace hermes {
+ namespace inspector_modern {
+diff --git a/lib/Regex/Executor.cpp b/lib/Regex/Executor.cpp
+index fb73b8e56..b0361be85 100644
+--- a/lib/Regex/Executor.cpp
++++ b/lib/Regex/Executor.cpp
+@@ -252,7 +252,8 @@ struct Context {
+   using CodeUnit = typename Traits::CodeUnit;
+   using CodePoint = typename Traits::CodePoint;
+ 
+-  /// The set of backtracking opcodes. These are interpreted by the backtrack()
++  size_t recursionDepth = 0;
++  static constexpr size_t kMaxRecursionDepth = 1000;
+   /// function.
+   enum class BacktrackOp : uint8_t {
+     /// Set the value of a capture group to a stored value.
+@@ -1311,12 +1312,15 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+ 
+             // Set the direction of the cursor.
+             c.setForwards(insn->forwards);
+-
+             // Invoke match() recursively with our expression.
+             // Save and restore the position because lookaheads do not consume
+             // anything.
+-            s->ip_ += sizeof(LookaroundInsn);
++            if (recursionDepth >= kMaxRecursionDepth) {
++              return ExecutorResult<const CodeUnit*>(ExecutionStatus::STACK_OVERFLOW);
++            }
++            ++recursionDepth;
+             auto match = this->match(s, true /* onlyAtStart */);
++            --recursionDepth;
+             // There were no errors and we matched something (so non-null
+             // return)
+             matched = match && match.getValue();

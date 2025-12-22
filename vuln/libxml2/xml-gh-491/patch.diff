@@ -1,0 +1,13 @@
+diff --git a/xmlschemas.c b/xmlschemas.c
+index 6a353858..a4eaf591 100644
+--- a/xmlschemas.c
++++ b/xmlschemas.c
+@@ -18632,7 +18632,7 @@ xmlSchemaFixupComplexType(xmlSchemaParserCtxtPtr pctxt,
+ 			"allowed to appear inside other model groups",
+ 			NULL, NULL);
+ 
+-		} else if (! dummySequence) {
++		} else if ((!dummySequence) && (baseType->subtypes != NULL)) {
+ 		    xmlSchemaTreeItemPtr effectiveContent =
+ 			(xmlSchemaTreeItemPtr) type->subtypes;
+ 		    /*

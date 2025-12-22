@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 66190522e70..ab1a5d23282 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -512,8 +512,8 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+                          std::end(kTemplatesWithMismatchedArguments), index)) {
+             builder.AppendCString("undefined");
+           } else {
+-            FATAL("Missing argument to template (got %zu): %s", args.size(),
+-                  template_string);
++            builder.AppendCString("undefined");
++            // Previously: FATAL("Missing argument to template (got %zu): %s", args.size(), template_string);
+           }
+         } else {
+           Handle<String> arg = remaining_args[0];

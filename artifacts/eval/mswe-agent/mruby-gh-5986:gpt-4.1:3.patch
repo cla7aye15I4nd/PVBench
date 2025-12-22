@@ -1,0 +1,39 @@
+
+diff --git a/.gitignore b/.gitignore
+index c2918f31a..6bf18697a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -32,3 +32,13 @@ compile_flags.txt
+ cscope.files
+ cscope.out
+ tags
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/string.c b/src/string.c
+index 1bd3f6f8f..775e3fead 100644
+--- a/src/string.c
++++ b/src/string.c
+@@ -2950,9 +2950,15 @@ str_bytesplice(mrb_state *mrb, mrb_value str, mrb_int idx1, mrb_int len1, mrb_va
+   if (RSTR_LEN(s) < idx1 || RSTRING_LEN(replace) < idx2) {
+     mrb_raise(mrb, E_INDEX_ERROR, "index out of string");
+   }
++  if (idx1 > MRB_INT_MAX - len1) {
++    mrb_raise(mrb, E_INDEX_ERROR, "index+len1 overflow");
++  }
+   if (RSTR_LEN(s) <= idx1+len1) {
+     len1 = RSTR_LEN(s) - idx1;
+   }
++  if (idx2 > MRB_INT_MAX - len2) {
++    mrb_raise(mrb, E_INDEX_ERROR, "index+len2 overflow");
++  }
+   if (RSTRING_LEN(replace) <= idx2+len2) {
+     len2 = RSTRING_LEN(replace) - idx2;
+   }

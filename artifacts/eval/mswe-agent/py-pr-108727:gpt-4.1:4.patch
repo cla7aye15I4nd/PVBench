@@ -1,0 +1,45 @@
+
+diff --git a/.gitignore b/.gitignore
+index dddf28da016..efa3374de86 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -158,3 +158,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index c66a8623413..7bc23449a51 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2490,8 +2490,11 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
+-    return Py_NewRef(self->task_coro);
+-}
++    if (self->task_coro) {
++        return Py_NewRef(self->task_coro);
++    } else {
++        Py_RETURN_NONE;
++    }
+ 
+ /*[clinic input]
+ _asyncio.Task.get_context
+@@ -2504,6 +2507,11 @@ _asyncio_Task_get_context_impl(TaskObj *self)
+     return Py_NewRef(self->task_context);
+ }
+ 
++
++
++
++
++
+ /*[clinic input]
+ _asyncio.Task.get_name
+ [clinic start generated code]*/

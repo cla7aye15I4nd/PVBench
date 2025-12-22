@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index d6b4065e130..50f559a57b8 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -127,6 +127,10 @@ static PyObject *
+ framelocalsproxy_getitem(PyObject *self, PyObject *key)
+ {
+     PyFrameObject* frame = ((PyFrameLocalsProxyObject*)self)->frame;
++    if (frame == NULL || frame->f_frame == NULL) {
++        PyErr_SetString(PyExc_ReferenceError, "frame is no longer valid");
++        return NULL;
++    }
+     PyCodeObject* co = _PyFrame_GetCode(frame->f_frame);
+ 
+     int i = framelocalsproxy_getkeyindex(frame, key, true);

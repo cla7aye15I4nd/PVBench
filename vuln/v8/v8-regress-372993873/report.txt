@@ -1,0 +1,21 @@
+#
+# Fatal error in ../../src/wasm/wasm-js.cc, line 664
+# Debug check failed: i_isolate()->has_exception() || thrower_.error() implies callback_info_.GetReturnValue().Get()->IsUndefined().
+#
+#
+#
+#FailureMessage Object: 0x7b2cb6e58060
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x46) [0x563cfb6161d6]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x563d0296ae03]
+    out/debug_asan/d8(+0xab662ca) [0x563d029692ca]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x563d029362a0]
+    out/debug_asan/d8(+0xab322df) [0x563d029352df]
+    out/debug_asan/d8(+0x7145f79) [0x563cfef48f79]
+    out/debug_asan/d8(v8::internal::wasm::WebAssemblyException(v8::FunctionCallbackInfo<v8::Value> const&)+0x49d) [0x563cfef2301d]
+    out/debug_asan/d8(v8::internal::FunctionCallbackArguments::CallOrConstruct(v8::internal::Tagged<v8::internal::FunctionTemplateInfo>, bool)+0x38a) [0x563cfb9b60ca]
+    out/debug_asan/d8(+0x3bafea3) [0x563cfb9b2ea3]
+    out/debug_asan/d8(+0x3bad5f6) [0x563cfb9b05f6]
+    out/debug_asan/d8(v8::internal::Builtin_HandleApiConstruct(int, unsigned long*, v8::internal::Isolate*)+0x1b5) [0x563cfb9afaf5]
+    out/debug_asan/d8(+0xa1dd2fd) [0x563d01fe02fd]

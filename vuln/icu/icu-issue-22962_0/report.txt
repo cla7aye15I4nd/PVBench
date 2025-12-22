@@ -1,0 +1,15 @@
+runtime error: signed integer overflow: 2147483647 + 1 cannot be represented in type 'int'
+    #0 0x79d54a849657 in icu_77::Calendar::handleGetMonthLength(int, int, UErrorCode&) const /tmp/icu-issue-22962/build/i18n/.././icu4c/source/i18n/calendar.cpp:3807:55
+    #1 0x79d54a846f0b in icu_77::Calendar::handleComputeJulianDay(UCalendarDateFields, UErrorCode&) /tmp/icu-issue-22962/build/i18n/.././icu4c/source/i18n/calendar.cpp:3488:35
+    #2 0x79d54a8435c5 in icu_77::Calendar::computeJulianDay(UErrorCode&) /tmp/icu-issue-22962/build/i18n/.././icu4c/source/i18n/calendar.cpp:3348:12
+    #3 0x79d54a8419fa in icu_77::Calendar::computeTime(UErrorCode&) /tmp/icu-issue-22962/build/i18n/.././icu4c/source/i18n/calendar.cpp:3087:25
+    #4 0x79d54a828d50 in icu_77::Calendar::updateTime(UErrorCode&) /tmp/icu-issue-22962/build/i18n/.././icu4c/source/i18n/calendar.cpp:4186:5
+    #5 0x79d54a8297eb in icu_77::Calendar::complete(UErrorCode&) /tmp/icu-issue-22962/build/i18n/.././icu4c/source/i18n/calendar.cpp:1319:9
+    #6 0x79d54a8293cc in icu_77::Calendar::get(UCalendarDateFields, UErrorCode&) const /tmp/icu-issue-22962/build/i18n/.././icu4c/source/i18n/calendar.cpp:1176:57
+    #7 0x79d54a836599 in icu_77::Calendar::add(UCalendarDateFields, int, UErrorCode&) /tmp/icu-issue-22962/build/i18n/.././icu4c/source/i18n/calendar.cpp:2113:23
+    #8 0x64a1342b2c9d in main /tmp/icu-issue-22962/build/poc.cpp:23:10
+    #9 0x79d547a9f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x79d547a9f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x64a134287464 in _start (/tmp/icu-issue-22962/build/poc+0x6464) (BuildId: 8317262684cd717df6a0a5a73336ad48d6c7317f)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/calendar.cpp:3807:55 

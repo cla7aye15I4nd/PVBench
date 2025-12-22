@@ -1,0 +1,27 @@
+==299647==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x562ee1648aac bp 0x7fff0baa08a0 sp 0x7fff0baa0720 T0)
+==299647==The signal is caused by a READ memory access.
+==299647==Hint: address points to the zero page.
+    #0 0x562ee1648aac in sxe_object_cast_ex /php-gh-14638/build/ext/simplexml/simplexml.c:1871:64
+    #1 0x562ee16484bb in zim_SimpleXMLElement___toString /php-gh-14638/build/ext/simplexml/simplexml.c:1909:6
+    #2 0x562ee1d6649d in zend_call_function /php-gh-14638/build/Zend/zend_execute_API.c:962:4
+    #3 0x562ee1d67c3c in zend_call_known_function /php-gh-14638/build/Zend/zend_execute_API.c:1043:23
+    #4 0x562ee244196d in zend_call_known_instance_method /php-gh-14638/build/Zend/zend_API.h:753:2
+    #5 0x562ee244196d in zend_call_known_instance_method_with_0_params /php-gh-14638/build/Zend/zend_API.h:759:2
+    #6 0x562ee244196d in zend_std_cast_object_tostring /php-gh-14638/build/Zend/zend_object_handlers.c:1871:5
+    #7 0x562ee165227e in sxe_object_cast /php-gh-14638/build/ext/simplexml/simplexml.c:1893:6
+    #8 0x562ee1d956f0 in __zval_get_string_func /php-gh-14638/build/Zend/zend_operators.c:975:8
+    #9 0x562ee1d956f0 in zval_get_string_func /php-gh-14638/build/Zend/zend_operators.c:996:9
+    #10 0x562ee22195a8 in ZEND_ECHO_SPEC_CV_HANDLER /php-gh-14638/build/Zend/zend_vm_execute.h:38400:22
+    #11 0x562ee1eff0cf in execute_ex /php-gh-14638/build/Zend/zend_vm_execute.h:55866:7
+    #12 0x562ee1f00866 in zend_execute /php-gh-14638/build/Zend/zend_vm_execute.h:60439:2
+    #13 0x562ee1de0f06 in zend_execute_scripts /php-gh-14638/build/Zend/zend.c:1840:4
+    #14 0x562ee1b85f5b in php_execute_script /php-gh-14638/build/main/main.c:2578:13
+    #15 0x562ee270a9ec in do_cli /php-gh-14638/build/sapi/cli/php_cli.c:964:5
+    #16 0x562ee27089a9 in main /php-gh-14638/build/sapi/cli/php_cli.c:1333:18
+    #17 0x7f116307f1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x7f116307f28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x562ee0e03164 in _start (/php-gh-14638/build/sapi/cli/php+0x403164) (BuildId: 948b66e17c270595f81a5d8716c863fc9ff4b6ba)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-14638/build/ext/simplexml/simplexml.c:1871:64 in sxe_object_cast_ex
+==299647==ABORTING

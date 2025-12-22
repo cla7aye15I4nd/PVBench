@@ -1,0 +1,44 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 5cf9eba243b..5ab3776dba5 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -757,15 +757,18 @@ flush_unmatched(ProfilerObject *pObj)
+ {
+     while (pObj->currentProfilerContext) {
+         ProfilerContext *pContext = pObj->currentProfilerContext;
+-        ProfilerEntry *profEntry= pContext->ctxEntry;
+-        if (profEntry)
++        ProfilerEntry *profEntry = pContext->ctxEntry;
++        
++        if (profEntry) {
+             Stop(pObj, pContext, profEntry);
+-        else
++        } else {
++            /* If no profEntry, just unlink the context manually */
+             pObj->currentProfilerContext = pContext->previous;
+-        if (pContext)
+-            PyMem_Free(pContext);
++        }
++        
++        /* Free the context */
++        PyMem_Free(pContext);
+     }
+-
+ }
+ 
+ PyDoc_STRVAR(disable_doc, "\

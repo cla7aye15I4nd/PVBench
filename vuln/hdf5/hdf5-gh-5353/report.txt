@@ -1,0 +1,13 @@
+==18488==ERROR: AddressSanitizer: SEGV on unknown address 0x74ce88600878 (pc 0x74c68aff054f bp 0x7fff3c7c0870 sp 0x7fff3c7c0520 T0)
+==18488==The signal is caused by a READ memory access.
+    #0 0x74c68aff054f in H5S__get_select_hyper_blocklist /tmp/hdf5-gh-5353/build/src/H5Shyper.c:4730:40
+    #1 0x74c68afef6f2 in H5Sget_select_hyper_blocklist /tmp/hdf5-gh-5353/build/src/H5Shyper.c:4852:21
+    #2 0x60cdc2b71a81 in test_h5s_bug5 /tmp/hdf5-gh-5353/build/poc.c:17:15
+    #3 0x60cdc2b717e3 in main /tmp/hdf5-gh-5353/build/poc.c:24:5
+    #4 0x74c68a1cc1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x74c68a1cc28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x60cdc2a983e4 in _start (/tmp/hdf5-gh-5353/build/poc+0x2c3e4) (BuildId: 545e43d09b94b0243290e36c35ba26e068c0397b)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/hdf5-gh-5353/build/src/H5Shyper.c:4730:40 in H5S__get_select_hyper_blocklist
+==18488==ABORTING

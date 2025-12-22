@@ -1,0 +1,27 @@
+==2253476==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000010 (pc 0x55c82c392a5d bp 0x7ffed969eb60 sp 0x7ffed969eae0 T0)
+==2253476==The signal is caused by a READ memory access.
+==2253476==Hint: address points to the zero page.
+    #0 0x55c82c392a5d in phpdbg_unwatch_parent_ht /php-gh-13681/build/sapi/phpdbg/phpdbg_watch.c:671:27
+    #1 0x55c82c394e29 in phpdbg_clean_watch_element /php-gh-13681/build/sapi/phpdbg/phpdbg_watch.c:973:2
+    #2 0x55c82c3950f8 in phpdbg_remove_watch_element /php-gh-13681/build/sapi/phpdbg/phpdbg_watch.c:855:3
+    #3 0x55c82c39b55c in phpdbg_watchpoint_parse_wrapper /php-gh-13681/build/sapi/phpdbg/phpdbg_watch.c:1307:3
+    #4 0x55c82c36c903 in phpdbg_parse_variable_with_arg /php-gh-13681/build/sapi/phpdbg/phpdbg_utils.c:564:11
+    #5 0x55c82c39c3b5 in phpdbg_watchpoint_parse_symtables /php-gh-13681/build/sapi/phpdbg/phpdbg_watch.c:1383:8
+    #6 0x55c82c38af94 in phpdbg_do_watch_array /php-gh-13681/build/sapi/phpdbg/phpdbg_watch.c:1441:4
+    #7 0x55c82c380a28 in phpdbg_internal_stack_execute /php-gh-13681/build/sapi/phpdbg/phpdbg_cmd.c:701:13
+    #8 0x55c82c3804a9 in phpdbg_stack_execute /php-gh-13681/build/sapi/phpdbg/phpdbg_cmd.c:731:18
+    #9 0x55c82c33a449 in phpdbg_interactive /php-gh-13681/build/sapi/phpdbg/phpdbg_prompt.c:1551:11
+    #10 0x55c82c33f4e8 in phpdbg_execute_ex /php-gh-13681/build/sapi/phpdbg/phpdbg_prompt.c:1798:5
+    #11 0x55c82baffdd6 in zend_execute /php-gh-13681/build/Zend/zend_vm_execute.h:60439:2
+    #12 0x55c82c32c7d5 in phpdbg_do_run /php-gh-13681/build/sapi/phpdbg/phpdbg_prompt.c:885:4
+    #13 0x55c82c380a28 in phpdbg_internal_stack_execute /php-gh-13681/build/sapi/phpdbg/phpdbg_cmd.c:701:13
+    #14 0x55c82c3804a9 in phpdbg_stack_execute /php-gh-13681/build/sapi/phpdbg/phpdbg_cmd.c:731:18
+    #15 0x55c82c33a449 in phpdbg_interactive /php-gh-13681/build/sapi/phpdbg/phpdbg_prompt.c:1551:11
+    #16 0x55c82c310658 in main /php-gh-13681/build/sapi/phpdbg/phpdbg.c:1614:5
+    #17 0x7fea98b431c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x7fea98b4328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x55c82aa03174 in _start (/php-gh-13681/build/sapi/phpdbg/phpdbg+0x403174) (BuildId: a62e79173812e8c66c7db721fd5d91ac7dcc03c8)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-13681/build/sapi/phpdbg/phpdbg_watch.c:671:27 in phpdbg_unwatch_parent_ht
+==2253476==ABORTING

@@ -1,0 +1,130 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ba8d67d9..8556f202b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,3 +24,14 @@ test/ApplePlatformsIntegrationTestApp/Podfile.lock
+ test/ApplePlatformsIntegrationTestApp/Pods
+ test/ApplePlatformsIntegrationTestApp/**/xcuserdata
+ test/ApplePlatformsIntegrationTestApp/ApplePlatformsIntegrationTestApp.xcworkspace
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/lib/VM/Operations.cpp b/lib/VM/Operations.cpp
+index 60820798a..996d1accb 100644
+--- a/lib/VM/Operations.cpp
++++ b/lib/VM/Operations.cpp
+@@ -29,6 +29,7 @@
+ 
+ #include <cfloat>
+ #include <cmath>
++#include <unordered_set>
+ 
+ namespace hermes {
+ namespace vm {
+@@ -373,7 +374,7 @@ static inline double stringToNumber(
+     return std::numeric_limits<double>::infinity();
+   }
+   if (runtime->symbolEqualsToStringPrim(
+-          Predefined::getSymbolID(Predefined::PositiveInfinity), *strPrim)) {
++  // Get the target and check if it's a constructor
+     return std::numeric_limits<double>::infinity();
+   }
+   if (runtime->symbolEqualsToStringPrim(
+@@ -1351,6 +1352,48 @@ bool isConstructor(Runtime *runtime, HermesValue value) {
+   return isConstructor(runtime, dyn_vmcast<Callable>(value));
+ }
+ 
++
++// Helper function to detect cycles in JSCallableProxy chains
++static bool isConstructorWithCycleDetection(
++    Runtime *runtime, 
++    JSCallableProxy *cproxy, 
++    std::unordered_set<JSCallableProxy*> *visited) {
++  // Create a new visited set if this is the top-level call
++  std::unordered_set<JSCallableProxy*> localVisited;
++  if (visited == nullptr) {
++    visited = &localVisited;
++  }
++  
++  // Check if we've already visited this proxy (cycle detected)
++  if (visited->find(cproxy) != visited->end()) {
++    // Cycle detected, return false to break the recursion
++    return false;
++  }
++  
++  // Mark this proxy as visited
++  visited->insert(cproxy);
++  
++  // Get the target and check if it's a constructor
++  auto targetHandle = JSProxy::getTarget(cproxy, runtime);
++  if (!targetHandle) {
++    return false;
++  }
++  }
++  
++  auto *target = dyn_vmcast<Callable>(targetHandle.get());
++  if (!target) {
++    return false;
++  }
++  
++  // If the target is another JSCallableProxy, recursively check with cycle detection
++  if (auto *targetProxy = dyn_vmcast<JSCallableProxy>(target)) {
++    return isConstructorWithCycleDetection(runtime, targetProxy, visited);
++  }
++  
++  // For non-proxy targets, use the regular isConstructor logic
++  return isConstructor(runtime, target);
++}
++
+ bool isConstructor(Runtime *runtime, Callable *callable) {
+   // This is not a complete definition, since ES6 and later define member
+   // functions of objects to not be constructors; however, Hermes does not have
+@@ -1380,9 +1423,10 @@ bool isConstructor(Runtime *runtime, Callable *callable) {
+   }
+ 
+   // JSCallableProxy is a NativeFunction, but may or may not be a
+-  // constructor, so we ask it.
++  // constructor, so we ask it. However, we need to prevent infinite
++  // recursion by tracking visited proxies.
+   if (auto *cproxy = dyn_vmcast<JSCallableProxy>(callable)) {
+-    return cproxy->isConstructor(runtime);
++    return isConstructorWithCycleDetection(runtime, cproxy, nullptr);
+   }
+ 
+   return false;
+diff --git a/test_recursive.js b/test_recursive.js
+new file mode 100644
+index 000000000..e6a015747
+--- /dev/null
++++ b/test_recursive.js
+@@ -0,0 +1,21 @@
++// Test case to trigger recursive isConstructor calls
++function createRecursiveProxy() {
++    let handler = {
++        construct: function(target, args) {
++            return new target(...args);
++        }
++    };
++    
++    let proxy1 = new Proxy(function() {}, handler);
++    let proxy2 = new Proxy(proxy1, handler);
++    
++    // This might trigger the recursive isConstructor calls
++    return new proxy2();
++}
++
++try {
++    createRecursiveProxy();
++    print("Test completed successfully");
++} catch (e) {
++    print("Error:", e.message);
++}

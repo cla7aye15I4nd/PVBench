@@ -1,0 +1,99 @@
+==1063569==ERROR: AddressSanitizer: heap-use-after-free on address 0x503000027b98 at pc 0x55fba016fc2d bp 0x7ffcd8a84b80 sp 0x7ffcd8a84b78
+READ of size 8 at 0x503000027b98 thread T0
+    #0 0x55fba016fc2c in zend_assign_to_variable /php-gh-14969/build/Zend/zend_execute.h:149:9
+    #1 0x55fba016fc2c in ZEND_ASSIGN_SPEC_CV_VAR_RETVAL_UNUSED_HANDLER /php-gh-14969/build/Zend/zend_vm_execute.h:47010:10
+    #2 0x55fba00ff0cf in execute_ex /php-gh-14969/build/Zend/zend_vm_execute.h:55866:7
+    #3 0x55fba0100866 in zend_execute /php-gh-14969/build/Zend/zend_vm_execute.h:60439:2
+    #4 0x55fb9ffe0f06 in zend_execute_scripts /php-gh-14969/build/Zend/zend.c:1840:4
+    #5 0x55fb9fd85e0b in php_execute_script /php-gh-14969/build/main/main.c:2578:13
+    #6 0x55fba090a9fc in do_cli /php-gh-14969/build/sapi/cli/php_cli.c:964:5
+    #7 0x55fba09089b9 in main /php-gh-14969/build/sapi/cli/php_cli.c:1333:18
+    #8 0x7f1df29ad1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x7f1df29ad28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x55fb9f003184 in _start (/php-gh-14969/build/sapi/cli/php+0x403184) (BuildId: bbc893b98bfa5eac8fbe8d9c18af3718f87b9d6f)
+
+0x503000027b98 is located 24 bytes inside of 32-byte region [0x503000027b80,0x503000027ba0)
+freed by thread T0 here:
+    #0 0x55fb9f09dd3a in free (/php-gh-14969/build/sapi/cli/php+0x49dd3a) (BuildId: bbc893b98bfa5eac8fbe8d9c18af3718f87b9d6f)
+    #1 0x55fb9fecd2e7 in tracked_free /php-gh-14969/build/Zend/zend_alloc.c:2851:2
+    #2 0x55fb9feb9ec7 in _efree_custom /php-gh-14969/build/Zend/zend_alloc.c:2486:3
+    #3 0x55fb9feba426 in _efree_32 /php-gh-14969/build/Zend/zend_alloc.c:2566:1
+    #4 0x55fb9ffce1b3 in zend_reference_destroy /php-gh-14969/build/Zend/zend_variables.c:75:2
+    #5 0x55fb9ffccc3a in rc_dtor_func /php-gh-14969/build/Zend/zend_variables.c:57:2
+    #6 0x55fb9ffccd9c in i_zval_ptr_dtor /php-gh-14969/build/Zend/zend_variables.h:44:4
+    #7 0x55fb9ffccd9c in zval_ptr_dtor /php-gh-14969/build/Zend/zend_variables.c:84:2
+    #8 0x55fba062e556 in zend_std_write_property /php-gh-14969/build/Zend/zend_object_handlers.c:893:6
+    #9 0x55fba0214240 in ZEND_ASSIGN_OBJ_SPEC_CV_CONST_OP_DATA_CV_HANDLER /php-gh-14969/build/Zend/zend_vm_execute.h:41614:10
+    #10 0x55fba00ff0cf in execute_ex /php-gh-14969/build/Zend/zend_vm_execute.h:55866:7
+    #11 0x55fba0100866 in zend_execute /php-gh-14969/build/Zend/zend_vm_execute.h:60439:2
+    #12 0x55fb9ffe0f06 in zend_execute_scripts /php-gh-14969/build/Zend/zend.c:1840:4
+    #13 0x55fb9fd85e0b in php_execute_script /php-gh-14969/build/main/main.c:2578:13
+    #14 0x55fba090a9fc in do_cli /php-gh-14969/build/sapi/cli/php_cli.c:964:5
+    #15 0x55fba09089b9 in main /php-gh-14969/build/sapi/cli/php_cli.c:1333:18
+    #16 0x7f1df29ad1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x7f1df29ad28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x55fb9f003184 in _start (/php-gh-14969/build/sapi/cli/php+0x403184) (BuildId: bbc893b98bfa5eac8fbe8d9c18af3718f87b9d6f)
+
+previously allocated by thread T0 here:
+    #0 0x55fb9f09dfd3 in malloc (/php-gh-14969/build/sapi/cli/php+0x49dfd3) (BuildId: bbc893b98bfa5eac8fbe8d9c18af3718f87b9d6f)
+    #1 0x55fb9fead1a0 in tracked_malloc /php-gh-14969/build/Zend/zend_alloc.c:2832:14
+    #2 0x55fb9feb2d33 in _malloc_custom /php-gh-14969/build/Zend/zend_alloc.c:2477:10
+    #3 0x55fb9feb34b3 in _emalloc_32 /php-gh-14969/build/Zend/zend_alloc.c:2526:1
+    #4 0x55fba046ffc7 in ZEND_BIND_GLOBAL_SPEC_CV_CONST_HANDLER /php-gh-14969/build/Zend/zend_vm_execute.h:43386:3
+    #5 0x55fba00ff0cf in execute_ex /php-gh-14969/build/Zend/zend_vm_execute.h:55866:7
+    #6 0x55fb9ff66139 in zend_call_function /php-gh-14969/build/Zend/zend_execute_API.c:949:3
+    #7 0x55fb9ff67c3c in zend_call_known_function /php-gh-14969/build/Zend/zend_execute_API.c:1043:23
+    #8 0x55fba064197d in zend_call_known_instance_method /php-gh-14969/build/Zend/zend_API.h:753:2
+    #9 0x55fba064197d in zend_call_known_instance_method_with_0_params /php-gh-14969/build/Zend/zend_API.h:759:2
+    #10 0x55fba064197d in zend_std_cast_object_tostring /php-gh-14969/build/Zend/zend_object_handlers.c:1871:5
+    #11 0x55fb9ffec39a in zend_parse_arg_str_weak /php-gh-14969/build/Zend/zend_API.c:671:7
+    #12 0x55fba00e28e2 in zend_verify_weak_scalar_type_hint /php-gh-14969/build/Zend/zend_execute.c:745:37
+    #13 0x55fba00e1dca in zend_verify_scalar_type_hint /php-gh-14969/build/Zend/zend_execute.c:812:9
+    #14 0x55fba00e44e4 in i_zend_check_property_type /php-gh-14969/build/Zend/zend_execute.c:947:9
+    #15 0x55fba00e44e4 in i_zend_verify_property_type /php-gh-14969/build/Zend/zend_execute.c:952:6
+    #16 0x55fba00e44e4 in zend_verify_property_type /php-gh-14969/build/Zend/zend_execute.c:961:9
+    #17 0x55fba062e533 in zend_std_write_property /php-gh-14969/build/Zend/zend_object_handlers.c:892:9
+    #18 0x55fba0214240 in ZEND_ASSIGN_OBJ_SPEC_CV_CONST_OP_DATA_CV_HANDLER /php-gh-14969/build/Zend/zend_vm_execute.h:41614:10
+    #19 0x55fba00ff0cf in execute_ex /php-gh-14969/build/Zend/zend_vm_execute.h:55866:7
+    #20 0x55fba0100866 in zend_execute /php-gh-14969/build/Zend/zend_vm_execute.h:60439:2
+    #21 0x55fb9ffe0f06 in zend_execute_scripts /php-gh-14969/build/Zend/zend.c:1840:4
+    #22 0x55fb9fd85e0b in php_execute_script /php-gh-14969/build/main/main.c:2578:13
+    #23 0x55fba090a9fc in do_cli /php-gh-14969/build/sapi/cli/php_cli.c:964:5
+    #24 0x55fba09089b9 in main /php-gh-14969/build/sapi/cli/php_cli.c:1333:18
+    #25 0x7f1df29ad1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #26 0x7f1df29ad28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #27 0x55fb9f003184 in _start (/php-gh-14969/build/sapi/cli/php+0x403184) (BuildId: bbc893b98bfa5eac8fbe8d9c18af3718f87b9d6f)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /php-gh-14969/build/Zend/zend_execute.h:149:9 in zend_assign_to_variable
+Shadow bytes around the buggy address:
+  0x503000027900: fa fa fd fd fd fd fa fa fd fd fd fd fa fa fd fd
+  0x503000027980: fd fd fa fa fd fd fd fd fa fa 00 00 00 00 fa fa
+  0x503000027a00: fd fd fd fd fa fa fd fd fd fd fa fa fd fd fd fd
+  0x503000027a80: fa fa fd fd fd fd fa fa 00 00 00 00 fa fa 00 00
+  0x503000027b00: 00 00 fa fa 00 00 00 fa fa fa fd fd fd fa fa fa
+=>0x503000027b80: fd fd fd[fd]fa fa 00 00 00 01 fa fa fa fa fa fa
+  0x503000027c00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000027c80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000027d00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000027d80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000027e00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==1063569==ABORTING

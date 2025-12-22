@@ -1,0 +1,213 @@
+# ICU (International Components for Unicode) API Documentation Guide
+
+## Error Handling
+
+### UErrorCode
+- Status variable passed to most ICU functions
+- Must be initialized to U_ZERO_ERROR before use
+- Check with U_SUCCESS(status) or U_FAILURE(status) macros
+
+```cpp
+UErrorCode status = U_ZERO_ERROR;
+// ... ICU operations ...
+if (U_FAILURE(status)) {
+    // Handle error
+}
+```
+
+### Error Checking Macros
+```cpp
+U_SUCCESS(status)  // Returns true if status indicates success
+U_FAILURE(status)  // Returns true if status indicates failure
+```
+
+## Calendar API (unicode/calendar.h)
+
+### Calendar::createInstance
+```cpp
+static Calendar* Calendar::createInstance(const Locale& aLocale, UErrorCode& success)
+```
+- Creates a Calendar for the given locale
+- Returns: pointer to Calendar object, or nullptr on failure
+- Always check status after call
+
+### Calendar::clear
+```cpp
+void Calendar::clear()
+```
+- Clears all fields in the calendar
+
+### Calendar::set
+```cpp
+void Calendar::set(UCalendarDateFields field, int32_t value)
+```
+- Sets a field value
+- Fields: UCAL_YEAR, UCAL_MONTH, UCAL_DATE, UCAL_JULIAN_DAY, etc.
+
+### Calendar::get
+```cpp
+int32_t Calendar::get(UCalendarDateFields field, UErrorCode& status) const
+```
+- Gets a field value
+- Returns: field value, sets status on error
+- Always check U_SUCCESS(status) after call
+
+### Calendar::getMaximum
+```cpp
+int32_t Calendar::getMaximum(UCalendarDateFields field) const
+```
+- Returns maximum value for a field
+
+### Calendar::getMinimum
+```cpp
+int32_t Calendar::getMinimum(UCalendarDateFields field) const
+```
+- Returns minimum value for a field
+
+## Calendar Fields (UCalendarDateFields)
+- UCAL_YEAR - Year
+- UCAL_MONTH - Month (0-based: 0=January)
+- UCAL_DATE - Day of month
+- UCAL_DAY_OF_WEEK - Day of week
+- UCAL_JULIAN_DAY - Julian day number
+- UCAL_HOUR - Hour (12-hour)
+- UCAL_MINUTE - Minute
+- UCAL_SECOND - Second
+
+## Regular Expression API (unicode/uregex.h)
+
+### uregex_open
+```cpp
+URegularExpression* uregex_open(
+    const UChar* pattern,
+    int32_t patternLength,
+    uint32_t flags,
+    UParseError* pe,
+    UErrorCode* status
+)
+```
+- Compiles a regular expression
+- Returns: pointer to URegularExpression, or nullptr on failure
+- Check status for success
+
+### uregex_setText
+```cpp
+void uregex_setText(
+    URegularExpression* regexp,
+    const UChar* text,
+    int32_t textLength,
+    UErrorCode* status
+)
+```
+- Sets the text to be matched
+- textLength: -1 for null-terminated string
+
+### uregex_find
+```cpp
+UBool uregex_find(
+    URegularExpression* regexp,
+    int32_t startIndex,
+    UErrorCode* status
+)
+```
+- Finds the next match
+- Returns: TRUE if match found, FALSE otherwise
+- Check status for errors
+
+### uregex_start
+```cpp
+int32_t uregex_start(
+    URegularExpression* regexp,
+    int32_t groupNum,
+    UErrorCode* status
+)
+```
+- Returns start index of most recent match
+- groupNum: 0 for entire match, 1+ for capture groups
+- Returns: start position, or -1 on error
+
+### uregex_end
+```cpp
+int32_t uregex_end(
+    URegularExpression* regexp,
+    int32_t groupNum,
+    UErrorCode* status
+)
+```
+- Returns end index (exclusive) of most recent match
+
+### uregex_close
+```cpp
+void uregex_close(URegularExpression* regexp)
+```
+- Closes and frees a regular expression
+
+## UnicodeString (unicode/unistr.h)
+
+### UnicodeString::getBuffer
+```cpp
+const UChar* UnicodeString::getBuffer() const
+```
+- Returns pointer to internal buffer
+
+### UnicodeString::length
+```cpp
+int32_t UnicodeString::length() const
+```
+- Returns length of string
+
+### String literals
+```cpp
+UnicodeString str = u"text";  // UTF-16 literal
+```
+
+## Locale API (unicode/locid.h)
+
+### Locale constructor
+```cpp
+Locale(const char* localeID)
+```
+- Creates a Locale from string like "en_US", "bs_Cyrl@calendar=persian"
+
+## Common Assertion Patterns
+
+```cpp
+// Calendar creation
+UErrorCode status = U_ZERO_ERROR;
+Calendar* cal = Calendar::createInstance(Locale("en_US"), status);
+assert(U_SUCCESS(status));
+assert(cal != nullptr);
+
+// Calendar field access
+int32_t month = cal->get(UCAL_MONTH, status);
+assert(U_SUCCESS(status));
+
+// Field range validation
+int32_t maxMonth = cal->getMaximum(UCAL_MONTH);
+assert(month <= maxMonth);
+
+// Regular expression
+UErrorCode status = U_ZERO_ERROR;
+URegularExpression* re = uregex_open(pattern, -1, 0, nullptr, &status);
+assert(U_SUCCESS(status));
+assert(re != nullptr);
+
+uregex_setText(re, text, -1, &status);
+assert(U_SUCCESS(status));
+
+UBool found = uregex_find(re, 0, &status);
+assert(U_SUCCESS(status));
+assert(found == TRUE);  // or FALSE if expecting no match
+
+int32_t start = uregex_start(re, 0, &status);
+assert(U_SUCCESS(status));
+assert(start >= 0);
+
+// Cleanup
+delete cal;
+uregex_close(re);
+```
+
+## Memory Management
+- Calendar objects created with createInstance must be deleted
+- URegularExpression must be closed with uregex_close

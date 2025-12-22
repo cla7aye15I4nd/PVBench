@@ -1,0 +1,121 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index 3446fb2c964..500c338d713 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -1688,11 +1688,18 @@ ZEND_API int zend_std_compare_objects(zval *o1, zval *o2) /* {{{ */
+ 	if (zobj1->ce != zobj2->ce) {
+ 		return ZEND_UNCOMPARABLE; /* different classes */
+ 	}
++	
++	/* Protect objects from being freed during comparison */
++	GC_ADDREF(zobj1);
++	GC_ADDREF(zobj2);
++	
+ 	if (!zobj1->properties && !zobj2->properties) {
+ 		zend_property_info *info;
+ 		int i;
+ 
+ 		if (!zobj1->ce->default_properties_count) {
++			GC_DELREF(zobj1);
++			GC_DELREF(zobj2);
+ 			return 0;
+ 		}
+ 
+@@ -1702,6 +1709,8 @@ ZEND_API int zend_std_compare_objects(zval *o1, zval *o2) /* {{{ */
+ 		 */
+ 		/* use bitwise OR to make only one conditional jump */
+ 		if (UNEXPECTED(Z_IS_RECURSIVE_P(o1))) {
++			GC_DELREF(zobj1);
++			GC_DELREF(zobj2);
+ 			zend_error_noreturn(E_ERROR, "Nesting level too deep - recursive dependency?");
+ 		}
+ 		Z_PROTECT_RECURSION_P(o1);
+@@ -1725,30 +1734,42 @@ ZEND_API int zend_std_compare_objects(zval *o1, zval *o2) /* {{{ */
+ 					ret = zend_compare(p1, p2);
+ 					if (ret != 0) {
+ 						Z_UNPROTECT_RECURSION_P(o1);
++						GC_DELREF(zobj1);
++						GC_DELREF(zobj2);
+ 						return ret;
+ 					}
+ 				} else {
+ 					Z_UNPROTECT_RECURSION_P(o1);
++					GC_DELREF(zobj1);
++					GC_DELREF(zobj2);
+ 					return 1;
+ 				}
+ 			} else {
+ 				if (Z_TYPE_P(p2) != IS_UNDEF) {
+ 					Z_UNPROTECT_RECURSION_P(o1);
++					GC_DELREF(zobj1);
++					GC_DELREF(zobj2);
+ 					return 1;
+ 				}
+ 			}
+ 		}
+ 
+ 		Z_UNPROTECT_RECURSION_P(o1);
++		GC_DELREF(zobj1);
++		GC_DELREF(zobj2);
+ 		return 0;
+ 	} else {
++		int ret;
+ 		if (!zobj1->properties) {
+ 			rebuild_object_properties(zobj1);
+ 		}
+ 		if (!zobj2->properties) {
+ 			rebuild_object_properties(zobj2);
+ 		}
+-		return zend_compare_symbol_tables(zobj1->properties, zobj2->properties);
++		ret = zend_compare_symbol_tables(zobj1->properties, zobj2->properties);
++		GC_DELREF(zobj1);
++		GC_DELREF(zobj2);
++		return ret;
+ 	}
+ }
+ /* }}} */
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..f09ecb0e6b3 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -163,13 +163,13 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+ 
+ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
+ {
+-	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+-
+-	/* GC might have released this object already. */
+-	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
++	/* Check if object is already being deleted to prevent recursive deletion */
++	if (UNEXPECTED(GC_TYPE(object) == IS_NULL || (OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED))) {
+ 		return;
+ 	}
+ 
++	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
++
+ 	/*	Make sure we hold a reference count during the destructor call
+ 		otherwise, when the destructor ends the storage might be freed
+ 		when the refcount reaches 0 a second time
+@@ -205,4 +205,3 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
+ 	}
+ }
+-/* }}} */

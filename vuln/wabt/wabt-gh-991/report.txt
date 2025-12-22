@@ -1,0 +1,18 @@
+==9465==ERROR: AddressSanitizer: requested allocation size 0x7fffffffffffffff (0x8000000000001000 after adjustments for alignment, red zones etc.) exceeds maximum supported size of 0x10000000000 (thread T0)
+    #0 0x5a6e03ebe751 in operator new(unsigned long) (/tmp/wabt-gh-991/build/build/wasm-objdump+0x1bc751) (BuildId: 445201f20a051bab3fd545e886b3ee30609e71ed)
+    #1 0x5a6e03f23e5e in std::__new_allocator<unsigned char>::allocate(unsigned long, void const*) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/new_allocator.h:151:27
+    #2 0x5a6e03f23873 in std::allocator_traits<std::allocator<unsigned char>>::allocate(std::allocator<unsigned char>&, unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/alloc_traits.h:482:20
+    #3 0x5a6e03f23873 in std::_Vector_base<unsigned char, std::allocator<unsigned char>>::_M_allocate(unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/stl_vector.h:381:20
+    #4 0x5a6e03f23277 in std::vector<unsigned char, std::allocator<unsigned char>>::_M_default_append(unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/vector.tcc:663:34
+    #5 0x5a6e03f22ff5 in std::vector<unsigned char, std::allocator<unsigned char>>::resize(unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/stl_vector.h:1016:4
+    #6 0x5a6e03f22e99 in wabt::ReadFile(wabt::string_view, std::vector<unsigned char, std::allocator<unsigned char>>*) /tmp/wabt-gh-991/build/src/common.cc:78:13
+    #7 0x5a6e03ec0c3d in dump_file(char const*) /tmp/wabt-gh-991/build/src/tools/wasm-objdump.cc:73:3
+    #8 0x5a6e03ec122c in ProgramMain(int, char**) /tmp/wabt-gh-991/build/src/tools/wasm-objdump.cc:134:16
+    #9 0x5a6e03ec1af1 in main /tmp/wabt-gh-991/build/src/tools/wasm-objdump.cc:144:10
+    #10 0x7e5e901741c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7e5e9017428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x5a6e03de52e4 in _start (/tmp/wabt-gh-991/build/build/wasm-objdump+0xe32e4) (BuildId: 445201f20a051bab3fd545e886b3ee30609e71ed)
+
+==9465==HINT: if you don't care about these errors you may set allocator_may_return_null=1
+SUMMARY: AddressSanitizer: allocation-size-too-big (/tmp/wabt-gh-991/build/build/wasm-objdump+0x1bc751) (BuildId: 445201f20a051bab3fd545e886b3ee30609e71ed) in operator new(unsigned long)
+==9465==ABORTING

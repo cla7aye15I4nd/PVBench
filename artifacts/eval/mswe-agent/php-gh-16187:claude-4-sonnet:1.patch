@@ -1,0 +1,113 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..164a4cde398 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -45,6 +45,7 @@ typedef struct _spl_array_object {
+ 	uint32_t          ht_iter;
+ 	int               ar_flags;
+ 	unsigned char	  nApplyCount;
++	bool			  in_unset_operation;
+ 	bool			  is_child;
+ 	Bucket			  *bucket;
+ 	zend_function     *fptr_offset_get;
+@@ -156,8 +157,8 @@ static zend_object *spl_array_object_new_ex(zend_class_entry *class_type, zend_o
+ 	object_properties_init(&intern->std, class_type);
+ 
+ 	intern->ar_flags = 0;
++	intern->in_unset_operation = false;
+ 	intern->is_child = false;
+-	intern->bucket = NULL;
+ 	intern->ce_get_iterator = spl_ce_ArrayIterator;
+ 	if (orig) {
+ 		spl_array_object *other = spl_array_from_obj(orig);
+@@ -541,6 +542,11 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		return;
+ 	}
+ 
++	if (intern->in_unset_operation) {
++		zend_throw_error(NULL, "Modification of ArrayObject during unset is prohibited");
++		return;
++	}
++
+ 	if (get_hash_key(&key, intern, offset) == FAILURE) {
+ 		zend_type_error("Illegal offset type in unset");
+ 		return;
+@@ -549,6 +555,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
++	/* Set flag to prevent recursive modifications */
++	intern->in_unset_operation = true;
++
+ 	if (key.key) {
+ 		zval *data = zend_hash_find(ht, key.key);
+ 		if (data) {
+@@ -557,6 +566,8 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+ 					zval_ptr_dtor(data);
+ 					ZVAL_UNDEF(data);
++					/* Re-get hash table as destructor may have changed it */
++					ht = spl_array_get_hash_table(intern);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+ 					if (spl_array_is_object(intern)) {
+@@ -572,16 +583,19 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		zend_hash_index_del(ht, key.h);
+ 	}
+ 
++	/* Clear flag before setting refcount */
++	intern->in_unset_operation = false;
++
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
+ } /* }}} */
+ 
++
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+ {
+ 	spl_array_unset_dimension_ex(1, object, offset);
+ } /* }}} */
+-
+ /* check_empty can take value 0, 1, or 2
+  * 0/1 are used as normal boolean, but 2 is used for the case when this function is called from
+  * the offsetExists() method, in which case it needs to report the offset exist even if the value is null */
+@@ -590,6 +604,7 @@ static bool spl_array_has_dimension_ex(bool check_inherited, zend_object *object
+ 	spl_array_object *intern = spl_array_from_obj(object);
+ 	zval rv, *value = NULL, *tmp;
+ 
++
+ 	if (check_inherited && intern->fptr_offset_has) {
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_has, "offsetExists", &rv, offset);
+ 
+@@ -1050,6 +1065,12 @@ static HashTable *spl_array_it_get_gc(zend_object_iterator *iter, zval **table,
+ 
+ /* {{{ spl_array_set_array */
+ static void spl_array_set_array(zval *object, spl_array_object *intern, zval *array, zend_long ar_flags, bool just_array) {
++	/* Check if we're in the middle of an unset operation */
++	if (intern->in_unset_operation) {
++		zend_throw_error(NULL, "Modification of ArrayObject during unset is prohibited");
++		return;
++	}
++	
+ 	/* Handled by ZPP prior to this, or for __unserialize() before passing to here */
+ 	ZEND_ASSERT(Z_TYPE_P(array) == IS_ARRAY || Z_TYPE_P(array) == IS_OBJECT);
+ 	if (Z_TYPE_P(array) == IS_ARRAY) {

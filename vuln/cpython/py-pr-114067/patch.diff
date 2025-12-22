@@ -1,0 +1,21 @@
+diff --git a/Misc/NEWS.d/next/Core and Builtins/2024-01-17-23-39-20.gh-issue-114050.Lnv1oq.rst b/Misc/NEWS.d/next/Core and Builtins/2024-01-17-23-39-20.gh-issue-114050.Lnv1oq.rst
+new file mode 100644
+index 00000000000..c35d2508e6b
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core and Builtins/2024-01-17-23-39-20.gh-issue-114050.Lnv1oq.rst	
+@@ -0,0 +1,2 @@
++Fix segmentation fault caused by an incorrect format string
++in ``TypeError`` exception when more than two arguments are passed to ``int``.
+diff --git a/Objects/longobject.c b/Objects/longobject.c
+index fae70dd13bb..e655ba19e8f 100644
+--- a/Objects/longobject.c
++++ b/Objects/longobject.c
+@@ -6171,7 +6171,7 @@ long_vectorcall(PyObject *type, PyObject * const*args,
+             return long_new_impl(_PyType_CAST(type), args[0], args[1]);
+         default:
+             return PyErr_Format(PyExc_TypeError,
+-                                "int expected at most 2 argument%s, got %zd",
++                                "int expected at most 2 arguments, got %zd",
+                                 nargs);
+     }
+ }

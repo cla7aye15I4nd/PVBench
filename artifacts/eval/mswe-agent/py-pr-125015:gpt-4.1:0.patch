@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Include/refcount.h b/Include/refcount.h
+index 9a4e15065ec..70e21e6f499 100644
+--- a/Include/refcount.h
++++ b/Include/refcount.h
+@@ -452,8 +452,8 @@ static inline Py_ALWAYS_INLINE void Py_DECREF(PyObject *op)
+             PyObject *_null_ptr = _Py_NULL; \
+             memcpy(_tmp_op_ptr, &_null_ptr, sizeof(PyObject*)); \
+             Py_DECREF(_tmp_old_op); \
+-        } \
+-    } while (0)
++                Py_CLEAR(entries[i].me_key);
++                Py_CLEAR(entries[i].me_value);
+ #endif
+ 
+ 

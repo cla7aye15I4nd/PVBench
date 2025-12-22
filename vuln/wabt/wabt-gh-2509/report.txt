@@ -1,0 +1,20 @@
+==1755==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x765d1237b981 bp 0x7ffd2bf0bf60 sp 0x7ffd2bf0b718 T0)
+==1755==The signal is caused by a READ memory access.
+==1755==Hint: address points to the zero page.
+    #0 0x765d1237b981  (/lib/x86_64-linux-gnu/libc.so.6+0x188981) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #1 0x64e0676bdbf6 in __asan_memcpy (/tmp/wabt-gh-2509/build/build/wast2json+0x183bf6) (BuildId: 14f5212ea0eab5c6642f55c67cd485e56bd463e9)
+    #2 0x64e0678031f5 in wabt::Module::operator=(wabt::Module&&) /tmp/wabt-gh-2509/build/include/wabt/ir.h:1194:8
+    #3 0x64e0677df8c4 in wabt::WastParser::ParseModuleCommand(wabt::Script*, std::unique_ptr<wabt::Command, std::default_delete<wabt::Command>>*) /tmp/wabt-gh-2509/build/src/wast-parser.cc:3493:15
+    #4 0x64e0677fa2f4 in wabt::WastParser::ParseCommand(wabt::Script*, std::unique_ptr<wabt::Command, std::default_delete<wabt::Command>>*) /tmp/wabt-gh-2509/build/src/wast-parser.cc:3343:14
+    #5 0x64e0677e0eb8 in wabt::WastParser::ParseCommandList(wabt::Script*, std::vector<std::unique_ptr<wabt::Command, std::default_delete<wabt::Command>>, std::allocator<std::unique_ptr<wabt::Command, std::default_delete<wabt::Command>>>>*) /tmp/wabt-gh-2509/build/src/wast-parser.cc:3305:19
+    #6 0x64e0677e06e9 in wabt::WastParser::ParseScript(std::unique_ptr<wabt::Script, std::default_delete<wabt::Script>>*) /tmp/wabt-gh-2509/build/src/wast-parser.cc:1246:5
+    #7 0x64e0677fd7ab in wabt::ParseWastScript(wabt::WastLexer*, std::unique_ptr<wabt::Script, std::default_delete<wabt::Script>>*, std::vector<wabt::Error, std::allocator<wabt::Error>>*, wabt::WastParseOptions*) /tmp/wabt-gh-2509/build/src/wast-parser.cc:3782:3
+    #8 0x64e067700e6b in ProgramMain(int, char**) /tmp/wabt-gh-2509/build/src/tools/wast2json.cc:116:12
+    #9 0x64e067702051 in main /tmp/wabt-gh-2509/build/src/tools/wast2json.cc:159:10
+    #10 0x765d1221d1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x765d1221d28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x64e067625174 in _start (/tmp/wabt-gh-2509/build/build/wast2json+0xeb174) (BuildId: 14f5212ea0eab5c6642f55c67cd485e56bd463e9)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/lib/x86_64-linux-gnu/libc.so.6+0x188981) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667) 
+==1755==ABORTING

@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_elementtree.c b/Modules/_elementtree.c
+index b73bd844626..84bb51f8016 100644
+--- a/Modules/_elementtree.c
++++ b/Modules/_elementtree.c
+@@ -1640,6 +1640,13 @@ _elementtree_Element_remove_impl(ElementObject *self, PyObject *subelement)
+             );
+         return NULL;
+     }
++    if (!self->extra->children) {
++        PyErr_SetString(
++            PyExc_ValueError,
++            "list.remove(x): x not in list"
++        );
++        return NULL;
++    }
+ 
+     for (i = 0; i < self->extra->length; i++) {
+         if (self->extra->children[i] == subelement)

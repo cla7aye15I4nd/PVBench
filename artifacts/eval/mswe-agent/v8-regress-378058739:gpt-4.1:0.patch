@@ -1,0 +1,40 @@
+
+diff --git a/.gclient b/.gclient
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/.gitignore b/.gitignore
+index fa8fbb49d9d..d9670c75cbc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,3 +126,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 8071ec0eb61..3351fcd725d 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -1026,11 +1026,10 @@ Variable* DeclarationScope::DeclareParameter(const AstRawString* name,
+   } else {
+     var = LookupLocal(name);
+     DCHECK_EQ(mode, VariableMode::kVar);
+-    DCHECK(var->is_parameter());
++  Variable* receiver() {
++    DCHECK(has_this_declaration() || is_script_scope());
++    return receiver_;
+   }
+-  has_rest_ = is_rest;
+-  var->set_initializer_position(position);
+-  params_.Add(var, zone());
+   if (!is_rest) ++num_parameters_;
+   if (name == ast_value_factory->arguments_string()) {
+     has_arguments_parameter_ = true;

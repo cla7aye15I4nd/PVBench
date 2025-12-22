@@ -1,0 +1,41 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index 743b9e37fbc..76e69c73082 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3249,16 +3249,20 @@ Return a WindowObject which represents the whole screen.
+ 
+ static PyObject *
+ _curses_initscr_impl(PyObject *module)
+-/*[clinic end generated code: output=619fb68443810b7b input=514f4bce1821f6b5]*/
+ {
+     WINDOW *win;
+     PyCursesWindowObject *winobj;
+ 
++    if (ModDict == NULL) {
++        PyErr_SetString(PyExc_RuntimeError, "curses module dictionary not initialized");
++        return NULL;
++    }
+     if (initialised) {
+         wrefresh(stdscr);
+         return (PyObject *)PyCursesWindow_New(stdscr, NULL);
+     }
+ 
++
+     win = initscr();
+ 
+     if (win == NULL) {

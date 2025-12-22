@@ -1,0 +1,58 @@
+==28017==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x602000000131 at pc 0x7cf415257490 bp 0x7ffd4001a5f0 sp 0x7ffd40019d98
+READ of size 4294967295 at 0x602000000131 thread T0
+    #0 0x7cf41525748f in __interceptor_memcpy ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:790
+    #1 0x7cf4147b2975 in void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag) (/lib/x86_64-linux-gnu/libstdc++.so.6+0x16b975)
+    #2 0x7cf414ca388f in Exiv2::PngImage::readMetadata() /tmp/exiv2-gh-789/build/src/pngimage.cpp:470
+    #3 0x5c2d47d0b040 in Action::Print::printSummary() /tmp/exiv2-gh-789/build/src/actions.cpp:286
+    #4 0x5c2d47d0a2ae in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-789/build/src/actions.cpp:246
+    #5 0x5c2d47ce9887 in main /tmp/exiv2-gh-789/build/src/exiv2.cpp:169
+    #6 0x7cf4143461c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    #7 0x7cf41434628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)
+    #8 0x5c2d47ce8fd4 in _start (/tmp/exiv2-gh-789/build/build/bin/exiv2+0x1ffd4)
+
+0x602000000131 is located 0 bytes to the right of 1-byte region [0x602000000130,0x602000000131)
+allocated by thread T0 here:
+    #0 0x7cf4152cb787 in operator new[](unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cc:107
+    #1 0x7cf414c3c8ba in Exiv2::DataBuf::DataBuf(long) /tmp/exiv2-gh-789/build/src/types.cpp:141
+    #2 0x7cf414ca35a7 in Exiv2::PngImage::readMetadata() /tmp/exiv2-gh-789/build/src/pngimage.cpp:449
+    #3 0x5c2d47d0b040 in Action::Print::printSummary() /tmp/exiv2-gh-789/build/src/actions.cpp:286
+    #4 0x5c2d47d0a2ae in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-789/build/src/actions.cpp:246
+    #5 0x5c2d47ce9887 in main /tmp/exiv2-gh-789/build/src/exiv2.cpp:169
+    #6 0x7cf4143461c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    #7 0x7cf41434628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)
+    #8 0x5c2d47ce8fd4 in _start (/tmp/exiv2-gh-789/build/build/bin/exiv2+0x1ffd4)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:790 in __interceptor_memcpy
+Shadow bytes around the buggy address:
+  0x0c047fff7fd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c047fff7fe0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c047fff7ff0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x0c047fff8000: fa fa fd fa fa fa fd fa fa fa 07 fa fa fa 00 fa
+  0x0c047fff8010: fa fa 06 fa fa fa 00 fa fa fa 00 fa fa fa 00 fa
+=>0x0c047fff8020: fa fa 00 fa fa fa[01]fa fa fa fa fa fa fa fa fa
+  0x0c047fff8030: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8040: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8050: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8060: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c047fff8070: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+  Shadow gap:              cc
+==28017==ABORTING

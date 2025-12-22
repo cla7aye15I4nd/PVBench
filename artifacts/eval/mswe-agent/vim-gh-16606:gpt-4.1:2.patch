@@ -1,0 +1,98 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0d38d901d..9f2f930da 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -121,3 +121,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/message.c b/src/message.c
+index 24984123b..e1e90c0f0 100644
+--- a/src/message.c
++++ b/src/message.c
+@@ -14,7 +14,7 @@
+ #define MESSAGE_FILE		// don't include prototype for smsg()
+ 
+ #include "vim.h"
+-
++#include <assert.h>
+ static void add_msg_hist(char_u *s, int len, int attr);
+ static void check_msg_hist(void);
+ static void hit_return_msg(void);
+@@ -512,13 +512,16 @@ get_emsg_source(void)
+  * Returns NULL when no message is to be given.
+  */
+     static char_u *
++
+ get_emsg_lnum(void)
+ {
+     char_u	*Buf, *p;
+ 
++    // Debug: assert exestack.ga_len > 0 if HAVE_SOURCING_INFO is true
++    assert(!HAVE_SOURCING_INFO || exestack.ga_len > 0);
+     // lnum is 0 when executing a command from the command line
+     // argument, we don't want a line number then
+-    if (SOURCING_NAME != NULL
++    if (exestack.ga_len > 0
+ 	    && (other_sourcing_name() || SOURCING_LNUM != last_sourcing_lnum)
+ 	    && SOURCING_LNUM != 0)
+     {
+@@ -559,16 +562,20 @@ msg_source(int attr)
+     if (p != NULL)
+     {
+ 	msg_attr((char *)p, HL_ATTR(HLF_N));
+-	vim_free(p);
+-	last_sourcing_lnum = SOURCING_LNUM;  // only once for each line
+-    }
+-
+-    // remember the last sourcing name printed, also when it's empty
+-    if (SOURCING_NAME == NULL || other_sourcing_name())
+-    {
+-	VIM_CLEAR(last_sourcing_name);
+-	if (SOURCING_NAME != NULL)
+-	    last_sourcing_name = vim_strsave(SOURCING_NAME);
++        if (exestack.ga_len > 0)
++        {
++            last_sourcing_lnum = SOURCING_LNUM;  // only once for each line
++            // remember the last sourcing name printed, also when it's empty
++            if (SOURCING_NAME == NULL || other_sourcing_name())
++            {
++                VIM_CLEAR(last_sourcing_name);
++                if (SOURCING_NAME != NULL)
++                    last_sourcing_name = vim_strsave(SOURCING_NAME);
++            }
++        }
++        --no_wait_return;
++
++        recursive = FALSE;
+     }
+     --no_wait_return;
+ 
+@@ -693,10 +700,14 @@ emsg_core(const char *s)
+ 	if (in_assert_fails && emsg_assert_fails_msg == NULL)
+ 	{
+ 	    emsg_assert_fails_msg = vim_strsave((char_u *)s);
+-	    emsg_assert_fails_lnum = SOURCING_LNUM;
+-	    vim_free(emsg_assert_fails_context);
+-	    emsg_assert_fails_context = vim_strsave(
+-			 SOURCING_NAME == NULL ? (char_u *)"" : SOURCING_NAME);
++	    if (exestack.ga_len > 0) {
++		emsg_assert_fails_lnum = SOURCING_LNUM;
++		emsg_assert_fails_context = vim_strsave(
++		    SOURCING_NAME == NULL ? (char_u *)"" : SOURCING_NAME);
++	    } else {
++		emsg_assert_fails_lnum = 0;
++		emsg_assert_fails_context = vim_strsave((char_u *)"");
++	    }
+ 	}
+ 
+ 	// set "v:errmsg", also when using ":silent! cmd"

@@ -1,0 +1,176 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1687038dc70..12768176b4a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -113,3 +113,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/minimal_test b/minimal_test
+new file mode 100755
+index 00000000000..23772b0fd74
+Binary files /dev/null and b/minimal_test differ
+diff --git a/minimal_test.cpp b/minimal_test.cpp
+new file mode 100644
+index 00000000000..b59143d77ab
+--- /dev/null
++++ b/minimal_test.cpp
+@@ -0,0 +1,67 @@
++#include <iostream>
++#include <cassert>
++#include <cstring>
++
++// Simulate the ICU status codes
++typedef enum UErrorCode {
++    U_ZERO_ERROR = 0,
++    U_ILLEGAL_ARGUMENT_ERROR = 1,
++    U_INVALID_FORMAT_ERROR = 3
++} UErrorCode;
++
++#define U_SUCCESS(x) ((x) <= U_ZERO_ERROR)
++
++// Simulate the problematic original code
++void original_CreateICULocale(const char* bcp47_locale) {
++    UErrorCode status = U_ZERO_ERROR;
++    
++    // Simulate ICU function that fails with invalid locale
++    if (strcmp(bcp47_locale, "invalid-locale") == 0) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++    }
++    
++    // This is the problematic line that causes crashes
++    assert(U_SUCCESS(status)); // This would crash with invalid input
++    
++    std::cout << "Original: Successfully processed " << bcp47_locale << std::endl;
++}
++
++// Simulate the fixed code
++bool fixed_CreateICULocale(const char* bcp47_locale) {
++    UErrorCode status = U_ZERO_ERROR;
++    
++    // Simulate ICU function that fails with invalid locale
++    if (strcmp(bcp47_locale, "invalid-locale") == 0) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++    }
++    
++    // This is the fix - check status and return error instead of asserting
++    if (!U_SUCCESS(status)) {
++        std::cout << "Fixed: Failed to process " << bcp47_locale 
++                  << " - returning error gracefully" << std::endl;
++        return false; // Return Nothing<icu::Locale>() equivalent
++    }
++    
++    std::cout << "Fixed: Successfully processed " << bcp47_locale << std::endl;
++    return true;
++}
++
++int main() {
++    std::cout << "Testing the fix for CreateICULocale..." << std::endl;
++    
++    // Test with valid locale - both should work
++    std::cout << "\n--- Testing with valid locale ---" << std::endl;
++    original_CreateICULocale("en-US");
++    fixed_CreateICULocale("en-US");
++    
++    // Test with invalid locale - original would crash, fixed handles gracefully
++    std::cout << "\n--- Testing with invalid locale ---" << std::endl;
++    std::cout << "Original code would crash here with assert failure..." << std::endl;
++    // original_CreateICULocale("invalid-locale"); // This would crash
++    
++    std::cout << "Fixed code handles it gracefully:" << std::endl;
++    fixed_CreateICULocale("invalid-locale");
++    
++    std::cout << "\nTest completed successfully! The fix prevents crashes." << std::endl;
++    return 0;
++}
+diff --git a/src/objects/intl-objects.cc b/src/objects/intl-objects.cc
+index ab197778b8b..f67e6997ef1 100644
+--- a/src/objects/intl-objects.cc
++++ b/src/objects/intl-objects.cc
+@@ -450,7 +450,9 @@ Maybe<icu::Locale> CreateICULocale(const std::string& bcp47_locale) {
+   UErrorCode status = U_ZERO_ERROR;
+ 
+   icu::Locale icu_locale = icu::Locale::forLanguageTag(bcp47_locale, status);
+-  DCHECK(U_SUCCESS(status));
++  if (!U_SUCCESS(status)) {
++    return Nothing<icu::Locale>();
++  }
+   if (icu_locale.isBogus()) {
+     return Nothing<icu::Locale>();
+   }
+diff --git a/test_createiculocale.cc b/test_createiculocale.cc
+new file mode 100644
+index 00000000000..03a14561501
+--- /dev/null
++++ b/test_createiculocale.cc
+@@ -0,0 +1,36 @@
++#include <iostream>
++#include <string>
++#include "unicode/locid.h"
++#include "unicode/utypes.h"
++
++// Simplified version of the CreateICULocale function to test the fix
++bool TestCreateICULocale(const std::string& bcp47_locale) {
++    UErrorCode status = U_ZERO_ERROR;
++    icu::Locale icu_locale = icu::Locale::forLanguageTag(bcp47_locale.c_str(), status);
++    
++    // This is the fix - check status instead of using DCHECK
++    if (!U_SUCCESS(status)) {
++        std::cout << "Failed to create locale for: " << bcp47_locale 
++                  << " (status: " << u_errorName(status) << ")" << std::endl;
++        return false;
++    }
++    
++    std::cout << "Successfully created locale for: " << bcp47_locale << std::endl;
++    return true;
++}
++
++int main() {
++    std::cout << "Testing CreateICULocale fix..." << std::endl;
++    
++    // Test with valid locale
++    TestCreateICULocale("en-US");
++    
++    // Test with invalid locales that would cause the original DCHECK to fail
++    TestCreateICULocale("invalid-locale-tag");
++    TestCreateICULocale("x-invalid");
++    TestCreateICULocale("");
++    TestCreateICULocale("toolonglocaletagthatexceedslimits");
++    
++    std::cout << "All tests completed without crashing!" << std::endl;
++    return 0;
++}
+diff --git a/test_fix.js b/test_fix.js
+new file mode 100644
+index 00000000000..59815a76b62
+--- /dev/null
++++ b/test_fix.js
+@@ -0,0 +1,18 @@
++// Test case to trigger the CreateICULocale function with potentially invalid locale
++try {
++    // This should trigger the DateTimeFormat constructor which calls CreateICULocale
++    new Intl.DateTimeFormat("invalid-locale-tag");
++    console.log("Test passed - no crash occurred");
++} catch (e) {
++    console.log("Test passed - exception caught instead of crash:", e.message);
++}
++
++// Test with another potentially problematic locale
++try {
++    new Intl.DateTimeFormat("x-invalid");
++    console.log("Test 2 passed - no crash occurred");
++} catch (e) {
++    console.log("Test 2 passed - exception caught instead of crash:", e.message);
++}
++
++console.log("All tests completed successfully");

@@ -1,0 +1,106 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index aeaecac539a..aed8887afe3 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -282,3 +282,4 @@ ZEND_API zend_object *zend_objects_clone_obj(zend_object *old_object)
+ 
+ 	return new_object;
+ }
++
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 80f5b747db7..d2cb18db432 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -163,6 +163,8 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_put(zend_object *object)
+ 
+ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ */
+ {
++	uint32_t handle;
++	
+ 	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+ 
+ 	/* GC might have released this object already. */
+@@ -170,6 +172,16 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 		return;
+ 	}
+ 
++	handle = object->handle;
++	
++	/* Check if object is already being deleted from the store */
++	if (UNEXPECTED(!IS_OBJ_VALID(EG(objects_store).object_buckets[handle]))) {
++		return;
++	}
++	
++	/* Mark object as invalid in the store to prevent recursive calls */
++	EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
++
+ 	/*	Make sure we hold a reference count during the destructor call
+ 		otherwise, when the destructor ends the storage might be freed
+ 		when the refcount reaches 0 a second time
+@@ -188,21 +200,20 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ 	}
+ 
+ 	if (GC_REFCOUNT(object) == 0) {
+-		uint32_t handle = object->handle;
+ 		void *ptr;
+ 
+-		ZEND_ASSERT(EG(objects_store).object_buckets != NULL);
+-		ZEND_ASSERT(IS_OBJ_VALID(EG(objects_store).object_buckets[handle]));
+-		EG(objects_store).object_buckets[handle] = SET_OBJ_INVALID(object);
+ 		if (!(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
+ 			GC_ADD_FLAGS(object, IS_OBJ_FREE_CALLED);
+ 			GC_SET_REFCOUNT(object, 1);
+ 			object->handlers->free_obj(object);
+ 		}
++
++		/* efree() operating on NULL is a no-op. */
+ 		ptr = ((char*)object) - object->handlers->offset;
+-		GC_REMOVE_FROM_BUFFER(object);
+ 		efree(ptr);
+-		ZEND_OBJECTS_STORE_ADD_TO_FREE_LIST(handle);
++	} else {
++		/* Restore object in store if it's still referenced */
++		EG(objects_store).object_buckets[handle] = object;
+ 	}
+ }
+ /* }}} */
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..a3ecc65367e 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -528,9 +528,16 @@ static void spl_array_write_dimension(zend_object *object, zval *offset, zval *v
+ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *object, zval *offset) /* {{{ */
+ {
+ 	HashTable *ht;
+-	spl_array_object *intern = spl_array_from_obj(object);
++	spl_array_object *intern;
+ 	spl_hash_key key;
+ 
++	/* Check if object is valid before accessing it */
++	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
++		return;
++	}
++
++	intern = spl_array_from_obj(object);
++
+ 	if (check_inherited && intern->fptr_offset_del) {
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
+ 		return;

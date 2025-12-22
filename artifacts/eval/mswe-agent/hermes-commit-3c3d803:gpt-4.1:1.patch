@@ -1,0 +1,66 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/lib/Regex/Executor.cpp b/lib/Regex/Executor.cpp
+index fb73b8e56..a46b8ff77 100644
+--- a/lib/Regex/Executor.cpp
++++ b/lib/Regex/Executor.cpp
+@@ -427,7 +427,8 @@ struct Context {
+   /// state->cursor_.currentPointer().
+   ExecutorResult<const CodeUnit *> match(
+       State<Traits> *state,
+-      bool onlyAtStart);
++      bool onlyAtStart,
++      size_t depth = 0);
+ 
+   /// Backtrack the given state \p s with the backtrack stack \p bts.
+   /// \return true if we backtracked, false if we exhausted the stack.
+@@ -959,8 +960,12 @@ inline size_t Context<Traits>::advanceStringIndex(
+ }
+ 
+ template <class Traits>
+-auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
++auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart, size_t depth /* = 0 */)
+     -> ExecutorResult<const CodeUnit *> {
++    constexpr size_t kMaxRecursionDepth = 1000;
++    if (depth > kMaxRecursionDepth) {
++        return ExecutionStatus::STACK_OVERFLOW;
++    }
+   using State = State<Traits>;
+   BacktrackStack backtrackStack;
+ 
+@@ -1316,7 +1321,7 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+             // Save and restore the position because lookaheads do not consume
+             // anything.
+             s->ip_ += sizeof(LookaroundInsn);
+-            auto match = this->match(s, true /* onlyAtStart */);
++            auto match = this->match(s, true /* onlyAtStart */, depth + 1);
+             // There were no errors and we matched something (so non-null
+             // return)
+             matched = match && match.getValue();
+@@ -1543,7 +1548,7 @@ MatchRuntimeResult searchWithBytecodeImpl(
+   bool onlyAtStart = (header->constraints & MatchConstraintAnchoredAtStart) ||
+       (matchFlags & constants::matchOnlyAtStart);
+ 
+-  auto res = ctx.match(&state, onlyAtStart);
++  auto res = ctx.match(&state, onlyAtStart, 0);
+   if (!res) {
+     assert(res.getStatus() == ExecutionStatus::STACK_OVERFLOW);
+     return MatchRuntimeResult::StackOverflow;

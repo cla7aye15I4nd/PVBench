@@ -1,0 +1,1267 @@
+
+diff --git a/.gitignore b/.gitignore
+index 413dfb8e9ad..22e752d2658 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -985,3 +985,14 @@ tools/unicode/c/genuca/release
+ tools/unicode/c/genuca/x64
+ tools/unicode/c/genuca/x86
+ tools/unicodetools/com/ibm/rbm/lib
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 00000000000..4b9b1de493c
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,407 @@
++# Copyright (C) 2016 and later: Unicode, Inc. and others.
++# License & terms of use: http://www.unicode.org/copyright.html
++#******************************************************************************
++#
++#   Copyright (C) 1998-2016, International Business Machines
++#   Corporation and others.  All Rights Reserved.
++#
++#******************************************************************************
++## Top-level Makefile.in for ICU
++## Stephen F. Booth
++
++srcdir = ./icu4c/source
++top_srcdir = ./icu4c/source
++
++top_builddir = .
++
++include $(top_builddir)/icudefs.mk
++
++docdir = $(datadir)/doc
++docsubdir = $(PACKAGE)$(ICULIBDASHSUFFIX)/html
++docfilesdir = doc/html
++docfiles = $(docfilesdir)/*.png $(docfilesdir)/*.html $(docfilesdir)/*.css $(docfilesdir)/*.tag 
++docsrchdir = $(docfilesdir)/search
++docsrchfiles = $(docsrchdir)/*
++
++##
++
++## Build directory information
++subdir = .
++
++#AUTOCONF = @AUTOCONF@
++
++## Optional directory setup
++#LAYOUTEX = layoutex
++ICUIO = io
++EXTRA = extra
++# need tools for tests
++TEST = test
++SAMPLE = samples
++TOOLS = tools
++DATASUBDIR = data
++
++## pkgconfig setup. Always have uc and i18n. Others are optional.
++ALL_PKGCONFIG_SUFFIX=uc i18n
++#ALL_PKGCONFIG_SUFFIX+= lx
++ALL_PKGCONFIG_SUFFIX+= io
++
++DOXYGEN = 
++DOCZIP = icu-docs.zip
++
++## Files to remove for 'make clean'
++CLEANFILES = *~
++
++ALL_PKGCONFIG_FILES=$(ALL_PKGCONFIG_SUFFIX:%=$(top_builddir)/config/icu-%.pc)
++
++## Files built (autoconfed) and installed
++INSTALLED_BUILT_FILES = $(top_builddir)/config/Makefile.inc $(top_builddir)/config/pkgdata.inc $(top_builddir)/config/icu-config $(top_srcdir)/config/mh-linux $(EXTRA_DATA:%=$(DESTDIR)$(pkglibdir)/%) $(ALL_PKGCONFIG_FILES)
++
++## Files built (autoconfed) but not installed
++LOCAL_BUILT_FILES = icudefs.mk config/icucross.mk config/icucross.inc
++
++DOCDIRS = common i18n
++SUBDIRS =  stubdata common i18n $(LAYOUTEX) $(ICUIO) $(TOOLS) $(DATASUBDIR) $(EXTRA) $(SAMPLE) $(TEST)
++
++SECTION = 1
++
++MANX_FILES = config/icu-config.$(SECTION)
++
++ALL_MAN_FILES = $(MANX_FILES)
++
++## Extra files to install [nothing at present]
++EXTRA_DATA =
++
++## List of phony targets
++.PHONY : all all-local all-recursive install install-local install-udata install-udata-files install-udata-dlls		\
++install-recursive clean clean-local clean-recursive distclean		\
++distclean-local distclean-recursive doc dist dist-local dist-recursive	\
++check check-local check-recursive clean-recursive-with-twist install-icu \
++doc install-doc tests icu4j-data icu4j-data-install update-windows-makefiles xcheck-local xcheck-recursive xperf xcheck xperf-recursive \
++check-exhaustive check-exhaustive-local check-exhaustive-recursive releaseDist
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local all-recursive
++install: install-recursive install-local
++clean: clean-recursive-with-twist clean-local
++distclean : distclean-recursive distclean-local
++dist: dist-recursive
++check: all check-recursive
++check-recursive: all
++xcheck: all xcheck-recursive
++xperf: all xperf-recursive
++check-exhaustive: all check-exhaustive-recursive
++
++pcheck: all tests
++	@$(MAKE) -C test pcheck
++
++check-exhaustive-local: check-local
++
++xcheck-recursive: all xcheck-local
++	@$(MAKE) -C test xcheck
++
++xperf-recursive: all tests
++	@$(MAKE) -C test/perf xperf
++
++$(top_builddir)/config/icuinfo.xml: all
++	@$(MAKE) -C tools/icuinfo check
++
++ifeq ($(DOXYGEN),)
++doc doc-searchengine:
++	@echo you need Doxygen to generate documentation. Doxygen can be found on the Web
++	@echo at http://www.doxygen.org/
++else
++doc: doc/html/index.html
++
++doc-searchengine: Doxyfile $(wildcard ./common/unicode/platform.h $(srcdir)/common/unicode/*.h $(srcdir)/i18n/unicode/*.h $(srcdir)/io/unicode/*.h)
++	sed < Doxyfile -e 's%[^#]*SEARCHENGINE.*%SEARCHENGINE=YES%' | $(DOXYGEN) -
++	@echo adding links from non-namespaced class files
++	find doc/html -name 'classicu_1_1*' -print | sed -e 's%^\(.*class\)icu_1_1\(.*\)$$%ln & \1\2%' | sh
++	@echo Docs created - WARNING, probably contains non-GPL .js files
++
++doc/html/index.html: Doxyfile $(wildcard ./common/unicode/platform.h $(srcdir)/common/unicode/*.h $(srcdir)/i18n/unicode/*.h $(srcdir)/io/unicode/*.h)
++	$(DOXYGEN)
++	@echo adding links from non-namespaced class files
++	find doc/html -name 'classicu_1_1*' -print | sed -e 's%^\(.*class\)icu_1_1\(.*\)$$%ln & \1\2%' | sh
++
++Doxyfile: $(srcdir)/Doxyfile.in
++	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(DOCZIP): doc
++	-$(RMV) $(DOCZIP)
++	( cd doc/html ; zip -r ../../$(DOCZIP) * )
++endif
++
++LOCAL_SUBDIRS = $(SUBDIRS)
++CLEAN_FIRST_SUBDIRS = $(TOOLS)
++
++$(LIBDIR) $(BINDIR):
++	-$(MKINSTALLDIRS) $@
++
++## Recursive targets
++all-recursive install-recursive clean-recursive distclean-recursive dist-recursive check-recursive check-exhaustive-recursive: $(LIBDIR) $(BINDIR)
++ifneq ($(NEED_ESCAPING),)
++	@echo "building tools/escapesrc (Needed for this platform with NEED_ESCAPING)"
++	@(cd tools/escapesrc && $(MAKE) RECURSIVE=YES $$local_target) || exit
++endif
++	@dot_seen=no; \
++	target=`echo $@ | sed s/-recursive//`; \
++	list='$(LOCAL_SUBDIRS)'; for subdir in $$list; do \
++	  echo "$(MAKE)[$(MAKELEVEL)]: Making \`$$target' in \`$$subdir'"; \
++	  if test "$$subdir" = "."; then \
++	    dot_seen=yes; \
++	    local_target="$$target-local"; \
++	  else \
++	    local_target="$$target"; \
++	  fi; \
++	  (cd $$subdir && $(MAKE) RECURSIVE=YES $$local_target) || exit; \
++	done; \
++	if test "$$dot_seen" = "no"; then \
++	  $(MAKE) "$$target-local" || exit; \
++	fi
++
++clean-recursive-with-twist:
++	$(MAKE) clean-recursive LOCAL_SUBDIRS='$(CLEAN_FIRST_SUBDIRS) $(filter-out $(CLEAN_FIRST_SUBDIRS),$(LOCAL_SUBDIRS))'
++
++all-local: $(srcdir)/configure $(LOCAL_BUILT_FILES) $(INSTALLED_BUILT_FILES)
++ifndef VERBOSE
++	@echo "Note: rebuild with \"$(MAKE) VERBOSE=1 $(MAKECMDGOALS)\" to show all compiler parameters."
++endif
++install-local: install-icu install-manx
++
++# always installs. Used by layoutex.
++install-pkgconfig: $(ALL_PKGCONFIG_FILES)
++	@$(MKINSTALLDIRS) $(DESTDIR)$(libdir)/pkgconfig
++	$(INSTALL_DATA) $(ALL_PKGCONFIG_FILES) $(DESTDIR)$(libdir)/pkgconfig/
++
++install-icu: $(INSTALLED_BUILT_FILES)
++	@$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/config
++	@$(MKINSTALLDIRS) $(DESTDIR)$(pkglibdir)
++	@$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
++	@$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
++	$(INSTALL_DATA) $(top_srcdir)/config/mh-linux $(DESTDIR)$(pkgdatadir)/config/mh-linux
++	$(INSTALL_SCRIPT) $(top_srcdir)/mkinstalldirs $(DESTDIR)$(pkgdatadir)/mkinstalldirs
++	$(INSTALL_SCRIPT) $(top_srcdir)/install-sh $(DESTDIR)$(pkgdatadir)/install-sh
++	@$(MKINSTALLDIRS) $(DESTDIR)$(libdir)/pkgconfig
++	$(INSTALL_DATA) $(ALL_PKGCONFIG_FILES) $(DESTDIR)$(libdir)/pkgconfig/
++	$(INSTALL_DATA) $(top_srcdir)/../LICENSE $(DESTDIR)$(pkgdatadir)/LICENSE
++	$(INSTALL_SCRIPT) $(top_builddir)/config/icu-config $(DESTDIR)$(bindir)/icu-config
++	$(INSTALL_DATA) $(top_builddir)/config/Makefile.inc $(DESTDIR)$(pkglibdir)/Makefile.inc
++	$(INSTALL_DATA) $(top_builddir)/config/pkgdata.inc $(DESTDIR)$(pkglibdir)/pkgdata.inc
++#	@echo icuinfo.xml is built after make check.
++#	-$(INSTALL_DATA) $(top_builddir)/config/icuinfo.xml $(DESTDIR)$(pkglibdir)/icuinfo.xml
++	cd $(DESTDIR)$(pkglibdir)/..; \
++	    $(RM) current && ln -s $(VERSION) current; \
++	    $(RM) Makefile.inc && ln -s current/Makefile.inc Makefile.inc; \
++	    $(RM) pkgdata.inc && ln -s current/pkgdata.inc pkgdata.inc
++
++ifeq ($(DOXYGEN),)
++install-doc:
++else
++install-doc: doc
++	$(RM) -r $(DESTDIR)$(docdir)/$(docsubdir)
++	$(MKINSTALLDIRS) $(DESTDIR)$(docdir)/$(docsubdir)
++	$(INSTALL_DATA) $(docfiles) $(DESTDIR)$(docdir)/$(docsubdir)
++
++endif
++
++$(DESTDIR)$(pkglibdir)/%: $(top_srcdir)/../data/%
++	$(INSTALL_DATA) $< $@
++
++# Build the tests, but don't run them.
++tests: all
++	$(MAKE) -C $(top_builddir)/test
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	-$(RMV) "test-*.xml"
++	-$(RMV) "perf-*.xml"
++	-$(RMV) $(ALL_PKGCONFIG_FILES) $(top_builddir)/config/icuinfo.xml
++	$(RMV) Doxyfile doc $(DOCZIP)
++
++distclean-local: clean-local
++	$(RMV) $(top_builddir)/config/Makefile.inc $(top_builddir)/config/pkgdata.inc $(top_builddir)/config/icu-config $(top_builddir)/config/icu.pc $(ALL_PKGCONFIG_FILES)
++	$(RMV) config.cache config.log config.status $(top_builddir)/config/icucross.mk $(top_builddir)/config/icucross.inc autom4te.cache uconfig.h.prepend
++	$(RMV) Makefile config/Makefile icudefs.mk $(LIBDIR) $(BINDIR)
++	-$(RMV) dist
++
++check-local: xcheck-local
++	-$(RMV) test-local.xml
++
++xcheck-local: $(top_builddir)/config/icu-config $(top_builddir)/config/Makefile.inc $(top_builddir)/config/pkgdata.inc
++	@echo verifying that icu-config --selfcheck can operate
++	@test "passed" = "$(shell $(top_builddir)/config/icu-config --selfcheck 2>&1)" || (echo "FAIL: icu-config could not run properly." ; exit 1)
++	@echo verifying that $(MAKE) -f Makefile.inc selfcheck can operate
++	@test "passed" = "$(shell $(MAKE) --no-print-directory -f $(top_builddir)/config/Makefile.inc SELFCHECK=1 selfcheck)" || (echo "FAIL: Makefile.inc could not run properly." ; exit 1 )
++	@echo "PASS: config selfcheck OK"
++
++#$(srcdir)/configure : $(srcdir)/configure.ac $(top_srcdir)/aclocal.m4
++#	cd $(srcdir) && aclocal && $(AUTOCONF)
++
++icudefs.mk: $(srcdir)/icudefs.mk.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++		&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++config/icucross.mk: $(top_builddir)/icudefs.mk  $(top_builddir)/Makefile
++	@echo rebuilding $@
++	@(echo "CROSS_ICU_VERSION=$(VERSION)" ;\
++	  echo "TOOLEXEEXT=$(EXEEXT)" \
++	   ) > $@
++	@(echo 'TOOLBINDIR=$$(cross_buildroot)/bin' ;\
++	  echo 'TOOLLIBDIR=$$(cross_buildroot)/lib' ;\
++	  echo "INVOKE=$(LDLIBRARYPATH_ENVVAR)=$(LIBRARY_PATH_PREFIX)"'$$(TOOLLIBDIR):$$(cross_buildroot)/stubdata:$$(cross_buildroot)/tools/ctestfw:$$$$'"$(LDLIBRARYPATH_ENVVAR)" ;\
++	  echo "PKGDATA_INVOKE=$(LDLIBRARYPATH_ENVVAR)=$(LIBRARY_PATH_PREFIX)"'$$(cross_buildroot)/stubdata:$$(cross_buildroot)/tools/ctestfw:$$(TOOLLIBDIR):$$$$'"$(LDLIBRARYPATH_ENVVAR) " ;\
++	  echo ) >> $@
++
++config/icucross.inc: $(top_builddir)/icudefs.mk  $(top_builddir)/Makefile $(top_srcdir)/config/mh-linux
++	@echo rebuilding $@
++	@(grep '^CURR_FULL_DIR' $(top_builddir)/icudefs.mk ; \
++	  grep '^CURR_FULL_DIR' $(top_srcdir)/config/mh-linux || echo ""; \
++	   ) > $@
++
++config/icu.pc: $(srcdir)/config/icu.pc.in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++config/icu-uc.pc: config/icu.pc Makefile icudefs.mk
++	@cat config/icu.pc > $@
++	@echo "Description: $(PACKAGE_ICU_DESCRIPTION): Common and Data libraries" >> $@
++	@echo "Name: $(PACKAGE)-uc" >> $@
++	@echo "Libs:" '-L$${libdir}' "${ICULIBS_UC}" "${ICULIBS_DT}" >> $@
++	@echo "Libs.private:" '$${baselibs}' >> $@
++	@echo $@ updated.
++
++config/icu-i18n.pc: config/icu.pc Makefile icudefs.mk
++	@cat config/icu.pc > $@
++	@echo "Description: $(PACKAGE_ICU_DESCRIPTION): Internationalization library" >> $@
++	@echo "Name: $(PACKAGE)-i18n" >> $@
++	@echo "Requires: icu-uc" >> $@
++	@echo "Libs:" "${ICULIBS_I18N}" >> $@
++	@echo $@ updated.
++
++config/icu-io.pc: config/icu.pc Makefile icudefs.mk
++	@cat config/icu.pc > $@
++	@echo "Description: $(PACKAGE_ICU_DESCRIPTION): Stream and I/O Library" >> $@
++	@echo "Name: $(PACKAGE)-io" >> $@
++	@echo "Requires: icu-i18n" >> $@
++	@echo "Libs:" "${ICULIBS_IO}" >> $@
++	@echo $@ updated.
++
++ICULEHB_LIBS=
++USING_HB=
++ifneq ($(ICULEHB_LIBS),)
++USING_HB=(Using HarfBuzz)
++endif
++
++
++config/icu-lx.pc: config/icu.pc Makefile icudefs.mk
++	@cat config/icu.pc > $@
++	@echo "Description: $(PACKAGE_ICU_DESCRIPTION): Paragraph Layout library $(USING_HB)" >> $@
++	@echo "Name: $(PACKAGE)-lx" >> $@
++ifneq ($(ICULEHB_LIBS),)
++	@echo "Requires: icu-le-hb icu-uc" >> $@
++else
++	@echo "Requires: icu-le" >> $@
++endif
++	@echo "Libs:" "${ICULIBS_LX}" >> $@
++	@echo $@ updated.
++
++
++Makefile: $(srcdir)/Makefile.in icudefs.mk $(top_builddir)/config.status
++	cd $(top_builddir) \
++		&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(top_builddir)/config/Makefile.inc: $(srcdir)/config/Makefile.inc.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++		&& CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(top_builddir)/config/pkgdata.inc: icudefs.mk $(top_builddir)/config/pkgdataMakefile
++	cd $(top_builddir)/config; \
++		$(MAKE) -f pkgdataMakefile
++
++$(top_builddir)/config/pkgdataMakefile:
++	cd $(top_builddir) \
++		&& CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(top_builddir)/config/icu-config: $(top_builddir)/Makefile $(top_srcdir)/config/icu-config-top $(top_srcdir)/config/icu-config-bottom $(top_builddir)/config/Makefile.inc $(top_srcdir)/config/mh-linux $(top_srcdir)/config/make2sh.sed
++	-$(RMV) $@
++	$(INSTALL_SCRIPT) $(top_srcdir)/config/icu-config-top $@
++	chmod u+w $@
++	@echo "# Following from icu/icu4c/source/config/Makefile.inc" >> $@
++	LC_ALL=C $(SED) -f $(top_srcdir)/config/make2sh.sed < $(top_builddir)/config/Makefile.inc | grep -v '#M#' | uniq >> $@
++	@echo "# Following from $(top_srcdir)/config/mh-linux" >> $@
++	LC_ALL=C $(SED) -f $(top_srcdir)/config/make2sh.sed < $(top_srcdir)/config/mh-linux | grep -v '#M#' | uniq >> $@
++	cat $(top_srcdir)/config/icu-config-bottom >> $@
++	chmod u-w $@
++
++config.status: $(srcdir)/configure $(srcdir)/common/unicode/uvernum.h
++	@echo
++	@echo
++	@echo "*** config.status has become stale ***"
++	@echo "   'configure' and/or 'uvernum.h' have changed, please"
++	@echo "  do 'runConfigureICU' (or 'configure') again, as per"
++	@echo "  the readme.html."
++	@echo
++	@echo
++	exit 1
++
++
++install-manx: $(MANX_FILES)
++	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
++	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
++
++config/%.$(SECTION): $(srcdir)/config/%.$(SECTION).in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++icu4j-data-install icu4j-data: all tests
++	@echo ICU4J_ROOT=$(ICU4J_ROOT)
++	@$(MAKE) -C test/testdata $@
++	@$(MAKE) -C data $@
++
++# For updating Windows makefiles
++
++WINDOWS_UPDATEFILES=$(srcdir)/data/makedata.mak $(shell find $(srcdir) -name '*.vcproj' -o -name '*.vcxproj')
++
++WINDOWS_UPDATEFILES_SED=config/windows-update.sed
++
++update-windows-makefiles: config.status
++	@echo Updating Windows Makefiles for ICU $(VERSION)
++	CONFIG_FILES=$(WINDOWS_UPDATEFILES_SED) CONFIG_HEADERS= $(SHELL) ./config.status
++	@for file in $(WINDOWS_UPDATEFILES); do \
++	  echo "Updating $$file"; \
++	  mv "$${file}" "$${file}.bak" && \
++	  sed -f $(WINDOWS_UPDATEFILES_SED) < "$${file}.bak" > "$${file}" && \
++	  rm "$${file}.bak"; \
++	done;
++	$(RMV) $(WINDOWS_UPDATEFILES_SED)
++	@echo Please check over the changes carefully before checking them in.
++
++# For building a source distribution.
++distcheck dist-local:
++	$(MAKE) -C . -f $(top_srcdir)/config/dist.mk srcdir="$(srcdir)" top_srcdir="$(top_srcdir)" $@
++
++ifeq ($(DESTDIR),)
++releaseDist:
++	@echo "Please provide DESTDIR when calling the target releaseDist."
++else
++releaseDist: install
++	@echo -n "ICU Version: " > $(DESTDIR)/readme.txt
++	@echo `./config/icu-config --noverify --version` >> $(DESTDIR)/readme.txt
++	@echo -n "HOST: " >> $(DESTDIR)/readme.txt
++	@echo `./config/icu-config --noverify --host` >> $(DESTDIR)/readme.txt
++	@echo -n "CC Compiler: " >> $(DESTDIR)/readme.txt
++	@echo `./config/icu-config --noverify --cc` >> $(DESTDIR)/readme.txt
++	@echo -n "CXX Compiler: " >> $(DESTDIR)/readme.txt
++	@echo `./config/icu-config --noverify --cxx` >> $(DESTDIR)/readme.txt
++endif
++
++check-installed-icu: install
++	@echo "Testing ICU installed in $(prefix)"
++	$(INSTALLED_INVOKE) $(bindir)/icuinfo$(EXEEXT)
++	$(INSTALLED_INVOKE) $(bindir)/uconv$(EXEEXT) -V
++	$(INSTALLED_INVOKE) $(bindir)/genrb$(EXEEXT) -V
++	$(INSTALLED_INVOKE) $(bindir)/gencnval$(EXEEXT) -h
++	@echo INSTALLED ICU IN "$(prefix)" OK!
+diff --git a/common/Makefile b/common/Makefile
+new file mode 100644
+index 00000000000..b4bc6b60569
+--- /dev/null
++++ b/common/Makefile
+@@ -0,0 +1,232 @@
++# Copyright (C) 2016 and later: Unicode, Inc. and others.
++# License & terms of use: http://www.unicode.org/copyright.html
++#******************************************************************************
++#
++#   Copyright (C) 1999-2016, International Business Machines
++#   Corporation and others.  All Rights Reserved.
++#
++#******************************************************************************
++## Makefile.in for ICU - icuuc.so
++## Stephen F. Booth
++
++## Source directory information
++srcdir = .././icu4c/source/common
++top_srcdir = .././icu4c/source
++
++top_builddir = ..
++
++## All the flags and other definitions are included here.
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = common
++
++# for service hook
++LOCALSVC_CPP=localsvc.cpp
++SVC_HOOK_INC=$(top_builddir)/common/svchook.mk
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(IMPORT_LIB) $(MIDDLE_IMPORT_LIB) $(FINAL_IMPORT_LIB) $(SVC_HOOK_INC)
++
++## Target information
++
++TARGET_STUBNAME=$(COMMON_STUBNAME)
++
++ifneq ($(ENABLE_STATIC),)
++TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++endif
++
++ifneq ($(ENABLE_SHARED),)
++SO_TARGET = $(LIBDIR)/$(LIBICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(SO)
++ALL_SO_TARGETS = $(SO_TARGET) $(MIDDLE_SO_TARGET) $(FINAL_SO_TARGET) $(SHARED_OBJECT)
++
++ifeq ($(ENABLE_SO_VERSION_DATA),1)
++SO_VERSION_DATA = common.res
++endif
++
++ifeq ($(OS390BATCH),1)
++BATCH_TARGET = $(BATCH_COMMON_TARGET)
++BATCH_LIBS = $(BATCH_LIBICUDT) -lm
++endif   # OS390BATCH
++
++endif   # ENABLE_SHARED
++
++ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++
++DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
++DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
++DYNAMICCXXFLAGS = $(SHAREDLIBCXXFLAGS)
++CFLAGS += $(LIBCFLAGS)
++CXXFLAGS += $(LIBCXXFLAGS)
++ifeq ($(OS390BATCH),1)
++CFLAGS += -WI
++CXXFLAGS += -WI
++endif
++
++CPPFLAGS += -I$(srcdir) $(LIBCPPFLAGS) $(CPPFLAGSICUUC)
++# we want DEFS here
++DEFS += -DU_COMMON_IMPLEMENTATION 
++LDFLAGS += $(LDFLAGSICUUC)
++
++# for plugin configuration
++CPPFLAGS += "-DDEFAULT_ICU_PLUGINS=\"$(libdir)/icu\" "
++
++# for icu data location
++ifeq ($(PKGDATA_MODE),common)
++CPPFLAGS += "-DU_ICU_DATA_DEFAULT_DIR=\"$(ICUDATA_DIR)\""
++endif
++
++# $(LIBICUDT) is either stub data or the real DLL common data.
++LIBS = $(LIBICUDT) $(DEFAULT_LIBS)
++
++OBJECTS = errorcode.o putil.o umath.o utypes.o uinvchar.o umutex.o ucln_cmn.o \
++uinit.o uobject.o cmemory.o charstr.o cstr.o \
++udata.o ucmndata.o udatamem.o umapfile.o udataswp.o ucol_swp.o utrace.o \
++uhash.o uhash_us.o uenum.o ustrenum.o uvector.o ustack.o uvectr32.o uvectr64.o \
++ucnv.o ucnv_bld.o ucnv_cnv.o ucnv_io.o ucnv_cb.o ucnv_err.o ucnvlat1.o \
++ucnv_u7.o ucnv_u8.o ucnv_u16.o ucnv_u32.o ucnvscsu.o ucnvbocu.o \
++ucnv_ext.o ucnvmbcs.o ucnv2022.o ucnvhz.o ucnv_lmb.o ucnvisci.o ucnvdisp.o ucnv_set.o ucnv_ct.o \
++resource.o uresbund.o ures_cnv.o ures...kg
++top_srcdir = ../.././icu4c/source
++
++top_builddir = ../..
++
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = tools/icupkg
++
++TARGET_STUB_NAME = icupkg
++
++SECTION = 8
++
++MAN_FILES = $(TARGET_STUB_NAME).$(SECTION)
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(MAN_FILES)
++
++## Target information
++TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++
++CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
++LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
++
++OBJECTS = icupkg.o
++
++DEPS = $(OBJECTS:.o=.d)
++
++## List of phony targets
++.PHONY : all all-local install install-local clean clean-local	\
++distclean distclean-local dist dist-local check check-local install-man
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local
++install: install-local
++clean: clean-local
++distclean : distclean-local
++dist: dist-local
++check: all check-local
++
++all-local: $(TARGET) $(MAN_FILES)
++
++install-local: all-local install-man
++	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++
++install-man: $(MAN_FILES)
++	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
++	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
++
++
++dist-local:
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	$(RMV) $(TARGET) $(OBJECTS)
++
++distclean-local: clean-local
++	$(RMV) Makefile
++
++check-local: all-local
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(TARGET) : $(OBJECTS)
++	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
++	$(POST_BUILD_STEP)
++
++
++%.$(SECTION): $(srcdir)/%.$(SECTION).in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++
++ifeq (,$(MAKECMDGOALS))
++-include $(DEPS)
++else
++ifneq ($(patsubst %clean,,$(MAKECMDGOALS)),)
++-include $(DEPS)
++endif
++endif
++
+diff --git a/tools/icuswap/Makefile b/tools/icuswap/Makefile
+new file mode 100644
+index 00000000000..8834da997fc
+--- /dev/null
++++ b/tools/icuswap/Makefile
+@@ -0,0 +1,97 @@
++## Makefile.in for ICU - tools/icuswap
++## Copyright (C) 2016 and later: Unicode, Inc. and others.
++## License & terms of use: http://www.unicode.org/copyright.html
++## Copyright (c) 1999-2011, International Business Machines Corporation and
++## others. All Rights Reserved.
++## Steven R. Loomis
++
++## Source directory information
++srcdir = ../.././icu4c/source/tools/icuswap
++top_srcdir = ../.././icu4c/source
++
++top_builddir = ../..
++
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = tools/icuswap
++
++TARGET_STUB_NAME = icuswap
++
++SECTION = 8
++
++#MAN_FILES = $(TARGET_STUB_NAME).$(SECTION)
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(MAN_FILES)
++
++## Target information
++TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++
++CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
++LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
++
++OBJECTS = icuswap.o
++
++DEPS = $(OBJECTS:.o=.d)
++
++## List of phony targets
++.PHONY : all all-local install install-local clean clean-local	\
++distclean distclean-local dist dist-local check check-local install-man
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local
++install: install-local
++clean: clean-local
++distclean : distclean-local
++dist: dist-local
++check: all check-local
++
++all-local: $(TARGET) $(MAN_FILES)
++
++install-local: all-local install-man
++	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++
++install-man: $(MAN_FILES)
++#	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
++#	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
++
++
++dist-local:
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	$(RMV) $(TARGET) $(OBJECTS)
++
++distclean-local: clean-local
++	$(RMV) Makefile
++
++check-local: all-local
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(TARGET) : $(OBJECTS)
++	echo Note: icuswap is obsolete - use icupkg instead.
++	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
++	$(POST_BUILD_STEP)
++
++
++%.$(SECTION): $(srcdir)/%.$(SECTION).in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++
++ifeq (,$(MAKECMDGOALS))
++-include $(DEPS)
++else
++ifneq ($(patsubst %clean,,$(MAKECMDGOALS)),)
++-include $(DEPS)
++endif
++endif
++
+diff --git a/tools/makeconv/Makefile b/tools/makeconv/Makefile
+new file mode 100644
+index 00000000000..bc414d6a80a
+--- /dev/null
++++ b/tools/makeconv/Makefile
+@@ -0,0 +1,96 @@
++## Makefile.in for ICU - tools/makeconv
++## Copyright (C) 2016 and later: Unicode, Inc. and others.
++## License & terms of use: http://www.unicode.org/copyright.html
++## Copyright (c) 1999-2011, International Business Machines Corporation and
++## others. All Rights Reserved.
++## Stephen F. Booth
++
++## Source directory information
++srcdir = ../.././icu4c/source/tools/makeconv
++top_srcdir = ../.././icu4c/source
++
++top_builddir = ../..
++
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = tools/makeconv
++
++TARGET_STUB_NAME = makeconv
++
++SECTION = 1
++
++MAN_FILES = $(TARGET_STUB_NAME).$(SECTION)
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(MAN_FILES)
++
++## Target information
++TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++
++CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(srcdir)/../toolutil
++LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
++
++OBJECTS = makeconv.o ucnvstat.o genmbcs.o gencnvex.o
++
++DEPS = $(OBJECTS:.o=.d)
++
++## List of phony targets
++.PHONY : all all-local install install-local clean clean-local	\
++distclean distclean-local dist dist-local check check-local install-man
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local
++install: install-local
++clean: clean-local
++distclean : distclean-local
++dist: dist-local
++check: all check-local
++
++all-local: $(TARGET) $(MAN_FILES)
++
++install-local: all-local install-man
++	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
++	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++
++install-man: $(MAN_FILES)
++	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
++	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
++
++
++dist-local:
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	$(RMV) $(TARGET) $(OBJECTS)
++
++distclean-local: clean-local
++	$(RMV) Makefile
++
++check-local: all-local
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(TARGET) : $(OBJECTS)
++	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
++	$(POST_BUILD_STEP)
++
++
++%.$(SECTION): $(srcdir)/%.$(SECTION).in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++
++ifeq (,$(MAKECMDGOALS))
++-include $(DEPS)
++else
++ifneq ($(patsubst %clean,,$(MAKECMDGOALS)),)
++-include $(DEPS)
++endif
++endif
++
+diff --git a/tools/pkgdata/Makefile b/tools/pkgdata/Makefile
+new file mode 100644
+index 00000000000..4113c90c14b
+--- /dev/null
++++ b/tools/pkgdata/Makefile
+@@ -0,0 +1,101 @@
++## Makefile.in for ICU - tools/pkgdata
++## Copyright (C) 2016 and later: Unicode, Inc. and others.
++## License & terms of use: http://www.unicode.org/copyright.html
++## Copyright (c) 1999-2011, International Business Machines Corporation and
++## others. All Rights Reserved.
++## Steven R. Loomis
++
++## Source directory information
++srcdir = ../.././icu4c/source/tools/pkgdata
++top_srcdir = ../.././icu4c/source
++
++top_builddir = ../..
++
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = tools/pkgdata
++
++TARGET_STUB_NAME = pkgdata
++
++SECTION = 1
++
++MAN_FILES = $(TARGET_STUB_NAME).$(SECTION)
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(MAN_FILES)
++
++ifneq ($(PKGDATA_DEFS),)
++DEFS += $(PKGDATA_DEFS)
++endif
++
++## Target information
++TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++
++CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(srcdir)/../toolutil
++DEFS += -DUDATA_SO_SUFFIX=\".$(SO)\" -DSTATIC_O=\"$(STATIC_O)\"
++LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
++
++OBJECTS = pkgdata.o pkgtypes.o
++
++DEPS = $(OBJECTS:.o=.d)
++
++## List of phony targets
++.PHONY : all all-local install install-local clean clean-local	\
++distclean distclean-local dist dist-local check check-local install-man
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local
++install: install-local
++clean: clean-local
++distclean : distclean-local
++dist: dist-local
++check: all check-local
++
++all-local: $(TARGET) $(MAN_FILES)
++
++install-local: all-local install-man
++	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
++	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++
++install-man: $(MAN_FILES)
++	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
++	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
++
++
++dist-local:
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	$(RMV) $(TARGET) $(OBJECTS)
++
++distclean-local: clean-local
++	$(RMV) Makefile
++
++check-local: all-local
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(TARGET) : $(OBJECTS)
++	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
++	$(POST_BUILD_STEP)
++
++
++%.$(SECTION): $(srcdir)/%.$(SECTION).in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++
++ifeq (,$(MAKECMDGOALS))
++-include $(DEPS)
++else
++ifneq ($(patsubst %clean,,$(MAKECMDGOALS)),)
++-include $(DEPS)
++endif
++endif
++
+diff --git a/tools/toolutil/Makefile b/tools/toolutil/Makefile
+new file mode 100644
+index 00000000000..5beb08b65bf
+--- /dev/null
++++ b/tools/toolutil/Makefile
+@@ -0,0 +1,153 @@
++# Copyright (C) 2016 and later: Unicode, Inc. and others.
++# License & terms of use: http://www.unicode.org/copyright.html
++#******************************************************************************
++#
++#   Copyright (C) 1999-2014, International Business Machines
++#   Corporation and others.  All Rights Reserved.
++#
++#******************************************************************************
++## Makefile.in for ICU - tools/toolutil
++## Steven R. Loomis
++
++## Source directory information
++srcdir = ../.././icu4c/source/tools/toolutil
++top_srcdir = ../.././icu4c/source
++
++top_builddir = ../..
++
++## All the flags and other definitions are included here.
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = tools/toolutil
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(IMPORT_LIB) $(MIDDLE_IMPORT_LIB) $(FINAL_IMPORT_LIB)
++
++## Target information
++
++TARGET_STUBNAME=$(TOOLUTIL_STUBNAME)
++
++ifneq ($(ENABLE_STATIC),)
++TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++endif
++
++ifneq ($(ENABLE_SHARED),)
++SO_TARGET = $(LIBDIR)/$(LIBICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(SO)
++ALL_SO_TARGETS = $(SO_TARGET) $(MIDDLE_SO_TARGET) $(FINAL_SO_TARGET) $(SHARED_OBJECT)
++endif
++
++ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS)
++
++DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
++DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
++DYNAMICCXXFLAGS = $(SHAREDLIBCXXFLAGS)
++CFLAGS += $(LIBCFLAGS)
++CXXFLAGS += $(LIBCXXFLAGS)
++
++CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(top_srcdir)/i18n $(LIBCPPFLAGS)
++
++# from icuinfo
++CPPFLAGS+=  "-DU_BUILD=\"x86_64-unknown-linux-gnu\"" "-DU_HOST=\"x86_64-unknown-linux-gnu\"" "-DU_CC=\"clang\"" "-DU_CXX=\"clang++\""
++CPPFLAGS += -DUNISTR_FROM_CHAR_EXPLICIT=explicit -DUNISTR_FROM_STRING_EXPLICIT=explicit
++
++DEFS += -DU_TOOLUTIL_IMPLEMENTATION
++LDFLAGS += $(LDFLAGSICUTOOLUTIL)
++LIBS = $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS)
++
++OBJECTS = filestrm.o package.o pkgitems.o swapimpl.o toolutil.o unewdata.o \
++collationinfo.o denseranges.o \
++ucm.o ucmstate.o uoptions.o uparse.o \
++ucbuf.o xmlparser.o writesrc.o \
++pkg_icu.o pkg_genc.o pkg_gencmn.o ppucd.o flagparser.o filetools.o \
++udbgutil.o dbgutil.o ucln_tu.o
++
++STATIC_OBJECTS = $(OBJECTS:.o=.$(STATIC_O))
++
++DEPS = $(OBJECTS:.o=.d)
++
++-include Makefile.local
++
++## List of phony targets
++.PHONY : all all-local install install-local clean clean-local	\
++distclean distclean-local install-library dist	\
++dist-local check check-local
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local
++install: install-local
++clean: clean-local
++distclean : distclean-local
++dist: dist-local
++check: all check-local
++
++all-local: $(ALL_TARGETS)
++
++install-local: install-library
++
++install-library: all-local
++	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
++ifneq ($(ENABLE_STATIC),)
++	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++endif
++ifneq ($(ENABLE_SHARED),)
++	$(INSTALL-L) $(FINAL_SO_TARGET) $(DESTDIR)$(libdir)
++ifneq ($(FINAL_SO_TARGET),$(SO_TARGET))
++	cd $(DESTDIR)$(libdir) && $(RM) $(notdir $(SO_TARGET)) && ln -s $(notdir $(FINAL_SO_TARGET)) $(notdir $(SO_TARGET))
++ifneq ($(FINAL_SO_TARGET),$(MIDDLE_SO_TARGET))
++	cd $(DESTDIR)$(libdir) && $(RM) $(notdir $(MIDDLE_SO_TARGET)) && ln -s $(notdir $(FINAL_SO_TARGET)) $(notdir $(MIDDLE_SO_TARGET))
++endif
++endif
++ifneq ($(IMPORT_LIB_EXT),)
++	$(INSTALL-L) $(FINAL_IMPORT_LIB) $(DESTDIR)$(libdir)
++ifneq ($(IMPORT_LIB),$(FINAL_IMPORT_LIB))
++	cd $(DESTDIR)$(libdir) && $(RM) $(notdir $(IMPORT_LIB)) && ln -s $(notdir $(FINAL_IMPORT_LIB)) $(notdir $(IMPORT_LIB))
++endif
++ifneq ($(MIDDLE_IMPORT_LIB),$(FINAL_IMPORT_LIB))
++	cd $(DESTDIR)$(libdir) && $(RM) $(notdir $(MIDDLE_IMPORT_LIB)) && ln -s $(notdir $(FINAL_IMPORT_LIB)) $(notdir $(MIDDLE_IMPORT_LIB))
++endif
++endif
++endif
++
++dist-local:
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	$(RMV) $(OBJECTS) $(STATIC_OBJECTS) $(ALL_TARGETS)
++
++distclean-local: clean-local
++	$(RMV) Makefile
++
++check-local: all-local
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++ifneq ($(ENABLE_STATIC),)
++$(TARGET): $(STATIC_OBJECTS)
++	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
++	$(RANLIB) $@
++endif
++
++ifneq ($(ENABLE_SHARED),)
++$(SHARED_OBJECT): $(OBJECTS)
++	$(SHLIB.cc) $(LD_SONAME) $(OUTOPT)$@ $^ $(LIBS)
++ifeq ($(ENABLE_RPATH),YES)
++ifneq ($(wildcard $(libdir)/$(MIDDLE_SO_TARGET)),)
++	$(warning RPATH warning: --enable-rpath means test programs may use existing $(libdir)/$(MIDDLE_SO_TARGET))
++endif
++endif
++endif
++
++ifeq (,$(MAKECMDGOALS))
++-include $(DEPS)
++else
++ifneq ($(patsubst %clean,,$(MAKECMDGOALS)),)
++-include $(DEPS)
++endif
++endif
++
+diff --git a/tools/tzcode/Makefile b/tools/tzcode/Makefile
+new file mode 100644
+index 00000000000..f7e8d7f0497
+--- /dev/null
++++ b/tools/tzcode/Makefile
+@@ -0,0 +1,175 @@
++# Copyright (C) 2016 and later: Unicode, Inc. and others.
++# License & terms of use: http://www.unicode.org/copyright.html
++# Some Portions Copyright (c) 2006-2012 IBM and others. All Rights Reserved.
++
++srcdir = ../.././icu4c/source/tools/tzcode
++top_srcdir = ../.././icu4c/source
++
++top_builddir = ../..
++
++subdir = tools/tzcode
++
++include $(top_builddir)/icudefs.mk
++
++ifeq ($(TZDATA),)
++TZDATA = $(firstword $(wildcard ./tzdata*.tar.gz) $(wildcard $(srcdir)/tzdata*.tar.gz))
++endif
++ifeq ($(TZCODE),)
++TZCODE = $(firstword $(wildcard ./tzcode*.tar.gz) $(wildcard $(srcdir)/tzcode*.tar.gz))
++endif
++
++TZORIG=./tzorig
++TZORIG_TZDIR=./tzorig/tzdir
++TZORIG_ABS := $(shell pwd)/tzorig
++TZORIG_TZDIR_ABS := $(TZORIG_ABS)/tzdir
++TZORIG_OPTS := CFLAGS="-D_POSIX_C_SOURCE $(TZORIG_EXTRA_CFLAGS)" TZDIR=$(TZORIG_TZDIR_ABS)
++
++
++## Options for building zdumps
++ZDUMPOUT=$(shell pwd)/zdumpout
++ICUZDUMPOUT=$(shell pwd)/icuzdumpout
++
++ZDUMP_OPTS= -v -a -d $(ZDUMPOUT) -c 1902,2038 -i
++ICUZDUMP_OPTS= -a -d $(ICUZDUMPOUT)
++
++# Executables & objects
++OBJECTS= zic.o localtime.o asctime.o scheck.o ialloc.o
++ZICTARG=$(BINDIR)/zic$(EXEEXT)
++ZICEXEC=$(TOOLBINDIR)/zic$(TOOLEXEEXT)
++TZ2ICUTARG=$(BINDIR)/tz2icu$(EXEEXT)
++TZ2ICUEXEC=$(TOOLBINDIR)/tz2icu$(TOOLEXEEXT)
++ICUZDUMPTARG=$(BINDIR)/icuzdump$(EXEEXT)
++ICUZDUMPEXEC=$(TOOLBINDIR)/icuzdump$(TOOLEXEEXT)
++
++ifeq ($(TZDATA),)
++all: 
++	@echo ERROR "tzdata*.tar.gz" can\'t be found.
++	@false
++else
++all: icu_data
++endif
++
++TZCODE_TARGETS= tzorig check-dump
++
++ifeq ($(TZCODE),)
++# we're broken.
++$(TZCODE_TARGETS):
++	@echo ERROR "tzcode*.tar.gz" can\'t be found.
++	@false
++
++else
++ifeq ($(TZDATA),)
++# we're broken.
++$(TZCODE_TARGETS):
++	@echo ERROR "tzdata*.tar.gz" can\'t be found.
++	@false
++else
++tzorig:	$(TZCODE) $(TZDATA)
++	-$(RMV) ./tzorig/
++	mkdir $@
++	mkdir $(TZORIG_TZDIR)
++	gunzip -d < $(TZDATA) | ( cd $@ ; tar xf - )
++	gunzip -d < $(TZCODE) | ( cd $@ ; tar xf - )
++	-mv $(TZORIG)/zdump.c $(TZORIG)/zdump.c.orig
++	cp $(srcdir)/zdump.c $(TZORIG)/zdump.c
++	-mv $(TZORIG)/factory $(TZORIG)/factory.orig
++	cat $(TZORIG)/factory.orig $(srcdir)/icuzones > $(TZORIG)/factory
++	-mv $(TZORIG)/zishrink.awk $(TZORIG)/zishrink.awk.orig
++	sed -e '/if (line ~ \/^R SystemV \/) return/s/^/#/' $(TZORIG)/zishrink.awk.orig > $(TZORIG)/zishrink.awk
++	-mv $(TZORIG)/Makefile $(TZORIG)/Makefile.orig
++	sed -e "s/BACKWARD=\$$(BACKWARD)/BACKWARD='\$$(BACKWARD)'/" $(TZORIG)/Makefile.orig > $(TZORIG)/Makefile
++	$(MAKE) -C $@ $(TZORIG_OPTS) zdump zones
++
++$(ZDUMPOUT): tzorig
++	( cd $(TZORIG) ; ./zdump$(EXEEXT) $(ZDUMP_OPTS) )
++
++
++dump-out: $(ZDUMPOUT) $(ICUZDUMPOUT)
++
++check-dump: dump-out
++	diff -r zdumpout icuzdumpout
++
++endif
++endif
++
++$(ICUZDUMPOUT): $(ICUZDUMPEXEC)
++	-$(RMV) $(ICUZDUMPOUT)
++	-mkdir $(ICUZDUMPOUT)
++	$(INVOKE) $(ICUZDUMPEXEC) $(ICUZDUMP_OPTS)
++
++
++#
++# old 'tz' rules start here
++#
++
++
++PRIMARY_YDATA=	africa antarctica asia australasia \
++		europe northamerica southamerica
++YDATA=		$(PRIMARY_YDATA) pacificnew etcetera factory backward
++NDATA=		systemv
++SDATA=		solar87 solar88 solar89
++#TDATA=		$(YDATA) $(NDATA) $(SDATA)
++TDATA=		$(YDATA) $(NDATA)
++YEARISTYPE=     ./yearistype
++
++TZDIR=zoneinfo
++
++CFLAGS+=-D_POSIX_C_SOURCE
++CPPFLAGS+= -DTZDIR=\"$(TZDIR)\" 
++
++# more data
++XDATA=zone.tab yearistype.sh leapseconds iso3166.tab
++ICUDATA=ZoneMetaData.java icu_zone.txt tz2icu zoneinfo64.txt zoneinfo.txt
++
++$(ZICTARG):		$(OBJECTS) $(TDATA) yearistype $(srcdir)/tz2icu.h
++		$(CC) $(CFLAGS) $(TZORIG_EXTRA_CFLAGS) $(LFLAGS) -I$(srcdir) $(OBJECTS) $(LDLIBS) -o $@
++
++$(TZ2ICUTARG):	$(srcdir)/tz2icu.cpp $(srcdir)/tz2icu.h
++		$(CXX) $(CXXFLAGS) -I$(srcdir) -I$(top_srcdir)/common $(srcdir)/tz2icu.cpp -o $@
++
++$(ICUZDUMPTARG):	$(srcdir)/icuzdump.cpp
++		$(LINK.cc)  -I$(srcdir) -I$(top_srcdir)/common -I$(top_srcdir)/i18n -I$(top_srcdir)/tools/toolutil -I$(top_srcdir)/io  -pedantic $(srcdir)/icuzdump.cpp $(LIBICUUC) $(LIBICUDT) $(LIBICUI18N) $(LIBICUIO) $(LIBICUTOOLUTIL) -o $@
++
++
++$(TDATA): tdatamarker
++
++tdatamarker: $(TZDATA)
++	gunzip -d < $(TZDATA) | tar xf - --exclude=Makefile
++	touch $@
++
++yearistype:	yearistype.sh
++		cp yearistype.sh yearistype
++		chmod +x yearistype
++
++posix_only:	$(ZICEXEC) $(TDATA) $(srcdir)/icuzones
++		$(ZICEXEC) -y $(YEARISTYPE) -d $(TZDIR) -L /dev/null $(TDATA) $(srcdir)/icuzones
++
++
++icu_data:	$(TZ2ICUEXEC) posix_only
++		$(TZ2ICUEXEC) $(TZDIR) zone.tab `echo $(TZDATA) | sed -e "s/.*\/tzdata//;s/\.tar\.gz$$//"`
++		$(TZ2ICUEXEC) $(TZDIR) zone.tab `echo $(TZDATA) | sed -e "s/.*\/tzdata//;s/\.tar\.gz$$//"` --old
++
++clean:
++		-rm -f core *.o *.out zdump${EXEEXT} $(ZICTARG) yearistype date $(TZ2ICUTARG)
++		@echo ICU specific cleanup:
++		-rm -f $(ICUDATA)
++		-rm -rf $(TZDIR)
++		-$(RMV) $(ICUZDUMPTARG) tzorig ./zdumpout/ ./icuzdumpout/
++ifneq ($(TZDATA),)
++		-rm -rf `gunzip -d < $(TZDATA) | tar tf - --exclude=Makefile | grep -o '[^ ]*$$' | tr '\n' ' '`
++		-rm tdatamarker
++endif
++
++checkclean:
++
++dataclean: clean
++	-rm -f $(TDATA) $(XDATA)
++
++distclean:	dataclean clean
++	-rm -f Makefile
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++

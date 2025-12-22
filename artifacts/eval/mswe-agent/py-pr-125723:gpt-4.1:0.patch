@@ -1,0 +1,77 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index d6b4065e130..2c9338beaa5 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -127,6 +127,10 @@ static PyObject *
+ framelocalsproxy_getitem(PyObject *self, PyObject *key)
+ {
+     PyFrameObject* frame = ((PyFrameLocalsProxyObject*)self)->frame;
++    if (frame == NULL) {
++        PyErr_SetString(PyExc_ReferenceError, "underlying frame has been deallocated");
++        return NULL;
++    }
+     PyCodeObject* co = _PyFrame_GetCode(frame->f_frame);
+ 
+     int i = framelocalsproxy_getkeyindex(frame, key, true);
+@@ -158,6 +162,10 @@ framelocalsproxy_setitem(PyObject *self, PyObject *key, PyObject *value)
+ {
+     /* Merge locals into fast locals */
+     PyFrameObject *frame = ((PyFrameLocalsProxyObject*)self)->frame;
++    if (frame == NULL) {
++        PyErr_SetString(PyExc_ReferenceError, "underlying frame has been deallocated");
++        return -1;
++    }
+     _PyStackRef *fast = _PyFrame_GetLocalsArray(frame->f_frame);
+     PyCodeObject *co = _PyFrame_GetCode(frame->f_frame);
+ 
+@@ -275,6 +283,10 @@ static PyObject *
+ framelocalsproxy_keys(PyObject *self, void *Py_UNUSED(ignored))
+ {
+     PyFrameObject *frame = ((PyFrameLocalsProxyObject*)self)->frame;
++    if (frame == NULL) {
++        PyErr_SetString(PyExc_ReferenceError, "underlying frame has been deallocated");
++        return NULL;
++    }
+     PyCodeObject *co = _PyFrame_GetCode(frame->f_frame);
+     PyObject *names = PyList_New(0);
+     if (names == NULL) {
+@@ -384,7 +396,9 @@ static PyObject *
+ framelocalsproxy_richcompare(PyObject *self, PyObject *other, int op)
+ {
+     if (PyFrameLocalsProxy_Check(other)) {
+-        bool result = ((PyFrameLocalsProxyObject*)self)->frame == ((PyFrameLocalsProxyObject*)other)->frame;
++        bool result = ((PyFrameLocalsProxyObject*)self)->frame != NULL &&
++                      ((PyFrameLocalsProxyObject*)other)->frame != NULL &&
++                      ((PyFrameLocalsProxyObject*)self)->frame == ((PyFrameLocalsProxyObject*)other)->frame;
+         if (op == Py_EQ) {
+             return PyBool_FromLong(result);
+         } else if (op == Py_NE) {
+@@ -412,6 +426,10 @@ framelocalsproxy_richcompare(PyObject *self, PyObject *other, int op)
+ static PyObject *
+ framelocalsproxy_repr(PyObject *self)
+ {
++    if (((PyFrameLocalsProxyObject*)self)->frame == NULL) {
++        PyErr_SetString(PyExc_ReferenceError, "underlying frame has been deallocated");
++        return NULL;
++    }
+     int i = Py_ReprEnter(self);
+     if (i != 0) {
+         return i > 0 ? PyUnicode_FromString("{...}") : NULL;
+diff --git a/asan_stderr.txt b/asan_stderr.txt
+new file mode 100644
+index 00000000000..e69de29bb2d

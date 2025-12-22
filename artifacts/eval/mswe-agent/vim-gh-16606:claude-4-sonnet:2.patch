@@ -1,0 +1,100 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0d38d901d..9f2f930da 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -121,3 +121,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/message.c b/src/message.c
+index 24984123b..dad9c59d6 100644
+--- a/src/message.c
++++ b/src/message.c
+@@ -518,7 +518,7 @@ get_emsg_lnum(void)
+ 
+     // lnum is 0 when executing a command from the command line
+     // argument, we don't want a line number then
+-    if (SOURCING_NAME != NULL
++    if (HAVE_SOURCING_INFO && SOURCING_NAME != NULL
+ 	    && (other_sourcing_name() || SOURCING_LNUM != last_sourcing_lnum)
+ 	    && SOURCING_LNUM != 0)
+     {
+@@ -560,14 +560,15 @@ msg_source(int attr)
+     {
+ 	msg_attr((char *)p, HL_ATTR(HLF_N));
+ 	vim_free(p);
+-	last_sourcing_lnum = SOURCING_LNUM;  // only once for each line
++	if (HAVE_SOURCING_INFO)
++	    last_sourcing_lnum = SOURCING_LNUM;  // only once for each line
+     }
+ 
+     // remember the last sourcing name printed, also when it's empty
+-    if (SOURCING_NAME == NULL || other_sourcing_name())
++    if (!HAVE_SOURCING_INFO || SOURCING_NAME == NULL || other_sourcing_name())
+     {
+ 	VIM_CLEAR(last_sourcing_name);
+-	if (SOURCING_NAME != NULL)
++	if (HAVE_SOURCING_INFO && SOURCING_NAME != NULL)
+ 	    last_sourcing_name = vim_strsave(SOURCING_NAME);
+     }
+     --no_wait_return;
+@@ -693,10 +694,10 @@ emsg_core(const char *s)
+ 	if (in_assert_fails && emsg_assert_fails_msg == NULL)
+ 	{
+ 	    emsg_assert_fails_msg = vim_strsave((char_u *)s);
+-	    emsg_assert_fails_lnum = SOURCING_LNUM;
++	    emsg_assert_fails_lnum = HAVE_SOURCING_INFO ? SOURCING_LNUM : 0;
+ 	    vim_free(emsg_assert_fails_context);
+ 	    emsg_assert_fails_context = vim_strsave(
+-			 SOURCING_NAME == NULL ? (char_u *)"" : SOURCING_NAME);
++		     (HAVE_SOURCING_INFO && SOURCING_NAME != NULL) ? SOURCING_NAME : (char_u *)"");
+ 	}
+ 
+ 	// set "v:errmsg", also when using ":silent! cmd"
+@@ -824,9 +825,11 @@ semsg(const char *s, ...)
+ 	return TRUE;
+ 
+     if (IObuff == NULL)
++    {
+ 	// Very early in initialisation and already something wrong, just
+ 	// give the raw message so the user at least gets a hint.
+ 	return emsg_core(s);
++    }
+ 
+     va_list ap;
+ 
+@@ -2803,7 +2806,7 @@ inc_msg_scrolled(void)
+ #ifdef FEAT_EVAL
+     if (*get_vim_var_str(VV_SCROLLSTART) == NUL)
+     {
+-	char_u	    *p = SOURCING_NAME;
++	char_u	    *p = (HAVE_SOURCING_INFO && SOURCING_NAME != NULL) ? SOURCING_NAME : NULL;
+ 	char_u	    *tofree = NULL;
+ 	int	    len;
+ 
+@@ -2818,7 +2821,7 @@ inc_msg_scrolled(void)
+ 	    if (tofree != NULL)
+ 	    {
+ 		vim_snprintf((char *)tofree, len, _("%s line %ld"),
+-						      p, (long)SOURCING_LNUM);
++					      p, (long)(HAVE_SOURCING_INFO ? SOURCING_LNUM : 0));
+ 		p = tofree;
+ 	    }
+ 	}
+@@ -2830,6 +2833,7 @@ inc_msg_scrolled(void)
+     set_must_redraw(UPD_VALID);
+ }
+ 
++
+ /*
+  * To be able to scroll back at the "more" and "hit-enter" prompts we need to
+  * store the displayed text and remember where screen lines start.

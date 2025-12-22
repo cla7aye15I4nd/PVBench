@@ -1,0 +1,36 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_weakrefs.c b/Zend/zend_weakrefs.c
+index 3f2e517f3fe..fd8f977d2d5 100644
+--- a/Zend/zend_weakrefs.c
++++ b/Zend/zend_weakrefs.c
+@@ -534,7 +534,12 @@ static void zend_weakmap_iterator_get_current_key(zend_object_iterator *obj_iter
+ 		ZEND_ASSERT(0 && "Must have integer key");
+ 	}
+ 
+-	ZVAL_OBJ_COPY(key, zend_weakref_key_to_object(num_key));
++	zend_object *obj = zend_weakref_key_to_object(num_key);
++	if (obj && GC_TYPE(obj) == IS_OBJECT) {
++		ZVAL_OBJ_COPY(key, obj);
++	} else {
++		ZVAL_NULL(key);
++	}
+ }
+ 
+ static void zend_weakmap_iterator_move_forward(zend_object_iterator *obj_iter)

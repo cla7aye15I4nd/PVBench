@@ -1,0 +1,69 @@
+diff --git a/src/arglist.c b/src/arglist.c
+index 8825c8e25..4eec079df 100644
+--- a/src/arglist.c
++++ b/src/arglist.c
+@@ -1258,6 +1258,10 @@ do_arg_all(
+ 
+     tabpage_T *new_lu_tp = curtab;
+ 
++    // Stop Visual mode, the cursor and "VIsual" may very well be invalid after
++    // switching to another buffer.
++    reset_VIsual_and_resel();
++
+     // Try closing all windows that are not in the argument list.
+     // Also close windows that are not full width;
+     // When 'hidden' or "forceit" set the buffer becomes hidden.
+diff --git a/src/misc1.c b/src/misc1.c
+index 90cf91474..142a6161e 100644
+--- a/src/misc1.c
++++ b/src/misc1.c
+@@ -543,11 +543,15 @@ plines_m_win(win_T *wp, linenr_T first, linenr_T last, int max)
+ gchar_pos(pos_T *pos)
+ {
+     char_u	*ptr;
++    int		ptrlen;
+ 
+     // When searching columns is sometimes put at the end of a line.
+     if (pos->col == MAXCOL)
+ 	return NUL;
++    ptrlen = ml_get_len(pos->lnum);
+     ptr = ml_get_pos(pos);
++    if (pos->col > ptrlen)
++	return NUL;
+     if (has_mbyte)
+ 	return (*mb_ptr2char)(ptr);
+     return (int)*ptr;
+diff --git a/src/ops.c b/src/ops.c
+index a75efab59..9efef383d 100644
+--- a/src/ops.c
++++ b/src/ops.c
+@@ -2586,6 +2586,7 @@ charwise_block_prep(
+     colnr_T startcol = 0, endcol = MAXCOL;
+     colnr_T cs, ce;
+     char_u *p;
++    int	plen = ml_get_len(lnum);
+ 
+     p = ml_get(lnum);
+     bdp->startspaces = 0;
+@@ -2646,7 +2647,7 @@ charwise_block_prep(
+     else
+ 	bdp->textlen = endcol - startcol + inclusive;
+     bdp->textcol = startcol;
+-    bdp->textstart = p + startcol;
++    bdp->textstart = startcol <= plen ? p + startcol : p;
+ }
+ 
+ /*
+diff --git a/src/version.c b/src/version.c
+index f79eb15f8..0d2189b35 100644
+--- a/src/version.c
++++ b/src/version.c
+@@ -704,6 +704,8 @@ static char *(features[]) =
+ 
+ static int included_patches[] =
+ {   /* Add new patch number below this line */
++/**/
++    1003,
+ /**/
+     1002,
+ /**/

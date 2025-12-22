@@ -1,0 +1,80 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index 64e494200ee..6f4b36ddfda 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -707,6 +707,11 @@ ZEND_API zval *zend_std_read_property(zend_object *zobj, zend_string *name, int
+ 	const zend_property_info *prop_info = NULL;
+ 	uint32_t *guard = NULL;
+ 
++	/* Check if the object is still valid to prevent use-after-free */
++	if (UNEXPECTED(!IS_OBJ_VALID(zobj))) {
++		return &EG(uninitialized_zval);
++	}
++
+ #if DEBUG_OBJECT_HANDLERS
+ 	fprintf(stderr, "Read object #%d property: %s\n", zobj->handle, ZSTR_VAL(name));
+ #endif
+diff --git a/Zend/zend_objects.c b/Zend/zend_objects.c
+index fd0e97c5f41..1251fdcee36 100644
+--- a/Zend/zend_objects.c
++++ b/Zend/zend_objects.c
+@@ -160,11 +160,6 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+ 						);
+ 						return;
+ 					}
+-				} else {
+-					zend_error(E_WARNING,
+-						"Call to protected %s::__destruct() from global scope during shutdown ignored",
+-						ZSTR_VAL(object->ce->name));
+-					return;
+ 				}
+ 			}
+ 		}
+@@ -205,6 +200,8 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
+ 	}
+ }
+ 
++
++
+ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
+ {
+ 	zend_object *object = emalloc(sizeof(zend_object) + zend_object_properties_size(ce));
+diff --git a/Zend/zend_objects_API.c b/Zend/zend_objects_API.c
+index 8a6b714c8b3..7ce37398561 100644
+--- a/Zend/zend_objects_API.c
++++ b/Zend/zend_objects_API.c
+@@ -161,6 +161,16 @@ ZEND_API void ZEND_FASTCALL zend_objects_store_del(zend_object *object) /* {{{ *
+ {
+ 	ZEND_ASSERT(GC_REFCOUNT(object) == 0);
+ 
++	/* Check if free has already been called to prevent use-after-free */
++	if (UNEXPECTED(OBJ_FLAGS(object) & IS_OBJ_FREE_CALLED)) {
++		return;
++	}
++
++	/* Check if the object is still valid to prevent use-after-free */
++	if (UNEXPECTED(!IS_OBJ_VALID(object))) {
++		return;
++	}
++
+ 	/* GC might have released this object already. */
+ 	if (UNEXPECTED(GC_TYPE(object) == IS_NULL)) {
+ 		return;

@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/exiv2/types.hpp b/include/exiv2/types.hpp
+index 33ee3720b..43bd7bc47 100644
+--- a/include/exiv2/types.hpp
++++ b/include/exiv2/types.hpp
+@@ -296,6 +296,9 @@ namespace Exiv2 {
+     template <typename T>
+     uint16_t getUShort(const Slice<T>& buf, ByteOrder byteOrder)
+     {
++        if (buf.size() < 2) {
++            throw std::out_of_range("Buffer too small to read unsigned short");
++        }
+         if (byteOrder == littleEndian) {
+             return static_cast<byte>(buf.at(1)) << 8 | static_cast<byte>(buf.at(0));
+         } else {

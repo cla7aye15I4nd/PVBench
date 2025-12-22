@@ -1,0 +1,47 @@
+
+diff --git a/.gitignore b/.gitignore
+index 9142623efa8..926f616c81e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -124,3 +124,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index 7fb660a1774..182cc1584d4 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -657,14 +657,24 @@ class WasmJSApiScope {
+   WasmJSApiScope(const WasmJSApiScope&) = delete;
+   WasmJSApiScope& operator=(const WasmJSApiScope&) = delete;
+ 
++#if DEBUG
+ #if DEBUG
+   ~WasmJSApiScope() {
+     // If there was an exception we should not have a return value set.
++    ClearReturnValueOnError();
+     DCHECK_IMPLIES(i_isolate()->has_exception() || thrower_.error(),
+                    callback_info_.GetReturnValue().Get()->IsUndefined());
+   }
+ #endif
+ 
++ private:
++  void ClearReturnValueOnError() {
++    if (i_isolate()->has_exception() || thrower_.error()) {
++      callback_info_.GetReturnValue().SetUndefined();
++    }
++  }
++#endif
++
+   void AssertException() const {
+     DCHECK(callback_info_.GetReturnValue().Get()->IsUndefined());
+     DCHECK(i_isolate()->has_exception() || thrower_.error());

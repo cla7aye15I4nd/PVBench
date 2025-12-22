@@ -1,0 +1,80 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ba8d67d9..8556f202b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,3 +24,14 @@ test/ApplePlatformsIntegrationTestApp/Podfile.lock
+ test/ApplePlatformsIntegrationTestApp/Pods
+ test/ApplePlatformsIntegrationTestApp/**/xcuserdata
+ test/ApplePlatformsIntegrationTestApp/ApplePlatformsIntegrationTestApp.xcworkspace
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/lib/VM/Operations.cpp b/lib/VM/Operations.cpp
+index 60820798a..3b2ac8321 100644
+--- a/lib/VM/Operations.cpp
++++ b/lib/VM/Operations.cpp
+@@ -26,6 +26,7 @@
+ #include "dtoa/dtoa.h"
+ 
+ #include "llvh/ADT/SmallString.h"
++#include <unordered_set>
+ 
+ #include <cfloat>
+ #include <cmath>
+@@ -1346,47 +1347,11 @@ CallResult<Handle<Callable>> speciesConstructor(
+   // no other constructor specified.
+   return defaultConstructor;
+ }
+-
+-bool isConstructor(Runtime *runtime, HermesValue value) {
+-  return isConstructor(runtime, dyn_vmcast<Callable>(value));
+ }
+ 
+-bool isConstructor(Runtime *runtime, Callable *callable) {
+-  // This is not a complete definition, since ES6 and later define member
+-  // functions of objects to not be constructors; however, Hermes does not have
+-  // ES6 classes implemented yet, so we cannot check for that case.
+-  if (!callable) {
+-    return false;
+-  }
+-
+-  // We traverse the BoundFunction target chain to find the eventual target.
+-  while (BoundFunction *b = dyn_vmcast<BoundFunction>(callable)) {
+-    callable = b->getTarget(runtime);
+-  }
+-
+-  // If it is a bytecode function, check the flags.
+-  if (auto *func = dyn_vmcast<JSFunction>(callable)) {
+-    auto *cb = func->getCodeBlock();
+-    // Even though it doesn't make sense logically, we need to compile the
+-    // function in order to access it flags.
+-    cb->lazyCompile(runtime);
+-    return !func->getCodeBlock()->getHeaderFlags().isCallProhibited(true);
+-  }
+ 
+-  // We check for NativeFunction since those are defined to not be
+-  // constructible, with the exception of NativeConstructor.
+-  if (!vmisa<NativeFunction>(callable) || vmisa<NativeConstructor>(callable)) {
+-    return true;
+-  }
+ 
+-  // JSCallableProxy is a NativeFunction, but may or may not be a
+-  // constructor, so we ask it.
+-  if (auto *cproxy = dyn_vmcast<JSCallableProxy>(callable)) {
+-    return cproxy->isConstructor(runtime);
+-  }
+ 
+-  return false;
+-}
+ 
+ CallResult<bool>
+ ordinaryHasInstance(Runtime *runtime, Handle<> constructor, Handle<> object) {

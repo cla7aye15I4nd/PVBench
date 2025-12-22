@@ -1,0 +1,72 @@
+clang-21: /tmp/llvm-gh-134085/build/llvm/include/llvm/ADT/SmallVector.h:291: T& llvm::SmallVectorTemplateCommon<T, <template-parameter-1-2> >::operator[](size_type) [with T = const llvm::slpvectorizer::BoUpSLP::TreeEntry*; <template-parameter-1-2> = void; reference = const llvm::slpvectorizer::BoUpSLP::TreeEntry*&; size_type = long unsigned int]: Assertion `idx < size()' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace, preprocessed source, and associated run script.
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-134085/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=none -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-134085/build -fcoverage-compilation-dir=/tmp/llvm-gh-134085/build -resource-dir /tmp/llvm-gh-134085/build/build/lib/clang/21 -internal-isystem /tmp/llvm-gh-134085/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -O3 -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -vectorize-loops -vectorize-slp -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-168bde.o -x c /testcases/llvm-gh-134085/input/poc.c
+1.	<eof> parser at end of file
+2.	Optimizer
+3.	Running pass "function<eager-inv>(float2int,lower-constant-intrinsics,chr,loop(loop-rotate<header-duplication;no-prepare-for-lto>,loop-deletion),loop-distribute,inject-tli-mappings,loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>,infer-alignment,loop-load-elim,instcombine<max-iterations=1;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;forward-switch-cond;switch-range-to-icmp;switch-to-lookup;no-keep-loops;hoist-common-insts;no-hoist-loads-stores-with-cond-faulting;sink-common-insts;speculate-blocks;simplify-cond-branch;no-speculate-unpredictables>,slp-vectorizer,vector-combine,instcombine<max-iterations=1;no-verify-fixpoint>,loop-unroll<O3>,transform-warning,sroa<preserve-cfg>,infer-alignment,instcombine<max-iterations=1;no-verify-fixpoint>,loop-mssa(licm<allowspeculation>),alignment-from-assumptions,loop-sink,instsimplify,div-rem-pairs,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;hoist-loads-stores-with-cond-faulting;no-sink-common-insts;speculate-blocks;simplify-cond-branch;speculate-unpredictables>)" on module "/testcases/llvm-gh-134085/input/poc.c"
+4.	Running pass "slp-vectorizer" on function "main"
+ #0 0x00005555586af698 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-134085/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x00005555586afaaf PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-134085/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x00005555586ace5d llvm::sys::RunSignalHandlers() /tmp/llvm-gh-134085/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x00005555586aef1a SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-134085/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007ffff7a92b2c pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2c)
+ #6 0x00007ffff7a3927e raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527e)
+ #7 0x00007ffff7a1c8ff abort (/lib/x86_64-linux-gnu/libc.so.6+0x288ff)
+ #8 0x00007ffff7a1c81b (/lib/x86_64-linux-gnu/libc.so.6+0x2881b)
+ #9 0x00007ffff7a2f517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#10 0x000055555b145018 llvm::SmallVectorTemplateCommon<llvm::slpvectorizer::BoUpSLP::TreeEntry const*, void>::operator[](unsigned long) /tmp/llvm-gh-134085/build/llvm/include/llvm/ADT/SmallVector.h:292:17
+#11 0x000055555b092800 llvm::slpvectorizer::BoUpSLP::isGatherShuffledSingleRegisterEntry(llvm::slpvectorizer::BoUpSLP::TreeEntry const*, llvm::ArrayRef<llvm::Value*>, llvm::MutableArrayRef<int>, llvm::SmallVectorImpl<llvm::slpvectorizer::BoUpSLP::TreeEntry const*>&, unsigned int, bool) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:14705:51
+#12 0x000055555b0944e9 llvm::slpvectorizer::BoUpSLP::isGatherShuffledEntry(llvm::slpvectorizer::BoUpSLP::TreeEntry const*, llvm::ArrayRef<llvm::Value*>, llvm::SmallVectorImpl<int>&, llvm::SmallVectorImpl<llvm::SmallVector<llvm::slpvectorizer::BoUpSLP::TreeEntry const*, 6u>>&, unsigned int, bool) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:14905:44
+#13 0x000055555b055113 llvm::slpvectorizer::BoUpSLP::findReusedOrderedScalars(llvm::slpvectorizer::BoUpSLP::TreeEntry const&, bool, bool) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:4949:46
+#14 0x000055555b05dca0 llvm::slpvectorizer::BoUpSLP::getReorderingData(llvm::slpvectorizer::BoUpSLP::TreeEntry const&, bool, bool) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:6276:71
+#15 0x000055555b062365 llvm::slpvectorizer::BoUpSLP::reorderBottomToTop(bool) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:6794:73
+#16 0x000055555b0b48b4 llvm::SLPVectorizerPass::tryToVectorizeList(llvm::ArrayRef<llvm::Value*>, llvm::slpvectorizer::BoUpSLP&, bool) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:20542:23
+#17 0x000055555b0c3142 llvm::SLPVectorizerPass::vectorizeChainsInBlock(llvm::BasicBlock*, llvm::slpvectorizer::BoUpSLP&)::'lambda'(llvm::ArrayRef<llvm::Value*>, bool)::operator()(llvm::ArrayRef<llvm::Value*>, bool) const /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:23205:9
+#18 0x000055555b0d8cfd bool llvm::function_ref<bool (llvm::ArrayRef<llvm::Value*>, bool)>::callback_fn<llvm::SLPVectorizerPass::vectorizeChainsInBlock(llvm::BasicBlock*, llvm::slpvectorizer::BoUpSLP&)::'lambda'(llvm::ArrayRef<llvm::Value*>, bool)>(long, llvm::ArrayRef<llvm::Value*>, bool) /tmp/llvm-gh-134085/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:48:3
+#19 0x000055555b187074 llvm::function_ref<bool (llvm::ArrayRef<llvm::Value*>, bool)>::operator()(llvm::ArrayRef<llvm::Value*>, bool) const /tmp/llvm-gh-134085/build/llvm/include/llvm/ADT/STLFunctionalExtras.h:70:3
+#20 0x000055555b0d082a bool tryToVectorizeSequence<llvm::Value>(llvm::SmallVectorImpl<llvm::Value*>&, llvm::function_ref<bool (llvm::Value*, llvm::Value*)>, llvm::function_ref<bool (llvm::Value*, llvm::Value*)>, llvm::function_ref<bool (llvm::ArrayRef<llvm::Value*>, bool)>, bool, llvm::slpvectorizer::BoUpSLP&) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:22786:7
+#21 0x000055555b0c389c llvm::SLPVectorizerPass::vectorizeChainsInBlock(llvm::BasicBlock*, llvm::slpvectorizer::BoUpSLP&) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:23201:59
+#22 0x000055555b0aff41 llvm::SLPVectorizerPass::runImpl(llvm::Function&, llvm::ScalarEvolution*, llvm::TargetTransformInfo*, llvm::TargetLibraryInfo*, llvm::AAResults*, llvm::LoopInfo*, llvm::DominatorTree*, llvm::AssumptionCache*, llvm::DemandedBits*, llvm::OptimizationRemarkEmitter*) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:19853:13
+#23 0x000055555b0af964 llvm::SLPVectorizerPass::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-134085/build/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp:19781:25
+#24 0x000055555a7b6fe9 llvm::detail::PassModel<llvm::Function, llvm::SLPVectorizerPass, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-134085/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#25 0x0000555557ef6cc9 llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-134085/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#26 0x000055555680271d llvm::detail::PassModel<llvm::Function, llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) /tmp/llvm-gh-134085/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#27 0x0000555557ef5b26 llvm::ModuleToFunctionPassAdaptor::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-134085/build/llvm/lib/IR/PassManager.cpp:129:23
+#28 0x000055555680264d llvm::detail::PassModel<llvm::Module, llvm::ModuleToFunctionPassAdaptor, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-134085/build/llvm/include/llvm/IR/PassManagerInternal.h:92:3
+#29 0x0000555557ef68f5 llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /tmp/llvm-gh-134085/build/llvm/include/llvm/IR/PassManagerImpl.h:85:18
+#30 0x0000555558ada775 (anonymous namespace)::EmitAssemblyHelper::RunOptimizationPipeline(clang::BackendAction, std::unique_ptr<llvm::raw_pwrite_stream, std::default_delete<llvm::raw_pwrite_stream>>&, std::unique_ptr<llvm::ToolOutputFile, std::default_delete<llvm::ToolOutputFile>>&, clang::BackendConsumer*) /tmp/llvm-gh-134085/build/clang/lib/CodeGen/BackendUtil.cpp:1194:12
+#31 0x0000555558adaecc (anonymous namespace)::EmitAssemblyHelper::emitAssembly(clang::BackendAction, std::unique_ptr<llvm::raw_pwrite_stream, std::default_delete<llvm::raw_pwrite_stream>>, clang::BackendConsumer*) /tmp/llvm-gh-134085/build/clang/lib/CodeGen/BackendUtil.cpp:1268:21
+#32 0x0000555558adc0bc clang::emitBackendOutput(clang::CompilerInstance&, clang::CodeGenOptions&, llvm::StringRef, llvm::Module*, clang::BackendAction, llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem>, std::unique_ptr<llvm::raw_pwrite_stream, std::default_delete<llvm::raw_pwrite_stream>>, clang::BackendConsumer*) /tmp/llvm-gh-134085/build/clang/lib/CodeGen/BackendUtil.cpp:1433:25
+#33 0x00005555596e1a79 clang::BackendConsumer::HandleTranslationUnit(clang::ASTContext&) /tmp/llvm-gh-134085/build/clang/lib/CodeGen/CodeGenAction.cpp:315:20
+#34 0x000055555be4d6f8 clang::ParseAST(clang::Sema&, bool, bool) /tmp/llvm-gh-134085/build/clang/lib/Parse/ParseAST.cpp:191:14
+#35 0x0000555559a45baa clang::ASTFrontendAction::ExecuteAction() /tmp/llvm-gh-134085/build/clang/lib/Frontend/FrontendAction.cpp:1144:11
+#36 0x00005555596e5f5a clang::CodeGenAction::ExecuteAction() /tmp/llvm-gh-134085/build/clang/lib/CodeGen/CodeGenAction.cpp:1102:5
+#37 0x0000555559a45465 clang::FrontendAction::Execute() /tmp/llvm-gh-134085/build/clang/lib/Frontend/FrontendAction.cpp:1030:38
+#38 0x0000555559957fe7 clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) /tmp/llvm-gh-134085/build/clang/lib/Frontend/CompilerInstance.cpp:1055:42
+#39 0x0000555559c183ec clang::ExecuteCompilerInvocation(clang::CompilerInstance*) /tmp/llvm-gh-134085/build/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+#40 0x00005555566c5bb1 cc1_main(llvm::ArrayRef<char const*>, char const*, void*) /tmp/llvm-gh-134085/build/clang/tools/driver/cc1_main.cpp:294:40
+#41 0x00005555566b62ee ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) /tmp/llvm-gh-134085/build/clang/tools/driver/driver.cpp:218:20
+#42 0x00005555566b685b clang_main(int, char**, llvm::ToolContext const&) /tmp/llvm-gh-134085/build/clang/tools/driver/driver.cpp:259:26
+#43 0x00005555566ec906 main /tmp/llvm-gh-134085/build/build/tools/clang/tools/driver/clang-driver.cpp:17:20
+#44 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#45 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#46 0x00005555566b5625 _start (/tmp/llvm-gh-134085/build/build/bin/clang-21+0x1161625)
+clang: error: unable to execute command: Aborted (core dumped)
+clang: error: clang frontend command failed due to signal (use -v to see invocation)
+clang version 21.0.0git (https://github.com/llvm/llvm-project.git f475ccd3794ebce22950b707ad390fae7e235b46)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /tmp/llvm-gh-134085/build/build/bin
+Build config: +unoptimized, +assertions
+clang: note: diagnostic msg: 
+********************
+
+PLEASE ATTACH THE FOLLOWING FILES TO THE BUG REPORT:
+Preprocessed source(s) and associated run script(s) are located at:
+clang: note: diagnostic msg: /tmp/poc-c884a2.c
+clang: note: diagnostic msg: /tmp/poc-c884a2.sh
+clang: note: diagnostic msg: 
+
+********************

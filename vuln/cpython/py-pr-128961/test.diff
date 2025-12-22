@@ -1,0 +1,18 @@
+diff --git a/Lib/test/test_array.py b/Lib/test/test_array.py
+index f621f343eb0..58ea89c4fac 100755
+--- a/Lib/test/test_array.py
++++ b/Lib/test/test_array.py
+@@ -1665,5 +1665,13 @@ def test_tolist(self, size):
+         self.assertEqual(ls[:8], list(example[:8]))
+         self.assertEqual(ls[-8:], list(example[-8:]))
+ 
++    def test_gh_128961(self):
++        a = array.array('i')
++        it = iter(a)
++        list(it)
++        it.__setstate__(0)
++        self.assertRaises(StopIteration, next, it)
++
++
+ if __name__ == "__main__":
+     unittest.main()

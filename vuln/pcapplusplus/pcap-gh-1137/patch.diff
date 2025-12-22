@@ -1,0 +1,108 @@
+diff --git a/Packet++/header/DnsResourceData.h b/Packet++/header/DnsResourceData.h
+index 9acd8a76..ee44f924 100644
+--- a/Packet++/header/DnsResourceData.h
++++ b/Packet++/header/DnsResourceData.h
+@@ -363,7 +363,7 @@ namespace pcpp
+ 		 * copied from this byte array to the object
+ 		 * @param[in] dataLen The byte array size
+ 		 */
+-		GenericDnsResourceData(uint8_t* dataPtr, size_t dataLen);
++		GenericDnsResourceData(const uint8_t* dataPtr, size_t dataLen);
+ 
+ 		/**
+ 		 * A c'tor for this class
+diff --git a/Packet++/src/DnsLayer.cpp b/Packet++/src/DnsLayer.cpp
+index 644ea89b..3863c4a7 100644
+--- a/Packet++/src/DnsLayer.cpp
++++ b/Packet++/src/DnsLayer.cpp
+@@ -475,7 +475,7 @@ DnsResource* DnsLayer::addResource(DnsResourceType resType, const std::string& n
+ 		uint32_t ttl, IDnsResourceData* data)
+ {
+ 	// create new query on temporary buffer
+-	uint8_t newResourceRawData[256];
++	uint8_t newResourceRawData[4096];
+ 	memset(newResourceRawData, 0, sizeof(newResourceRawData));
+ 
+ 	DnsResource* newResource = new DnsResource(newResourceRawData, resType);
+diff --git a/Packet++/src/DnsResource.cpp b/Packet++/src/DnsResource.cpp
+index 8c72cc57..fec1bf05 100644
+--- a/Packet++/src/DnsResource.cpp
++++ b/Packet++/src/DnsResource.cpp
+@@ -12,7 +12,7 @@ namespace pcpp
+ IDnsResource::IDnsResource(DnsLayer* dnsLayer, size_t offsetInLayer)
+ 	: m_DnsLayer(dnsLayer), m_OffsetInLayer(offsetInLayer), m_NextResource(nullptr)
+ {
+-	char decodedName[256];
++	char decodedName[4096];
+ 	m_NameLength = decodeName((const char*)getRawData(), decodedName);
+ 	if (m_NameLength > 0)
+ 		m_DecodedName = decodedName;
+@@ -83,8 +83,8 @@ size_t IDnsResource::decodeName(const char* encodedName, char* result, int itera
+ 				return 0;
+ 			}
+ 
+-			char tempResult[256];
+-			memset(tempResult, 0, 256);
++			char tempResult[4096];
++			memset(tempResult, 0, sizeof(tempResult));
+ 			int i = 0;
+ 			decodeName((const char*)(m_DnsLayer->m_Data + offsetInLayer), tempResult, iteration+1);
+ 			while (tempResult[i] != 0 && decodedNameLength < 255)
+@@ -224,7 +224,7 @@ void IDnsResource::setDnsClass(DnsClass newClass)
+ 
+ bool IDnsResource::setName(const std::string& newName)
+ {
+-	char encodedName[256];
++	char encodedName[4096];
+ 	size_t encodedNameLen = 0;
+ 	encodeName(newName, encodedName, encodedNameLen);
+ 	if (m_DnsLayer != nullptr)
+@@ -345,7 +345,7 @@ bool DnsResource::setData(IDnsResourceData* data)
+ {
+ 	// convert data to byte array according to the DNS type
+ 	size_t dataLength = 0;
+-	uint8_t dataAsByteArr[256];
++	uint8_t dataAsByteArr[4096];
+ 
+ 	if (data == nullptr)
+ 	{
+diff --git a/Packet++/src/DnsResourceData.cpp b/Packet++/src/DnsResourceData.cpp
+index 8183511d..88b73b37 100644
+--- a/Packet++/src/DnsResourceData.cpp
++++ b/Packet++/src/DnsResourceData.cpp
+@@ -38,7 +38,7 @@ StringDnsResourceData::StringDnsResourceData(const uint8_t* dataPtr, size_t data
+ {
+ 	if (dataPtr && dataLen > 0)
+ 	{
+-		char tempResult[256];
++		char tempResult[4096];
+ 		decodeName((const char*)dataPtr, tempResult, dnsResource);
+ 		m_Data = tempResult;
+ 	}
+@@ -106,7 +106,7 @@ MxDnsResourceData::MxDnsResourceData(uint8_t* dataPtr, size_t dataLen, IDnsResou
+ 	if (dataPtr && dataLen > 0)
+ 	{
+ 		uint16_t preference = be16toh(*(uint16_t*)dataPtr);
+-		char tempMX[256];
++		char tempMX[4096];
+ 		decodeName((const char*)(dataPtr + sizeof(preference)), tempMX, dnsResource);
+ 		m_Data.preference = preference;
+ 		m_Data.mailExchange = tempMX;
+@@ -150,7 +150,7 @@ bool MxDnsResourceData::toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource*
+ 	return true;
+ }
+ 
+-GenericDnsResourceData::GenericDnsResourceData(uint8_t* dataPtr, size_t dataLen)
++GenericDnsResourceData::GenericDnsResourceData(const uint8_t* dataPtr, size_t dataLen)
+ {
+ 	m_Data = nullptr;
+ 	m_DataLen = 0;
+@@ -218,7 +218,7 @@ bool GenericDnsResourceData::toByteArr(uint8_t* arr, size_t& arrLength, IDnsReso
+ {
+ 	if (m_DataLen == 0 || m_Data == nullptr)
+ 	{
+-		PCPP_LOG_ERROR("Input data is null or illegal");
++		PCPP_LOG_ERROR("Input data is null or illegal" << "|m_DataLen:" << m_DataLen);
+ 		return false;
+ 	}
+ 

@@ -1,0 +1,16 @@
+<?php
+$doc = new DOMDocument();
+$doc->loadHTML('<p id=x>foo</p>');
+$dom = DOM\XMLDocument::createFromString('<root/>');
+$child = $dom->documentElement->appendChild($dom->createElementNS('urn:a', 'child'));
+function test($child, $html) {
+    try {
+        $child->innerHTML = $html;
+    } catch (DOMException $e) {
+    }
+}
+test($child, '--></root><!--');
+test($doc, '<');
+echo $doc->saveXML(), "\n";
+echo $dom->saveXML(), "\n";
+?>

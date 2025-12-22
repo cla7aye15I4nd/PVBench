@@ -1,0 +1,107 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_dllist.c b/ext/spl/spl_dllist.c
+index 6592efc4e5e..8e0716ced82 100644
+--- a/ext/spl/spl_dllist.c
++++ b/ext/spl/spl_dllist.c
+@@ -1003,37 +1003,53 @@ PHP_METHOD(SplDoublyLinkedList, current)
+ /* {{{ Serializes storage */
+ PHP_METHOD(SplDoublyLinkedList, serialize)
+ {
+-	spl_dllist_object     *intern   = Z_SPLDLLIST_P(ZEND_THIS);
+-	smart_str              buf      = {0};
+-	spl_ptr_llist_element *current  = intern->llist->head, *next;
+-	zval                   flags;
+-	php_serialize_data_t   var_hash;
+-
+-	if (zend_parse_parameters_none() == FAILURE) {
+-		RETURN_THROWS();
+-	}
+-
+-	PHP_VAR_SERIALIZE_INIT(var_hash);
+-
+-	/* flags */
+-	ZVAL_LONG(&flags, intern->flags);
+-	php_var_serialize(&buf, &flags, &var_hash);
+-
+-	/* elements */
+-	while (current) {
+-		smart_str_appendc(&buf, ':');
+-		next = current->next;
+-
+-		php_var_serialize(&buf, &current->data, &var_hash);
+-
+-		current = next;
+-	}
+-
+-	/* done */
+-	PHP_VAR_SERIALIZE_DESTROY(var_hash);
+-
+-	RETURN_STR(smart_str_extract(&buf));
+-} /* }}} */
++    spl_dllist_object     *intern   = Z_SPLDLLIST_P(ZEND_THIS);
++    smart_str              buf      = {0};
++    spl_ptr_llist_element *current  = intern->llist->head, *next;
++    spl_ptr_llist_element *tmp_elem;
++    zval                   flags;
++    php_serialize_data_t   var_hash;
++
++    if (zend_parse_parameters_none() == FAILURE) {
++        RETURN_THROWS();
++    }
++
++    /* First pass: Add a reference to each element to prevent UAF */
++    tmp_elem = intern->llist->head;
++    while (tmp_elem) {
++        SPL_LLIST_ADDREF(tmp_elem);
++        tmp_elem = tmp_elem->next;
++    }
++
++    PHP_VAR_SERIALIZE_INIT(var_hash);
++
++    /* flags */
++    ZVAL_LONG(&flags, intern->flags);
++    php_var_serialize(&buf, &flags, &var_hash);
++
++    /* elements */
++    current = intern->llist->head;
++    while (current) {
++        smart_str_appendc(&buf, ':');
++        next = current->next;
++
++        php_var_serialize(&buf, &current->data, &var_hash);
++
++        current = next;
++    }
++
++    /* Second pass: Remove the reference we added */
++    tmp_elem = intern->llist->head;
++    while (tmp_elem) {
++        SPL_LLIST_DELREF(tmp_elem);
++        tmp_elem = tmp_elem->next;
++    }
++
++    /* done */
++    PHP_VAR_SERIALIZE_DESTROY(var_hash);
++
++    RETURN_STR(smart_str_extract(&buf));
++}
+ 
+ /* {{{ Unserializes storage */
+ PHP_METHOD(SplDoublyLinkedList, unserialize)

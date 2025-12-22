@@ -1,0 +1,3 @@
+<?php
+var_dump(range(9.9, '0'));
+?>

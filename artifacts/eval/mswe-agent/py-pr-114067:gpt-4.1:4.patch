@@ -1,0 +1,50 @@
+
+diff --git a/.gitignore b/.gitignore
+index c424a894c2a..94d6d1b74a0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -160,3 +160,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
+index 4b03cc3f4da..82be0ab8330 100644
+--- a/Objects/unicodeobject.c
++++ b/Objects/unicodeobject.c
+@@ -2376,6 +2376,8 @@ unicode_fromformat_write_str(_PyUnicodeWriter *writer, PyObject *str,
+ }
+ 
+ static int
++
++
+ unicode_fromformat_write_cstr(_PyUnicodeWriter *writer, const char *str,
+                               Py_ssize_t width, Py_ssize_t precision, int flags)
+ {
+@@ -2384,7 +2386,11 @@ unicode_fromformat_write_cstr(_PyUnicodeWriter *writer, const char *str,
+     PyObject *unicode;
+     int res;
+ 
+-    if (precision == -1) {
++    if (str == NULL) {
++        /* Treat NULL as an empty string */
++        length = 0;
++    }
++    else if (precision == -1) {
+         length = strlen(str);
+     }
+     else {
+@@ -2393,7 +2399,7 @@ unicode_fromformat_write_cstr(_PyUnicodeWriter *writer, const char *str,
+             length++;
+         }
+     }
+-    unicode = PyUnicode_DecodeUTF8Stateful(str, length, "replace", NULL);
++    unicode = PyUnicode_DecodeUTF8Stateful(str ? str : "", length, "replace", NULL);
+     if (unicode == NULL)
+         return -1;
+ 

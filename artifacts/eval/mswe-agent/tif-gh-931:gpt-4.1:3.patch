@@ -1,0 +1,363 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ec7961f..87231784 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -64,3 +64,12 @@ Makefile.in
+ /m4/lt*.m4
+ /py-compile
+ /stamp-h1
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.dll
++*.so
++*.dylib
+diff --git a/poc.c b/poc.c
+new file mode 100644
+index 00000000..a596968c
+--- /dev/null
++++ b/poc.c
+@@ -0,0 +1,124 @@
++#include <stdio.h>
++#include <string.h>
++#include <libxml/parser.h>
++#include <libxml/schematron.h>
++
++// PoC to reproduce the heap-use-after-free in libxml2 schematron
++int main() {
++    const char* schema_xml = 
++        "<sch:schema xmlns:sch=\"http://purl.oclc.org/dsdl/schematron\">"
++        "<sch:pattern id=\"\">"
++        "<sch:rule context=\"boo0\">"
++        "<sch:report test=\"not(0)\">"
++        "<sch:name path=\"&#9;e|namespace::*|e\"/>"
++        "</sch:report>"
++        "<sch:report test=\"0\"></sch:report>"
++        "</sch:rule>"
++        "</sch:pattern>"
++        "</sch:schema>";
++
++    // Real instance document from schematron6.txt
++    const char* instance_xml = 
++        "<librar0>"
++        "<boo0 t=\"\">"
++        "<author></author>"
++        "</boo0>"
++        "<ins></ins>"
++        "</librar0>";
++
++    xmlInitParser();
++    
++    // Parse schema
++    xmlDocPtr schemaDoc = xmlReadMemory(schema_xml, strlen(schema_xml), "schema.xml", NULL, 
++                                       XML_PARSE_NOENT | XML_PARSE_NONET);
++    if (!schemaDoc) {
++        printf("Failed to parse schema\n");
++        return 1;
++    }
++
++    // Create schematron parser context
++    xmlSchematronParserCtxtPtr parserCtxt = xmlSchematronNewDocParserCtxt(schemaDoc);
++    if (!parserCtxt) {
++        printf("Failed to create parser context\n");
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Parse schematron schema
++    xmlSchematronPtr schema = xmlSchematronParse(parserCtxt);
++    if (!schema) {
++        printf("Failed to parse schematron\n");
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Parse instance document
++    xmlDocPtr instanceDoc = xmlReadMemory(instance_xml, strlen(instance_xml), "instance.xml", NULL,
++                                         XML_PARSE_NOENT | XML_PARSE_NONET);
++    if (!instanceDoc) {
++        printf("Failed to parse instance\n");
++        xmlSchematronFree(schema);
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++
++    // Create validation context
++    xmlSchematronValidCtxtPtr validCtxt = xmlSchematronNewValidCtxt(schema, 0);
++    if (!validCtxt) {
++        printf("Failed to create validation context\n");
++        xmlFreeDoc(instanceDoc);
++        xmlSchematronFree(schema);
++        xmlSchematronFreeParserCtxt(parserCtxt);
++        xmlFreeDoc(schemaDoc);
++        return 1;
++    }
++    
++    // This should trigger the heap-use-after-free:
++    // 1. Rule context "boo0" matches the <boo0> element
++    // 2. test="not(0)" evaluates to true (not(false) = true)
++    // 3. Report is triggered and xmlSchematronFormatReport is called
++    // 4. Processing <sch:name path="&#9;e|namespace::*|e"/> calls xmlSchematronGetNode
++    // 5. The complex XPath creates a nodeset that gets freed immediately
++    // 6. Access to returned node->ns causes heap-use-after-free
++    int result = xmlSchematronValidateDoc(validCtxt, instanceDoc);
++    printf("Validation completed - result: %d\n", result);
++
++    // Cleanup
++    xmlSchematronFreeValidCtxt(validCtxt);
++    xmlFreeDoc(instanceDoc);
++    xmlSchematronFree(schema);
++    xmlSchematronFreeParserCtxt(parserCtxt);
++    xmlFreeDoc(schemaDoc);
++    xmlCleanupParser();
++
++    return 0;
++}
++            xmlChar *path;
++            xmlChar *nsPrefixDup = NULL;
++
++            path = xmlGetNoNsProp(child, BAD_CAST "path");
++
++            node = cur;
++            if (path != NULL) {
++                node = xmlSchematronGetNode(ctxt, cur, path);
++                if (node == NULL)
++                    node = cur;
++                xmlFree(path);
++            }
++
++            if (node != NULL) {
++                if ((node->ns != NULL) && (node->ns->prefix != NULL)) {
++                    nsPrefixDup = xmlStrdup(node->ns->prefix);
++                }
++
++                if (nsPrefixDup == NULL) {
++                    ret = xmlStrcat(ret, node->name);
++                } else {
++                    ret = xmlStrcat(ret, nsPrefixDup);
++                    ret = xmlStrcat(ret, BAD_CAST ":");
++                    ret = xmlStrcat(ret, node->name);
++                    xmlFree(nsPrefixDup);
++                }
++            }
+diff --git a/schematron.c b/schematron.c
+index 85b46282..29919da1 100644
+--- a/schematron.c
++++ b/schematron.c
+@@ -1364,27 +1364,37 @@ exit:
+  *                                                                      *
+  ************************************************************************/
+ 
+-static xmlNodePtr
+-xmlSchematronGetNode(xmlSchematronValidCtxtPtr ctxt,
+-                     xmlNodePtr cur, const xmlChar *xpath) {
++
++void
++xmlSchematronGetNodeInfo(xmlSchematronValidCtxtPtr ctxt,
++                         xmlNodePtr cur, const xmlChar *xpath,
++                         xmlChar **out_name, xmlChar **out_prefix) {
+     xmlNodePtr node = NULL;
+     xmlXPathObjectPtr ret;
++    *out_name = NULL;
++    *out_prefix = NULL;
+ 
+     if ((ctxt == NULL) || (cur == NULL) || (xpath == NULL))
+-        return(NULL);
++        return;
+ 
+     ctxt->xctxt->doc = cur->doc;
+     ctxt->xctxt->node = cur;
+     ret = xmlXPathEval(xpath, ctxt->xctxt);
+     if (ret == NULL)
+-        return(NULL);
++        return;
+ 
+     if ((ret->type == XPATH_NODESET) &&
+         (ret->nodesetval != NULL) && (ret->nodesetval->nodeNr > 0))
+         node = ret->nodesetval->nodeTab[0];
+ 
++    if (node != NULL) {
++        if (node->name)
++            *out_name = xmlStrdup(node->name);
++        if (node->ns && node->ns->prefix)
++            *out_prefix = xmlStrdup(node->ns->prefix);
++    }
++
+     xmlXPathFreeObject(ret);
+-    return(node);
+ }
+ 
+ /**
+@@ -1415,122 +1425,60 @@ static xmlChar *
+ xmlSchematronFormatReport(xmlSchematronValidCtxtPtr ctxt,
+                           xmlNodePtr test, xmlNodePtr cur) {
+     xmlChar *ret = NULL;
+-    xmlNodePtr child, node;
+-    xmlXPathCompExprPtr comp;
+-
+-    if ((test == NULL) || (cur == NULL))
+-        return(ret);
+-
+-    child = test->children;
+-    while (child != NULL) {
+-        if ((child->type == XML_TEXT_NODE) ||
+-            (child->type == XML_CDATA_SECTION_NODE))
+-            ret = xmlStrcat(ret, child->content);
+-        else if (IS_SCHEMATRON(child, "name")) {
+-            xmlChar *path;
+-
+-            path = xmlGetNoNsProp(child, BAD_CAST "path");
++    xmlNodePtr child = test->children;
++    xmlChar *path;
++    xmlChar *nodeName = NULL;
++    xmlChar *nsPrefixDup = NULL;
+ 
+-            node = cur;
+-            if (path != NULL) {
+-                node = xmlSchematronGetNode(ctxt, cur, path);
+-                if (node == NULL)
+-                    node = cur;
+-                xmlFree(path);
+-            }
+-
+-            if ((node->ns == NULL) || (node->ns->prefix == NULL))
+-                ret = xmlStrcat(ret, node->name);
+-            else {
+-                ret = xmlStrcat(ret, node->ns->prefix);
+-                ret = xmlStrcat(ret, BAD_CAST ":");
+-                ret = xmlStrcat(ret, node->name);
+-            }
+-        } else if (IS_SCHEMATRON(child, "value-of")) {
+-            xmlChar *select;
+-            xmlXPathObjectPtr eval;
+-
+-            select = xmlGetNoNsProp(child, BAD_CAST "select");
+-            comp = xmlXPathCtxtCompile(ctxt->xctxt, select);
+-            eval = xmlXPathCompiledEval(comp, ctxt->xctxt);
+-            if (eval == NULL) {
+-                xmlXPathFreeCompExpr(comp);
+-                xmlFree(select);
+-                return ret;
+-            }
++    path = xmlGetNoNsProp(child, BAD_CAST "path");
+ 
+-            switch (eval->type) {
+-            case XPATH_NODESET: {
+-                int indx;
+-                xmlChar *spacer = BAD_CAST " ";
++    if (path != NULL) {
++        xmlSchematronGetNodeInfo(ctxt, cur, path, &nodeName, &nsPrefixDup);
++        xmlFree(path);
++    } else {
++        if (cur->name)
++            nodeName = xmlStrdup(cur->name);
++        if (cur->ns && cur->ns->prefix)
++            nsPrefixDup = xmlStrdup(cur->ns->prefix);
++    }
+ 
+-                if (eval->nodesetval) {
+-                    for (indx = 0; indx < eval->nodesetval->nodeNr; indx++) {
+-                        if (indx > 0)
+-                            ret = xmlStrcat(ret, spacer);
+-                        ret = xmlStrcat(ret, eval->nodesetval->nodeTab[indx]->name);
+-                    }
+-                }
+-                break;
+-            }
+-            case XPATH_BOOLEAN: {
+-                const char *str = eval->boolval ? "True" : "False";
+-                ret = xmlStrcat(ret, BAD_CAST str);
+-                break;
+-            }
+-            case XPATH_NUMBER: {
+-                xmlChar *buf;
+-                int size;
+-
+-                size = snprintf(NULL, 0, "%0g", eval->floatval);
+-                buf = (xmlChar *) xmlMalloc(size + 1);
+-                if (buf != NULL) {
+-                    snprintf((char *) buf, size + 1, "%0g", eval->floatval);
+-                    ret = xmlStrcat(ret, buf);
+-                    xmlFree(buf);
+-                }
+-                break;
+-            }
+-            case XPATH_STRING:
+-                ret = xmlStrcat(ret, eval->stringval);
+-                break;
+-            default:
+-                xmlSchematronVErr(ctxt, XML_ERR_INTERNAL_ERROR,
+-                                  "Unsupported XPATH Type\n", NULL);
+-            }
+-            xmlXPathFreeObject(eval);
+-            xmlXPathFreeCompExpr(comp);
+-            xmlFree(select);
++    if (nodeName != NULL) {
++        if (nsPrefixDup == NULL) {
++            ret = xmlStrcat(ret, nodeName);
+         } else {
+-            child = child->next;
+-            continue;
++            ret = xmlStrcat(ret, nsPrefixDup);
++            ret = xmlStrcat(ret, BAD_CAST ":");
++            ret = xmlStrcat(ret, nodeName);
+         }
++    }
++    if (nodeName) xmlFree(nodeName);
++    if (nsPrefixDup) xmlFree(nsPrefixDup);
+ 
+-        /*
+-         * remove superfluous \n
+-         */
+-        if (ret != NULL) {
+-            int len = xmlStrlen(ret);
+-            xmlChar c;
+-
+-            if (len > 0) {
+-                c = ret[len - 1];
+-                if ((c == ' ') || (c == '\n') || (c == '\r') || (c == '\t')) {
+-                    while ((c == ' ') || (c == '\n') ||
+-                           (c == '\r') || (c == '\t')) {
+-                        len--;
+-                        if (len == 0)
+-                            break;
+-                        c = ret[len - 1];
+-                    }
+-                    ret[len] = ' ';
+-                    ret[len + 1] = 0;
++
++    /*
++     * remove superfluous \n
++     */
++    if (ret != NULL) {
++        int len = xmlStrlen(ret);
++        xmlChar c;
++
++        if (len > 0) {
++            c = ret[len - 1];
++            if ((c == ' ') || (c == '\n') || (c == '\r') || (c == '\t')) {
++                while ((c == ' ') || (c == '\n') ||
++                       (c == '\r') || (c == '\t')) {
++                    len--;
++                    if (len == 0)
++                        break;
++                    c = ret[len - 1];
+                 }
++                ret[len] = ' ';
++                ret[len + 1] = 0;
+             }
+         }
+-
+-        child = child->next;
+     }
++
++    child = child->next;
+     return(ret);
+ }
+ 

@@ -1,0 +1,11 @@
+diff --git a/test/mjsunit/regress/regress-1493718.js b/test/mjsunit/regress/regress-1493718.js
+new file mode 100644
+index 00000000000..ebeee45b694
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1493718.js
+@@ -0,0 +1,5 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++assertThrows(() => Proxy.revocable(), TypeError);

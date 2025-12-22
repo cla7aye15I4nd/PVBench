@@ -1,0 +1,200 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 18dc2859357..8cc98ec0236 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2758,6 +2758,7 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+         }
+         return NULL;
+     }
++    Py_INCREF(coro);  /* Take a strong reference to prevent use-after-free */
+ 
+     int gen_status = PYGEN_ERROR;
+     if (exc == NULL) {
+@@ -2791,9 +2792,11 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+             Py_DECREF(result);
+ 
+             if (tmp == NULL) {
++                Py_DECREF(coro);  /* Release the strong reference */
+                 return NULL;
+             }
+             Py_DECREF(tmp);
++            Py_DECREF(coro);  /* Release the strong reference */
+             Py_RETURN_NONE;
+         }
+ 
+@@ -2806,7 +2809,7 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+             FutureObj *fut = (FutureObj*)task;
+             /* transfer ownership */
+             fut->fut_cancelled_exc = exc;
+-
++            Py_DECREF(coro);  /* Release the strong reference */
+             return future_cancel(state, fut, NULL);
+         }
+ 
+@@ -2818,7 +2821,8 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+         if (!o) {
+             /* An exception in Task.set_exception() */
+             Py_DECREF(exc);
+-            goto fail;
++            Py_DECREF(coro);  /* Release the strong reference */
++            goto fail_with_coro;
+         }
+         assert(o == Py_None);
+         Py_DECREF(o);
+@@ -2828,17 +2832,26 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+         {
+             /* We've got a KeyboardInterrupt or a SystemError; re-raise it */
+             PyErr_SetRaisedException(exc);
+-            goto fail;
++            Py_DECREF(coro);  /* Release the strong reference */
++            goto fail_with_coro;
+         }
+ 
+         Py_DECREF(exc);
+-
++        Py_DECREF(coro);  /* Release the strong reference */
+         Py_RETURN_NONE;
+     }
+ 
++
+     PyObject *ret = task_step_handle_result_impl(state, task, result);
++    if (ret == NULL) {
++        Py_DECREF(coro);  /* Release the strong reference */
++    }
+     return ret;
+ 
++fail_with_coro:
++    Py_DECREF(coro);  /* Release the strong reference */
++    return NULL;
++
+ fail:
+     return NULL;
+ }
+diff --git a/poc.py b/poc.py
+new file mode 100644
+index 00000000000..8f5473a6272
+--- /dev/null
++++ b/poc.py
+@@ -0,0 +1,15 @@
++import asyncio
++
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++
++    async def foo(): ...
++
++    task = asyncio.create_task(foo())
++    await task
++    print(task.get_coro())
++
++
++asyncio.run(main())
+\ No newline at end of file
+diff --git a/test_race.py b/test_race.py
+new file mode 100644
+index 00000000000..5aa9601cdf1
+--- /dev/null
++++ b/test_race.py
+@@ -0,0 +1,45 @@
++import asyncio
++import gc
++import threading
++import time
++
++async def quick_coro():
++    return "done"
++
++async def main():
++    loop = asyncio.get_event_loop()
++    loop.set_task_factory(asyncio.create_eager_task_factory(asyncio.Task))
++    
++    tasks = []
++    
++    # Create many tasks that complete immediately
++    for i in range(1000):
++        task = loop.create_task(quick_coro())
++        tasks.append(task)
++        
++        # Try to access the coroutine immediately after creation
++        try:
++            coro = task.get_coro()
++            if coro is not None:
++                # Force some operations on the coroutine
++                str(coro)
++        except Exception as e:
++            print(f"Error accessing coroutine {i}: {e}")
++    
++    # Force garbage collection
++    gc.collect()
++    
++    # Try to access coroutines after all tasks are done
++    for i, task in enumerate(tasks):
++        try:
++            coro = task.get_coro()
++            if coro is not None:
++                str(coro)
++        except Exception as e:
++            print(f"Error accessing coroutine {i} after completion: {e}")
++    
++    return "completed"
++
++if __name__ == "__main__":
++    result = asyncio.run(main())
++    print("Final result:", result)
+diff --git a/test_uaf.py b/test_uaf.py
+new file mode 100644
+index 00000000000..3116fd2c668
+--- /dev/null
++++ b/test_uaf.py
+@@ -0,0 +1,34 @@
++import asyncio
++import gc
++
++async def coro():
++    return "result"
++
++async def main():
++    loop = asyncio.get_event_loop()
++    loop.set_task_factory(asyncio.create_eager_task_factory(asyncio.Task))
++    
++    # Create a task that completes eagerly
++    task = loop.create_task(coro())
++    
++    # Force garbage collection to potentially free objects
++    gc.collect()
++    
++    # Try to access the coroutine after the task is done
++    print("Task done:", task.done())
++    print("Task result:", task.result())
++    
++    # Try to access the coroutine object
++    try:
++        print("Coroutine:", task.get_coro())
++    except Exception as e:
++        print("Error accessing coroutine:", e)
++    
++    # Force more garbage collection
++    gc.collect()
++    
++    return task.result()
++
++if __name__ == "__main__":
++    result = asyncio.run(main())
++    print("Final result:", result)

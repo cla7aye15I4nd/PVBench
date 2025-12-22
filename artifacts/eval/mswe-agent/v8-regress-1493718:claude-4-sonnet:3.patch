@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 155e8003340..7d3099cb379 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -487,6 +487,7 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+       MessageTemplate::kMustBePositive,
+       MessageTemplate::kNotIterable,
+       MessageTemplate::kNotTypedArray,
++      MessageTemplate::kProxyNonObject,
+       MessageTemplate::kProxyPrivate,
+       MessageTemplate::kProxyRevoked,
+       MessageTemplate::kProxyTrapReturnedFalsishFor,
+diff --git a/tools/unittests/testdata/builddirs/dir1/out/build/d8 b/tools/unittests/testdata/builddirs/dir1/out/build/d8
+old mode 100644
+new mode 100755

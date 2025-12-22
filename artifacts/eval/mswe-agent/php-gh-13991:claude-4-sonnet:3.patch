@@ -1,0 +1,46 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/12345678 b/12345678
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/:mem b/:mem
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/a b/a
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/ab b/ab
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/ext/pdo_sqlite/sqlite_driver.c b/ext/pdo_sqlite/sqlite_driver.c
+index de5170a35a9..44b3a4891ec 100644
+--- a/ext/pdo_sqlite/sqlite_driver.c
++++ b/ext/pdo_sqlite/sqlite_driver.c
+@@ -751,7 +751,7 @@ static char *make_filename_safe(const char *filename)
+ 		}
+ 		return estrdup(filename);
+ 	}
+-	if (*filename && memcmp(filename, ":memory:", sizeof(":memory:"))) {
++	if (*filename && (strlen(filename) < sizeof(":memory:") - 1 || memcmp(filename, ":memory:", sizeof(":memory:") - 1) != 0)) {
+ 		char *fullpath = expand_filepath(filename, NULL);
+ 
+ 		if (!fullpath) {
+diff --git a/x b/x
+new file mode 100644
+index 00000000000..e69de29bb2d

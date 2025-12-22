@@ -1,0 +1,394 @@
+# PcapPlusPlus API Documentation Guide
+
+## Namespace
+All PcapPlusPlus classes are in the `pcpp` namespace.
+
+```cpp
+using namespace pcpp;
+// or
+pcpp::DnsLayer layer;
+```
+
+## DNS Layer (DnsLayer.h)
+
+### DnsLayer Class
+Represents a DNS protocol layer for packet parsing and creation.
+
+#### Constructor
+```cpp
+DnsLayer()
+```
+- Creates an empty DNS layer
+
+```cpp
+DnsLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
+```
+- Creates DNS layer from raw data
+
+#### Adding DNS Records
+
+##### addAnswer
+```cpp
+DnsResource* addAnswer(
+    const std::string& name,
+    DnsType dnsType,
+    DnsClass dnsClass,
+    uint32_t ttl,
+    IDnsResourceData* data
+)
+```
+- Adds an answer record to the DNS layer
+- Returns: pointer to DnsResource on success, nullptr on failure
+- name: Domain name (e.g., "github.com")
+- dnsType: DNS record type (DNS_TYPE_A, DNS_TYPE_AAAA, DNS_TYPE_DNSKEY, etc.)
+- dnsClass: DNS class (usually DNS_CLASS_IN for Internet)
+- ttl: Time to live in seconds
+- data: Resource data object
+
+##### addQuery
+```cpp
+DnsQuery* addQuery(const std::string& name, DnsType dnsType, DnsClass dnsClass)
+```
+- Adds a query record
+- Returns: pointer to DnsQuery on success, nullptr on failure
+
+##### addAuthority
+```cpp
+DnsResource* addAuthority(
+    const std::string& name,
+    DnsType dnsType,
+    DnsClass dnsClass,
+    uint32_t ttl,
+    IDnsResourceData* data
+)
+```
+- Adds an authority record
+- Returns: pointer to DnsResource on success, nullptr on failure
+
+##### addAdditionalRecord
+```cpp
+DnsResource* addAdditionalRecord(
+    const std::string& name,
+    DnsType dnsType,
+    DnsClass dnsClass,
+    uint32_t ttl,
+    IDnsResourceData* data
+)
+```
+- Adds an additional record
+- Returns: pointer to DnsResource on success, nullptr on failure
+
+#### Removing DNS Records
+
+##### removeAnswer
+```cpp
+bool removeAnswer(const std::string& name, bool exactMatch = true)
+```
+- Removes an answer record by name
+- Returns: true on success, false if not found
+
+##### removeQuery
+```cpp
+bool removeQuery(const std::string& name, bool exactMatch = true)
+```
+- Removes a query by name
+- Returns: true on success, false if not found
+
+#### Getting DNS Records
+
+##### getAnswer
+```cpp
+DnsResource* getAnswer(const std::string& name, bool exactMatch)
+```
+- Gets an answer record by name
+- **IMPORTANT**: Both parameters are required - there is NO default value for exactMatch
+- name: Domain name to search for
+- exactMatch: If true, requires exact match; if false, allows partial/suffix match
+- Returns: pointer to DnsResource or nullptr
+- Example: `dnsLayer.getAnswer("github.com", true)` or `dnsLayer.getAnswer("github.com", false)`
+
+##### getQuery
+```cpp
+DnsQuery* getQuery(const std::string& name, bool exactMatch)
+```
+- Gets a query by name
+- **IMPORTANT**: Both parameters are required - there is NO default value for exactMatch
+- name: Domain name to search for
+- exactMatch: If true, requires exact match; if false, allows partial/suffix match
+- Returns: pointer to DnsQuery or nullptr
+- Example: `dnsLayer.getQuery("github.com", true)` or `dnsLayer.getQuery("github.com", false)`
+
+##### getAnswerCount
+```cpp
+size_t getAnswerCount() const
+```
+- Returns number of answer records
+
+##### getQueryCount
+```cpp
+size_t getQueryCount() const
+```
+- Returns number of query records
+
+## DNS Resource Data (DnsResourceData.h)
+
+### IDnsResourceData (Interface)
+Base interface for DNS resource data.
+
+### GenericDnsResourceData
+Generic container for any DNS resource data.
+
+#### Constructor
+```cpp
+GenericDnsResourceData(uint8_t* dataPtr, size_t dataLen)
+```
+- Creates resource data from raw bytes
+- dataPtr: Pointer to data buffer
+- dataLen: Length of data in bytes
+
+```cpp
+GenericDnsResourceData(const std::string& dataAsHexString)
+```
+- Creates resource data from hex string
+
+### IPv4DnsResourceData
+For A records (IPv4 addresses).
+
+```cpp
+IPv4DnsResourceData(const IPv4Address& addr)
+```
+
+### IPv6DnsResourceData
+For AAAA records (IPv6 addresses).
+
+```cpp
+IPv6DnsResourceData(const IPv6Address& addr)
+```
+
+### StringDnsResourceData
+For records containing string data (CNAME, NS, PTR, etc.).
+
+```cpp
+StringDnsResourceData(const std::string& data)
+```
+
+## DNS Types (DnsTypes.h)
+
+### DnsType Enum
+```cpp
+enum DnsType {
+    DNS_TYPE_A = 1,          // IPv4 address
+    DNS_TYPE_NS = 2,         // Name server
+    DNS_TYPE_CNAME = 5,      // Canonical name
+    DNS_TYPE_SOA = 6,        // Start of authority
+    DNS_TYPE_PTR = 12,       // Pointer record
+    DNS_TYPE_MX = 15,        // Mail exchange
+    DNS_TYPE_TXT = 16,       // Text record
+    DNS_TYPE_AAAA = 28,      // IPv6 address
+    DNS_TYPE_SRV = 33,       // Service record
+    DNS_TYPE_DNSKEY = 48,    // DNS Key record
+    DNS_TYPE_RRSIG = 46,     // DNSSEC signature
+    DNS_TYPE_NSEC = 47,      // NSEC record
+    // ... more types
+};
+```
+
+### DnsClass Enum
+```cpp
+enum DnsClass {
+    DNS_CLASS_IN = 1,        // Internet
+    DNS_CLASS_CH = 3,        // Chaos
+    DNS_CLASS_HS = 4,        // Hesiod
+    DNS_CLASS_ANY = 255      // Any class
+};
+```
+
+## Packet Layer Operations
+
+### getData
+```cpp
+uint8_t* getData() const
+```
+- Returns pointer to layer's raw data
+
+### getDataLen
+```cpp
+size_t getDataLen() const
+```
+- Returns length of layer data
+
+### computeCalculateFields
+```cpp
+void computeCalculateFields()
+```
+- Recalculates checksums and lengths
+
+## Common Assertion Patterns
+
+```cpp
+#include <cassert>
+#include "DnsLayer.h"
+#include "DnsResourceData.h"
+
+// Creating DNS layer and adding answer
+pcpp::DnsLayer dnsLayer;
+
+// Create resource data
+uint8_t* data = new uint8_t[dataSize];
+// ... fill data ...
+pcpp::GenericDnsResourceData genericData(data, dataSize);
+
+// Add answer - check for nullptr
+pcpp::DnsResource* answer = dnsLayer.addAnswer(
+    "example.com",
+    pcpp::DNS_TYPE_DNSKEY,
+    pcpp::DNS_CLASS_IN,
+    3600,
+    &genericData
+);
+assert(answer != nullptr);  // Should not return null
+
+// Add query - check for nullptr
+pcpp::DnsQuery* query = dnsLayer.addQuery(
+    "example.com",
+    pcpp::DNS_TYPE_A,
+    pcpp::DNS_CLASS_IN
+);
+assert(query != nullptr);
+
+// Get counts
+size_t answerCount = dnsLayer.getAnswerCount();
+assert(answerCount > 0);
+
+// Remove record - check success
+bool removed = dnsLayer.removeAnswer("example.com");
+assert(removed == true);
+
+// Get record that should exist - MUST provide exactMatch parameter
+pcpp::DnsResource* found = dnsLayer.getAnswer("example.com", true);
+assert(found != nullptr);
+
+// Get record that shouldn't exist - MUST provide exactMatch parameter
+pcpp::DnsResource* notFound = dnsLayer.getAnswer("nonexistent.com", true);
+assert(notFound == nullptr);
+
+// Get query - MUST provide exactMatch parameter
+pcpp::DnsQuery* query = dnsLayer.getQuery("example.com", true);
+// query may be nullptr if not found
+
+// Cleanup
+delete[] data;
+```
+
+## GTP Layer (GtpLayer.h)
+
+### GtpV1Layer Class
+Represents GTP (GPRS Tunneling Protocol) version 1 layer.
+
+#### Constructor
+```cpp
+GtpV1Layer(GtpV1MessageType messageType, uint32_t teid, bool setSeqNum,
+           uint16_t seqNum, bool setNpduNum, uint8_t npduNum)
+```
+- Creates a new GTP layer with specified parameters
+
+#### addExtension
+```cpp
+GtpExtension addExtension(uint8_t extensionType, uint16_t extensionContent)
+```
+- Adds a GTP extension header
+- **IMPORTANT**: Returns a `GtpExtension` object, NOT a bool
+- `GtpExtension` does NOT have a conversion operator to bool
+- To check success, use `!extension.isNull()` method
+- Example:
+```cpp
+auto ext = gtpLayer->addExtension(0x85, 0x1234);
+assert(!ext.isNull());  // Correct way to check success
+// Do NOT use: assert(ext);  // This will cause compile error!
+```
+
+#### getHeader
+```cpp
+gtpv1_header* getHeader() const
+```
+- Returns pointer to GTP header structure
+- Returns: pointer to gtpv1_header, never null for valid layer
+
+#### getData / getDataLen
+```cpp
+uint8_t* getData() const
+size_t getDataLen() const
+```
+- Standard layer data access methods
+
+### GtpExtension Class
+Represents a GTP extension header.
+
+#### isNull
+```cpp
+bool isNull() const
+```
+- Returns true if this is a null/invalid extension
+- Use this to check if addExtension succeeded
+
+### Common GTP Assertion Patterns
+```cpp
+#include <cassert>
+#include "GtpLayer.h"
+
+// Create GTP layer
+auto gtpLayer = std::make_unique<pcpp::GtpV1Layer>(
+    pcpp::GtpV1MessageType::GtpV1_GPDU, 0x12345678, true, 1, false, 0);
+assert(gtpLayer != nullptr);
+
+// Get header - always valid for a constructed layer
+auto* hdr = gtpLayer->getHeader();
+assert(hdr != nullptr);
+
+// Add extension - MUST use 'auto' for return type
+auto ext = gtpLayer->addExtension(0x85, 0x1234);
+assert(!ext.isNull());  // Correct assertion
+
+// WARNING: Header pointer may CHANGE after addExtension due to reallocation!
+// Do NOT compare old header pointer to new one. Just verify it's still valid:
+assert(gtpLayer->getHeader() != nullptr);
+// WRONG: assert(gtpLayer->getHeader() == hdr);  // This may fail!
+
+// Data access
+assert(gtpLayer->getData() != nullptr);
+assert(gtpLayer->getDataLen() > 0);
+
+// Recalculate fields
+gtpLayer->computeCalculateFields();
+```
+
+## RawPacket Memory Management
+
+### RawPacket Constructor
+```cpp
+RawPacket(const uint8_t* pRawData, int rawDataLen, timeval timestamp, bool deleteRawDataAtDestructor)
+```
+- **CRITICAL**: The `deleteRawDataAtDestructor` parameter controls memory ownership!
+- If `true`: RawPacket takes ownership and will delete[] the buffer in destructor
+- If `false`: Caller retains ownership and must delete the buffer manually
+
+**WARNING - Double Free Prevention:**
+```cpp
+// If deleteRawDataAtDestructor = true, do NOT manually delete the buffer!
+uint8_t* buffer = new uint8_t[len];
+pcpp::RawPacket rawPacket(buffer, len, time, true);  // RawPacket owns buffer
+// Do NOT add: delete[] buffer;  // This causes double-free!
+
+// If deleteRawDataAtDestructor = false, you MUST delete manually:
+uint8_t* buffer = new uint8_t[len];
+pcpp::RawPacket rawPacket(buffer, len, time, false);  // Caller owns buffer
+// ... use packet ...
+delete[] buffer;  // Required - caller must clean up
+```
+
+## Memory Management Notes
+- DnsLayer manages its own internal memory
+- Resource data objects can be stack-allocated or heap-allocated
+- When passing data pointers, ensure the data remains valid during the operation
+- Use delete[] for arrays allocated with new[]
+- DnsResource and DnsQuery pointers returned by DnsLayer methods are managed by the layer

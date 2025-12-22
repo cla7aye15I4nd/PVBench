@@ -1,0 +1,30 @@
+
+diff --git a/.gitignore b/.gitignore
+index 241e96eaf..6bdb4f440 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -117,3 +117,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/xxd/xxd.c b/src/xxd/xxd.c
+index cf8b4ea6a..072de66bd 100644
+--- a/src/xxd/xxd.c
++++ b/src/xxd/xxd.c
+@@ -893,7 +893,7 @@ main(int argc, char *argv[])
+   if ((hextype == HEX_POSTSCRIPT && cols < 0) ||
+       (hextype != HEX_POSTSCRIPT && cols < 1) ||
+       ((hextype == HEX_NORMAL || hextype == HEX_BITS || hextype == HEX_LITTLEENDIAN)
+-							    && (cols > COLS)))
++							    && (cols >= COLS)))
+     {
+       fprintf(stderr, "%s: invalid number of columns (max. %d).\n", pname, COLS);
+       exit(1);

@@ -1,0 +1,34 @@
+diff --git a/Include/internal/pycore_runtime_init.h b/Include/internal/pycore_runtime_init.h
+index 574a3c1a9db..4a48907d9ee 100644
+--- a/Include/internal/pycore_runtime_init.h
++++ b/Include/internal/pycore_runtime_init.h
+@@ -177,6 +177,7 @@ extern PyTypeObject _PyExc_MemoryError;
+                 }, \
+                 .last_resort_memory_error = { \
+                     _PyObject_HEAD_INIT(&_PyExc_MemoryError) \
++                    .args = (PyObject*)&_Py_SINGLETON(tuple_empty) \
+                 }, \
+             }, \
+         }, \
+diff --git a/Misc/NEWS.d/next/Core and Builtins/2023-10-15-22-18-45.gh-issue-109894.UAmo06.rst b/Misc/NEWS.d/next/Core and Builtins/2023-10-15-22-18-45.gh-issue-109894.UAmo06.rst
+new file mode 100644
+index 00000000000..214853660c5
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core and Builtins/2023-10-15-22-18-45.gh-issue-109894.UAmo06.rst	
+@@ -0,0 +1 @@
++Fixed crash due to improperly initialized static :exc:`MemoryError` in subinterpreter.
+diff --git a/Objects/exceptions.c b/Objects/exceptions.c
+index 48623451c0d..e3e8e02861d 100644
+--- a/Objects/exceptions.c
++++ b/Objects/exceptions.c
+@@ -3700,10 +3700,6 @@ _PyExc_FiniTypes(PyInterpreterState *interp)
+ PyStatus
+ _PyExc_InitGlobalObjects(PyInterpreterState *interp)
+ {
+-    if (!_Py_IsMainInterpreter(interp)) {
+-        return _PyStatus_OK();
+-    }
+-
+     if (preallocate_memerrors() < 0) {
+         return _PyStatus_NO_MEMORY();
+     }

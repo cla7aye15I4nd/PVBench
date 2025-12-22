@@ -1,0 +1,27 @@
+This is an V8 error report. Please refer the error message for more details.
+
+#
+# Fatal error in ../../src/heap/object-stats.cc, line 512
+# Check failed: over_allocated < size (18446744073709551604 vs. 72).
+#
+#
+#
+#FailureMessage Object: 0x7b3e08907060
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x46) [0x55e32629b586]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x55e32d6890d3]
+    out/debug_asan/d8(+0xac5e59a) [0x55e32d68759a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x55e32d654570]
+    out/debug_asan/d8(v8::internal::ObjectStatsCollectorImpl::RecordVirtualObjectStats(v8::internal::Tagged<v8::internal::HeapObject>, v8::internal::Tagged<v8::internal::HeapObject>, v8::internal::ObjectStats::VirtualInstanceType, unsigned long, unsigned long, v8::internal::ObjectStatsCollectorImpl::CowMode)+0x49e) [0x55e327532f4e]
+    out/debug_asan/d8(void v8::internal::ObjectStatsCollectorImpl::RecordHashTableVirtualObjectStats<v8::internal::NumberDictionary>(v8::internal::Tagged<v8::internal::HeapObject>, v8::internal::Tagged<v8::internal::NumberDictionary>, v8::internal::ObjectStats::VirtualInstanceType)+0x316) [0x55e327537c66]
+    out/debug_asan/d8(v8::internal::ObjectStatsCollectorImpl::RecordVirtualJSObjectDetails(v8::internal::Tagged<v8::internal::JSObject>)+0x955) [0x55e327535725]
+    out/debug_asan/d8(v8::internal::ObjectStatsCollectorImpl::CollectStatistics(v8::internal::Tagged<v8::internal::HeapObject>, v8::internal::ObjectStatsCollectorImpl::Phase, v8::internal::ObjectStatsCollectorImpl::CollectFieldStats)+0x84d) [0x55e327539d6d]
+    out/debug_asan/d8(v8::internal::ObjectStatsCollector::Collect()+0x252) [0x55e327543002]
+    out/debug_asan/d8(v8::internal::MarkCompactCollector::RecordObjectStats()+0x3ac) [0x55e327378b9c]
+    out/debug_asan/d8(v8::internal::MarkCompactCollector::CollectGarbage()+0x199) [0x55e327374c29]
+    out/debug_asan/d8(v8::internal::Heap::MarkCompact()+0x353) [0x55e3272ccad3]
+    out/debug_asan/d8(v8::internal::Heap::PerformGarbageCollection(v8::internal::GarbageCollector, v8::internal::GarbageCollectionReason, char const*)+0xb99) [0x55e3272ca7c9]
+    out/debug_asan/d8(+0x49084e3) [0x55e3273314e3]
+    out/debug_asan/d8(+0x4907cb7) [0x55e327330cb7]
+    out/debug_asan/d8(+0x75faec3) [0x55e32a023ec3]

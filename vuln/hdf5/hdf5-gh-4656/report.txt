@@ -1,0 +1,16 @@
+==18024==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000550 (pc 0x71dfdc47edb7 bp 0x7fffa49e3b90 sp 0x7fffa49e3840 T0)
+==18024==The signal is caused by a READ memory access.
+==18024==Hint: address points to the zero page.
+    #0 0x71dfdc47edb7 in H5VL__native_file_get /tmp/hdf5-gh-4656/build/src/H5VLnative_file.c:180:74
+    #1 0x71dfdc447021 in H5VL__file_get /tmp/hdf5-gh-4656/build/src/H5VLcallback.c:3740:9
+    #2 0x71dfdc446d0b in H5VL_file_get /tmp/hdf5-gh-4656/build/src/H5VLcallback.c:3771:9
+    #3 0x71dfdbb306f7 in H5Fget_create_plist /tmp/hdf5-gh-4656/build/src/H5F.c:129:9
+    #4 0x57e2c046ee08 in test_appropriate_ids /tmp/hdf5-gh-4656/build/poc.c:39:17
+    #5 0x57e2c046e8b3 in main /tmp/hdf5-gh-4656/build/poc.c:80:5
+    #6 0x71dfdb3b51c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x71dfdb3b528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x57e2c03954b4 in _start (/tmp/hdf5-gh-4656/build/poc+0x2c4b4) (BuildId: fdd2b04d7c6225d90988bf8be2b67c5c7d8650de)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/hdf5-gh-4656/build/src/H5VLnative_file.c:180:74 in H5VL__native_file_get
+==18024==ABORTING

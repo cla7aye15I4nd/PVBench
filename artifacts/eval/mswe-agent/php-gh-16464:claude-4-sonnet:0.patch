@@ -1,0 +1,88 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..7e85d8b91af 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -532,12 +532,14 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	spl_hash_key key;
+ 
+ 	if (check_inherited && intern->fptr_offset_del) {
++		GC_ADDREF(object);
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
++		OBJ_RELEASE(object);
+ 		return;
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return;
+ 	}
+ 
+@@ -546,6 +548,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		return;
+ 	}
+ 
++	GC_ADDREF(object);
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
+@@ -555,7 +558,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
++					intern->nApplyCount++;
+ 					zval_ptr_dtor(data);
++					intern->nApplyCount--;
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+@@ -564,17 +569,22 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 					}
+ 				}
+ 			} else {
++				intern->nApplyCount++;
+ 				zend_hash_del(ht, key.key);
++				intern->nApplyCount--;
+ 			}
+ 		}
+ 		spl_hash_key_release(&key);
+ 	} else {
++		intern->nApplyCount++;
+ 		zend_hash_index_del(ht, key.h);
++		intern->nApplyCount--;
+ 	}
+ 
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++	OBJ_RELEASE(object);
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+@@ -1253,7 +1263,7 @@ PHP_METHOD(ArrayObject, exchangeArray)
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		RETURN_THROWS();
+ 	}
+ 

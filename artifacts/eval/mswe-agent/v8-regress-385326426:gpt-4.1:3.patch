@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index ff67337416c..7afe9789038 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/builtins/builtins-number.cc b/src/builtins/builtins-number.cc
+index 18f912b04dd..cc7531cab2d 100644
+--- a/src/builtins/builtins-number.cc
++++ b/src/builtins/builtins-number.cc
+@@ -79,7 +79,7 @@ BUILTIN(NumberPrototypeToFixed) {
+     THROW_NEW_ERROR_RETURN_FAILURE(
+         isolate, NewTypeError(MessageTemplate::kNotGeneric,
+                               isolate->factory()->NewStringFromAsciiChecked(
+-                                  "Number.prototype.toFixed"),
++constexpr int kDoubleToExponentialMaxChars = kMaxFractionDigits + 16;
+                               isolate->factory()->Number_string()));
+   }
+   double const value_number = Object::NumberValue(*value);

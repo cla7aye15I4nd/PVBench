@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+15|RuleBasedNumberFormat rbfmt(testStr, Locale("as"), perror, status)|status == U_PARSE_ERROR|Number too large

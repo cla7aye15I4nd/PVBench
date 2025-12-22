@@ -1,0 +1,33 @@
+==172520==ERROR: AddressSanitizer: SEGV on unknown address 0x7fba096ff370 (pc 0x7fba0b796aef bp 0x7ffe9ff87f00 sp 0x7ffe9ff87e70 T0)
+==172520==The signal is caused by a READ memory access.
+    #0 0x7fba0b796aef  (/lib/x86_64-linux-gnu/libncursesw.so.6+0x29aef) (BuildId: 84ef32c373c2b5b3c25dc788a1bcbbd3750cf9d1)
+    #1 0x7fba0b7992a8 in doupdate_sp (/lib/x86_64-linux-gnu/libncursesw.so.6+0x2c2a8) (BuildId: 84ef32c373c2b5b3c25dc788a1bcbbd3750cf9d1)
+    #2 0x7fba0b78c439 in wrefresh (/lib/x86_64-linux-gnu/libncursesw.so.6+0x1f439) (BuildId: 84ef32c373c2b5b3c25dc788a1bcbbd3750cf9d1)
+    #3 0x7fba0b7d79a1 in _curses_initscr_impl /py-pr-124911/build/./Modules/_cursesmodule.c:3258:9
+    #4 0x7fba0b7d3308 in _curses_initscr /py-pr-124911/build/./Modules/clinic/_cursesmodule.c.h:2661:12
+    #5 0x5634f49af503 in cfunction_vectorcall_NOARGS /py-pr-124911/build/Objects/methodobject.c:481:24
+    #6 0x5634f48b2f6f in _PyObject_VectorcallTstate /py-pr-124911/build/./Include/internal/pycore_call.h:92:11
+    #7 0x5634f48b4a19 in PyObject_Vectorcall /py-pr-124911/build/Objects/call.c:325:12
+    #8 0x5634f4c04ae3 in _PyEval_EvalFrameDefault /py-pr-124911/build/Python/bytecodes.c:2715:19
+    #9 0x5634f4bd8d21 in _PyEval_EvalFrame /py-pr-124911/build/./Include/internal/pycore_ceval.h:89:16
+    #10 0x5634f4bd8bde in _PyEval_Vector /py-pr-124911/build/Python/ceval.c:1683:12
+    #11 0x5634f4bd856f in PyEval_EvalCode /py-pr-124911/build/Python/ceval.c:578:21
+    #12 0x5634f4d74514 in run_eval_code_obj /py-pr-124911/build/Python/pythonrun.c:1722:9
+    #13 0x5634f4d6d6c5 in run_mod /py-pr-124911/build/Python/pythonrun.c:1743:19
+    #14 0x5634f4d6b9fe in pyrun_file /py-pr-124911/build/Python/pythonrun.c:1643:15
+    #15 0x5634f4d6a1c5 in _PyRun_SimpleFileObject /py-pr-124911/build/Python/pythonrun.c:433:13
+    #16 0x5634f4d698a8 in _PyRun_AnyFileObject /py-pr-124911/build/Python/pythonrun.c:78:15
+    #17 0x5634f4df9a26 in pymain_run_file_obj /py-pr-124911/build/Modules/main.c:360:15
+    #18 0x5634f4df897b in pymain_run_file /py-pr-124911/build/Modules/main.c:379:15
+    #19 0x5634f4df687b in pymain_run_python /py-pr-124911/build/Modules/main.c:633:21
+    #20 0x5634f4df5bc8 in Py_RunMain /py-pr-124911/build/Modules/main.c:713:5
+    #21 0x5634f4df6cc8 in pymain_main /py-pr-124911/build/Modules/main.c:743:12
+    #22 0x5634f4df6dd7 in Py_BytesMain /py-pr-124911/build/Modules/main.c:767:12
+    #23 0x5634f46f4491 in main /py-pr-124911/build/./Programs/python.c:15:12
+    #24 0x7fba0bfd51c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #25 0x7fba0bfd528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #26 0x5634f461b084 in _start (/py-pr-124911/build/python+0x277084) (BuildId: 1bcec8bd49816a911163a9ddeaa6000b838eab6d)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/lib/x86_64-linux-gnu/libncursesw.so.6+0x29aef) (BuildId: 84ef32c373c2b5b3c25dc788a1bcbbd3750cf9d1) 
+==172520==ABORTING

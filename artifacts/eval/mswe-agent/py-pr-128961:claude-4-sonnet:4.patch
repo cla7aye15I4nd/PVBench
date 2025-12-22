@@ -1,0 +1,130 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/Setup b/Modules/Setup
+index ddf39e0b966..55711dce9cc 100644
+--- a/Modules/Setup
++++ b/Modules/Setup
+@@ -152,7 +152,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+ #_struct _struct.c
+ #_typing _typingmodule.c
+ #_zoneinfo _zoneinfo.c
+-#array arraymodule.c
++array arraymodule.c
+ #binascii binascii.c
+ #cmath cmathmodule.c
+ #math mathmodule.c
+diff --git a/Modules/arraymodule.c b/Modules/arraymodule.c
+index b80c964f20d..19f666203f1 100644
+--- a/Modules/arraymodule.c
++++ b/Modules/arraymodule.c
+@@ -1,21 +1,6 @@
+-/* Array object implementation */
+-
+-/* An array is a uniform list -- all items have the same type.
+-   The item type is restricted to simple C types like int or float */
+-
+-#ifndef Py_BUILD_CORE_BUILTIN
+-#  define Py_BUILD_CORE_MODULE 1
+-#endif
+-
+ #include "Python.h"
+-#include "pycore_bytesobject.h"   // _PyBytes_Repeat
+-#include "pycore_call.h"          // _PyObject_CallMethod()
+-#include "pycore_ceval.h"         // _PyEval_GetBuiltin()
+-#include "pycore_modsupport.h"    // _PyArg_NoKeywords()
+-#include "pycore_moduleobject.h"  // _PyModule_GetState()
+-
+-#include <stddef.h>               // offsetof()
+-#include <stdbool.h>
++#include <stddef.h>
++#include <sys/types.h>
+ 
+ /*[clinic input]
+ module array
+@@ -167,8 +152,7 @@ array_resize(arrayobject *self, Py_ssize_t newsize)
+      * The growth pattern is:  0, 4, 8, 16, 25, 34, 46, 56, 67, 79, ...
+      * Note, the pattern starts out the same as for lists but then
+      * grows at a smaller rate so that larger arrays only overallocate
+-     * by about 1/16th -- this is done because arrays are presumed to be more
+-     * memory critical.
++     * by a smaller amount when memory is more
+      */
+ 
+     _new_size = (newsize >> 4) + (Py_SIZE(self) < 8 ? 3 : 7) + newsize;
+@@ -3090,6 +3074,11 @@ array_arrayiterator___setstate__(arrayiterobject *self, PyObject *state)
+     Py_ssize_t index = PyLong_AsSsize_t(state);
+     if (index == -1 && PyErr_Occurred())
+         return NULL;
++    if (self->ao == NULL) {
++        /* Iterator is exhausted, set index to 0 */
++        self->index = 0;
++        Py_RETURN_NONE;
++    }
+     if (index < 0)
+         index = 0;
+     else if (index > Py_SIZE(self->ao))
+diff --git a/reproduce_crash.py b/reproduce_crash.py
+new file mode 100644
+index 00000000000..3dc61b50d13
+--- /dev/null
++++ b/reproduce_crash.py
+@@ -0,0 +1,21 @@
++import array
++
++# Create an array and get its iterator
++arr = array.array('i', [1, 2, 3])
++it = iter(arr)
++
++# Exhaust the iterator to make ao NULL
++print("Exhausting iterator...")
++for item in it:
++    print(f"Item: {item}")
++
++print("Iterator exhausted, ao should be NULL now")
++
++# Now try to call __setstate__ on the exhausted iterator
++# This should trigger the null pointer dereference
++try:
++    print("Calling __setstate__ on exhausted iterator...")
++    it.__setstate__(5)
++    print("No crash occurred")
++except Exception as e:
++    print(f"Exception: {e}")
+diff --git a/test_crash.py b/test_crash.py
+new file mode 100644
+index 00000000000..2cba9594a8d
+--- /dev/null
++++ b/test_crash.py
+@@ -0,0 +1,19 @@
++import array
++import pickle
++
++# Create an array and get its iterator
++arr = array.array('i', [1, 2, 3])
++it = iter(arr)
++
++# Get the iterator's state
++state = it.__getstate__()
++print(f"Iterator state: {state}")
++
++# Now try to create a scenario where ao might be NULL
++# We'll try to manually set the ao field to None or cause it to be NULL
++try:
++    # This should trigger the null pointer dereference
++    it.__setstate__(5)
++    print("No crash occurred")
++except Exception as e:
++    print(f"Exception: {e}")

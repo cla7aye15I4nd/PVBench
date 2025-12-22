@@ -1,0 +1,140 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..e1b07a041e5 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -537,12 +537,16 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return;
+ 	}
+ 
++	/* Increment apply count to prevent recursive modifications during destructor calls */
++	intern->nApplyCount++;
++
+ 	if (get_hash_key(&key, intern, offset) == FAILURE) {
+ 		zend_type_error("Illegal offset type in unset");
++		intern->nApplyCount--;
+ 		return;
+ 	}
+ 
+@@ -575,6 +579,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++
++	/* Decrement apply count */
++	intern->nApplyCount--;
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+@@ -1253,7 +1260,7 @@ PHP_METHOD(ArrayObject, exchangeArray)
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		RETURN_THROWS();
+ 	}
+ 
+diff --git a/poc_readable.php b/poc_readable.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/poc_readable.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
+diff --git a/reproduce_crash.sh b/reproduce_crash.sh
+new file mode 100755
+index 00000000000..f87f5f114ca
+--- /dev/null
++++ b/reproduce_crash.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++USE_TRACKED_ALLOC=1 USE_ZEND_ALLOC=0 sapi/cli/php -f $1
+diff --git a/test_crash.php b/test_crash.php
+new file mode 100644
+index 00000000000..3fb3945e59e
+--- /dev/null
++++ b/test_crash.php
+@@ -0,0 +1,16 @@
++<?php
++class C extends ArrayObject {
++    public function __destruct() {
++        echo "C::__destruct\n";
++    }
++    
++    public function offsetUnset($offset) {
++        echo "offsetUnset called\n";
++        parent::offsetUnset($offset);
++    }
++}
++
++$c = new C();
++$c['key'] = 'value';
++unset($c['key']);
++echo "Script completed successfully\n";
+diff --git a/test_normal.php b/test_normal.php
+new file mode 100644
+index 00000000000..d0c81e22585
+--- /dev/null
++++ b/test_normal.php
+@@ -0,0 +1,17 @@
++<?php
++// Test normal ArrayObject operations to ensure they still work
++
++$arr = new ArrayObject(['a' => 1, 'b' => 2, 'c' => 3]);
++
++// Test normal unset
++unset($arr['b']);
++echo "After unset: ";
++var_dump($arr->getArrayCopy());
++
++// Test normal exchangeArray
++$arr->exchangeArray(['x' => 10, 'y' => 20]);
++echo "After exchangeArray: ";
++var_dump($arr->getArrayCopy());
++
++echo "Normal operations completed successfully\n";
++?>

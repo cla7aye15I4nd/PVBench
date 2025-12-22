@@ -1,0 +1,61 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index d6b4065e130..39aacf5d08a 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -24,7 +24,21 @@
+ static PyObject *
+ framelocalsproxy_getval(_PyInterpreterFrame *frame, PyCodeObject *co, int i)
+ {
++    // Check if frame is still valid before accessing its data
++    if (frame == NULL) {
++        return NULL;
++    }
++    
+     _PyStackRef *fast = _PyFrame_GetLocalsArray(frame);
++    if (fast == NULL) {
++        return NULL;
++    }
++    
++    // Check if the index is within bounds
++    if (i < 0 || i >= co->co_nlocalsplus) {
++        return NULL;
++    }
++    
+     _PyLocals_Kind kind = _PyLocals_GetKind(co->co_localspluskinds, i);
+ 
+     PyObject *value = PyStackRef_AsPyObjectBorrow(fast[i]);
+@@ -52,6 +66,7 @@ framelocalsproxy_getval(_PyInterpreterFrame *frame, PyCodeObject *co, int i)
+     return value;
+ }
+ 
++
+ static int
+ framelocalsproxy_getkeyindex(PyFrameObject *frame, PyObject* key, bool read)
+ {
+@@ -135,7 +150,10 @@ framelocalsproxy_getitem(PyObject *self, PyObject *key)
+     }
+     if (i >= 0) {
+         PyObject *value = framelocalsproxy_getval(frame->f_frame, co, i);
+-        assert(value != NULL);
++        if (value == NULL) {
++            PyErr_Format(PyExc_KeyError, "local variable '%R' is not defined", key);
++            return NULL;
++        }
+         return Py_NewRef(value);
+     }
+ 

@@ -1,0 +1,40 @@
+
+diff --git a/.gitignore b/.gitignore
+index c424a894c2a..94d6d1b74a0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -160,3 +160,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
+index 4b03cc3f4da..887a7a082bd 100644
+--- a/Objects/unicodeobject.c
++++ b/Objects/unicodeobject.c
+@@ -2375,6 +2375,9 @@ unicode_fromformat_write_str(_PyUnicodeWriter *writer, PyObject *str,
+     return 0;
+ }
+ 
++
++
++
+ static int
+ unicode_fromformat_write_cstr(_PyUnicodeWriter *writer, const char *str,
+                               Py_ssize_t width, Py_ssize_t precision, int flags)
+@@ -2384,6 +2387,10 @@ unicode_fromformat_write_cstr(_PyUnicodeWriter *writer, const char *str,
+     PyObject *unicode;
+     int res;
+ 
++    if (str == NULL) {
++        str = "";
++    }
++
+     if (precision == -1) {
+         length = strlen(str);
+     }

@@ -1,0 +1,58 @@
+/testcases/llvm-gh-132249/input/poc.cpp:9:47: warning: defaulted comparison operators are a C++20 extension [-Wc++20-extensions]
+    9 | bool operator==(const bar& a, const bar& b) = default;
+      |                                               ^
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace, preprocessed source, and associated run script.
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-132249/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-132249/build -fcoverage-compilation-dir=/tmp/llvm-gh-132249/build -resource-dir /tmp/llvm-gh-132249/build/build/lib/clang/21 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/backward -internal-isystem /tmp/llvm-gh-132249/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-5c100e.o -x c++ /testcases/llvm-gh-132249/input/poc.cpp
+1.	<eof> parser at end of file
+ #0 0x00005555586a900e llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /tmp/llvm-gh-132249/build/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x00005555586a9425 PrintStackTraceSignalHandler(void*) /tmp/llvm-gh-132249/build/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x00005555586a67d3 llvm::sys::RunSignalHandlers() /tmp/llvm-gh-132249/build/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x00005555586a8890 SignalHandler(int, siginfo_t*, void*) /tmp/llvm-gh-132249/build/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x00007ffff7a39330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x000055555c37a563 clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)::operator()(clang::FriendDecl const*) const /tmp/llvm-gh-132249/build/clang/lib/Sema/SemaDeclCXX.cpp:9010:54
+ #6 0x000055555c3bbd5a bool __gnu_cxx::__ops::_Iter_pred<clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>::operator()<clang::CXXRecordDecl::friend_iterator>(clang::CXXRecordDecl::friend_iterator) /usr/include/c++/13/bits/predefined_ops.h:318:33
+ #7 0x000055555c3bb9db clang::CXXRecordDecl::friend_iterator std::__find_if<clang::CXXRecordDecl::friend_iterator, __gnu_cxx::__ops::_Iter_pred<clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>>(clang::CXXRecordDecl::friend_iterator, clang::CXXRecordDecl::friend_iterator, __gnu_cxx::__ops::_Iter_pred<clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>, std::input_iterator_tag) /usr/include/c++/13/bits/stl_algobase.h:2055:42
+ #8 0x000055555c3bb5d6 clang::CXXRecordDecl::friend_iterator std::__find_if<clang::CXXRecordDecl::friend_iterator, __gnu_cxx::__ops::_Iter_pred<clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>>(clang::CXXRecordDecl::friend_iterator, clang::CXXRecordDecl::friend_iterator, __gnu_cxx::__ops::_Iter_pred<clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>) /usr/include/c++/13/bits/stl_algobase.h:2119:5
+ #9 0x000055555c3baecc clang::CXXRecordDecl::friend_iterator std::find_if<clang::CXXRecordDecl::friend_iterator, clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>(clang::CXXRecordDecl::friend_iterator, clang::CXXRecordDecl::friend_iterator, clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)) /usr/include/c++/13/bits/stl_algo.h:3925:5
+#10 0x000055555c3b9cb4 bool std::none_of<clang::CXXRecordDecl::friend_iterator, clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>(clang::CXXRecordDecl::friend_iterator, clang::CXXRecordDecl::friend_iterator, clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)) /usr/include/c++/13/bits/stl_algo.h:477:47
+#11 0x000055555c3b05a6 bool llvm::none_of<llvm::iterator_range<clang::CXXRecordDecl::friend_iterator>, clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)>(llvm::iterator_range<clang::CXXRecordDecl::friend_iterator>&&, clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind)::'lambda'(clang::FriendDecl const*)) /tmp/llvm-gh-132249/build/llvm/include/llvm/ADT/STLExtras.h:1760:1
+#12 0x000055555c37b61f clang::Sema::CheckExplicitlyDefaultedComparison(clang::Scope*, clang::FunctionDecl*, clang::Sema::DefaultedComparisonKind) /tmp/llvm-gh-132249/build/clang/lib/Sema/SemaDeclCXX.cpp:9008:5
+#13 0x000055555c3a6520 clang::Sema::SetDeclDefaulted(clang::Decl*, clang::SourceLocation) /tmp/llvm-gh-132249/build/clang/lib/Sema/SemaDeclCXX.cpp:18288:5
+#14 0x000055555c3a686d clang::Sema::SetFunctionBodyKind(clang::Decl*, clang::SourceLocation, clang::Sema::FnBodyKind, clang::StringLiteral*) /tmp/llvm-gh-132249/build/clang/lib/Sema/SemaDeclCXX.cpp:18330:5
+#15 0x000055555be2a040 clang::Parser::ParseFunctionDefinition(clang::ParsingDeclarator&, clang::Parser::ParsedTemplateInfo const&, clang::Parser::LateParsedAttrList*) /tmp/llvm-gh-132249/build/clang/lib/Parse/Parser.cpp:1494:31
+#16 0x000055555be6292d clang::Parser::ParseDeclGroup(clang::ParsingDeclSpec&, clang::DeclaratorContext, clang::ParsedAttributes&, clang::Parser::ParsedTemplateInfo&, clang::SourceLocation*, clang::Parser::ForRangeInit*) /tmp/llvm-gh-132249/build/clang/lib/Parse/ParseDecl.cpp:2460:40
+#17 0x000055555be28ed2 clang::Parser::ParseDeclOrFunctionDefInternal(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec&, clang::AccessSpecifier) /tmp/llvm-gh-132249/build/clang/lib/Parse/Parser.cpp:1260:24
+#18 0x000055555be290cb clang::Parser::ParseDeclarationOrFunctionDefinition(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*, clang::AccessSpecifier) /tmp/llvm-gh-132249/build/clang/lib/Parse/Parser.cpp:1282:42
+#19 0x000055555be282d5 clang::Parser::ParseExternalDeclaration(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*) /tmp/llvm-gh-132249/build/clang/lib/Parse/Parser.cpp:1085:50
+#20 0x000055555be2708d clang::Parser::ParseTopLevelDecl(clang::OpaquePtr<clang::DeclGroupRef>&, clang::Sema::ModuleImportState&) /tmp/llvm-gh-132249/build/clang/lib/Parse/Parser.cpp:771:36
+#21 0x000055555be21eef clang::ParseAST(clang::Sema&, bool, bool) /tmp/llvm-gh-132249/build/clang/lib/Parse/ParseAST.cpp:171:37
+#22 0x0000555559a3fa38 clang::ASTFrontendAction::ExecuteAction() /tmp/llvm-gh-132249/build/clang/lib/Frontend/FrontendAction.cpp:1144:11
+#23 0x00005555596df9b4 clang::CodeGenAction::ExecuteAction() /tmp/llvm-gh-132249/build/clang/lib/CodeGen/CodeGenAction.cpp:1102:5
+#24 0x0000555559a3f2f3 clang::FrontendAction::Execute() /tmp/llvm-gh-132249/build/clang/lib/Frontend/FrontendAction.cpp:1030:38
+#25 0x0000555559951b69 clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) /tmp/llvm-gh-132249/build/clang/lib/Frontend/CompilerInstance.cpp:1055:42
+#26 0x0000555559c1227a clang::ExecuteCompilerInvocation(clang::CompilerInstance*) /tmp/llvm-gh-132249/build/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+#27 0x00005555566be9f1 cc1_main(llvm::ArrayRef<char const*>, char const*, void*) /tmp/llvm-gh-132249/build/clang/tools/driver/cc1_main.cpp:294:40
+#28 0x00005555566af12e ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) /tmp/llvm-gh-132249/build/clang/tools/driver/driver.cpp:218:20
+#29 0x00005555566af69b clang_main(int, char**, llvm::ToolContext const&) /tmp/llvm-gh-132249/build/clang/tools/driver/driver.cpp:259:26
+#30 0x00005555566e5746 main /tmp/llvm-gh-132249/build/build/tools/clang/tools/driver/clang-driver.cpp:17:20
+#31 0x00007ffff7a1e1ca (/lib/x86_64-linux-gnu/libc.so.6+0x2a1ca)
+#32 0x00007ffff7a1e28b __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28b)
+#33 0x00005555566ae465 _start (/tmp/llvm-gh-132249/build/build/bin/clang-21+0x115a465)
+clang++: error: unable to execute command: Segmentation fault (core dumped)
+clang++: error: clang frontend command failed due to signal (use -v to see invocation)
+clang version 21.0.0git (https://github.com/llvm/llvm-project.git 749c20b3e0b88792c10d7709874f3ae374e8170e)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /tmp/llvm-gh-132249/build/build/bin
+Build config: +unoptimized, +assertions
+clang++: note: diagnostic msg: 
+********************
+
+PLEASE ATTACH THE FOLLOWING FILES TO THE BUG REPORT:
+Preprocessed source(s) and associated run script(s) are located at:
+clang++: note: diagnostic msg: /tmp/poc-97f7e5.cpp
+clang++: note: diagnostic msg: /tmp/poc-97f7e5.sh
+clang++: note: diagnostic msg: 
+
+********************

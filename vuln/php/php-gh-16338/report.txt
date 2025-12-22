@@ -1,0 +1,20 @@
+==301418==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000008 (pc 0x555dac8511fe bp 0x7ffc77f43840 sp 0x7ffc77f437e0 T0)
+==301418==The signal is caused by a READ memory access.
+==301418==Hint: address points to the zero page.
+    #0 0x555dac8511fe in dom_set_document_ref_obj_single /php-gh-16338/build/ext/dom/node.c:829:21
+    #1 0x555dac8441f4 in dom_set_document_pointers /php-gh-16338/build/ext/dom/node.c:841:7
+    #2 0x555dac842608 in zim_DOMNode_insertBefore /php-gh-16338/build/ext/dom/node.c:977:3
+    #3 0x555dad659242 in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-16338/build/Zend/zend_vm_execute.h:1867:4
+    #4 0x555dad4d567f in execute_ex /php-gh-16338/build/Zend/zend_vm_execute.h:57007:7
+    #5 0x555dad4d6dc5 in zend_execute /php-gh-16338/build/Zend/zend_vm_execute.h:61604:2
+    #6 0x555dad3b17e6 in zend_execute_scripts /php-gh-16338/build/Zend/zend.c:1893:4
+    #7 0x555dad15497b in php_execute_script /php-gh-16338/build/main/main.c:2528:13
+    #8 0x555dadcb9f6e in do_cli /php-gh-16338/build/sapi/cli/php_cli.c:966:5
+    #9 0x555dadcb7f69 in main /php-gh-16338/build/sapi/cli/php_cli.c:1341:18
+    #10 0x7f5d842e71c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7f5d842e728a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x555dac403254 in _start (/php-gh-16338/build/sapi/cli/php+0x403254) (BuildId: 18bf8222c0c1bae4ba395b53a673325cbec43a8d)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-16338/build/ext/dom/node.c:829:21 in dom_set_document_ref_obj_single
+==301418==ABORTING

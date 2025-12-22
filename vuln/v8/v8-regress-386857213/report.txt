@@ -1,0 +1,21 @@
+#
+# Fatal error in ../../src/objects/string.h, line 149
+# Debug check failed: i < length_.
+#
+#
+#
+#FailureMessage Object: 0x7be20a4fec60
+==== C stack trace ===============================
+
+    out/debug_asan/d8(___interceptor_backtrace+0x46) [0x562163ef9dd6]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x56216b6b9f93]
+    out/debug_asan/d8(+0xb1a22fa) [0x56216b6b82fa]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x2a0) [0x56216b688a60]
+    out/debug_asan/d8(+0xb171a9f) [0x56216b687a9f]
+    out/debug_asan/d8(v8::internal::GetOffsetTimeZone(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::String>)+0x85e) [0x562165a4c81e]
+    out/debug_asan/d8(v8::internal::JSDateTimeFormat::CreateTimeZone(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::String>)+0x111) [0x562165a4cb31]
+    out/debug_asan/d8(v8::internal::JSDateTimeFormat::CreateDateTimeFormat(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Map>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::JSDateTimeFormat::RequiredOption, v8::internal::JSDateTimeFormat::DefaultsOption, char const*)+0x1039) [0x562165a498c9]
+    out/debug_asan/d8(v8::internal::JSDateTimeFormat::New(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Map>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, char const*)+0x1a) [0x562165a4b4fa]
+    out/debug_asan/d8(+0x3e92599) [0x5621643a8599]
+    out/debug_asan/d8(v8::internal::Builtin_DateTimeFormatConstructor(int, unsigned long*, v8::internal::Isolate*)+0x1b5) [0x5621643a7995]
+    out/debug_asan/d8(+0xa737a3d) [0x56216ac4da3d]

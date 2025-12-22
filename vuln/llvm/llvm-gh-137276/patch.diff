@@ -1,0 +1,35 @@
+diff --git a/clang/include/clang/AST/OperationKinds.def b/clang/include/clang/AST/OperationKinds.def
+index 790dd572a7c9..d33d608a16f2 100644
+--- a/clang/include/clang/AST/OperationKinds.def
++++ b/clang/include/clang/AST/OperationKinds.def
+@@ -119,7 +119,8 @@ CAST_OPERATION(ArrayToPointerDecay)
+ CAST_OPERATION(FunctionToPointerDecay)
+ 
+ /// CK_NullToPointer - Null pointer constant to pointer, ObjC
+-/// pointer, or block pointer.
++/// pointer, or block pointer. The result of this conversion can
++/// still be a null pointer constant if it has type std::nullptr_t.
+ ///   (void*) 0
+ ///   void (^block)() = 0;
+ CAST_OPERATION(NullToPointer)
+diff --git a/clang/lib/CodeGen/CodeGenTypes.cpp b/clang/lib/CodeGen/CodeGenTypes.cpp
+index b94c11802a26..d1b292f23c2d 100644
+--- a/clang/lib/CodeGen/CodeGenTypes.cpp
++++ b/clang/lib/CodeGen/CodeGenTypes.cpp
+@@ -850,12 +850,14 @@ CodeGenTypes::getCGRecordLayout(const RecordDecl *RD) {
+ }
+ 
+ bool CodeGenTypes::isPointerZeroInitializable(QualType T) {
+-  assert((T->isAnyPointerType() || T->isBlockPointerType()) && "Invalid type");
++  assert((T->isAnyPointerType() || T->isBlockPointerType() ||
++          T->isNullPtrType()) &&
++         "Invalid type");
+   return isZeroInitializable(T);
+ }
+ 
+ bool CodeGenTypes::isZeroInitializable(QualType T) {
+-  if (T->getAs<PointerType>())
++  if (T->getAs<PointerType>() || T->isNullPtrType())
+     return Context.getTargetNullPointerValue(T) == 0;
+ 
+   if (const auto *AT = Context.getAsArrayType(T)) {

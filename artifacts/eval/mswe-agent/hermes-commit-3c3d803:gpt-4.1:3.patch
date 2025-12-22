@@ -1,0 +1,64 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+index 034612427..f4fa61ee7 100644
+--- a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
++++ b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+@@ -6,7 +6,7 @@
+  */
+ 
+ #include "SerialExecutor.h"
+-
++#include <stdexcept>
+ namespace facebook {
+ namespace hermes {
+ namespace inspector_modern {
+diff --git a/lib/Regex/Executor.cpp b/lib/Regex/Executor.cpp
+index fb73b8e56..f72733a98 100644
+--- a/lib/Regex/Executor.cpp
++++ b/lib/Regex/Executor.cpp
+@@ -251,7 +251,8 @@ template <class Traits>
+ struct Context {
+   using CodeUnit = typename Traits::CodeUnit;
+   using CodePoint = typename Traits::CodePoint;
+-
++  static constexpr int kMaxRecursionDepth = 64;
++  int recursionDepth = 0;
+   /// The set of backtracking opcodes. These are interpreted by the backtrack()
+   /// function.
+   enum class BacktrackOp : uint8_t {
+@@ -1314,10 +1315,13 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+ 
+             // Invoke match() recursively with our expression.
+             // Save and restore the position because lookaheads do not consume
+-            // anything.
+-            s->ip_ += sizeof(LookaroundInsn);
++            // Recursion depth check to prevent stack overflow.
++            if (recursionDepth >= kMaxRecursionDepth) {
++              return ExecutorResult<const typename Traits::CodeUnit*>(ExecutionStatus::STACK_OVERFLOW);
++            }
++            recursionDepth++;
+             auto match = this->match(s, true /* onlyAtStart */);
+-            // There were no errors and we matched something (so non-null
++            recursionDepth--;
+             // return)
+             matched = match && match.getValue();
+             c.setCurrentPointer(savedState.cursor_.currentPointer());

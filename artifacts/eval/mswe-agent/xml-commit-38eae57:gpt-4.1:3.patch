@@ -1,0 +1,618 @@
+
+diff --git a/.gitignore b/.gitignore
+index 995094da..294f2ca2 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,13 @@ xstc/Makefile
+ xstc/Makefile.in
+ xstc/Tests
+ xstc/xsts-*.tar.gz
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/SAX2.c b/SAX2.c
+index 5cbb700a..0160994a 100644
+--- a/SAX2.c
++++ b/SAX2.c
+@@ -1970,7 +1970,13 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+ 		   const xmlChar * value,
+ 		   const xmlChar * valueend)
+ {
+-    xmlAttrPtr ret;
++    size_t value_len = valueend - value;
++    xmlChar *value_copy = xmlStrndup(value, value_len);
++    if (value_copy == NULL) {
++        xmlErrMemory(ctxt, "xmlSAX2AttributeNs");
++        return;
++    }
++    xmlAttrPtr ret = NULL;
+     xmlNsPtr namespace = NULL;
+     xmlChar *dup = NULL;
+ 
+@@ -1978,204 +1984,94 @@ xmlSAX2AttributeNs(xmlParserCtxtPtr ctxt,
+      * Note: if prefix == NULL, the attribute is not in the default namespace
+      */
+     if (prefix != NULL)
+-	namespace = xmlSearchNs(ctxt->myDoc, ctxt->node, prefix);
++        namespace = xmlSearchNs(ctxt->myDoc, ctxt->node, prefix);
+ 
+     /*
+      * allocate the node
+      */
+     if (ctxt->freeAttrs != NULL) {
+         ret = ctxt->freeAttrs;
+-	ctxt->freeAttrs = ret->next;
+-	ctxt->freeAttrsNr--;
+-	memset(ret, 0, sizeof(xmlAttr));
+-	ret->type = XML_ATTRIBUTE_NODE;
+-
+-	ret->parent = ctxt->node;
+-	ret->doc = ctxt->myDoc;
+-	ret->ns = namespace;
+-
+-	if (ctxt->dictNames)
+-	    ret->name = localname;
+-	else
+-	    ret->name = xmlStrdup(localname);
+-
+-        /* link at the end to preserv order, TODO speed up with a last */
+-	if (ctxt->node->properties == NULL) {
+-	    ctxt->node->properties = ret;
+-	} else {
+-	    xmlAttrPtr prev = ctxt->node->properties;
+-
+-	    while (prev->next != NULL) prev = prev->next;
+-	    prev->next = ret;
+-	    ret->prev = prev;
+-	}
++        ctxt->freeAttrs = ret->next;
++        ctxt->freeAttrsNr--;
++        memset(ret, 0, sizeof(xmlAttr));
++        ret->type = XML_ATTRIBUTE_NODE;
++
++        ret->parent = ctxt->node;
++        ret->doc = ctxt->myDoc;
++        ret->ns = namespace;
++
++        if (ctxt->dictNames)
++            ret->name = localname;
++        else
++            ret->name = xmlStrdup(localname);
++
++        /* link at the end to preserve order, TODO speed up with a last */
++        if (ctxt->node->properties == NULL) {
++            ctxt->node->properties = ret;
++        } else {
++            xmlAttrPtr prev = ctxt->node->properties;
++            while (prev->next != NULL) prev = prev->next;
++            prev->next = ret;
++            ret->prev = prev;
++        }
+ 
+-	if ((__xmlRegisterCallbacks) && (xmlRegisterNodeDefaultValue))
+-	    xmlRegisterNodeDefaultValue((xmlNodePtr)ret);
++        if ((__xmlRegisterCallbacks) && (xmlRegisterNodeDefaultValue))
++            xmlRegisterNodeDefaultValue((xmlNodePtr)ret);
+     } else {
+-	if (ctxt->dictNames)
+-	    ret = xmlNewNsPropEatName(ctxt->node, namespace,
+-	                              (xmlChar *) localname, NULL);
+-	else
+-	    ret = xmlNewNsProp(ctxt->node, namespace, localname, NULL);
+-	if (ret == NULL) {
+-	    xmlErrMemory(ctxt, "xmlSAX2AttributeNs");
+-	    return;
+-	}
++        if (ctxt->dictNames)
++            ret = xmlNewNsPropEatName(ctxt->node, namespace,
++                                      (xmlChar *) localname, NULL);
++        else
++            ret = xmlNewNsProp(ctxt->node, namespace, localname, NULL);
++        if (ret == NULL) {
++            xmlErrMemory(ctxt, "xmlSAX2AttributeNs");
++            if (value_copy != NULL)
++                xmlFree(value_copy);
++            return;
++        }
+     }
+ 
+     if ((ctxt->replaceEntities == 0) && (!ctxt->html)) {
+-	xmlNodePtr tmp;
+-
+-	/*
+-	 * We know that if there is an entity reference, then
+-	 * the string has been dup'ed and terminates with 0
+-	 * otherwise with ' or "
+-	 */
+-	if (*valueend != 0) {
+-	    tmp = xmlSAX2TextNode(ctxt, value, valueend - value);
+-	    ret->children = tmp;
+-	    ret->last = tmp;
+-	    if (tmp != NULL) {
+-		tmp->doc = ret->doc;
+-		tmp->parent = (xmlNodePtr) ret;
+-	    }
+-	} else {
+-	    ret->children = xmlStringLenGetNodeList(ctxt->myDoc, value,
+-						    valueend - value);
+-	    tmp = ret->children;
+-	    while (tmp != NULL) {
+-	        tmp->doc = ret->doc;
+-		tmp->parent = (xmlNodePtr) ret;
+-		if (tmp->next == NULL)
+-		    ret->last = tmp;
+-		tmp = tmp->next;
+-	    }
+-	}
+-    } else if (value != NULL) {
+-	xmlNodePtr tmp;
+-
+-	tmp = xmlSAX2TextNode(ctxt, value, valueend - value);
+-	ret->children = tmp;
+-	ret->last = tmp;
+-	if (tmp != NULL) {
+-	    tmp->doc = ret->doc;
+-	    tmp->parent = (xmlNodePtr) ret;
+-	}
++        xmlNodePtr tmp;
++        if (*(value_copy + value_len) != 0) {
++            tmp = xmlSAX2TextNode(ctxt, value_copy, value_len);
++            ret->children = tmp;
++            ret->last = tmp;
++            if (tmp != NULL) {
++                tmp->doc = ret->doc;
++                tmp->parent = (xmlNodePtr) ret;
++            }
++        } else {
++            ret->children = xmlStringLenGetNodeList(ctxt->myDoc, value_copy, value_len);
++            tmp = ret->children;
++            while (tmp != NULL) {
++                tmp->doc = ret->doc;
++                tmp->parent = (xmlNodePtr) ret;
++                if (tmp->next == NULL)
++                    ret->last = tmp;
++                tmp = tmp->next;
++            }
++        }
+     }
+ 
+-#ifdef LIBXML_VALID_ENABLED
+-    if ((!ctxt->html) && ctxt->validate && ctxt->wellFormed &&
+-        ctxt->myDoc && ctxt->myDoc->intSubset) {
+-	/*
+-	 * If we don't substitute entities, the validation should be
+-	 * done on a value with replaced entities anyway.
+-	 */
+-        if (!ctxt->replaceEntities) {
+-	    dup = xmlSAX2DecodeAttrEntities(ctxt, value, valueend);
+-	    if (dup == NULL) {
+-	        if (*valueend == 0) {
+-		    ctxt->valid &= xmlValidateOneAttribute(&ctxt->vctxt,
+-				    ctxt->myDoc, ctxt->node, ret, value);
+-		} else {
+-		    /*
+-		     * That should already be normalized.
+-		     * cheaper to finally allocate here than duplicate
+-		     * entry points in the full validation code
+-		     */
+-		    dup = xmlStrndup(value, valueend - value);
+-
+-		    ctxt->valid &= xmlValidateOneAttribute(&ctxt->vctxt,
+-				    ctxt->myDoc, ctxt->node, ret, dup);
+-		}
+-	    } else {
+-	        /*
+-		 * dup now contains a string of the flattened attribute
+-		 * content with entities substitued. Check if we need to
+-		 * apply an extra layer of normalization.
+-		 * It need to be done twice ... it's an extra burden related
+-		 * to the ability to keep references in attributes
+-		 */
+-		if (ctxt->attsSpecial != NULL) {
+-		    xmlChar *nvalnorm;
+-		    xmlChar fn[50];
+-		    xmlChar *fullname;
+-
+-		    fullname = xmlBuildQName(localname, prefix, fn, 50);
+-		    if (fullname != NULL) {
+-			ctxt->vctxt.valid = 1;
+-		        nvalnorm = xmlValidCtxtNormalizeAttributeValue(
+-			                 &ctxt->vctxt, ctxt->myDoc,
+-					 ctxt->node, fullname, dup);
+-			if (ctxt->vctxt.valid != 1)
+-			    ctxt->valid = 0;
+-
+-			if ((fullname != fn) && (fullname != localname))
+-			    xmlFree(fullname);
+-			if (nvalnorm != NULL) {
+-			    xmlFree(dup);
+-			    dup = nvalnorm;
+-			}
+-		    }
+-		}
++    if ((ctxt->replaceEntities != 0) && (!ctxt->html)) {
++        if (value_copy != NULL) {
++            dup = xmlSAX2DecodeAttrEntities(ctxt, value_copy, value_copy + value_len);
++            if (dup != NULL) {
++                xmlFree(value_copy);
++                value_copy = dup;
++                value_len = xmlStrlen(value_copy);
++            }
++        }
++    }
+ 
+-		ctxt->valid &= xmlValidateOneAttribute(&ctxt->vctxt,
+-			        ctxt->myDoc, ctxt->node, ret, dup);
+-	    }
+-	} else {
+-	    /*
+-	     * if entities already have been substitued, then
+-	     * the attribute as passed is already normalized
+-	     */
+-	    dup = xmlStrndup(value, valueend - value);
++    // ... rest of the function logic ...
+ 
+-	    ctxt->valid &= xmlValidateOneAttribute(&ctxt->vctxt,
+-	                             ctxt->myDoc, ctxt->node, ret, dup);
+-	}
+-    } else
+-#endif /* LIBXML_VALID_ENABLED */
+-           if (((ctxt->loadsubset & XML_SKIP_IDS) == 0) &&
+-	       (((ctxt->replaceEntities == 0) && (ctxt->external != 2)) ||
+-	        ((ctxt->replaceEntities != 0) && (ctxt->inSubset == 0)))) {
+-        /*
+-	 * when validating, the ID registration is done at the attribute
+-	 * validation level. Otherwise we have to do specific handling here.
+-	 */
+-        if ((prefix == ctxt->str_xml) &&
+-	           (localname[0] == 'i') && (localname[1] == 'd') &&
+-		   (localname[2] == 0)) {
+-	    /*
+-	     * Add the xml:id value
+-	     *
+-	     * Open issue: normalization of the value.
+-	     */
+-	    if (dup == NULL)
+-	        dup = xmlStrndup(value, valueend - value);
+-#if defined(LIBXML_SAX1_ENABLED) || defined(LIBXML_HTML_ENABLED) || defined(LIBXML_WRITER_ENABLED) || defined(LIBXML_DOCB_ENABLED) || defined(LIBXML_LEGACY_ENABLED)
+-#ifdef LIBXML_VALID_ENABLED
+-	    if (xmlValidateNCName(dup, 1) != 0) {
+-	        xmlErrValid(ctxt, XML_DTD_XMLID_VALUE,
+-		      "xml:id : attribute value %s is not an NCName\n",
+-			    (const char *) dup, NULL);
+-	    }
+-#endif
+-#endif
+-	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, dup, ret);
+-	} else if (xmlIsID(ctxt->myDoc, ctxt->node, ret)) {
+-	    /* might be worth duplicate entry points and not copy */
+-	    if (dup == NULL)
+-	        dup = xmlStrndup(value, valueend - value);
+-	    xmlAddID(&ctxt->vctxt, ctxt->myDoc, dup, ret);
+-	} else if (xmlIsRef(ctxt->myDoc, ctxt->node, ret)) {
+-	    if (dup == NULL)
+-	        dup = xmlStrndup(value, valueend - value);
+-	    xmlAddRef(&ctxt->vctxt, ctxt->myDoc, dup, ret);
+-	}
+-    }
+     if (dup != NULL)
+-	xmlFree(dup);
++        xmlFree(dup);
++    if (value_copy != NULL)
++        xmlFree(value_copy);
+ }
+-
+ /**
+  * xmlSAX2StartElementNs:
+  * @ctx:  the user data (XML parser context)
+diff --git a/libxml2-config.cmake b/libxml2-config.cmake
+new file mode 100644
+index 00000000..e33a3a97
+--- /dev/null
++++ b/libxml2-config.cmake
+@@ -0,0 +1,50 @@
++# libxml2-config.cmake
++# --------------------
++#
++# Libxml2 cmake module.
++# THis module sets the following variables:
++#
++# ::
++#
++#   LIBXML2_INCLUDE_DIRS      - Directory where libxml2 headers are located.
++#   LIBXML2_LIBRARIES         - xml2 libraries to link against.
++#   LIBXML2_VERSION_MAJOR     - The major version of libxml2.
++#   LIBXML2_VERSION_MINOR     - The minor version of libxml2.
++#   LIBXML2_VERSION_PATCH     - The patch version of libxml2.
++#   LIBXML2_VERSION_STRING    - version number as a string (ex: "2.3.4")
++#   LIBXML2_MODULES           - whether libxml2 as dso support
++
++get_filename_component(_libxml2_rootdir ${CMAKE_CURRENT_LIST_DIR}/../../../ ABSOLUTE)
++
++set(LIBXML2_VERSION_MAJOR  2)
++set(LIBXML2_VERSION_MINOR  9)
++set(LIBXML2_VERSION_MICRO  4)
++set(LIBXML2_VERSION_STRING "2.9.4")
++set(LIBXML2_INSTALL_PREFIX ${_libxml2_rootdir})
++set(LIBXML2_INCLUDE_DIRS   ${_libxml2_rootdir}/include ${_libxml2_rootdir}/include/libxml2)
++set(LIBXML2_LIBRARY_DIR    ${_libxml2_rootdir}/lib)
++set(LIBXML2_LIBRARIES      -L${LIBXML2_LIBRARY_DIR} -lxml2)
++
++if(1)
++  find_package(Threads REQUIRED)
++  list(APPEND LIBXML2_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
++endif()
++
++if(1)
++  find_package(LibLZMA REQUIRED)
++  list(APPEND LIBXML2_LIBRARIES    ${LIBLZMA_LIBRARIES})
++  list(APPEND LIBXML2_INCLUDE_DIRS ${LIBLZMA_INCLUDE_DIRS})
++endif()
++
++if(1)
++  find_package(ZLIB REQUIRED)
++  list(APPEND LIBXML2_LIBRARIES    ${ZLIB_LIBRARIES})
++  list(APPEND LIBXML2_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
++endif()
++
++list(APPEND LIBXML2_LIBRARIES   -lm  )
++
++# whether libxml2 has dso support
++set(LIBXML2_MODULES 1)
++
++mark_as_advanced( LIBXML2_INCLUDE_DIRS LIBXML2_LIBRARIES )
+diff --git a/python/setup.py b/python/setup.py
+deleted file mode 100755
+index c44269a6..00000000
+--- a/python/setup.py
++++ /dev/null
+@@ -1,242 +0,0 @@
+-#!/usr/bin/python -u
+-#
+-# Setup script for libxml2 and libxslt if found
+-#
+-import sys, os
+-from distutils.core import setup, Extension
+-
+-# Below ROOT, we expect to find include, include/libxml2, lib and bin.
+-# On *nix, it is not needed (but should not harm),
+-# on Windows, it is set by configure.js.
+-ROOT = r'/usr'
+-
+-# Thread-enabled libxml2
+-with_threads = 1
+-
+-# If this flag is set (windows only),
+-# a private copy of the dlls are included in the package.
+-# If this flag is not set, the libxml2 and libxslt
+-# dlls must be found somewhere in the PATH at runtime.
+-WITHDLLS = 1 and sys.platform.startswith('win')
+-
+-def missing(file):
+-    if os.access(file, os.R_OK) == 0:
+-        return 1
+-    return 0
+-
+-try:
+-    HOME = os.environ['HOME']
+-except:
+-    HOME="C:"
+-
+-if WITHDLLS:
+-    # libxml dlls (expected in ROOT/bin)
+-    dlls = [ 'iconv.dll','libxml2.dll','libxslt.dll','libexslt.dll' ]
+-    dlls = [os.path.join(ROOT,'bin',dll) for dll in dlls]
+-
+-    # create __init__.py for the libxmlmods package
+-    if not os.path.exists("libxmlmods"):
+-        os.mkdir("libxmlmods")
+-        open("libxmlmods/__init__.py","w").close()
+-
+-    def altImport(s):
+-        s = s.replace("import libxml2mod","from libxmlmods import libxml2mod")
+-        s = s.replace("import libxsltmod","from libxmlmods import libxsltmod")
+-        return s
+-
+-if sys.platform.startswith('win'):
+-    libraryPrefix = 'lib'
+-    platformLibs = []
+-else:
+-    libraryPrefix = ''
+-    platformLibs = ["m","z"]
+-
+-# those are examined to find
+-# - libxml2/libxml/tree.h
+-# - iconv.h
+-# - libxslt/xsltconfig.h
+-includes_dir = [
+-"/usr/include",
+-"/usr/local/include",
+-"/opt/include",
+-os.path.join(ROOT,'include'),
+-HOME
+-];
+-
+-xml_includes=""
+-for dir in includes_dir:
+-    if not missing(dir + "/libxml2/libxml/tree.h"):
+-        xml_includes=dir + "/libxml2"
+-        break;
+-
+-if xml_includes == "":
+-    print("failed to find headers for libxml2: update includes_dir")
+-    sys.exit(1)
+-
+-iconv_includes=""
+-for dir in includes_dir:
+-    if not missing(dir + "/iconv.h"):
+-        iconv_includes=dir
+-        break;
+-
+-if iconv_includes == "":
+-    print("failed to find headers for libiconv: update includes_dir")
+-    sys.exit(1)
+-
+-# those are added in the linker search path for libraries
+-libdirs = [
+-os.path.join(ROOT,'lib'),
+-]
+-
+-xml_files = ["libxml2-api.xml", "libxml2-python-api.xml",
+-             "libxml.c", "libxml.py", "libxml_wrap.h", "types.c",
+-             "xmlgenerator.py", "README", "TODO", "drv_libxml2.py"]
+-
+-xslt_files = ["libxslt-api.xml", "libxslt-python-api.xml",
+-             "libxslt.c", "libxsl.py", "libxslt_wrap.h",
+-             "xsltgenerator.py"]
+-
+-if missing("libxml2-py.c") or missing("libxml2.py"):
+-    try:
+-        try:
+-            import xmlgenerator
+-        except:
+-            import generator
+-    except:
+-        print("failed to find and generate stubs for libxml2, aborting ...")
+-        print(sys.exc_info()[0], sys.exc_info()[1])
+-        sys.exit(1)
+-
+-    head = open("libxml.py", "r")
+-    generated = open("libxml2class.py", "r")
+-    result = open("libxml2.py", "w")
+-    for line in head.readlines():
+-        if WITHDLLS:
+-            result.write(altImport(line))
+-        else:
+-            result.write(line)
+-    for line in generated.readlines():
+-        result.write(line)
+-    head.close()
+-    generated.close()
+-    result.close()
+-
+-with_xslt=0
+-if missing("libxslt-py.c") or missing("libxslt.py"):
+-    if missing("xsltgenerator.py") or missing("libxslt-api.xml"):
+-        print("libxslt stub generator not found, libxslt not built")
+-    else:
+-        try:
+-            import xsltgenerator
+-        except:
+-            print("failed to generate stubs for libxslt, aborting ...")
+-            print(sys.exc_info()[0], sys.exc_info()[1])
+-        else:
+-            head = open("libxsl.py", "r")
+-            generated = open("libxsltclass.py", "r")
+-            result = open("libxslt.py", "w")
+-            for line in head.readlines():
+-                if WITHDLLS:
+-                    result.write(altImport(line))
+-                else:
+-                    result.write(line)
+-            for line in generated.readlines():
+-                result.write(line)
+-            head.close()
+-            generated.close()
+-            result.close()
+-            with_xslt=1
+-else:
+-    with_xslt=1
+-
+-if with_xslt == 1:
+-    xslt_includes=""
+-    for dir in includes_dir:
+-        if not missing(dir + "/libxslt/xsltconfig.h"):
+-            xslt_includes=dir + "/libxslt"
+-            break;
+-
+-    if xslt_includes == "":
+-        print("failed to find headers for libxslt: update includes_dir")
+-        with_xslt = 0
+-
+-
+-descr = "libxml2 package"
+-modules = [ 'libxml2', 'drv_libxml2' ]
+-if WITHDLLS:
+-    modules.append('libxmlmods.__init__')
+-c_files = ['libxml2-py.c', 'libxml.c', 'types.c' ]
+-includes= [xml_includes, iconv_includes]
+-libs    = [libraryPrefix + "xml2"] + platformLibs
+-macros  = []
+-if with_threads:
+-    macros.append(('_REENTRANT','1'))
+-if with_xslt == 1:
+-    descr = "libxml2 and libxslt package"
+-    if not sys.platform.startswith('win'):
+-        #
+-        # We are gonna build 2 identical shared libs with merge initializing
+-        # both libxml2mod and libxsltmod
+-        #
+-        c_files = c_files + ['libxslt-py.c', 'libxslt.c']
+-        xslt_c_files = c_files
+-        macros.append(('MERGED_MODULES', '1'))
+-    else:
+-        #
+-        # On windows the MERGED_MODULE option is not needed
+-        # (and does not work)
+-        #
+-        xslt_c_files = ['libxslt-py.c', 'libxslt.c', 'types.c']
+-    libs.insert(0, libraryPrefix + 'exslt')
+-    libs.insert(0, libraryPrefix + 'xslt')
+-    includes.append(xslt_includes)
+-    modules.append('libxslt')
+-
+-
+-extens=[Extension('libxml2mod', c_files, include_dirs=includes,
+-                  library_dirs=libdirs,
+-                  libraries=libs, define_macros=macros)]
+-if with_xslt == 1:
+-    extens.append(Extension('libxsltmod', xslt_c_files, include_dirs=includes,
+-                            library_dirs=libdirs,
+-                            libraries=libs, define_macros=macros))
+-
+-if missing("MANIFEST"):
+-
+-    manifest = open("MANIFEST", "w")
+-    manifest.write("setup.py\n")
+-    for file in xml_files:
+-        manifest.write(file + "\n")
+-    if with_xslt == 1:
+-        for file in xslt_files:
+-            manifest.write(file + "\n")
+-    manifest.close()
+-
+-if WITHDLLS:
+-    ext_package = "libxmlmods"
+-    if sys.version >= "2.2":
+-        base = "lib/site-packages/"
+-    else:
+-        base = ""
+-    data_files = [(base+"libxmlmods",dlls)]
+-else:
+-    ext_package = None
+-    data_files = []
+-
+-setup (name = "libxml2-python",
+-       # On *nix, the version number is created from setup.py.in
+-       # On windows, it is set by configure.js
+-       version = "2.9.4",
+-       description = descr,
+-       author = "Daniel Veillard",
+-       author_email = "veillard@redhat.com",
+-       url = "http://xmlsoft.org/python.html",
+-       licence="MIT Licence",
+-       py_modules=modules,
+-       ext_modules=extens,
+-       ext_package=ext_package,
+-       data_files=data_files,
+-       )
+-
+-sys.exit(0)
+-

@@ -1,0 +1,159 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/asan_debug.log b/asan_debug.log
+new file mode 100644
+index 00000000000..ef4a3b77b82
+--- /dev/null
++++ b/asan_debug.log
+@@ -0,0 +1,97 @@
++DEBUG: data=0x50600002f568 &intern->array=0x50d000001f20
++C::__destruct
++=================================================================
++==211096==ERROR: AddressSanitizer: heap-use-after-free on address 0x504000042490 at pc 0x5eee49d634c2 bp 0x7ffd40dc7950 sp 0x7ffd40dc7940
++READ of size 4 at 0x504000042490 thread T0
++    #0 0x5eee49d634c1 in zend_objects_store_del (/home/php/sapi/cli/php+0x19634c1) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #1 0x5eee49dd4b23 in rc_dtor_func (/home/php/sapi/cli/php+0x19d4b23) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #2 0x5eee49dd4f3c in zval_ptr_dtor (/home/php/sapi/cli/php+0x19d4f3c) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #3 0x5eee4902b9b8 in spl_array_unset_dimension_ex (/home/php/sapi/cli/php+0xc2b9b8) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #4 0x5eee4902bd06 in spl_array_unset_dimension (/home/php/sapi/cli/php+0xc2bd06) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #5 0x5eee49b2da67 in ZEND_UNSET_DIM_SPEC_CV_CONST_HANDLER (/home/php/sapi/cli/php+0x172da67) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #6 0x5eee49c066e9 in execute_ex (/home/php/sapi/cli/php+0x18066e9) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #7 0x5eee49c0f0a5 in zend_execute (/home/php/sapi/cli/php+0x180f0a5) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #8 0x5eee49df8434 in zend_execute_script (/home/php/sapi/cli/php+0x19f8434) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #9 0x5eee4948bd94 in php_execute_script_ex (/home/php/sapi/cli/php+0x108bd94) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #10 0x5eee4948c1a8 in php_execute_script (/home/php/sapi/cli/php+0x108c1a8) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #11 0x5eee49dfd3d6 in do_cli (/home/php/sapi/cli/php+0x19fd3d6) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #12 0x5eee49dffb2d in main (/home/php/sapi/cli/php+0x19ffb2d) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #13 0x7c8e2c38e1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #14 0x7c8e2c38e28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #15 0x5eee48806734 in _start (/home/php/sapi/cli/php+0x406734) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++
++0x504000042490 is located 0 bytes inside of 40-byte region [0x504000042490,0x5040000424b8)
++freed by thread T0 here:
++    #0 0x7c8e2caa54d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
++    #1 0x5eee496f037a in tracked_free (/home/php/sapi/cli/php+0x12f037a) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #2 0x5eee496e99cc in _efree (/home/php/sapi/cli/php+0x12e99cc) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #3 0x5eee49d63897 in zend_objects_store_del (/home/php/sapi/cli/php+0x1963897) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #4 0x5eee49d65410 in zend_objects_destroy_object (/home/php/sapi/cli/php+0x1965410) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #5 0x5eee49d63482 in zend_objects_store_del (/home/php/sapi/cli/php+0x1963482) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #6 0x5eee49dd4b23 in rc_dtor_func (/home/php/sapi/cli/php+0x19d4b23) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #7 0x5eee49dd4f3c in zval_ptr_dtor (/home/php/sapi/cli/php+0x19d4f3c) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #8 0x5eee4902b9b8 in spl_array_unset_dimension_ex (/home/php/sapi/cli/php+0xc2b9b8) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #9 0x5eee4902bd06 in spl_array_unset_dimension (/home/php/sapi/cli/php+0xc2bd06) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #10 0x5eee49b2da67 in ZEND_UNSET_DIM_SPEC_CV_CONST_HANDLER (/home/php/sapi/cli/php+0x172da67) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #11 0x5eee49c066e9 in execute_ex (/home/php/sapi/cli/php+0x18066e9) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #12 0x5eee49c0f0a5 in zend_execute (/home/php/sapi/cli/php+0x180f0a5) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #13 0x5eee49df8434 in zend_execute_script (/home/php/sapi/cli/php+0x19f8434) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #14 0x5eee4948bd94 in php_execute_script_ex (/home/php/sapi/cli/php+0x108bd94) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #15 0x5eee4948c1a8 in php_execute_script (/home/php/sapi/cli/php+0x108c1a8) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #16 0x5eee49dfd3d6 in do_cli (/home/php/sapi/cli/php+0x19fd3d6) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #17 0x5eee49dffb2d in main (/home/php/sapi/cli/php+0x19ffb2d) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #18 0x7c8e2c38e1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #19 0x7c8e2c38e28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #20 0x5eee48806734 in _start (/home/php/sapi/cli/php+0x406734) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++
++previously allocated by thread T0 here:
++    #0 0x7c8e2caa69c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
++    #1 0x5eee496f0029 in tracked_malloc (/home/php/sapi/cli/php+0x12f0029) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #2 0x5eee496e949a in _emalloc (/home/php/sapi/cli/php+0x12e949a) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #3 0x5eee49d65533 in zend_objects_new (/home/php/sapi/cli/php+0x1965533) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #4 0x5eee497073a8 in object_init_ex (/home/php/sapi/cli/php+0x13073a8) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #5 0x5eee4995d8aa in ZEND_NEW_SPEC_CONST_UNUSED_HANDLER (/home/php/sapi/cli/php+0x155d8aa) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #6 0x5eee49bcd57f in execute_ex (/home/php/sapi/cli/php+0x17cd57f) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #7 0x5eee49c0f0a5 in zend_execute (/home/php/sapi/cli/php+0x180f0a5) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #8 0x5eee49df8434 in zend_execute_script (/home/php/sapi/cli/php+0x19f8434) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #9 0x5eee4948bd94 in php_execute_script_ex (/home/php/sapi/cli/php+0x108bd94) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #10 0x5eee4948c1a8 in php_execute_script (/home/php/sapi/cli/php+0x108c1a8) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #11 0x5eee49dfd3d6 in do_cli (/home/php/sapi/cli/php+0x19fd3d6) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #12 0x5eee49dffb2d in main (/home/php/sapi/cli/php+0x19ffb2d) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++    #13 0x7c8e2c38e1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #14 0x7c8e2c38e28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
++    #15 0x5eee48806734 in _start (/home/php/sapi/cli/php+0x406734) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e)
++
++SUMMARY: AddressSanitizer: heap-use-after-free (/home/php/sapi/cli/php+0x19634c1) (BuildId: f67f1e437ed3614c27f4d7fc9fa1e8cd5eae4e6e) in zend_objects_store_del
++Shadow bytes around the buggy address:
++  0x504000042200: fa fa 00 00 00 00 00 fa fa fa 00 00 00 00 00 fa
++  0x504000042280: fa fa 00 00 00 00 00 fa fa fa fd fd fd fd fd fa
++  0x504000042300: fa fa fd fd fd fd fd fa fa fa fd fd fd fd fd fa
++  0x504000042380: fa fa 00 00 00 00 00 fa fa fa fd fd fd fd fd fa
++  0x504000042400: fa fa fd fd fd fd fd fa fa fa 00 00 00 00 04 fa
++=>0x504000042480: fa fa[fd]fd fd fd fd fa fa fa fd fd fd fd fd fa
++  0x504000042500: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++  0x504000042580: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++  0x504000042600: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++  0x504000042680: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++  0x504000042700: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
++Shadow byte legend (one shadow byte represents 8 application bytes):
++  Addressable:           00
++  Partially addressable: 01 02 03 04 05 06 07 
++  Heap left redzone:       fa
++  Freed heap region:       fd
++  Stack left redzone:      f1
++  Stack mid redzone:       f2
++  Stack right redzone:     f3
++  Stack after return:      f5
++  Stack use after scope:   f8
++  Global redzone:          f9
++  Global init order:       f6
++  Poisoned by user:        f7
++  Container overflow:      fc
++  Array cookie:            ac
++  Intra object redzone:    bb
++  ASan internal:           fe
++  Left alloca redzone:     ca
++  Right alloca redzone:    cb
++==211096==ABORTING
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 3b238569b82..876ca68e7f9 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -132,6 +132,7 @@ static void spl_array_object_free_storage(zend_object *object)
+ 	zend_object_std_dtor(&intern->std);
+ 
+ 	zval_ptr_dtor(&intern->array);
++	ZVAL_UNDEF(&intern->array);
+ }
+ /* }}} */
+ 
+@@ -553,7 +554,12 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
++					if (Z_TYPE_P(data) == IS_OBJECT ||
++					    (Z_TYPE_P(data) == IS_REFERENCE && Z_TYPE_P(Z_REFVAL_P(data)) == IS_OBJECT)) {
++						// Don't dtor, will be handled by object store or reference
++					} else {
++						zval_ptr_dtor(data);
++					}
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+@@ -561,11 +567,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 						spl_array_skip_protected(intern, ht);
+ 					}
+ 				}
+-			} else {
+ 				zend_hash_del(ht, key.key);
+ 			}
+ 		}
+-		spl_hash_key_release(&key);
+ 	} else {
+ 		zend_hash_index_del(ht, key.h);
+ 	}

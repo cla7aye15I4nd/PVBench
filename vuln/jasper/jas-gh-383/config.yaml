@@ -1,0 +1,14 @@
+id: jas-gh-383
+project: jasper
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: jasper
+trigger_commit: 29154a52b6c2b895ac3db60d51be9f2a995ee145
+patch:
+  commit: 2d6b6e8a9987386afe388e1cde859d0182445e63
+  date: '2024-04-27T10:49:23-07:00'
+reference:
+- https://github.com/jasper-software/jasper
+- https://github.com/jasper-software/jasper/issues/383
+- https://github.com/jasper-software/jasper/commit/29154a52b6c2b895ac3db60d51be9f2a995ee145
+- https://github.com/jasper-software/jasper/commit/2d6b6e8a9987386afe388e1cde859d0182445e63

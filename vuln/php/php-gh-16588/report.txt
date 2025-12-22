@@ -1,0 +1,103 @@
+==1061141==ERROR: AddressSanitizer: heap-use-after-free on address 0x503000027a40 at pc 0x55612804db6c bp 0x7fff7f7f5d30 sp 0x7fff7f7f5d28
+READ of size 1 at 0x503000027a40 thread T0
+    #0 0x55612804db6b in zval_get_type /php-gh-16588/build/Zend/zend_types.h:582:18
+    #1 0x55612804db6b in php_add_var_hash /php-gh-16588/build/ext/standard/var.c:667:16
+    #2 0x55612803cbdc in php_var_serialize_intern /php-gh-16588/build/ext/standard/var.c:1006:33
+    #3 0x55612803c7a1 in php_var_serialize /php-gh-16588/build/ext/standard/var.c:1275:2
+    #4 0x556127d09be4 in zim_SplObjectStorage_serialize /php-gh-16588/build/ext/spl/spl_observer.c:802:3
+    #5 0x5561286a0fd9 in ZEND_DO_FCALL_SPEC_RETVAL_USED_HANDLER /php-gh-16588/build/Zend/zend_vm_execute.h:1951:4
+    #6 0x556128502f1f in execute_ex /php-gh-16588/build/Zend/zend_vm_execute.h:55866:7
+    #7 0x5561285046b6 in zend_execute /php-gh-16588/build/Zend/zend_vm_execute.h:60439:2
+    #8 0x5561283e4a86 in zend_execute_scripts /php-gh-16588/build/Zend/zend.c:1842:4
+    #9 0x5561281880cb in php_execute_script /php-gh-16588/build/main/main.c:2578:13
+    #10 0x556128d0fcac in do_cli /php-gh-16588/build/sapi/cli/php_cli.c:964:5
+    #11 0x556128d0dc69 in main /php-gh-16588/build/sapi/cli/php_cli.c:1334:18
+    #12 0x7f477cee31c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x7f477cee328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x556127403184 in _start (/php-gh-16588/build/sapi/cli/php+0x403184) (BuildId: aafb6d81cf637d7e4901cfdc356769ab61a64122)
+
+0x503000027a40 is located 16 bytes inside of 24-byte region [0x503000027a30,0x503000027a48)
+freed by thread T0 here:
+    #0 0x55612749dd3a in free (/php-gh-16588/build/sapi/cli/php+0x49dd3a) (BuildId: aafb6d81cf637d7e4901cfdc356769ab61a64122)
+    #1 0x5561282d0e27 in tracked_free /php-gh-16588/build/Zend/zend_alloc.c:2851:2
+    #2 0x5561282bda07 in _efree_custom /php-gh-16588/build/Zend/zend_alloc.c:2486:3
+    #3 0x5561282c2ab6 in _efree /php-gh-16588/build/Zend/zend_alloc.c:2606:3
+    #4 0x556127d17c10 in spl_object_storage_dtor /php-gh-16588/build/ext/spl/spl_observer.c:124:3
+    #5 0x55612847d22c in _zend_hash_packed_del_val /php-gh-16588/build/Zend/zend_hash.c:1383:3
+    #6 0x55612847d22c in zend_hash_index_del /php-gh-16588/build/Zend/zend_hash.c:1644:5
+    #7 0x556127d03ff6 in spl_object_storage_detach /php-gh-16588/build/ext/spl/spl_observer.c:228:10
+    #8 0x556127d05e48 in zim_SplObjectStorage_removeAll /php-gh-16588/build/ext/spl/spl_observer.c:598:7
+    #9 0x55612869ef5f in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-16588/build/Zend/zend_vm_execute.h:1842:4
+    #10 0x556128502f1f in execute_ex /php-gh-16588/build/Zend/zend_vm_execute.h:55866:7
+    #11 0x556128369cb9 in zend_call_function /php-gh-16588/build/Zend/zend_execute_API.c:949:3
+    #12 0x55612836b7bc in zend_call_known_function /php-gh-16588/build/Zend/zend_execute_API.c:1043:23
+    #13 0x55612804f57d in zend_call_known_instance_method /php-gh-16588/build/Zend/zend_API.h:753:2
+    #14 0x55612804f57d in zend_call_known_instance_method_with_0_params /php-gh-16588/build/Zend/zend_API.h:759:2
+    #15 0x55612804f57d in php_var_serialize_call_magic_serialize /php-gh-16588/build/ext/standard/var.c:811:2
+    #16 0x55612804201c in php_var_serialize_intern /php-gh-16588/build/ext/standard/var.c:1094:10
+    #17 0x55612803c7a1 in php_var_serialize /php-gh-16588/build/ext/standard/var.c:1275:2
+    #18 0x556127d098d7 in zim_SplObjectStorage_serialize /php-gh-16588/build/ext/spl/spl_observer.c:800:3
+    #19 0x5561286a0fd9 in ZEND_DO_FCALL_SPEC_RETVAL_USED_HANDLER /php-gh-16588/build/Zend/zend_vm_execute.h:1951:4
+    #20 0x556128502f1f in execute_ex /php-gh-16588/build/Zend/zend_vm_execute.h:55866:7
+    #21 0x5561285046b6 in zend_execute /php-gh-16588/build/Zend/zend_vm_execute.h:60439:2
+    #22 0x5561283e4a86 in zend_execute_scripts /php-gh-16588/build/Zend/zend.c:1842:4
+    #23 0x5561281880cb in php_execute_script /php-gh-16588/build/main/main.c:2578:13
+    #24 0x556128d0fcac in do_cli /php-gh-16588/build/sapi/cli/php_cli.c:964:5
+    #25 0x556128d0dc69 in main /php-gh-16588/build/sapi/cli/php_cli.c:1334:18
+    #26 0x7f477cee31c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #27 0x7f477cee328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #28 0x556127403184 in _start (/php-gh-16588/build/sapi/cli/php+0x403184) (BuildId: aafb6d81cf637d7e4901cfdc356769ab61a64122)
+
+previously allocated by thread T0 here:
+    #0 0x55612749dfd3 in malloc (/php-gh-16588/build/sapi/cli/php+0x49dfd3) (BuildId: aafb6d81cf637d7e4901cfdc356769ab61a64122)
+    #1 0x5561282b0ce0 in tracked_malloc /php-gh-16588/build/Zend/zend_alloc.c:2832:14
+    #2 0x5561282b6873 in _malloc_custom /php-gh-16588/build/Zend/zend_alloc.c:2477:10
+    #3 0x5561282b6c73 in _emalloc_24 /php-gh-16588/build/Zend/zend_alloc.c:2526:1
+    #4 0x556127d16f67 in spl_object_storage_create_element /php-gh-16588/build/ext/spl/spl_observer.c:139:42
+    #5 0x556127d01932 in spl_object_storage_attach_handle /php-gh-16588/build/ext/spl/spl_observer.c:175:13
+    #6 0x556127d15608 in spl_object_storage_write_dimension /php-gh-16588/build/ext/spl/spl_observer.c:497:2
+    #7 0x5561288e1312 in zend_assign_to_object_dim /php-gh-16588/build/Zend/zend_execute.c:1437:2
+    #8 0x5561285bf116 in ZEND_ASSIGN_DIM_SPEC_CV_TMPVAR_OP_DATA_VAR_HANDLER /php-gh-16588/build/Zend/zend_vm_execute.h:45807:4
+    #9 0x556128502f1f in execute_ex /php-gh-16588/build/Zend/zend_vm_execute.h:55866:7
+    #10 0x5561285046b6 in zend_execute /php-gh-16588/build/Zend/zend_vm_execute.h:60439:2
+    #11 0x5561283e4a86 in zend_execute_scripts /php-gh-16588/build/Zend/zend.c:1842:4
+    #12 0x5561281880cb in php_execute_script /php-gh-16588/build/main/main.c:2578:13
+    #13 0x556128d0fcac in do_cli /php-gh-16588/build/sapi/cli/php_cli.c:964:5
+    #14 0x556128d0dc69 in main /php-gh-16588/build/sapi/cli/php_cli.c:1334:18
+    #15 0x7f477cee31c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #16 0x7f477cee328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x556127403184 in _start (/php-gh-16588/build/sapi/cli/php+0x403184) (BuildId: aafb6d81cf637d7e4901cfdc356769ab61a64122)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /php-gh-16588/build/Zend/zend_types.h:582:18 in zval_get_type
+Shadow bytes around the buggy address:
+  0x503000027780: fa fa 00 00 00 00 fa fa 00 00 00 fa fa fa fd fd
+  0x503000027800: fd fd fa fa fd fd fd fd fa fa fd fd fd fd fa fa
+  0x503000027880: fd fd fd fd fa fa fd fd fd fd fa fa fd fd fd fd
+  0x503000027900: fa fa fd fd fd fd fa fa fd fd fd fd fa fa 00 00
+  0x503000027980: 00 00 fa fa 00 00 00 00 fa fa fd fd fd fd fa fa
+=>0x503000027a00: fd fd fd fa fa fa fd fd[fd]fa fa fa 00 00 00 00
+  0x503000027a80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000027b00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000027b80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000027c00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000027c80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==1061141==ABORTING

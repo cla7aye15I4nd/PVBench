@@ -1,0 +1,29 @@
+diff --git a/Misc/NEWS.d/next/Library/2025-04-18-12-45-18.gh-issue-132673.P7Z3F1.rst b/Misc/NEWS.d/next/Library/2025-04-18-12-45-18.gh-issue-132673.P7Z3F1.rst
+new file mode 100644
+index 00000000000..db74ef6a324
+--- /dev/null
++++ b/Misc/NEWS.d/next/Library/2025-04-18-12-45-18.gh-issue-132673.P7Z3F1.rst
+@@ -0,0 +1,2 @@
++Fix a crash when using ``_align_ = 0`` and ``_fields_ = []`` in a
++:class:`ctypes.Structure`.
+diff --git a/Modules/_ctypes/stgdict.c b/Modules/_ctypes/stgdict.c
+index ad82e4891c5..5f5e79e5a64 100644
+--- a/Modules/_ctypes/stgdict.c
++++ b/Modules/_ctypes/stgdict.c
+@@ -383,7 +383,7 @@ PyCStructUnionType_update_stginfo(PyObject *type, PyObject *fields, int isStruct
+         size = 0;
+         align = 0;
+         union_size = 0;
+-        total_align = forced_alignment;
++        total_align = forced_alignment == 0 ? 1 : forced_alignment;
+         stginfo->ffi_type_pointer.type = FFI_TYPE_STRUCT;
+         stginfo->ffi_type_pointer.elements = PyMem_New(ffi_type *, len + 1);
+         if (stginfo->ffi_type_pointer.elements == NULL) {
+@@ -570,6 +570,7 @@ PyCStructUnionType_update_stginfo(PyObject *type, PyObject *fields, int isStruct
+     }
+ 
+     /* Adjust the size according to the alignment requirements */
++    assert(total_align != 0);
+     aligned_size = ((size + total_align - 1) / total_align) * total_align;
+ 
+     if (isStruct) {

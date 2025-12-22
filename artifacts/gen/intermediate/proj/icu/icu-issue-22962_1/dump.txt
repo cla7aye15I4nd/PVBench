@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+20|cal->fieldDifference(..., UCAL_YEAR_WOY, status)|U_FAILURE(status)|Should return failure

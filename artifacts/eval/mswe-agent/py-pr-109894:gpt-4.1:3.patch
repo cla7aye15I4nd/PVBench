@@ -1,0 +1,29 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8c8273fc7a3..bf30502d55e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -159,3 +159,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/exceptions.c b/Objects/exceptions.c
+index 48623451c0d..51b56ec9043 100644
+--- a/Objects/exceptions.c
++++ b/Objects/exceptions.c
+@@ -118,6 +118,9 @@ BaseException_traverse(PyBaseExceptionObject *self, visitproc visit, void *arg)
+ static PyObject *
+ BaseException_str(PyBaseExceptionObject *self)
+ {
++    if (self->args == NULL) {
++        return PyUnicode_FromString("");
++    }
+     switch (PyTuple_GET_SIZE(self->args)) {
+     case 0:
+         return PyUnicode_FromString("");

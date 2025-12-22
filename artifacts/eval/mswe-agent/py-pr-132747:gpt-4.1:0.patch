@@ -1,0 +1,29 @@
+
+diff --git a/.gitignore b/.gitignore
+index 596e0f3af6a..8d4234061fa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -172,3 +172,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Include/object.h b/Include/object.h
+index 8cc83abb857..60902644ee7 100644
+--- a/Include/object.h
++++ b/Include/object.h
+@@ -267,6 +267,9 @@ PyAPI_FUNC(PyTypeObject*) Py_TYPE(PyObject *ob);
+ #else
+     static inline PyTypeObject* _Py_TYPE(PyObject *ob)
+     {
++        if (ob == NULL) {
++            return NULL;
++        }
+         return ob->ob_type;
+     }
+     #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 < 0x030b0000

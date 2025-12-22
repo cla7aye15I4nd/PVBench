@@ -1,0 +1,41 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index 9a75efa5fd3..22c9a13308b 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -1920,7 +1920,7 @@ Tagged<Object> Isolate::ReThrow(Tagged<Object> exception) {
+ }
+ 
+ Tagged<Object> Isolate::ReThrow(Tagged<Object> exception,
+-                                Tagged<Object> message) {
++  clear_pending_message();
+   DCHECK(!has_pending_exception());
+   DCHECK(!has_pending_message());
+ 
+diff --git a/src/runtime/runtime-internal.cc b/src/runtime/runtime-internal.cc
+index c105141739d..ec252f3f102 100644
+--- a/src/runtime/runtime-internal.cc
++++ b/src/runtime/runtime-internal.cc
+@@ -823,3 +823,5 @@ RUNTIME_FUNCTION(Runtime_SharedValueBarrierSlow) {
+ 
+ }  // namespace internal
+ }  // namespace v8
++  // Clear any existing pending message to avoid DCHECK failure.
++  clear_pending_message();

@@ -1,0 +1,28 @@
+
+diff --git a/.gitignore b/.gitignore
+index 307814a276a..3127999a700 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -170,3 +170,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_ctypes/stgdict.c b/Modules/_ctypes/stgdict.c
+index ad82e4891c5..c0ba18622a7 100644
+--- a/Modules/_ctypes/stgdict.c
++++ b/Modules/_ctypes/stgdict.c
+@@ -383,7 +383,7 @@ PyCStructUnionType_update_stginfo(PyObject *type, PyObject *fields, int isStruct
+         size = 0;
+         align = 0;
+         union_size = 0;
+-        total_align = forced_alignment;
++        total_align = forced_alignment ? forced_alignment : 1;
+         stginfo->ffi_type_pointer.type = FFI_TYPE_STRUCT;
+         stginfo->ffi_type_pointer.elements = PyMem_New(ffi_type *, len + 1);
+         if (stginfo->ffi_type_pointer.elements == NULL) {

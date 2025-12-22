@@ -1,0 +1,53 @@
+==5425==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x75e393084f40 at pc 0x63062bef7218 bp 0x7fff17c5ef40 sp 0x7fff17c5e700
+WRITE of size 350 at 0x75e393084f40 thread T0
+    #0 0x63062bef7217 in __asan_memcpy (/tmp/pcap-gh-1137/build/poc+0xc6217) (BuildId: 2c6250f741b75b18bf2e125b8de16d64435424ab)
+    #1 0x75e3957db00d in pcpp::GenericDnsResourceData::toByteArr(unsigned char*, unsigned long&, pcpp::IDnsResource*) const /tmp/pcap-gh-1137/build/Packet++/src/DnsResourceData.cpp:226:2
+    #2 0x75e3957d7cf3 in pcpp::DnsResource::setData(pcpp::IDnsResourceData*) /tmp/pcap-gh-1137/build/Packet++/src/DnsResource.cpp:409:13
+    #3 0x75e3957d06f3 in pcpp::DnsLayer::addResource(pcpp::DnsResourceType, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, pcpp::DnsType, pcpp::DnsClass, unsigned int, pcpp::IDnsResourceData*) /tmp/pcap-gh-1137/build/Packet++/src/DnsLayer.cpp:492:20
+    #4 0x75e3957d2466 in pcpp::DnsLayer::addAnswer(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>> const&, pcpp::DnsType, pcpp::DnsClass, unsigned int, pcpp::IDnsResourceData*) /tmp/pcap-gh-1137/build/Packet++/src/DnsLayer.cpp:653:21
+    #5 0x63062bf3a097 in main /tmp/pcap-gh-1137/build/poc.cpp:15:36
+    #6 0x75e3950ff1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x75e3950ff28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x63062be5e484 in _start (/tmp/pcap-gh-1137/build/poc+0x2d484) (BuildId: 2c6250f741b75b18bf2e125b8de16d64435424ab)
+
+Address 0x75e393084f40 is located in stack of thread T0 at offset 320 in frame
+    #0 0x75e3957d781f in pcpp::DnsResource::setData(pcpp::IDnsResourceData*) /tmp/pcap-gh-1137/build/Packet++/src/DnsResource.cpp:345
+
+  This frame has 2 object(s):
+    [32, 40) 'dataLength' (line 347)
+    [64, 320) 'dataAsByteArr' (line 348) <== Memory access at offset 320 overflows this variable
+HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+      (longjmp and C++ exceptions *are* supported)
+SUMMARY: AddressSanitizer: stack-buffer-overflow (/tmp/pcap-gh-1137/build/poc+0xc6217) (BuildId: 2c6250f741b75b18bf2e125b8de16d64435424ab) in __asan_memcpy
+Shadow bytes around the buggy address:
+  0x75e393084c80: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5
+  0x75e393084d00: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5
+  0x75e393084d80: f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5 f5
+  0x75e393084e00: f1 f1 f1 f1 00 f2 f2 f2 00 00 00 00 00 00 00 00
+  0x75e393084e80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x75e393084f00: 00 00 00 00 00 00 00 00[f3]f3 f3 f3 f3 f3 f3 f3
+  0x75e393084f80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x75e393085000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x75e393085080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x75e393085100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x75e393085180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==5425==ABORTING

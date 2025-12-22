@@ -1,0 +1,14 @@
+id: hdf5-gh-4765
+project: hdf5
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: poc
+trigger_commit: 2eaa01690a521a4e2b18f6474f70d7a38ab4341e
+patch:
+  commit: a75542b3e77664f5f4be39dac24e9e3c791456da
+  date: '2024-09-06T08:50:10-07:00'
+reference:
+- https://github.com/HDFGroup/hdf5
+- https://github.com/HDFGroup/hdf5/issues/4765
+- https://github.com/HDFGroup/hdf5/commit/2eaa01690a521a4e2b18f6474f70d7a38ab4341e
+- https://github.com/HDFGroup/hdf5/commit/a75542b3e77664f5f4be39dac24e9e3c791456da

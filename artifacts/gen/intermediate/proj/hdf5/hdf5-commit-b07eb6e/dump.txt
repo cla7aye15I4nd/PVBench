@@ -1,0 +1,6 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+15|H5Oget_info_by_name(fid, "/soft_two", &oinfo, H5P_DEFAULT)|ret == -1|Soft link should fail
+20|H5Oget_info_by_name(fid, "/dsetA", &oinfo, H5P_DEFAULT)|ret == -1|Dataset not found should fail
+25|H5Oget_info_by_name(fid, "/soft_one", &oinfo, H5P_DEFAULT)|ret == -1|Soft link should fail

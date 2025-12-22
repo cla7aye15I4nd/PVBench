@@ -1,0 +1,113 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 18dc2859357..32e026a3673 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -792,8 +792,12 @@ _asyncio_Future_result_impl(FutureObj *self)
+ 
+     int res = future_get_result(state, self, &result);
+ 
+-    if (res == -1) {
+-        return NULL;
++            if (tmp == NULL) {
++                Py_DECREF(coro);
++            if (tmp == NULL) {
++                Py_DECREF(coro);
++                return NULL;
++            }
+     }
+ 
+     if (res == 0) {
+@@ -2758,6 +2762,8 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+         }
+         return NULL;
+     }
++    Py_INCREF(coro);  // Take a reference to prevent use-after-free
++
+ 
+     int gen_status = PYGEN_ERROR;
+     if (exc == NULL) {
+@@ -2791,9 +2797,11 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+             Py_DECREF(result);
+ 
+             if (tmp == NULL) {
++                Py_DECREF(coro);
+                 return NULL;
+             }
+             Py_DECREF(tmp);
++            Py_DECREF(coro);
+             Py_RETURN_NONE;
+         }
+ 
+@@ -2806,7 +2814,7 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+             FutureObj *fut = (FutureObj*)task;
+             /* transfer ownership */
+             fut->fut_cancelled_exc = exc;
+-
++            Py_DECREF(coro);
+             return future_cancel(state, fut, NULL);
+         }
+ 
+@@ -2832,7 +2840,7 @@ task_step_impl(asyncio_state *state, TaskObj *task, PyObject *exc)
+         }
+ 
+         Py_DECREF(exc);
+-
++        Py_DECREF(coro);
+         Py_RETURN_NONE;
+     }
+ 
+@@ -3133,7 +3141,6 @@ task_eager_start(asyncio_state *state, TaskObj *task)
+             retval = -1;
+         }
+     } else {
+-        // This seems to really help performance on pyperformance benchmarks
+         Py_CLEAR(task->task_coro);
+     }
+ 
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..612d0281431
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,26 @@
++import asyncio
++import gc
++
++async def foo():
++    return 42
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++    
++    # Create multiple tasks to increase chances of race condition
++    for i in range(100):
++        task = asyncio.create_task(foo())
++        await task
++        # Try to access the coroutine after completion
++        try:
++            coro = task.get_coro()
++            print(f"Task {i}: coro = {coro}")
++        except Exception as e:
++            print(f"Task {i}: Error accessing coro: {e}")
++        
++        # Force garbage collection to trigger potential use-after-free
++        gc.collect()
++
++if __name__ == "__main__":
++    asyncio.run(main())

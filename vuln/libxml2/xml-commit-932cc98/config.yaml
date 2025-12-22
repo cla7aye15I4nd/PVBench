@@ -1,0 +1,13 @@
+id: xml-commit-932cc98
+project: libxml2
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+binary: xmllint
+trigger_commit: e26630548e7d138d2c560844c43820b6767251e3
+patch:
+  commit: 932cc9896ab41475d4aa429c27d9afd175959d74
+  date: '2017-06-05T19:38:19+02:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/e26630548e7d138d2c560844c43820b6767251e3
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/932cc9896ab41475d4aa429c27d9afd175959d74

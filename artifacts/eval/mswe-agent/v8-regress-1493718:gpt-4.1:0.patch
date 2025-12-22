@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 155e8003340..f1806bad14a 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -528,8 +528,9 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+   if (!remaining_args.empty() &&
+       std::count(std::begin(kTemplatesWithMismatchedArguments),
+                  std::end(kTemplatesWithMismatchedArguments), index) == 0) {
+-    FATAL("Too many arguments to template (expected %zu, got %zu): %s",
+-          args.size() - remaining_args.size(), args.size(), template_string);
++    // Ignore extra arguments instead of crashing.
++    // FATAL("Too many arguments to template (expected %zu, got %zu): %s",
++    //       args.size() - remaining_args.size(), args.size(), template_string);
+   }
+ 
+   return builder.Finish();

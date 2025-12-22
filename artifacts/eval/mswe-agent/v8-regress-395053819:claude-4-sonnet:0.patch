@@ -1,0 +1,35 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6d3ef302292..5c865635f30 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/strings/string-hasher-inl.h b/src/strings/string-hasher-inl.h
+index fd308f36b7d..d3b9a109009 100644
+--- a/src/strings/string-hasher-inl.h
++++ b/src/strings/string-hasher-inl.h
+@@ -159,8 +159,10 @@ V8_INLINE IndexParseResult TryParseArrayIndex(const uchar* chars,
+         TenToThe(String::kMaxArrayIndexSize - 1);
+     if (index + 1 < kMinValidValue + 1) {
+       // Undo the overflowing add so that integer index parsing can retry it on
+-      // with int64.
+-      index -= chars[i - 1];
++      // with int64. We need to properly restore the index to its state before
++      // the last digit was processed.
++      uint32_t digit_val = chars[i - 1] - '0';
++      index = (index - digit_val) / 10;
+       i--;
+       return kOverflow;
+     }

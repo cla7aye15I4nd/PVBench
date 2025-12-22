@@ -1,0 +1,41 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6d3ef302292..5c865635f30 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/builtins/builtins-string.cc b/src/builtins/builtins-string.cc
+index 3a92f083ae6..7e6997d8975 100644
+--- a/src/builtins/builtins-string.cc
++++ b/src/builtins/builtins-string.cc
+@@ -146,11 +146,13 @@ BUILTIN(StringPrototypeLocaleCompare) {
+ 
+   isolate->CountUsage(v8::Isolate::UseCounterFeature::kStringLocaleCompare);
+   static const char* const kMethod = "String.prototype.localeCompare";
+-
+-  DCHECK_LE(2, args.length());
+-
+-  TO_THIS_STRING(str1, kMethod);
+-  DirectHandle<String> str2;
++      if (i >= length_) {
++        // Out-of-bounds access, return 0 as a safe fallback.
++        return 0;
++      }
++      DCHECK(state_ != NON_FLAT);
++      if (state_ == ONE_BYTE) return onebyte_start[i];
++      return twobyte_start[i];
+   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, str2,
+                                      Object::ToString(isolate, args.at(1)));
+ 

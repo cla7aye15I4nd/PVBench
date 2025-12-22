@@ -1,0 +1,65 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_dllist.c b/ext/spl/spl_dllist.c
+index 6592efc4e5e..557a07afaed 100644
+--- a/ext/spl/spl_dllist.c
++++ b/ext/spl/spl_dllist.c
+@@ -1005,7 +1005,7 @@ PHP_METHOD(SplDoublyLinkedList, serialize)
+ {
+ 	spl_dllist_object     *intern   = Z_SPLDLLIST_P(ZEND_THIS);
+ 	smart_str              buf      = {0};
+-	spl_ptr_llist_element *current  = intern->llist->head, *next;
++	spl_ptr_llist_element *current  = intern->llist->head;
+ 	zval                   flags;
+ 	php_serialize_data_t   var_hash;
+ 
+@@ -1022,11 +1022,29 @@ PHP_METHOD(SplDoublyLinkedList, serialize)
+ 	/* elements */
+ 	while (current) {
+ 		smart_str_appendc(&buf, ':');
+-		next = current->next;
+-
++		
++		/* Save reference to current element for validation */
++		spl_ptr_llist_element *saved_current = current;
++		
+ 		php_var_serialize(&buf, &current->data, &var_hash);
+-
+-		current = next;
++		
++		/* Check if the current element is still valid by walking the list */
++		spl_ptr_llist_element *check = intern->llist->head;
++		int found = 0;
++		while (check) {
++			if (check == saved_current) {
++				found = 1;
++				break;
++			}
++			check = check->next;
++		}
++		
++		/* If current element was removed during serialization, restart from head */
++		if (!found) {
++			current = intern->llist->head;
++		} else {
++			current = current->next;
++		}
+ 	}
+ 
+ 	/* done */

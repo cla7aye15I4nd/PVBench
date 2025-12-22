@@ -1,0 +1,94 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..bb691b97d89 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -555,7 +555,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
++					intern->nApplyCount++;
+ 					zval_ptr_dtor(data);
++					intern->nApplyCount--;
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+diff --git a/poc.php b/poc.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/poc.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
+diff --git a/run_test.sh b/run_test.sh
+new file mode 100755
+index 00000000000..f87f5f114ca
+--- /dev/null
++++ b/run_test.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++USE_TRACKED_ALLOC=1 USE_ZEND_ALLOC=0 sapi/cli/php -f $1
+diff --git a/test_normal.php b/test_normal.php
+new file mode 100644
+index 00000000000..aa731ee78a0
+--- /dev/null
++++ b/test_normal.php
+@@ -0,0 +1,20 @@
++<?php
++
++// Test normal ArrayObject operations still work
++$arr = new ArrayObject(['a' => 1, 'b' => 2, 'c' => 3]);
++
++echo "Original array:\n";
++var_dump($arr);
++
++// Normal unset should work
++unset($arr['b']);
++echo "\nAfter unset(\$arr['b']):\n";
++var_dump($arr);
++
++// Normal exchangeArray should work
++$arr->exchangeArray(['x' => 10, 'y' => 20]);
++echo "\nAfter exchangeArray:\n";
++var_dump($arr);
++
++echo "\nTest completed successfully!\n";
++?>

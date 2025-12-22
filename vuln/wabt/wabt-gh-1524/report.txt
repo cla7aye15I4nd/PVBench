@@ -1,0 +1,21 @@
+==528465==ERROR: AddressSanitizer: SEGV on unknown address 0x001fffffffe0 (pc 0x772e59b6fb3e bp 0x7ffcd3edfe50 sp 0x7ffcd3edfe40 T0)
+==528465==The signal is caused by a READ memory access.
+    #0 0x772e59b6fb3e in std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>>::operator=(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>>&&) (/lib/x86_64-linux-gnu/libstdc++.so.6+0x168b3e) (BuildId: ca77dae775ec87540acd7218fa990c40d1c94ab1)
+    #1 0x60b1a5e91014 in wabt::ObjdumpNames::Set(unsigned int, wabt::string_view) /tmp/wabt-gh-1524/build/src/binary-reader-objdump.cc:1864:16
+    #2 0x60b1a5e95547 in wabt::(anonymous namespace)::BinaryReaderObjdumpPrepass::SetFunctionName(unsigned int, wabt::string_view) /tmp/wabt-gh-1524/build/src/binary-reader-objdump.cc:357:34
+    #3 0x60b1a5e9367c in wabt::(anonymous namespace)::BinaryReaderObjdumpPrepass::OnExport(unsigned int, wabt::ExternalKind, unsigned int, wabt::string_view) /tmp/wabt-gh-1524/build/src/binary-reader-objdump.cc:320:7
+    #4 0x60b1a5ec54d4 in wabt::(anonymous namespace)::BinaryReader::ReadExportSection(unsigned long) /tmp/wabt-gh-1524/build/src/binary-reader.cc:2244:5
+    #5 0x60b1a5ebe64b in wabt::(anonymous namespace)::BinaryReader::ReadSections() /tmp/wabt-gh-1524/build/src/binary-reader.cc:2493:26
+    #6 0x60b1a5ebce09 in wabt::(anonymous namespace)::BinaryReader::ReadModule() /tmp/wabt-gh-1524/build/src/binary-reader.cc:2566:3
+    #7 0x60b1a5ebc311 in wabt::ReadBinary(void const*, unsigned long, wabt::BinaryReaderDelegate*, wabt::ReadBinaryOptions const&) /tmp/wabt-gh-1524/build/src/binary-reader.cc:2583:17
+    #8 0x60b1a5e915b0 in wabt::ReadBinaryObjdump(unsigned char const*, unsigned long, wabt::ObjdumpOptions*, wabt::ObjdumpState*) /tmp/wabt-gh-1524/build/src/binary-reader-objdump.cc:1886:14
+    #9 0x60b1a5e89a37 in dump_file(char const*) /tmp/wabt-gh-1524/build/src/tools/wasm-objdump.cc:88:13
+    #10 0x60b1a5e89f6c in ProgramMain(int, char**) /tmp/wabt-gh-1524/build/src/tools/wasm-objdump.cc:133:16
+    #11 0x60b1a5e8a811 in main /tmp/wabt-gh-1524/build/src/tools/wasm-objdump.cc:143:10
+    #12 0x772e596f51c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x772e596f528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x60b1a5dadff4 in _start (/tmp/wabt-gh-1524/build/build/wasm-objdump+0xd8ff4) (BuildId: d6930a48dc10e10684184d3aea16318756d9c1f5)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/lib/x86_64-linux-gnu/libstdc++.so.6+0x168b3e) (BuildId: ca77dae775ec87540acd7218fa990c40d1c94ab1) in std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>>::operator=(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char>>&&)
+==528465==ABORTING

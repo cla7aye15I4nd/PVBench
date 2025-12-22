@@ -1,0 +1,13 @@
+runtime error: signed integer overflow: 32511318 * 3600 cannot be represented in type 'int'
+    #0 0x7ad0410c0afd in Exiv2::Internal::print0x0007(std::ostream&, Exiv2::Value const&, Exiv2::ExifData const*) /tmp/exiv2-gh-1913/build/src/tags_int.cpp:2778
+    #1 0x7ad040cffbff in Exiv2::Exifdatum::write(std::ostream&, Exiv2::ExifData const*) const /tmp/exiv2-gh-1913/build/src/exif.cpp:240
+    #2 0x7ad040dc8dcb in Exiv2::Metadatum::print[abi:cxx11](Exiv2::ExifData const*) const /tmp/exiv2-gh-1913/build/src/metadatum.cpp:41
+    #3 0x5e2576c332c0 in Action::Print::printMetadatum(Exiv2::Metadatum const&, Exiv2::Image const*) /tmp/exiv2-gh-1913/build/src/actions.cpp:610
+    #4 0x5e2576c2ddf5 in Action::Print::printMetadata(Exiv2::Image const*) /tmp/exiv2-gh-1913/build/src/actions.cpp:447
+    #5 0x5e2576c2d8cc in Action::Print::printList() /tmp/exiv2-gh-1913/build/src/actions.cpp:437
+    #6 0x5e2576c270e8 in Action::Print::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /tmp/exiv2-gh-1913/build/src/actions.cpp:260
+    #7 0x5e2576b7a01a in main /tmp/exiv2-gh-1913/build/src/exiv2.cpp:169
+    #8 0x7ad03f7fb1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x7ad03f7fb28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x5e2576b78d04 in _start (/tmp/exiv2-gh-1913/build/build/bin/exiv2+0x13ed04) (BuildId: 5ed481b045e678ec425820f11e0b6147c20bfcd3)
+

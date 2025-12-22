@@ -1,0 +1,14 @@
+id: icu-issue-12504
+project: icu
+sanitizer: UndefinedBehaviorSanitizer
+type: Integer Overflow
+binary: poc
+trigger_commit: 4b67416113ef638f39b7070dc7e0e5ac3b1774d3
+patch:
+  commit: 71dd84d4ffd6600a70e5bca56a22b957e6642bd4
+  date: '2017-10-29T03:38:05+00:00'
+reference:
+- https://github.com/unicode-org/icu
+- https://unicode-org.atlassian.net/browse/ICU-12504
+- https://github.com/unicode-org/icu/commit/4b67416113ef638f39b7070dc7e0e5ac3b1774d3
+- https://github.com/unicode-org/icu/commit/71dd84d4ffd6600a70e5bca56a22b957e6642bd4

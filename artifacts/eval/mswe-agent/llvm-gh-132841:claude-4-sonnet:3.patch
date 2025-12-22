@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp b/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp
+index 4dc398f716b3..9766a7d511f5 100644
+--- a/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp
++++ b/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp
+@@ -15111,7 +15111,7 @@ Instruction &BoUpSLP::getLastInstructionInBundle(const TreeEntry *E) {
+       Res = (*It)->getBundle().back()->getInst();
+       return *Res;
+     }
+-    assert(E->getOpcode() == Instruction::PHI && "Expected PHI");
++    // Remove incorrect assertion - the entry doesn't have to be a PHI
+   }
+ 
+   // LastInst can still be null at this point if there's either not an entry

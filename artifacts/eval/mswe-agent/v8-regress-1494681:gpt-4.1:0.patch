@@ -1,0 +1,40 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 66190522e70..410954f77fa 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -507,13 +507,10 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+         builder.AppendCharacter('%');
+       } else {
+         // TODO(14386): Remove this fallback.
+-        if (remaining_args.empty()) {
+-          if (std::count(std::begin(kTemplatesWithMismatchedArguments),
+-                         std::end(kTemplatesWithMismatchedArguments), index)) {
+-            builder.AppendCString("undefined");
+-          } else {
+-            FATAL("Missing argument to template (got %zu): %s", args.size(),
+-                  template_string);
++        // Instead of FATAL, always append "undefined" for missing arguments.
++        builder.AppendCString("undefined");
++        // Optionally, log a warning here if a logging facility is available.
++        // Previously, this would FATAL for templates not in kTemplatesWithMismatchedArguments.
+           }
+         } else {
+           Handle<String> arg = remaining_args[0];

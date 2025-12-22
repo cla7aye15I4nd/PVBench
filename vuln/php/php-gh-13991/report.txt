@@ -1,0 +1,67 @@
+==902361==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x502000004c38 at pc 0x5628b5c1f8bc bp 0x7ffe4845e890 sp 0x7ffe4845e038
+READ of size 9 at 0x502000004c38 thread T0
+    #0 0x5628b5c1f8bb in MemcmpInterceptorCommon(void*, int (*)(void const*, void const*, unsigned long), void const*, void const*, unsigned long) (/php-gh-13991/build/sapi/cli/php+0x41f8bb) (BuildId: 4b64e000ce005565c08719ee8d93bed00fa523c8)
+    #1 0x5628b5c1fd90 in memcmp (/php-gh-13991/build/sapi/cli/php+0x41fd90) (BuildId: 4b64e000ce005565c08719ee8d93bed00fa523c8)
+    #2 0x5628b62363f1 in make_filename_safe /php-gh-13991/build/ext/pdo_sqlite/sqlite_driver.c:754:19
+    #3 0x5628b6234390 in pdo_sqlite_handle_factory /php-gh-13991/build/ext/pdo_sqlite/sqlite_driver.c:806:13
+    #4 0x5628b61dee78 in zim_PDO___construct /php-gh-13991/build/ext/pdo/pdo_dbh.c:389:6
+    #5 0x5628b6e993bf in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-13991/build/Zend/zend_vm_execute.h:1842:4
+    #6 0x5628b6cfd37f in execute_ex /php-gh-13991/build/Zend/zend_vm_execute.h:55866:7
+    #7 0x5628b6cfeb16 in zend_execute /php-gh-13991/build/Zend/zend_vm_execute.h:60439:2
+    #8 0x5628b6bdf3a6 in zend_execute_scripts /php-gh-13991/build/Zend/zend.c:1840:4
+    #9 0x5628b6984a7b in php_execute_script /php-gh-13991/build/main/main.c:2565:13
+    #10 0x5628b751151c in do_cli /php-gh-13991/build/sapi/cli/php_cli.c:964:5
+    #11 0x5628b750f4d9 in main /php-gh-13991/build/sapi/cli/php_cli.c:1333:18
+    #12 0x7f02391161c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #13 0x7f023911628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x5628b5c03164 in _start (/php-gh-13991/build/sapi/cli/php+0x403164) (BuildId: 4b64e000ce005565c08719ee8d93bed00fa523c8)
+
+0x502000004c38 is located 0 bytes after 8-byte region [0x502000004c30,0x502000004c38)
+allocated by thread T0 here:
+    #0 0x5628b5c85cbe in strdup (/php-gh-13991/build/sapi/cli/php+0x485cbe) (BuildId: 4b64e000ce005565c08719ee8d93bed00fa523c8)
+    #1 0x5628b6ac57b4 in __zend_strdup /php-gh-13991/build/Zend/zend_alloc.c:3149:14
+    #2 0x5628b61de988 in zim_PDO___construct /php-gh-13991/build/ext/pdo/pdo_dbh.c:367:35
+    #3 0x5628b6e993bf in ZEND_DO_FCALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-13991/build/Zend/zend_vm_execute.h:1842:4
+    #4 0x5628b6cfd37f in execute_ex /php-gh-13991/build/Zend/zend_vm_execute.h:55866:7
+    #5 0x5628b6cfeb16 in zend_execute /php-gh-13991/build/Zend/zend_vm_execute.h:60439:2
+    #6 0x5628b6bdf3a6 in zend_execute_scripts /php-gh-13991/build/Zend/zend.c:1840:4
+    #7 0x5628b6984a7b in php_execute_script /php-gh-13991/build/main/main.c:2565:13
+    #8 0x5628b751151c in do_cli /php-gh-13991/build/sapi/cli/php_cli.c:964:5
+    #9 0x5628b750f4d9 in main /php-gh-13991/build/sapi/cli/php_cli.c:1333:18
+    #10 0x7f02391161c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7f023911628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x5628b5c03164 in _start (/php-gh-13991/build/sapi/cli/php+0x403164) (BuildId: 4b64e000ce005565c08719ee8d93bed00fa523c8)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow (/php-gh-13991/build/sapi/cli/php+0x41f8bb) (BuildId: 4b64e000ce005565c08719ee8d93bed00fa523c8) in MemcmpInterceptorCommon(void*, int (*)(void const*, void const*, unsigned long), void const*, void const*, unsigned long)
+Shadow bytes around the buggy address:
+  0x502000004980: fa fa fd fa fa fa fd fd fa fa 00 fa fa fa 00 fa
+  0x502000004a00: fa fa fd fd fa fa fd fa fa fa fd fd fa fa fd fd
+  0x502000004a80: fa fa fd fa fa fa fd fd fa fa 00 fa fa fa 00 fa
+  0x502000004b00: fa fa fd fa fa fa 00 04 fa fa 00 05 fa fa 00 05
+  0x502000004b80: fa fa fd fa fa fa 00 fa fa fa 00 00 fa fa 00 04
+=>0x502000004c00: fa fa 00 fa fa fa 00[fa]fa fa fa fa fa fa fa fa
+  0x502000004c80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000004d00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000004d80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000004e00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x502000004e80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==902361==ABORTING

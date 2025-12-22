@@ -1,0 +1,141 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/document.c b/ext/dom/document.c
+index 9650d090290..5e780a190d1 100644
+--- a/ext/dom/document.c
++++ b/ext/dom/document.c
+@@ -1616,7 +1616,13 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 
+ 	DOM_GET_OBJ(docp, ZEND_THIS, xmlDocPtr, intern);
+ 
+-	libxml_doc_props const* doc_props = dom_get_doc_props_read_only(intern->document);
++	/* Increment document reference to prevent use-after-free */
++	php_libxml_ref_obj *document = intern->document;
++	if (document != NULL) {
++		document->refcount++;
++	}
++
++	libxml_doc_props const* doc_props = dom_get_doc_props_read_only(document);
+ 	bool format = doc_props->formatoutput;
+ 
+ 	zend_string *res;
+@@ -1624,7 +1630,11 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 		/* Dump contents of Node */
+ 		DOM_GET_OBJ(node, nodep, xmlNodePtr, nodeobj);
+ 		if (node->doc != docp) {
+-			php_dom_throw_error(WRONG_DOCUMENT_ERR, dom_get_strict_error(intern->document));
++			php_dom_throw_error(WRONG_DOCUMENT_ERR, dom_get_strict_error(document));
++			/* Decrement document reference before returning */
++			if (document != NULL) {
++				php_libxml_decrement_doc_ref_directly(document);
++			}
+ 			RETURN_FALSE;
+ 		}
+ 
+@@ -1632,7 +1642,7 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 		 * w.r.t. the implicit return in DOM_GET_OBJ). */
+ 		old_xml_save_no_empty_tags = xmlSaveNoEmptyTags;
+ 		xmlSaveNoEmptyTags = (options & LIBXML_SAVE_NOEMPTYTAG) ? 1 : 0;
+-		res = intern->document->handlers->dump_node_to_str(docp, node, format, (const char *) docp->encoding);
++		res = document->handlers->dump_node_to_str(docp, node, format, (const char *) docp->encoding);
+ 		xmlSaveNoEmptyTags = old_xml_save_no_empty_tags;
+ 	} else {
+ 		int converted_options = XML_SAVE_AS_XML;
+@@ -1646,10 +1656,15 @@ static void dom_document_save_xml(INTERNAL_FUNCTION_PARAMETERS, zend_class_entry
+ 		/* Save libxml2 global, override its value, and restore after saving. */
+ 		old_xml_save_no_empty_tags = xmlSaveNoEmptyTags;
+ 		xmlSaveNoEmptyTags = (options & LIBXML_SAVE_NOEMPTYTAG) ? 1 : 0;
+-		res = intern->document->handlers->dump_doc_to_str(docp, converted_options, (const char *) docp->encoding);
++		res = document->handlers->dump_doc_to_str(docp, converted_options, (const char *) docp->encoding);
+ 		xmlSaveNoEmptyTags = old_xml_save_no_empty_tags;
+ 	}
+ 
++	/* Decrement document reference */
++	if (document != NULL) {
++		php_libxml_decrement_doc_ref_directly(document);
++	}
++
+ 	if (!res) {
+ 		php_error_docref(NULL, E_WARNING, "Could not save document");
+ 		RETURN_FALSE;
+diff --git a/test_dom.php b/test_dom.php
+new file mode 100644
+index 00000000000..0014788b53c
+--- /dev/null
++++ b/test_dom.php
+@@ -0,0 +1,5 @@
++<?php
++$doc = new DOMDocument();
++$doc->loadXML('<root><child>test</child></root>');
++echo $doc->saveXML();
++?>
+diff --git a/test_dom_complex.php b/test_dom_complex.php
+new file mode 100644
+index 00000000000..18bb3db0970
+--- /dev/null
++++ b/test_dom_complex.php
+@@ -0,0 +1,23 @@
++<?php
++// Create multiple DOM documents and manipulate them in ways that might trigger use-after-free
++for ($i = 0; $i < 100; $i++) {
++    $doc = new DOMDocument();
++    $doc->loadXML('<root><child id="' . $i . '">test' . $i . '</child></root>');
++    
++    // Create child nodes
++    $child = $doc->createElement('newchild', 'value' . $i);
++    $doc->documentElement->appendChild($child);
++    
++    // Save XML multiple times
++    $xml1 = $doc->saveXML();
++    $xml2 = $doc->saveXML($doc->documentElement);
++    
++    // Force garbage collection
++    unset($doc);
++    if ($i % 10 == 0) {
++        gc_collect_cycles();
++    }
++}
++
++echo "Complex DOM test completed successfully, no errors.\n";
++?>
+diff --git a/test_dom_savexml.php b/test_dom_savexml.php
+new file mode 100644
+index 00000000000..bf48ab6f720
+--- /dev/null
++++ b/test_dom_savexml.php
+@@ -0,0 +1,19 @@
++<?php
++class TestClass {
++    public function __destruct() {
++        echo "TestClass::__destruct\n";
++    }
++}
++
++$doc = new DOMDocument();
++$doc->loadXML('<root><child>test</child></root>');
++
++// Create a scenario where the document might be freed during saveXML
++$test = new TestClass();
++$result = $doc->saveXML();
++unset($doc);
++unset($test);
++
++echo "Result: " . $result . "\n";
++echo "Script completed successfully, no errors.\n";
++?>

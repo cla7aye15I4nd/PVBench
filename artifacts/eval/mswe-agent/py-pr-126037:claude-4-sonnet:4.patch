@@ -1,0 +1,92 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_elementtree.c b/Modules/_elementtree.c
+index d20bbcd21fd..09d7d7a9adc 100644
+--- a/Modules/_elementtree.c
++++ b/Modules/_elementtree.c
+@@ -1253,6 +1253,7 @@ _elementtree_Element_find_impl(ElementObject *self, PyTypeObject *cls,
+ /*[clinic end generated code: output=18f77d393c9fef1b input=94df8a83f956acc6]*/
+ {
+     Py_ssize_t i;
++    ElementObjectExtra *extra;
+     elementtreestate *st = get_elementtree_state_by_cls(cls);
+ 
+     if (checkpath(path) || namespaces != Py_None) {
+@@ -1261,11 +1262,12 @@ _elementtree_Element_find_impl(ElementObject *self, PyTypeObject *cls,
+             );
+     }
+ 
+-    if (!self->extra)
++    extra = self->extra;
++    if (!extra)
+         Py_RETURN_NONE;
+ 
+-    for (i = 0; i < self->extra->length; i++) {
+-        PyObject* item = self->extra->children[i];
++    for (i = 0; i < extra->length; i++) {
++        PyObject* item = extra->children[i];
+         int rc;
+         assert(Element_Check(st, item));
+         Py_INCREF(item);
+@@ -1298,6 +1300,7 @@ _elementtree_Element_findtext_impl(ElementObject *self, PyTypeObject *cls,
+ /*[clinic end generated code: output=6af7a2d96aac32cb input=32f252099f62a3d2]*/
+ {
+     Py_ssize_t i;
++    ElementObjectExtra *extra;
+     elementtreestate *st = get_elementtree_state_by_cls(cls);
+ 
+     if (checkpath(path) || namespaces != Py_None)
+@@ -1306,12 +1309,13 @@ _elementtree_Element_findtext_impl(ElementObject *self, PyTypeObject *cls,
+             self, path, default_value, namespaces, NULL
+             );
+ 
+-    if (!self->extra) {
++    extra = self->extra;
++    if (!extra) {
+         return Py_NewRef(default_value);
+     }
+ 
+-    for (i = 0; i < self->extra->length; i++) {
+-        PyObject *item = self->extra->children[i];
++    for (i = 0; i < extra->length; i++) {
++        PyObject *item = extra->children[i];
+         int rc;
+         assert(Element_Check(st, item));
+         Py_INCREF(item);
+@@ -1351,6 +1355,7 @@ _elementtree_Element_findall_impl(ElementObject *self, PyTypeObject *cls,
+ {
+     Py_ssize_t i;
+     PyObject* out;
++    ElementObjectExtra *extra;
+     elementtreestate *st = get_elementtree_state_by_cls(cls);
+ 
+     if (checkpath(path) || namespaces != Py_None) {
+@@ -1363,11 +1368,12 @@ _elementtree_Element_findall_impl(ElementObject *self, PyTypeObject *cls,
+     if (!out)
+         return NULL;
+ 
+-    if (!self->extra)
++    extra = self->extra;
++    if (!extra)
+         return out;
+ 
+-    for (i = 0; i < self->extra->length; i++) {
+-        PyObject* item = self->extra->children[i];
++    for (i = 0; i < extra->length; i++) {
++        PyObject* item = extra->children[i];
+         int rc;
+         assert(Element_Check(st, item));
+         Py_INCREF(item);

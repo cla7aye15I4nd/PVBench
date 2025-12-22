@@ -1,0 +1,9 @@
+#!/opt/venv/bin/python
+
+import subprocess
+
+import dcc1
+
+if __name__ == "__main__":
+    llvmcc = subprocess.check_output(["which", "clang"]).decode().strip()
+    dcc1.build(llvmcc)

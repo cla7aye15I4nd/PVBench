@@ -1,0 +1,22 @@
+diff --git a/Misc/NEWS.d/next/Core_and_Builtins/2025-05-16-20-59-12.gh-issue-134119.w8expI.rst b/Misc/NEWS.d/next/Core_and_Builtins/2025-05-16-20-59-12.gh-issue-134119.w8expI.rst
+new file mode 100644
+index 00000000000..754e8166285
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core_and_Builtins/2025-05-16-20-59-12.gh-issue-134119.w8expI.rst
+@@ -0,0 +1,2 @@
++Fix crash when calling :func:`next` on an exhausted template string iterator.
++Patch by Jelle Zijlstra.
+diff --git a/Objects/templateobject.c b/Objects/templateobject.c
+index 06cb19e0b6d..4293a311c44 100644
+--- a/Objects/templateobject.c
++++ b/Objects/templateobject.c
+@@ -23,6 +23,9 @@ templateiter_next(PyObject *op)
+     if (self->from_strings) {
+         item = PyIter_Next(self->stringsiter);
+         self->from_strings = 0;
++        if (item == NULL) {
++            return NULL;
++        }
+         if (PyUnicode_GET_LENGTH(item) == 0) {
+             Py_SETREF(item, PyIter_Next(self->interpolationsiter));
+             self->from_strings = 1;

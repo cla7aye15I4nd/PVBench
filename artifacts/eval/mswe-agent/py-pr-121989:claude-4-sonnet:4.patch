@@ -1,0 +1,93 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 257de4387c0..c2c27609610 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -287,7 +287,7 @@ static void clearEntries(ProfilerObject *pObj)
+ }
+ 
+ static void
+-initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
++initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry, _PyTime_t t0)
+ {
+     self->ctxEntry = entry;
+     self->subt = 0;
+@@ -303,7 +303,7 @@ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+         if (subentry)
+             ++subentry->recursionLevel;
+     }
+-    self->t0 = call_timer(pObj);
++    self->t0 = t0;
+ }
+ 
+ static void
+@@ -343,6 +343,7 @@ ptrace_enter_call(PyObject *self, void *key, PyObject *userObj)
+     ProfilerObject *pObj = (ProfilerObject*)self;
+     ProfilerEntry *profEntry;
+     ProfilerContext *pContext;
++    _PyTime_t t0;
+ 
+     /* In the case of entering a generator expression frame via a
+      * throw (gen_send_ex(.., 1)), we may already have an
+@@ -358,6 +359,11 @@ ptrace_enter_call(PyObject *self, void *key, PyObject *userObj)
+         if (profEntry == NULL)
+             goto restorePyerr;
+     }
++    
++    /* Get the timer value before allocating context to avoid use-after-free
++     * if the timer callback triggers profiler_disable() */
++    t0 = call_timer(pObj);
++    
+     /* grab a ProfilerContext out of the free list */
+     pContext = pObj->freelistProfilerContext;
+     if (pContext) {
+@@ -372,7 +378,7 @@ ptrace_enter_call(PyObject *self, void *key, PyObject *userObj)
+             goto restorePyerr;
+         }
+     }
+-    initContext(pObj, pContext, profEntry);
++    initContext(pObj, pContext, profEntry, t0);
+ 
+ restorePyerr:
+     PyErr_SetRaisedException(exc);
+diff --git a/test_lsprof.py b/test_lsprof.py
+new file mode 100644
+index 00000000000..784dc2b1f11
+--- /dev/null
++++ b/test_lsprof.py
+@@ -0,0 +1,21 @@
++import cProfile
++import sys
++
++def recursive_function(n):
++    if n <= 0:
++        return 1
++    return recursive_function(n-1) + recursive_function(n-1)
++
++def main():
++    profiler = cProfile.Profile()
++    profiler.enable()
++    
++    # This should trigger multiple calls and potentially the use-after-free
++    result = recursive_function(10)
++    
++    profiler.disable()
++    profiler.print_stats()
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()

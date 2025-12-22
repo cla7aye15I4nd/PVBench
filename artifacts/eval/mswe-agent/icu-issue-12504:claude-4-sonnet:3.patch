@@ -1,0 +1,191 @@
+
+diff --git a/.gitignore b/.gitignore
+index 413dfb8e9ad..22e752d2658 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -985,3 +985,14 @@ tools/unicode/c/genuca/release
+ tools/unicode/c/genuca/x64
+ tools/unicode/c/genuca/x86
+ tools/unicodetools/com/ibm/rbm/lib
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/icu4c/source/i18n/persncal.cpp b/icu4c/source/i18n/persncal.cpp
+index f66ac676a4a..ebf0911f2a2 100644
+--- a/icu4c/source/i18n/persncal.cpp
++++ b/icu4c/source/i18n/persncal.cpp
+@@ -172,7 +172,7 @@ int32_t PersianCalendar::handleComputeMonthStart(int32_t eyear, int32_t month, U
+         eyear += ClockMath::floorDivide(month, 12, month);
+     }
+ 
+-    int32_t julianDay = PERSIAN_EPOCH - 1 + 365 * (eyear - 1) + ClockMath::floorDivide(8 * eyear + 21, 33);
++    int32_t julianDay = PERSIAN_EPOCH - 1 + 365 * (eyear - 1) + ClockMath::floorDivide((int64_t)8 * eyear + 21, 33);
+ 
+     if (month != 0) {
+         julianDay += kPersianNumDays[month];
+@@ -213,15 +213,23 @@ void PersianCalendar::handleComputeFields(int32_t julianDay, UErrorCode &/*statu
+     int32_t year, month, dayOfMonth, dayOfYear;
+ 
+     int32_t daysSinceEpoch = julianDay - PERSIAN_EPOCH;
+-    year = 1 + ClockMath::floorDivide(33 * daysSinceEpoch + 3, 12053);
++    year = 1 + ClockMath::floorDivide((int64_t)33 * daysSinceEpoch + 3, 12053);
+ 
+-    int32_t farvardin1 = 365 * (year - 1) + ClockMath::floorDivide(8 * year + 21, 33);
++    int32_t farvardin1 = 365 * (year - 1) + ClockMath::floorDivide((int64_t)8 * year + 21, 33);
+     dayOfYear = (daysSinceEpoch - farvardin1); // 0-based
+     if (dayOfYear < 216) { // Compute 0-based month
+         month = dayOfYear / 31;
+     } else {
+         month = (dayOfYear - 6) / 30;
+     }
++    
++    // Ensure month is within valid bounds (0-11) to prevent array access violation
++    if (month < 0) {
++        month = 0;
++    } else if (month > 11) {
++        month = 11;
++    }
++    
+     dayOfMonth = dayOfYear - kPersianNumDays[month] + 1;
+     ++dayOfYear; // Make it 1-based now
+ 
+diff --git a/icu4c/source/tools/escapesrc/Makefile b/icu4c/source/tools/escapesrc/Makefile
+new file mode 100644
+index 00000000000..57b31e27369
+--- /dev/null
++++ b/icu4c/source/tools/escapesrc/Makefile
+@@ -0,0 +1,112 @@
++## Makefile.in for ICU - tools/escapesrc
++## Copyright (C) 2016 and later: Unicode, Inc. and others.
++## License & terms of use: http://www.unicode.org/copyright.html
++## Copyright (c) 1999-2011, International Business Machines Corporation and
++## others. All Rights Reserved.
++## Steven R. Loomis
++
++# To avoid recursion
++SKIP_ESCAPING=YES
++
++## Source directory information
++srcdir = .
++top_srcdir = ../..
++
++top_builddir = ../..
++
++include $(top_builddir)/icudefs.mk
++
++## Build directory information
++subdir = tools/escapesrc
++
++TARGET_STUB_NAME = escapesrc
++
++SECTION = 8
++
++#MAN_FILES = $(TARGET_STUB_NAME).$(SECTION)
++
++## Extra files to remove for 'make clean'
++CLEANFILES = *~ $(DEPS) $(MAN_FILES) ./output-*.cpp
++
++## Target information
++TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++
++CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
++#LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC)
++LIBS += $(DEFAULT_LIBS) $(LIB_M)
++
++OBJECTS = escapesrc.o
++
++DEPS = $(OBJECTS:.o=.d)
++
++## List of phony targets
++.PHONY : all all-local install install-local clean clean-local	\
++distclean distclean-local dist dist-local check check-local install-man
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local
++install: install-local
++clean: clean-local
++distclean : distclean-local
++dist: dist-local
++check: all check-local
++
++all-local: $(TARGET) $(MAN_FILES)
++
++install-local: all-local install-man
++	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++
++install-man: $(MAN_FILES)
++#	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
++#	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
++
++
++dist-local:
++
++clean-local:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++	$(RMV) $(TARGET) $(OBJECTS)
++
++distclean-local: clean-local
++	$(RMV) Makefile
++
++check-local: all-local
++	@echo Testing test-nochange.cpp
++	@$(INVOKE) $(TARGET) $(srcdir)/test-nochange.cpp ./output-nochange.cpp
++	@-diff -I '#line.*' $(srcdir)/test-nochange.cpp ./output-nochange.cpp || (echo >&2 'warning: diff failed or not found' ; true)
++	@echo Testing test-simple.cpp
++	@$(INVOKE) $(TARGET) $(srcdir)/test-simple.cpp ./output-simple.cpp
++	@-diff -I '#line.*' $(srcdir)/expect-simple.cpp ./output-simple.cpp   || (echo >&2 'warning: diff failed or not found' ; true)
++
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++$(TARGET) : $(OBJECTS)
++	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
++	$(POST_BUILD_STEP)
++
++
++%.$(SECTION): $(srcdir)/%.$(SECTION).in
++	cd $(top_builddir) \
++	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++# depends on ICU being built
++gen-table: tblgen$(EXEEXT)
++	$(INVOKE) ./tblgen$(EXEEXT) > $(srcdir)/cptbl.h
++
++tblgen$(EXEEXT): tblgen.o
++	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS) $(LIBICUUC)
++
++ifeq (,$(MAKECMDGOALS))
++-include $(DEPS)
++else
++ifneq ($(patsubst %clean,,$(MAKECMDGOALS)),)
++-include $(DEPS)
++endif
++endif
++
+diff --git a/icu4c/source/tools/escapesrc/escapesrc.d b/icu4c/source/tools/escapesrc/escapesrc.d
+new file mode 100644
+index 00000000000..27af058792e
+--- /dev/null
++++ b/icu4c/source/tools/escapesrc/escapesrc.d
+@@ -0,0 +1,8 @@
++escapesrc.o escapesrc.d : escapesrc.cpp ../../common/unicode/utf8.h \
++  ../../common/unicode/umachine.h ../../common/unicode/ptypes.h \
++  ../../common/unicode/platform.h ../../common/unicode/uconfig.h \
++  ../../common/unicode/uvernum.h ../../common/unicode/urename.h \
++  ../../common/unicode/utf.h ../../common/unicode/utf16.h \
++  ../../common/unicode/utf_old.h cptbl.h ../../common/utf_impl.cpp \
++  ../../common/unicode/utypes.h ../../common/unicode/uversion.h \
++  ../../common/uassert.h

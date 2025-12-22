@@ -1,0 +1,20 @@
+diff --git a/Misc/NEWS.d/next/Core and Builtins/2023-08-31-21-29-28.gh-issue-108727.blNRGM.rst b/Misc/NEWS.d/next/Core and Builtins/2023-08-31-21-29-28.gh-issue-108727.blNRGM.rst
+new file mode 100644
+index 00000000000..34959ae3bb9
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core and Builtins/2023-08-31-21-29-28.gh-issue-108727.blNRGM.rst	
+@@ -0,0 +1,2 @@
++Define ``tp_dealloc`` for ``CounterOptimizer_Type``. This fixes a segfault
++on deallocation.
+diff --git a/Python/optimizer.c b/Python/optimizer.c
+index c311a03fa59..7472f52c50b 100644
+--- a/Python/optimizer.c
++++ b/Python/optimizer.c
+@@ -289,6 +289,7 @@ static PyTypeObject CounterOptimizer_Type = {
+     .tp_itemsize = 0,
+     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION,
+     .tp_methods = counter_methods,
++    .tp_dealloc = (destructor)PyObject_Del,
+ };
+ 
+ PyObject *

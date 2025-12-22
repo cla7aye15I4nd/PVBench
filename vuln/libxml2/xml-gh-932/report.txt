@@ -1,0 +1,15 @@
+==21604==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x75df9375381b bp 0x7ffd1bcac170 sp 0x7ffd1bcabed0 T0)
+==21604==The signal is caused by a READ memory access.
+==21604==Hint: address points to the zero page.
+    #0 0x75df9375381b in xmlSchematronFormatReport /tmp/xml-gh-932/build/schematron.c:1457:27
+    #1 0x75df937529bb in xmlSchematronReportSuccess /tmp/xml-gh-932/build/schematron.c:1572:22
+    #2 0x75df9374ee06 in xmlSchematronRunTest /tmp/xml-gh-932/build/schematron.c:1822:5
+    #3 0x75df9374e0a7 in xmlSchematronValidateDoc /tmp/xml-gh-932/build/schematron.c:1933:25
+    #4 0x5643b6ac59e5 in main /tmp/xml-gh-932/build/poc.c:75:18
+    #5 0x75df930431c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x75df9304328a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x5643b69ec3f4 in _start (/tmp/xml-gh-932/build/poc+0x2c3f4) (BuildId: 629873acfbd35f255648514b3d2514b05407b219)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/xml-gh-932/build/schematron.c:1457:27 in xmlSchematronFormatReport
+==21604==ABORTING

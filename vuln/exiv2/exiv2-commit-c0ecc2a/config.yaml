@@ -1,0 +1,14 @@
+id: exiv2-commit-c0ecc2a
+project: exiv2
+sanitizer: AddressSanitizer
+type: Integer Overflow
+binary: exiv2
+trigger_commit: f4a37c63f2f890c16ff7192fc89a75a7c34ae82b
+patch:
+  commit: c0ecc2ae36f34462be98623deb85ba1747ae2175
+  date: '2019-05-13T22:46:25+02:00'
+reference:
+- https://github.com/Exiv2/exiv2
+- https://github.com/Exiv2/exiv2/issues/None
+- https://github.com/Exiv2/exiv2/commit/f4a37c63f2f890c16ff7192fc89a75a7c34ae82b
+- https://github.com/Exiv2/exiv2/commit/c0ecc2ae36f34462be98623deb85ba1747ae2175

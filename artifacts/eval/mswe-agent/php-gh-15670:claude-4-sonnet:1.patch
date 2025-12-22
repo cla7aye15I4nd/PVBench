@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/inner_html_mixin.c b/ext/dom/inner_html_mixin.c
+index 262c85411aa..c0978961f0c 100644
+--- a/ext/dom/inner_html_mixin.c
++++ b/ext/dom/inner_html_mixin.c
+@@ -193,7 +193,10 @@ static xmlNodePtr dom_html_fragment_parsing_algorithm(dom_object *obj, xmlNodePt
+ 
+ 	const lxb_char_t *ns_uri;
+ 	size_t ns_uri_len;
+-	if (context_node->ns == NULL || context_node->ns->href == NULL) {
++	if (context_node->ns == NULL) {
++		ns_uri = (lxb_char_t *) "";
++		ns_uri_len = 0;
++	} else if (context_node->ns->href == NULL) {
+ 		ns_uri = (lxb_char_t *) "";
+ 		ns_uri_len = 0;
+ 	} else {

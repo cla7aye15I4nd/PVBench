@@ -1,0 +1,37 @@
+
+diff --git a/.gitignore b/.gitignore
+index 24208ddbb..e3bfbe6e6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -31,3 +31,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ # VS Code and Visual Studio
+ .vs
+ .vscode
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/reproduce_asan.sh b/reproduce_asan.sh
+new file mode 100755
+index 000000000..c7bef2778
+--- /dev/null
++++ b/reproduce_asan.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++echo "a" "?b:a"{1..10000} | build_asan/bin/hermesc -dump-ast -
+diff --git a/reproduce_bug.sh b/reproduce_bug.sh
+new file mode 100755
+index 000000000..351375951
+--- /dev/null
++++ b/reproduce_bug.sh
+@@ -0,0 +1,3 @@
++#!/bin/bash -eu
++echo "a" "?b:a"{1..10000} | build/bin/hermesc -dump-ast -
++echo "a" "?b"{1..10000} | build/bin/hermesc -dump-ast -

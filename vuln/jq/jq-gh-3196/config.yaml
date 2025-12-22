@@ -1,0 +1,14 @@
+id: jq-gh-3196
+project: jq
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+binary: jq_fuzz_fixed
+trigger_commit: 64bd8ba3749fe473b0708f999e088dfa94d37a2c
+patch:
+  commit: a09a4dfd55e6c24d04b35062ccfe4509748b1dd3
+  date: '2025-03-05T07:43:54+09:00'
+reference:
+- https://github.com/jqlang/jq
+- https://github.com/jqlang/jq/issues/3196
+- https://github.com/jqlang/jq/commit/64bd8ba3749fe473b0708f999e088dfa94d37a2c
+- https://github.com/jqlang/jq/commit/a09a4dfd55e6c24d04b35062ccfe4509748b1dd3

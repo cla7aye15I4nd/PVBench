@@ -1,0 +1,1149 @@
+
+diff --git a/.gitignore b/.gitignore
+index 463ce5df..cfb1fc2a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -77,3 +77,8 @@ venv/**
+ 
+ #MacOS system files
+ **/.DS_Store
++Build/
++bin/
++lib/
++*.out
++*.exe
+diff --git a/Packet++/src/Packet.cpp b/Packet++/src/Packet.cpp
+index 30a2790f..816f2960 100644
+--- a/Packet++/src/Packet.cpp
++++ b/Packet++/src/Packet.cpp
+@@ -46,66 +46,68 @@ namespace pcpp
+ 		m_RawPacket = new RawPacket(buffer, 0, time, false, LINKTYPE_ETHERNET);
+ 	}
+ 
++
+ 	void Packet::setRawPacket(RawPacket* rawPacket, bool freeRawPacket, ProtocolTypeFamily parseUntil,
+ 	                          OsiModelLayer parseUntilLayer)
+-	{
+-		destructPacketData();
++{
++	destructPacketData();
+ 
+-		m_FirstLayer = nullptr;
+-		m_LastLayer = nullptr;
+-		m_MaxPacketLen = rawPacket->getRawDataLen();
+-		m_FreeRawPacket = freeRawPacket;
+-		m_RawPacket = rawPacket;
+-		m_CanReallocateData = true;
+-		if (m_RawPacket == nullptr)
+-			return;
++	m_FreeRawPacket = freeRawPacket;
++	m_RawPacket = rawPacket;
++	m_CanReallocateData = true;
+ 
+-		LinkLayerType linkType = m_RawPacket->getLinkLayerType();
++	if (m_RawPacket == nullptr)
++		return;
++	if (m_RawPacket->getRawData() == nullptr)
++		return;
++	std::cout << "setRawPacket: m_RawPacket->getRawDataLen() = " << m_RawPacket->getRawDataLen() << std::endl;
+ 
+-		m_FirstLayer = createFirstLayer(linkType);
++	LinkLayerType linkType = m_RawPacket->getLinkLayerType();
+ 
+-		m_LastLayer = m_FirstLayer;
+-		Layer* curLayer = m_FirstLayer;
+-		while (curLayer != nullptr &&
+-		       (parseUntil == UnknownProtocol || !curLayer->isMemberOfProtocolFamily(parseUntil)) &&
+-		       curLayer->getOsiModelLayer() <= parseUntilLayer)
+-		{
+-			curLayer->parseNextLayer();
+-			curLayer->m_IsAllocatedInPacket = true;
+-			curLayer = curLayer->getNextLayer();
+-			if (curLayer != nullptr)
+-				m_LastLayer = curLayer;
+-		}
++	m_FirstLayer = createFirstLayer(linkType);
+ 
+-		if (curLayer != nullptr && curLayer->isMemberOfProtocolFamily(parseUntil))
+-		{
+-			curLayer->m_IsAllocatedInPacket = true;
+-		}
++	m_LastLayer = m_FirstLayer;
++	Layer* curLayer = m_FirstLayer;
++	while (curLayer != nullptr &&
++	       (parseUntil == UnknownProtocol || !curLayer->isMemberOfProtocolFamily(parseUntil)) &&
++	       curLayer->getOsiModelLayer() <= parseUntilLayer)
++	{
++		curLayer->parseNextLayer();
++		curLayer->m_IsAllocatedInPacket = true;
++		curLayer = curLayer->getNextLayer();
++		if (curLayer != nullptr)
++			m_LastLayer = curLayer;
++	}
+ 
+-		if (curLayer != nullptr && curLayer->getOsiModelLayer() > parseUntilLayer)
+-		{
+-			m_LastLayer = curLayer->getPrevLayer();
+-			delete curLayer;
+-			m_LastLayer->m_NextLayer = nullptr;
+-		}
++	if (curLayer != nullptr && curLayer->isMemberOfProtocolFamily(parseUntil))
++	{
++		curLayer->m_IsAllocatedInPacket = true;
++	}
++
++	if (curLayer != nullptr && curLayer->getOsiModelLayer() > parseUntilLayer)
++	{
++		m_LastLayer = curLayer->getPrevLayer();
++		delete curLayer;
++		m_LastLayer->m_NextLayer = nullptr;
++	}
+ 
+-		if (m_LastLayer != nullptr && parseUntil == UnknownProtocol && parseUntilLayer == OsiModelLayerUnknown)
++	if (m_LastLayer != nullptr && parseUntil == UnknownProtocol && parseUntilLayer == OsiModelLayerUnknown)
++	{
++		// find if there is data left in the raw packet that doesn't belong to any layer. In that case it's probably
++		// a packet trailer. create a PacketTrailerLayer layer and add it at the end of the packet
++		int trailerLen = (int)((m_RawPacket->getRawData() + m_RawPacket->getRawDataLen()) -
++		                       (m_LastLayer->getData() + m_LastLayer->getDataLen()));
++		if (trailerLen > 0)
+ 		{
+-			// find if there is data left in the raw packet that doesn't belong to any layer. In that case it's probably
+-			// a packet trailer. create a PacketTrailerLayer layer and add it at the end of the packet
+-			int trailerLen = (int)((m_RawPacket->getRawData() + m_RawPacket->getRawDataLen()) -
+-			                       (m_LastLayer->getData() + m_LastLayer->getDataLen()));
+-			if (trailerLen > 0)
+-			{
+-				PacketTrailerLayer* trailerLayer = new PacketTrailerLayer(
+-				    (uint8_t*)(m_LastLayer->getData() + m_LastLayer->getDataLen()), trailerLen, m_LastLayer, this);
++			PacketTrailerLayer* trailerLayer = new PacketTrailerLayer(
++			    (uint8_t*)(m_LastLayer->getData() + m_LastLayer->getDataLen()), trailerLen, m_LastLayer, this);
+ 
+-				trailerLayer->m_IsAllocatedInPacket = true;
+-				m_LastLayer->setNextLayer(trailerLayer);
+-				m_LastLayer = trailerLayer;
+-			}
++			trailerLayer->m_IsAllocatedInPacket = true;
++			m_LastLayer->setNextLayer(trailerLayer);
++			m_LastLayer = trailerLayer;
+ 		}
+ 	}
++}
+ 
+ 	Packet::Packet(RawPacket* rawPacket, bool freeRawPacket, ProtocolType parseUntil, OsiModelLayer parseUntilLayer)
+ 	{
+diff --git a/install/include/pcapplusplus/ArpLayer.h b/install/include/pcapplusplus/ArpLayer.h
+new file mode 100644
+index 00000000..a42db627
+--- /dev/null
++++ b/install/include/pcapplusplus/ArpLayer.h
+@@ -0,0 +1,179 @@
++#pragma once
++
++#include "Layer.h"
++#include "IpAddress.h"
++#include "MacAddress.h"
++
++/// @file
++
++/**
++ * \namespace pcpp
++ * \brief The main namespace for the PcapPlusPlus lib
++ */
++namespace pcpp
++{
++
++	/**
++	 * @struct arphdr
++	 * Represents an ARP protocol header
++	 */
++#pragma pack(push, 1)
++	struct arphdr
++	{
++		/** Hardware type (HTYPE) */
++		uint16_t hardwareType;
++		/** Protocol type (PTYPE). The permitted PTYPE values share a numbering space with those for EtherType */
++		uint16_t protocolType;
++		/** Hardware address length (HLEN). For IPv4, this has the value 0x0800 */
++		uint8_t hardwareSize;
++		/** Protocol length (PLEN). Length (in octets) of addresses used in the upper layer protocol. (The upper layer
++		 * protocol specified in PTYPE.) IPv4 address size is 4 */
++		uint8_t protocolSize;
++		/** Specifies the operation that the sender is performing: 1 (::ARP_REQUEST) for request, 2 (::ARP_REPLY) for
++		 * reply */
++		uint16_t opcode;
++		/** Sender hardware address (SHA) */
++		uint8_t senderMacAddr[6];
++		/** Sender protocol address (SPA) */
++		uint32_t senderIpAddr;
++		/** Target hardware address (THA) */
++		uint8_t targetMacAddr[6];
++		/** Target protocol address (TPA) */
++		uint32_t targetIpAddr;
++	};
++#pragma pack(pop)
++
++	/**
++	 * An enum for ARP message type
++	 */
++	enum ArpOpcode
++	{
++		ARP_REQUEST = 0x0001,  ///< ARP request
++		ARP_REPLY = 0x0002     ///< ARP reply (response)
++	};
++
++	/**
++	 * @class ArpLayer
++	 * Represents an ARP protocol layer. Currently only IPv4 ARP messages are supported
++	 */
++	class ArpLayer : public Layer
++	{
++	public:
++		/**
++		 * A constructor that creates the layer from an existing packet raw data
++		 * @param[in] data A pointer to the raw data (will be casted to @ref arphdr)
++		 * @param[in] dataLen Size of the data in bytes
++		 * @param[in] prevLayer A pointer to the previous layer
++		 * @param[in] packet A pointer to the Packet instance where layer will be stored in
++		 */
++		ArpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
++		    : Layer(data, dataLen, prevLayer, packet, ARP)
++		{
++			m_DataLen = sizeof(arphdr);
++		}
++
++		/**
++		 * A constructor that allocates a new ARP header
++		 * @param[in] opCode ARP message type (ARP request or ARP reply)
++		 * @param[in] senderMacAddr The sender MAC address (will be put in arphdr#senderMacAddr)
++		 * @param[in] targetMacAddr The target MAC address (will be put in arphdr#targetMacAddr)
++		 * @param[in] senderIpAddr The sender IP address (will be put in arphdr#senderIpAddr)
++		 * @param[in] targetIpAddr The target IP address (will be put in arphdr#targetIpAddr)
++		 */
++		ArpLayer(ArpOpcode opCode, const MacAddress& senderMacAddr, const MacAddress& targetMacAddr,
++		         const IPv4Address& senderIpAddr, const IPv4Address& targetIpAddr);
++
++		~ArpLayer()
++		{}
++
++		/**
++		 * Get a pointer to the ARP header. Notice this points directly to the data, so every change will change the
++		 * actual packet data
++		 * @return A pointer to the @ref arphdr
++		 */
++		inline arphdr* getArpHeader() const
++		{
++			return (arphdr*)m_Data;
++		}
++
++		/**
++		 * Get the sender hardware address (SHA) in the form of MacAddress
++		 * @return A MacAddress containing the sender hardware address (SHA)
++		 */
++		inline MacAddress getSenderMacAddress() const
++		{
++			return MacAddress(getArpHeader()->senderMacAddr);
++		}
++
++		/**
++		 * Get the target hardware address (THA) in the form of MacAddress
++		 * @return A MacAddress containing the target hardware address (THA)
++		 */
++		inline MacAddress getTargetMacAddress() const
++		{
++			return MacAddress(getArpHeader()->targetMacAddr);
++		}
++
++		/**
++		 * Get the sender protocol address (SPA) in the form of IPv4Address
++		 * @return An IPv4Address containing the sender protocol address (SPA)
++		 */
++		inline IPv4Address getSenderIpAddr() const
++		{
++			return getArpHeader()->senderIpAddr;
++		}
++
++		/**
++		 * Get the target protocol address (TPA) in the form of IPv4Address
++		 * @return An IPv4Address containing the target protocol address (TPA)
++		 */
++		inline IPv4Address getTargetIpAddr() const
++		{
++			return getArpHeader()->targetIpAddr;
++		}
++
++		// implement abstract methods
++
++		/**
++		 * Does nothing for this layer (ArpLayer is always last)
++		 */
++		void parseNextLayer()
++		{}
++
++		/**
++		 * @return The size of @ref arphdr
++		 */
++		size_t getHeaderLen() const
++		{
++			return sizeof(arphdr);
++		}
++
++		/**
++		 * Calculate the following fields:
++		 * - @ref arphdr#hardwareType = Ethernet (1)
++		 * - @ref arphdr#hardwareSize = 6
++		 * - @ref arphdr#protocolType = ETHERTYPE_IP (assume IPv4 over ARP)
++		 * - @ref arphdr#protocolSize = 4 (assume IPv4 over ARP)
++		 * - if it's an ARP request: @ref arphdr#targetMacAddr = MacAddress("00:00:00:00:00:00")
++		 */
++		void computeCalculateFields();
++
++		/**
++		 * Is this packet an ARP request?
++		 */
++		bool isRequest() const;
++
++		/**
++		 * Is this packet an ARP reply?
++		 */
++		bool isReply() const;
++
++		std::string toString() const;
++
++		OsiModelLayer getOsiModelLayer() const
++		{
++			return OsiModelNetworkLayer;
++		}
++	};
++
++}  // namespace pcpp
+diff --git a/install/include/pcapplusplus/Asn1Codec.h b/install/include/pcapplusplus/Asn1Codec.h
+new file mode 100644
+index 00000000..7b5bffef
+--- /dev/null
++++ b/install/include/pcapplusplus/Asn1Codec.h
+@@ -0,0 +1,582 @@
++#pragma once
++
++#include <string>
++#include <memory>
++#include <typeinfo>
++#include <stdexcept>
++#include "PointerVector.h"
++
++/// @file
++
++/**
++ * \namespace pcpp
++ * \brief The main namespace for the PcapPlusPlus lib
++ */
++namespace pcpp
++{
++	/**
++	 * An enum for representing ASN.1 tag class
++	 */
++	enum class Asn1TagClass : uint8_t
++	{
++		/** The Universal tag class */
++		Universal = 0,
++		/** The Application tag class */
++		Application = 1,
++		/** The Context-Specific tag class */
++		ContextSpecific = 2,
++		/** The Private tag class */
++		Private = 3,
++	};
++
++	/**
++	 * An enum for representing ASN.1 Universal tag types
++	 */
++	enum class Asn1UniversalTagType : uint8_t
++	{
++		/** The reserved identifier for the End-of-Contents marker in an indefinite length encoding */
++		EndOfContent = 0,
++		/** The universal tag type for Boolean */
++		Boolean = 1,
++		/** The universal tag type for Integer */
++		Integer = 2,
++		/** The universal tag type for Bit String */
++		BitString = 3,
++		/** The universal tag type for Octet String */
++		OctetString = 4,
++		/** The universal tag type for Null */
++		Null = 5,
++		/** The universal tag type for Object Identifier */
++		ObjectIdentifier = 6,
++		/** The universal tag type for Object Descriptor */
++		ObjectDescriptor = 7,
++		/** The universal tag type for External */
++		External = 8,
++		/** The universal tag type for Real */
++		Real = 9,
++		/** The universal tag type for Enumerated */
++		Enumerated = 10,
++		/** The universal tag type for Embedded-PDV */
++		EmbeddedPDV = 11,
++		/** The universal tag type for UTF8 String */
++		UTF8String = 12,
++		/** The universal tag type for Relative Object Identifier */
++		RelativeObjectIdentifier = 13,
++		/** The universal tag type for Time */
++		Time = 14,
++		/** A reserved value */
++		Reserved = 15,
++		/** The universal tag type Sequence */
++		Sequence = 16,
++		/** The universal tag type for Set */
++		Set = 17,
++		/** The universal tag type for Numeric String */
++		NumericString = 18,
++		/** The universal tag type for Printable String */
++		PrintableString = 19,
++		/** The universal tag type for T61String */
++		T61String = 20,
++		/** The universal tag type for Videotex String */
++		VideotexString = 21,
++		/** The universal tag type for IA5String */
++		IA5String = 22,
++		/** The universal tag type for UTC time */
++		UTCTime = 23,
++		/** The universal tag type for Generalized time */
++		GeneralizedTime = 24,
++		/** The universal tag type for GraphicString */
++		GraphicString = 25,
++		/** The universal tag type for VisibleString */
++		VisibleString = 26,
++		/** The universal tag type for GeneralString */
++		GeneralString = 27,
++		/** The universal tag type for UniversalString */
++		UniversalString = 28,
++		/** The universal tag type for CharacterString */
++		CharacterString = 29,
++		/** The universal tag type for BMPString */
++		BMPString = 30,
++		/** The universal tag type for Date */
++		Date = 31,
++		/** The universal tag type for Time of Day */
++		TimeOfDay = 32,
++		/** The universal tag type for Date-Time */
++		DateTime = 33,
++		/** The universal tag type for Duration */
++		Duration = 34,
++		/** The universal tag type for Object Identifier Internationalized Resource Identifier (IRI) */
++		ObjectIdentifierIRI = 35,
++		/** The universal tag type for Relative Object Identifier Internationalized Resource Identifier (IRI) */
++		RelativeObjectIdentifierIRI = 36,
++		/** A non-applicable value */
++		NotApplicable = 255
++	};
++
++	/**
++	 * @class Asn1Record
++	 * Represents an ASN.1 record, as described in ITU-T Recommendation X.680:
++	 * <https://www.itu.int/rec/T-REC-X.680/en>
++	 *
++	 * <https://en.wikipedia.org/wiki/ASN.1>
++	 */
++	class Asn1Record
++	{
++	public:
++		/**
++		 * A static method to decode a byte array into an Asn1Record
++		 * @param data A byte array to decode
++		 * @param dataLen The byte array length
++		 * @param lazy Use lazy decoding, set to true by default. Lazy decoding entails delaying the decoding
++		 * of the record value until it is accessed
++		 * @return A smart poi...nt8_t virtualRouterID);
++
++		/**
++		 * @return The priority in this message
++		 */
++		uint8_t getPriority() const;
++
++		/**
++		 * @return An enum describing VRRP priority
++		 */
++		VrrpPriority getPriorityAsEnum() const;
++
++		/**
++		 * Set the priority
++		 * @param priority new priority to set
++		 */
++		void setPriority(uint8_t priority);
++
++		/**
++		 * @return VRRP checksum of this message
++		 */
++		uint16_t getChecksum() const;
++
++		/**
++		 * Fill the checksum from header and data and write the result to @ref vrrp_header#checksum
++		 */
++		void calculateAndSetChecksum();
++
++		/**
++		 * Calculate the checksum from header and data and write the result to @ref vrrp_header#checksum
++		 * @return The checksum result
++		 */
++		virtual uint16_t calculateChecksum() const = 0;
++
++		/**
++		 * @return True if VRRP checksum is correct
++		 */
++		bool isChecksumCorrect() const;
++
++		/**
++		 * @return The count of VRRP virtual IP addresses in this message
++		 */
++		uint8_t getIPAddressesCount() const;
++
++		/**
++		 * @return A list of the virtual IP addresses in this message
++		 */
++		std::vector<IPAddress> getIPAddresses() const;
++
++		/**
++		 * Add a list of virtual IP addresses at a the end of the virtual IP address list. The
++		 * vrrp_header#ipAddressCount field will be incremented accordingly
++		 * @param[in] ipAddresses A vector containing all the virtual IP address
++		 * @return true if added successfully, false otherwise
++		 */
++		bool addIPAddresses(const std::vector<IPAddress>& ipAddresses);
++
++		/**
++		 * Add a virtual IP address at a the end of the virtual IP address list. The vrrp_header#ipAddressCount field
++		 * will be incremented accordingly
++		 * @param[in] ipAddress Virtual IP address to add
++		 * @return true if add successfully, false otherwise
++		 */
++		bool addIPAddress(const IPAddress& ipAddress);
++
++		/**
++		 * Remove a virtual IP address at a certain index. The vrrp_header#ipAddressCount field will be decremented
++		 * accordingly
++		 * @param[in] index The index of the virtual IP address to be removed
++		 * @return True if virtual IP address was removed successfully or false otherwise. If false is returned an
++		 * appropriate error message will be printed to log
++		 */
++		bool removeIPAddressAtIndex(int index);
++
++		/**
++		 * Remove all virtual IP addresses in the message. The vrrp_header#ipAddressCount field will be set to 0
++		 * @return True if virtual IP addresses were cleared successfully or false otherwise. If false is returned an
++		 * appropriate error message will be printed to log
++		 */
++		bool removeAllIPAddresses();
++
++		// implement abstract methods
++
++		/**
++		 * Does nothing for this layer (VRRP layer is always last)
++		 */
++		void parseNextLayer() override
++		{}
++
++		/**
++		 * Calculate the VRRP checksum
++		 */
++		void computeCalculateFields() override;
++
++		/**
++		 * @return The message size in bytes which include the size of the basic header + the size of the IP address(es)
++		 */
++		size_t getHeaderLen() const override
++		{
++			return m_DataLen;
++		}
++
++		std::string toString() const override;
++
++		OsiModelLayer getOsiModelLayer() const override
++		{
++			return OsiModelNetworkLayer;
++		}
++	};
++
++	/**
++	 * @class VrrpV2Layer
++	 * Represents VRRPv2 (Virtual Router Redundancy Protocol ver 2) layer. This class represents all the different
++	 * messages of VRRPv2
++	 */
++	class VrrpV2Layer : public VrrpLayer
++	{
++	private:
++		struct vrrpv2_auth_adv
++		{
++			uint8_t authType;
++			uint8_t advInt;
++		};
++
++	public:
++		/**
++		 * VRRP v2 authentication types
++		 */
++		enum class VrrpAuthType : uint8_t
++		{
++			/** No Authentication */
++			NoAuthentication = 0,
++			/** Simple Text Password */
++			SimpleTextPassword = 1,
++			/** IP Authentication Header */
++			IPAuthenticationHeader = 2,
++			/** Cisco VRRP MD5 Authentication */
++			MD5 = 3,
++			/** Other/Unknown Authentication Type */
++			Other = 4
++		};
++
++		/** A constructor that creates the layer from an existing packet raw data
++		 * @param[in] data A pointer to the raw data
++		 * @param[in] dataLen Size of the data in bytes
++		 * @param[in] prevLayer A pointer to the previous layer
++		 * @param[in] packet A pointer to the Packet instance where layer will be stored in
++		 */
++		VrrpV2Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
++		    : VrrpLayer(data, dataLen, prevLayer, packet, VRRPv2, IPAddress::IPv4AddressType)
++		{}
++
++		/**
++		 * A constructor that allocates a new VRRP v2 layer
++		 * @param virtualRouterId Virtual router ID
++		 * @param priority Priority
++		 * @param advInt Advertisement interval
++		 * @param authType Authentication type (default value is 0)
++		 */
++		explicit VrrpV2Layer(uint8_t virtualRouterId, uint8_t priority, uint8_t advInt, uint8_t authType = 0);
++
++		/**
++		 * A destructor for this layer (does nothing)
++		 */
++		~VrrpV2Layer()
++		{}
++
++		/**
++		 * @return The VRRP advertisement interval in this message
++		 */
++		uint8_t getAdvInt() const;
++
++		/**
++		 * Set advertisement interval value in this message
++		 * @param advInt value to set
++		 */
++		void setAdvInt(uint8_t advInt);
++
++		/**
++		 * @return The authentication type in this message
++		 */
++		uint8_t getAuthType() const;
++
++		/**
++		 * @return The VRRP authentication type as enum
++		 */
++		VrrpAuthType getAuthTypeAsEnum() const;
++
++		/**
++		 * Set VRRP authentication type
++		 * @param authType value to set
++		 */
++		void setAuthType(uint8_t authType);
++
++		// implement abstract methods
++
++		/**
++		 * Calculate the checksum from header and data and write the result to @ref vrrp_header#checksum
++		 * @return The checksum result
++		 */
++		uint16_t calculateChecksum() const override;
++	};
++
++	/**
++	 * @class VrrpV3Layer
++	 * Represents VRRPv3 (Virtual Router Redundancy Protocol ver 3) layer. This class represents all the different
++	 * messages of VRRP
++	 */
++	class VrrpV3Layer : public VrrpLayer
++	{
++	private:
++		struct vrrpv3_rsvd_adv
++		{
++			uint16_t maxAdvInt;
++		};
++
++	public:
++		/** A constructor that creates the layer from an existing packet raw data
++		 * @param[in] data A pointer to the raw data
++		 * @param[in] dataLen Size of the data in bytes
++		 * @param[in] prevLayer A pointer to the previous layer
++		 * @param[in] packet A pointer to the Packet instance where layer will be stored in
++		 * @param[in] addressType The IP address type to set for this layer
++		 */
++		VrrpV3Layer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet, IPAddress::AddressType addressType)
++		    : VrrpLayer(data, dataLen, prevLayer, packet, VRRPv3, addressType)
++		{}
++
++		/**
++		 * A constructor that allocates a new VRRPv3
++		 * @param addressType The IP address type to set for this layer
++		 * @param virtualRouterId Virtual router ID
++		 * @param priority Priority
++		 * @param maxAdvInt Max advertisement interval
++		 */
++		explicit VrrpV3Layer(IPAddress::AddressType addressType, uint8_t virtualRouterId, uint8_t priority,
++		                     uint16_t maxAdvInt);
++
++		/**
++		 * A destructor for this layer (does nothing)
++		 */
++		~VrrpV3Layer()
++		{}
++
++		/**
++		 * @return The maximum advertisement interval in this message
++		 */
++		uint16_t getMaxAdvInt() const;
++
++		/**
++		 * Set the maximum advertisement interval value
++		 * @param maxAdvInt Value to set
++		 */
++		void setMaxAdvInt(uint16_t maxAdvInt);
++
++		// implement abstract methods
++
++		/**
++		 * Calculate the checksum from header and data and write the result to @ref vrrp_header#checksum
++		 * @return The checksum result
++		 */
++		uint16_t calculateChecksum() const override;
++	};
++}  // namespace pcpp
+diff --git a/install/include/pcapplusplus/VxlanLayer.h b/install/include/pcapplusplus/VxlanLayer.h
+new file mode 100644
+index 00000000..87673d18
+--- /dev/null
++++ b/install/include/pcapplusplus/VxlanLayer.h
+@@ -0,0 +1,158 @@
++#pragma once
++
++#include "Layer.h"
++
++/// @file
++
++namespace pcpp
++{
++
++	/**
++	 * @struct vxlan_header
++	 * Represents a VXLAN protocol header
++	 */
++#pragma pack(push, 1)
++	struct vxlan_header
++	{
++#if (BYTE_ORDER == LITTLE_ENDIAN)
++		/** Reserved bits */
++		uint16_t reserved6_8 : 3;
++		/** VNI present flag */
++		uint16_t vniPresentFlag : 1;
++		/** Reserved bits */
++		uint16_t reserved2_4 : 3;
++		/** GBP flag */
++		uint16_t gbpFlag : 1;
++		/** Reserved bits */
++		uint16_t reserved14_16 : 3;
++		/** Policy applied flag */
++		uint16_t policyAppliedFlag : 1;
++		/** Reserved bits */
++		uint16_t reserved11_12 : 2;
++		/** Don't learn flag */
++		uint16_t dontLearnFlag : 1;
++		/** Reserved bits */
++		uint16_t reserved9 : 1;
++#else
++		/** Reserved bits */
++		uint16_t reserved9 : 1;
++		/** Don't learn flag */
++		uint16_t dontLearnFlag : 1;
++		/** Reserved bits */
++		uint16_t reserved11_12 : 2;
++		/** Policy applied flag */
++		uint16_t policyAppliedFlag : 1;
++		/** Reserved bits */
++		uint16_t reserved14_16 : 3;
++		/** GBP flag */
++		uint16_t gbpFlag : 1;
++		/** Reserved bits */
++		uint16_t reserved2_4 : 3;
++		/** VNI present flag */
++		uint16_t vniPresentFlag : 1;
++		/** Reserved bits */
++		uint16_t reserved6_8 : 3;
++#endif
++
++		/** Group Policy ID */
++		uint16_t groupPolicyID;
++
++		/** VXLAN Network ID (VNI) */
++		uint32_t vni : 24;
++		/** Reserved bits */
++		uint32_t pad : 8;
++	};
++#pragma pack(pop)
++
++	/**
++	 * @class VxlanLayer
++	 * Represents a VXLAN (Virtual eXtensible Local Area Network) protocol layer
++	 */
++	class VxlanLayer : public Layer
++	{
++	public:
++		/** A constructor that creates the layer from an existing packet raw data
++		 * @param[in] data A pointer to the raw data
++		 * @param[in] dataLen Size of the data in bytes
++		 * @param[in] prevLayer A pointer to the previous layer
++		 * @param[in] packet A pointer to the Packet instance where layer will be stored in
++		 */
++		VxlanLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
++		    : Layer(data, dataLen, prevLayer, packet, VXLAN)
++		{}
++
++		/**
++		 * A constructor that creates a new VXLAN header and allocates the data. Note: the VNI present flag is set
++		 * automatically
++		 * @param[in] vni VNI (VXLAN Network ID) to set. Optional parameter (default is 0)
++		 * @param[in] groupPolicyID Group Policy ID to set. Optional parameter (default is 0)
++		 * @param[in] setGbpFlag Set GBP flag. Optional parameter (default is false)
++		 * @param[in] setPolicyAppliedFlag Set Policy Applied flag. Optional parameter (default is false)
++		 * @param[in] setDontLearnFlag Set Don't Learn flag. Optional parameter (default is false)
++		 */
++		explicit VxlanLayer(uint32_t vni = 0, uint16_t groupPolicyID = 0, bool setGbpFlag = false,
++		                    bool setPolicyAppliedFlag = false, bool setDontLearnFlag = false);
++
++		~VxlanLayer()
++		{}
++
++		/**
++		 * Get a pointer to the VXLAN header. Notice this points directly to the data, so every change will change the
++		 * actual packet data
++		 * @return A pointer to the vxlan_header
++		 */
++		vxlan_header* getVxlanHeader() const
++		{
++			return (vxlan_header*)m_Data;
++		}
++
++		/**
++		 * @return The VXLAN Network ID (VNI) value
++		 */
++		uint32_t getVNI() const;
++
++		/**
++		 * Set VXLAN Network ID (VNI) value
++		 * @param[in] vni VNI value to set
++		 */
++		void setVNI(uint32_t vni);
++
++		/**
++		 * A static method that checks whether the port is considered as VxLAN
++		 * @param[in] port The port number to be checked
++		 */
++		static bool isVxlanPort(uint16_t port)
++		{
++			return port == 4789;
++		}
++
++		// implement abstract methods
++
++		/**
++		 * Next layer for VXLAN is always Ethernet
++		 */
++		void parseNextLayer();
++
++		/**
++		 * @return Size of vxlan_header
++		 */
++		size_t getHeaderLen() const
++		{
++			return sizeof(vxlan_header);
++		}
++
++		/**
++		 * Does nothing for this layer
++		 */
++		void computeCalculateFields()
++		{}
++
++		std::string toString() const;
++
++		OsiModelLayer getOsiModelLayer() const
++		{
++			return OsiModelDataLinkLayer;
++		}
++	};
++
++}  // namespace pcpp
+diff --git a/install/include/pcapplusplus/WakeOnLanLayer.h b/install/include/pcapplusplus/WakeOnLanLayer.h
+new file mode 100644
+index 00000000..358bbb5a
+--- /dev/null
++++ b/install/include/pcapplusplus/WakeOnLanLayer.h
+@@ -0,0 +1,182 @@
++#pragma once
++
++#include "IpAddress.h"
++#include "Layer.h"
++#include "MacAddress.h"
++
++/// @file
++
++/**
++ * \namespace pcpp
++ * \brief The main namespace for the PcapPlusPlus lib
++ */
++namespace pcpp
++{
++	/**
++	 * Class for representing the Wake on LAN Layer
++	 */
++	class WakeOnLanLayer : public Layer
++	{
++	private:
++		void init(uint16_t len);
++
++	public:
++		/**
++		 * @struct wol_header
++		 * Wake On LAN protocol header
++		 */
++#pragma pack(push, 1)
++		struct wol_header
++		{
++			/// Sync stream (FF FF FF FF FF FF)
++			uint8_t sync[6];
++			/// Target MAC address repeated 16 times
++			uint8_t addrBody[6 * 16];
++		};
++#pragma pack(pop)
++
++		/**
++		 * A constructor that creates the layer from an existing packet raw data
++		 * @param[in] data A pointer to the raw data
++		 * @param[in] dataLen Size of the data in bytes
++		 * @param[in] prevLayer A pointer to the previous layer
++		 * @param[in] packet A pointer to the Packet instance where layer will be stored in
++		 */
++		WakeOnLanLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
++		    : Layer(data, dataLen, prevLayer, packet, WakeOnLan)
++		{}
++
++		/**
++		 * Construct a new Wake On Lan Layer with provided values
++		 * @param[in] targetAddr Target MAC address
++		 */
++		explicit WakeOnLanLayer(const pcpp::MacAddress& targetAddr);
++
++		/**
++		 * Construct a new Wake On Lan Layer with provided values
++		 * @param[in] targetAddr Target MAC address
++		 * @param[in] password Password as array
++		 * @param[in] len Length of the password array, length of the password should be less than 6 bytes
++		 */
++		WakeOnLanLayer(const pcpp::MacAddress& targetAddr, uint8_t* password, uint8_t len);
++
++		/**
++		 * Construct a new Wake On Lan Layer with provided values
++		 * @param[in] targetAddr Target MAC address
++		 * @param[in] password Password as MAC address
++		 */
++		WakeOnLanLayer(const pcpp::MacAddress& targetAddr, const pcpp::MacAddress& password);
++
++		/**
++		 * Construct a new Wake On Lan Layer with provided values
++		 * @param[in] targetAddr Target MAC address
++		 * @param[in] password Password as IPv4 address
++		 */
++		WakeOnLanLayer(const pcpp::MacAddress& targetAddr, const IPv4Address& password);
++
++		/**
++		 * Get a pointer to the Wake On LAN header. Notice this points directly to the data, so every change will change
++		 * the actual packet data
++		 * @return A pointer to the wol_header
++		 */
++		inline wol_header* getWakeOnLanHeader() const
++		{
++			return (wol_header*)m_Data;
++		}
++
++		/**
++		 * Get the target MAC address of the command
++		 * @return MAC address of the target
++		 */
++		pcpp::MacAddress getTargetAddr() const;
++
++		/**
++		 * Set the target MAC address
++		 * @param[in] targetAddr MAC address of the target
++		 */
++		void setTargetAddr(const pcpp::MacAddress& targetAddr);
++
++		/**
++		 * Get the password of the command
++		 * @return Returns the password if exists, empty string otherwise
++		 */
++		std::string getPassword() const;
++
++		/**
++		 * Set the password of the command
++		 * @param[in] password Password as array
++		 * @param[in] len Length of the password array, length of the password should be less than 6 bytes
++		 * @return True if operation successful, false otherwise
++		 */
++		bool setPassword(const uint8_t* password, uint8_t len);
++
++		/**
++		 * Set the password of the command
++		 * @param[in] password Password as string. Length of the password should be less than 6 bytes
++		 * @return True if operation successful, false otherwise
++		 */
++		bool setPassword(const std::string& password);
++
++		/**
++		 * Set the password of the command
++		 * @param[in] addr Password as MAC address
++		 * @return True if operation successful, false otherwise
++		 */
++		bool setPassword(const MacAddress& addr);
++
++		/**
++		 * Set the password of the command
++		 * @param addr Password as IPv4 address
++		 * @return True if operation successful, false otherwise
++		 */
++		bool setPassword(const IPv4Address& addr);
++
++		/**
++		 * A static method that checks whether the port is considered as Wake on LAN
++		 * @param[in] port The port number to be checked
++		 */
++		static bool isWakeOnLanPort(uint16_t port)
++		{
++			return (port == 0) || (port == 7) || (port == 9);
++		}
++
++		/**
++		 * A static method that takes a byte array and detects whether it is a Wake on LAN message
++		 * @param[in] data A byte array
++		 * @param[in] dataSize The byte array size (in bytes)
++		 * @return True if the data is identified as Wake on LAN message
++		 */
++		static bool isDataValid(const uint8_t* data, size_t dataSize);
++
++		// overridden methods
++
++		/// Parses the next layer. Wake on LAN is the always last so does nothing for this layer
++		void parseNextLayer()
++		{}
++
++		/**
++		 * @return Get the size of the layer
++		 */
++		size_t getHeaderLen() const
++		{
++			return m_DataLen;
++		}
++
++		/// Does nothing for this layer
++		void computeCalculateFields()
++		{}
++
++		/**
++		 * @return The OSI layer level of Wake on LAN (Data Link Layer)
++		 */
++		OsiModelLayer getOsiModelLayer() const
++		{
++			return OsiModelDataLinkLayer;
++		}
++
++		/**
++		 * @return Returns the protocol info as readable string
++		 */
++		std::string toString() const;
++	};
++}  // namespace pcpp
+diff --git a/poc b/poc
+new file mode 100755
+index 00000000..72b6d729
+Binary files /dev/null and b/poc differ
+diff --git a/poc.cpp b/poc.cpp
+new file mode 100644
+index 00000000..c53e23b1
+--- /dev/null
++++ b/poc.cpp
+@@ -0,0 +1,68 @@
++#include <iostream>
++#include <fstream>
++#include <cstring>
++#include "Packet.h"
++
++int getFileLength(const char* filename)
++{
++    std::ifstream infile(filename, std::ifstream::binary);
++    if (!infile)
++        return -1;
++    infile.seekg(0, infile.end);
++    int length = infile.tellg();
++    infile.close();
++    return length;
++}
++
++uint8_t* readFileIntoBuffer(const char* filename, int& bufferLength)
++{
++    std::ifstream infile(filename);
++    if (!infile)
++        return nullptr;
++
++    std::string hexdata;
++    std::string line;
++    while (std::getline(infile, line)) {
++        for (char c : line) {
++            if (isxdigit(c))
++                hexdata += c;
++        }
++    }
++    infile.close();
++
++    bufferLength = hexdata.length() / 2;
++    uint8_t* result = new uint8_t[bufferLength];
++    for (int i = 0; i < bufferLength; ++i) {
++        std::string byteString = hexdata.substr(2 * i, 2);
++        result[i] = (uint8_t)strtol(byteString.c_str(), nullptr, 16);
++    }
++    return result;
++}
++
++#define READ_FILE_INTO_BUFFER(num, filename)                                                                           \
++    int bufferLength##num = 0;                                                                                         \
++    uint8_t* buffer##num = readFileIntoBuffer(filename, bufferLength##num);                                
++
++#define READ_FILE_AND_CREATE_PACKET(num, filename)                                                                     \
++    READ_FILE_INTO_BUFFER(num, filename);                                                                              \
++    pcpp::RawPacket rawPacket##num(static_cast<const uint8_t*>(buffer##num), bufferLength##num, time, true)
++
++int main(int argc, char* argv[]) {
++    timeval time;
++    gettimeofday(&time, nullptr);
++
++    READ_FILE_AND_CREATE_PACKET(0, "Tests/Packet++Test/PacketExamples/TcpPacketWithOptions3.dat");
++
++    READ_FILE_AND_CREATE_PACKET(0, "Tests/Packet++Test/PacketExamples/TcpPacketWithOptions3.dat");
++    pcpp::Packet packet0(&rawPacket0, pcpp::OsiModelPhysicalLayer);
++    packet0.getLastLayer();
++    packet0.getFirstLayer();
++
++    READ_FILE_AND_CREATE_PACKET(1, "Tests/Packet++Test/PacketExamples/TcpPacketWithOptions3.dat");
++    pcpp::Packet packet1(&rawPacket1, pcpp::OsiModelTransportLayer);
++    if (packet1.getLastLayer() != nullptr)
++        packet1.getLastLayer()->getOsiModelLayer();
++
++    return 0;
++    return 0;
++}

@@ -1,0 +1,33 @@
+diff --git a/src/insexpand.c b/src/insexpand.c
+index 9b5e5de64..93a56a8bd 100644
+--- a/src/insexpand.c
++++ b/src/insexpand.c
+@@ -2741,6 +2741,7 @@ expand_by_function(int type, char_u *base)
+     --textlock;
+ 
+     curwin->w_cursor = pos;	// restore the cursor position
++    check_cursor();  // make sure cursor position is valid, just in case
+     validate_cursor();
+     if (!EQUAL_POS(curwin->w_cursor, pos))
+     {
+@@ -4606,6 +4607,7 @@ get_userdefined_compl_info(colnr_T curs_col UNUSED)
+ 
+     State = save_State;
+     curwin->w_cursor = pos;	// restore the cursor position
++    check_cursor();  // make sure cursor position is valid, just in case
+     validate_cursor();
+     if (!EQUAL_POS(curwin->w_cursor, pos))
+     {
+diff --git a/src/version.c b/src/version.c
+index 4c7ab8436..abb028b6d 100644
+--- a/src/version.c
++++ b/src/version.c
+@@ -704,6 +704,8 @@ static char *(features[]) =
+ 
+ static int included_patches[] =
+ {   /* Add new patch number below this line */
++/**/
++    254,
+ /**/
+     253,
+ /**/

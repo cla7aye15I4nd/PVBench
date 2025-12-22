@@ -1,0 +1,14 @@
+id: htslib-gh-1788
+project: htslib
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: samtools
+trigger_commit: 1c8c335d5c3a5a29edbe03b9d12338404aff8b48
+patch:
+  commit: 356bfd6b9a573afeed5e4e266f9e15ad71f10896
+  date: '2024-06-06T10:14:39+01:00'
+reference:
+- https://github.com/daviesrob/htslib
+- https://github.com/samtools/samtools/issues/2063
+- https://github.com/daviesrob/htslib/commits/1c8c335d5c3a5a29edbe03b9d12338404aff8b48
+- https://github.com/daviesrob/htslib/commits/356bfd6b9a573afeed5e4e266f9e15ad71f10896

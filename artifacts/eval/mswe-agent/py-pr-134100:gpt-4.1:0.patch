@@ -1,0 +1,15 @@
+
+diff --git a/.gitignore b/.gitignore
+index 2a6f249275c..b3c9b7a4ed8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -173,3 +173,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj

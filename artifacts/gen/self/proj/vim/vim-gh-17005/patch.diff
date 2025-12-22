@@ -1,0 +1,26 @@
+diff --git a/src/popupmenu.c b/src/popupmenu.c
+index 71bb49984..a7c20c101 100644
+--- a/src/popupmenu.c
++++ b/src/popupmenu.c
+@@ -845,7 +845,7 @@ pum_redraw(void)
+ 				    last_char = st_end;
+ 				}
+ 
+-				if (last_char != NULL)
++				if (last_char != NULL && st_end > st)
+ 				{
+ 				    if (used_cells < ellipsis_width)
+ 				    {
+diff --git a/src/version.c b/src/version.c
+index 4be2967b6..ec6acb610 100644
+--- a/src/version.c
++++ b/src/version.c
+@@ -704,6 +704,8 @@ static char *(features[]) =
+ 
+ static int included_patches[] =
+ {   /* Add new patch number below this line */
++/**/
++    1262,
+ /**/
+     1261,
+ /**/

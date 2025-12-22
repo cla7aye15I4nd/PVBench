@@ -1,0 +1,153 @@
+
+diff --git a/.gitignore b/.gitignore
+index 503e3e8135f..2006ad6e4a1 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -293,3 +293,6 @@ icu4c/build_qnx/nto-x86_64-o/*
+ icu4c/build_qnx/linux-x86_64-o/Makefile
+ icu4c/build_qnx/nto-aarch64-le/Makefile
+ icu4c/build_qnx/nto-x86_64-o/Makefile
++build/
++Build/
++*.exe
+diff --git a/icu4c/overflow_test.cpp b/icu4c/overflow_test.cpp
+new file mode 100644
+index 00000000000..89e567d04a8
+--- /dev/null
++++ b/icu4c/overflow_test.cpp
+@@ -0,0 +1,29 @@
++#include "source/common/unicode/locid.h"
++#include "source/common/unicode/utypes.h"
++#include "source/common/unicode/parseerr.h"
++#include "source/i18n/unicode/rbnf.h"
++#include <iostream>
++
++using namespace icu;
++
++int main() {
++    UParseError perror;
++    UErrorCode status = U_ZERO_ERROR;
++    
++    std::cout << "Testing overflow fix..." << std::endl;
++    
++    // Test case from the original issue - this should now handle the overflow gracefully
++    UnicodeString testStr(u"0110110/300113001103000113001103000110i/3013033:");
++    RuleBasedNumberFormat rbfmt(testStr, Locale("as"), perror, status);
++    
++    if (U_FAILURE(status)) {
++        std::cout << "PASS: Overflow case properly handled with error status: " << u_errorName(status) << std::endl;
++        std::cout << "Error line: " << perror.line << ", offset: " << perror.offset << std::endl;
++    } else {
++        std::cout << "UNEXPECTED: Overflow case should have failed but didn't" << std::endl;
++        return 1;
++    }
++    
++    std::cout << "Test completed successfully - overflow is now properly handled!" << std::endl;
++    return 0;
++}
+diff --git a/icu4c/source/i18n/nfrule.cpp b/icu4c/source/i18n/nfrule.cpp
+index 264e8d79e2d..99f15d339fc 100644
+--- a/icu4c/source/i18n/nfrule.cpp
++++ b/icu4c/source/i18n/nfrule.cpp
+@@ -326,7 +326,14 @@ NFRule::parseRuleDescriptor(UnicodeString& description, UErrorCode& status)
+                 while (p < descriptorLength) {
+                     c = descriptor.charAt(p);
+                     if (c >= gZero && c <= gNine) {
+-                        val = val * ll_10 + static_cast<int32_t>(c - gZero);
++                        int32_t single_digit = static_cast<int32_t>(c - gZero);
++                        if ((val > 0 && val > (std::numeric_limits<int64_t>::max() - single_digit) / 10) ||
++                            (val < 0 && val < (std::numeric_limits<int64_t>::min() - single_digit) / 10)) {
++                            // out of int64_t range
++                            status = U_PARSE_ERROR;
++                            return;
++                        }
++                        val = val * ll_10 + single_digit;
+                     }
+                     else if (c == gGreaterThan) {
+                         break;
+diff --git a/test_fix.cpp b/test_fix.cpp
+new file mode 100644
+index 00000000000..2bb834c3a4c
+--- /dev/null
++++ b/test_fix.cpp
+@@ -0,0 +1,51 @@
++#include "unicode/locid.h"
++#include "unicode/utypes.h"
++#include "unicode/parseerr.h"
++#include "unicode/rbnf.h"
++#include <iostream>
++#include <cstdlib>
++
++using namespace icu;
++
++int main() {
++    UParseError perror;
++    UErrorCode status = U_ZERO_ERROR;
++    
++    // Test case 1: The original overflow case from the issue
++    std::cout << "Testing original overflow case..." << std::endl;
++    UnicodeString testStr1(u"0110110/300113001103000113001103000110i/3013033:");
++    RuleBasedNumberFormat rbfmt1(testStr1, Locale("as"), perror, status);
++    
++    if (U_FAILURE(status)) {
++        std::cout << "PASS: Original overflow case properly handled with error status: " << u_errorName(status) << std::endl;
++    } else {
++        std::cout << "FAIL: Original overflow case should have failed but didn't" << std::endl;
++    }
++    
++    // Test case 2: A simpler overflow case to verify the fix
++    status = U_ZERO_ERROR;
++    std::cout << "\nTesting simpler overflow case..." << std::endl;
++    UnicodeString testStr2(u"999999999999999999999/999999999999999999999:");
++    RuleBasedNumberFormat rbfmt2(testStr2, Locale("en"), perror, status);
++    
++    if (U_FAILURE(status)) {
++        std::cout << "PASS: Simpler overflow case properly handled with error status: " << u_errorName(status) << std::endl;
++    } else {
++        std::cout << "FAIL: Simpler overflow case should have failed but didn't" << std::endl;
++    }
++    
++    // Test case 3: A valid case that should work
++    status = U_ZERO_ERROR;
++    std::cout << "\nTesting valid case..." << std::endl;
++    UnicodeString testStr3(u"100/10:");
++    RuleBasedNumberFormat rbfmt3(testStr3, Locale("en"), perror, status);
++    
++    if (U_SUCCESS(status)) {
++        std::cout << "PASS: Valid case works correctly" << std::endl;
++    } else {
++        std::cout << "FAIL: Valid case failed with error status: " << u_errorName(status) << std::endl;
++    }
++    
++    std::cout << "\nTest completed successfully" << std::endl;
++    return 0;
++}
+diff --git a/test_overflow.cpp b/test_overflow.cpp
+new file mode 100644
+index 00000000000..828d5bcfb9b
+--- /dev/null
++++ b/test_overflow.cpp
+@@ -0,0 +1,23 @@
++#include "unicode/locid.h"
++#include "unicode/utypes.h"
++#include "unicode/parseerr.h"
++#include "unicode/rbnf.h"
++#include <iostream>
++#include <cstdlib>
++
++using namespace icu;
++
++int main() {
++    UParseError perror;
++    UErrorCode status = U_ZERO_ERROR;
++    // Test int64 overflow inside parseRuleDescriptor
++    UnicodeString testStr(u"0110110/300113001103000113001103000110i/3013033:");
++    RuleBasedNumberFormat rbfmt(
++        testStr,
++        Locale("as"), perror, status);
++    if (U_FAILURE(status)) {
++        std::cout << "Should return failure" << std::endl;
++    }
++    std::cout << "Test completed successfully" << std::endl;
++    return 0;
++}

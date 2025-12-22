@@ -1,0 +1,47 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+clang-21: /tmp/llvm-gh-137276/build/clang/lib/CodeGen/CodeGenTypes.cpp:853: bool clang::CodeGen::CodeGenTypes::isPointerZeroInitializable(clang::QualType): Assertion `(T->isAnyPointerType() || T->isBlockPointerType()) && "Invalid type"' failed.
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-137276/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-137276/build -fcoverage-compilation-dir=/tmp/llvm-gh-137276/build -resource-dir /tmp/llvm-gh-137276/build/build/lib/clang/21 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/backward -internal-isystem /tmp/llvm-gh-137276/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -std=c++20 -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-ff1660.o -x c++ /testcases/llvm-gh-137276/input/poc.c
+1.	<eof> parser at end of file
+2.	Per-file LLVM IR generation
+3.	/testcases/llvm-gh-137276/input/poc.c:6:6: Generating code for declaration 'g'
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:880:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - clang::CodeGen::CodeGenTypes::isPointerZeroInitializable(clang::QualType) clang/lib/CodeGen/CodeGenTypes.cpp:854:29
+    - isSimpleZero(clang::Expr const*, clang::CodeGen::CodeGenFunction&) clang/lib/CodeGen/CGExprAgg.cpp:1676:51
+    - GetNumNonZeroBytesInInit(clang::Expr const*, clang::CodeGen::CodeGenFunction&) clang/lib/CodeGen/CGExprAgg.cpp:2109:3
+    - GetNumNonZeroBytesInInit(clang::Expr const*, clang::CodeGen::CodeGenFunction&) clang/lib/CodeGen/CGExprAgg.cpp:2158:48
+    - GetNumNonZeroBytesInInit(clang::Expr const*, clang::CodeGen::CodeGenFunction&) clang/lib/CodeGen/CGExprAgg.cpp:2148:54
+    - CheckAggExprForMemSetUse(clang::CodeGen::AggValueSlot&, clang::Expr const*, clang::CodeGen::CodeGenFunction&) clang/lib/CodeGen/CGExprAgg.cpp:2188:55
+    - clang::CodeGen::CodeGenFunction::EmitAggExpr(clang::Expr const*, clang::CodeGen::AggValueSlot) clang/lib/CodeGen/CGExprAgg.cpp:2218:45
+    - clang::CodeGen::CodeGenFunction::EmitExprAsInit(clang::Expr const*, clang::ValueDecl const*, clang::CodeGen::LValue, bool) clang/lib/CodeGen/CGDecl.cpp:2112:18
+    - clang::CodeGen::CodeGenFunction::EmitAutoVarInit(clang::CodeGen::CodeGenFunction::AutoVarEmission const&) clang/lib/CodeGen/CGDecl.cpp:2045:26
+    - clang::CodeGen::CodeGenFunction::EmitAutoVarDecl(clang::VarDecl const&) clang/lib/CodeGen/CGDecl.cpp:1334:22
+    - clang::CodeGen::CodeGenFunction::EmitVarDecl(clang::VarDecl const&) clang/lib/CodeGen/CGDecl.cpp:225:27
+    - clang::CodeGen::CodeGenFunction::EmitDecl(clang::Decl const&, bool) clang/lib/CodeGen/CGDecl.cpp:167:5
+    - clang::CodeGen::CodeGenFunction::EmitDeclStmt(clang::DeclStmt const&) clang/lib/CodeGen/CGStmt.cpp:1673:3
+    - clang::CodeGen::CodeGenFunction::EmitSimpleStmt(clang::Stmt const*, llvm::ArrayRef<clang::Attr const*>) clang/lib/CodeGen/CGStmt.cpp:516:5
+    - clang::CodeGen::CodeGenFunction::EmitStmt(clang::Stmt const*, llvm::ArrayRef<clang::Attr const*>) clang/lib/CodeGen/CGStmt.cpp:65:3
+    - clang::CodeGen::CodeGenFunction::EmitCompoundStmtWithoutScope(clang::CompoundStmt const&, bool, clang::CodeGen::AggValueSlot) clang/lib/CodeGen/CGStmt.cpp:587:3
+    - clang::CodeGen::CodeGenFunction::EmitFunctionBody(clang::Stmt const*) clang/lib/CodeGen/CodeGenFunction.cpp:1373:33
+    - clang::CodeGen::CodeGenFunction::GenerateCode(clang::GlobalDecl, llvm::Function*, clang::CodeGen::CGFunctionInfo const&) clang/lib/CodeGen/CodeGenFunction.cpp:1619:21
+    - clang::CodeGen::CodeGenModule::EmitGlobalFunctionDefinition(clang::GlobalDecl, llvm::GlobalValue*) clang/lib/CodeGen/CodeGenModule.cpp:6174:3
+    - clang::CodeGen::CodeGenModule::EmitGlobalDefinition(clang::GlobalDecl, llvm::GlobalValue*) clang/lib/CodeGen/CodeGenModule.cpp:4290:47
+    - clang::CodeGen::CodeGenModule::EmitDeferred() clang/lib/CodeGen/CodeGenModule.cpp:3368:31
+    - clang::CodeGen::CodeGenModule::EmitDeferred() clang/lib/CodeGen/CodeGenModule.cpp:3370:7
+    - clang::CodeGen::CodeGenModule::Release() clang/lib/CodeGen/CodeGenModule.cpp:856:29
+    - (anonymous namespace)::CodeGeneratorImpl::HandleTranslationUnit(clang::ASTContext&) clang/lib/CodeGen/ModuleBuilder.cpp:291:11
+    - clang::BackendConsumer::HandleTranslationUnit(clang::ASTContext&) clang/lib/CodeGen/CodeGenAction.cpp:243:9
+    - clang::ParseAST(clang::Sema&, bool, bool) clang/lib/Parse/ParseAST.cpp:191:14
+    - clang::ASTFrontendAction::ExecuteAction() clang/lib/Frontend/FrontendAction.cpp:1343:11
+    - clang::CodeGenAction::ExecuteAction() clang/lib/CodeGen/CodeGenAction.cpp:1112:5
+    - clang::FrontendAction::Execute() clang/lib/Frontend/FrontendAction.cpp:1229:38
+    - clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) clang/lib/Frontend/CompilerInstance.cpp:1058:42
+    - clang::ExecuteCompilerInvocation(clang::CompilerInstance*) clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+    - cc1_main(llvm::ArrayRef<char const*>, char const*, void*) clang/tools/driver/cc1_main.cpp:294:40
+    - ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) clang/tools/driver/driver.cpp:223:20
+    - clang_main(int, char**, llvm::ToolContext const&) clang/tools/driver/driver.cpp:264:26
+    - main build/tools/clang/tools/driver/clang-driver.cpp:17:20

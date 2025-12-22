@@ -1,0 +1,84 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index d6b4065e130..8f0dd4e466f 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -19,6 +19,13 @@
+ 
+ #define OFF(x) offsetof(PyFrameObject, x)
+ 
++// Returns borrowed reference or NULL
++static PyObject *
++framelocalsproxy_getval(_PyInterpreterFrame *frame, PyCodeObject *co, int i);
++
++// Forward declaration for frame_get_var
++static int
++frame_get_var(_PyInterpreterFrame *frame, PyCodeObject *co, int i, PyObject **pvalue);
+ 
+ // Returns borrowed reference or NULL
+ static PyObject *
+@@ -134,9 +141,16 @@ framelocalsproxy_getitem(PyObject *self, PyObject *key)
+         return NULL;
+     }
+     if (i >= 0) {
+-        PyObject *value = framelocalsproxy_getval(frame->f_frame, co, i);
+-        assert(value != NULL);
+-        return Py_NewRef(value);
++        PyObject *value;
++        if (!frame_get_var(frame->f_frame, co, i, &value)) {
++            PyErr_Format(PyExc_KeyError, "local variable is not defined");
++            return NULL;
++        }
++        if (value == NULL) {
++            PyErr_Format(PyExc_KeyError, "local variable is not defined");
++            return NULL;
++        }
++        return value;  // frame_get_var already returns a new reference
+     }
+ 
+     // Okay not in the fast locals, try extra locals
+@@ -487,12 +501,14 @@ framelocalsproxy_values(PyObject *self, void *Py_UNUSED(ignored))
+     }
+ 
+     for (int i = 0; i < co->co_nlocalsplus; i++) {
+-        PyObject *value = framelocalsproxy_getval(frame->f_frame, co, i);
+-        if (value) {
++        PyObject *value;
++        if (frame_get_var(frame->f_frame, co, i, &value) && value != NULL) {
+             if (PyList_Append(values, value) < 0) {
++                Py_DECREF(value);
+                 Py_DECREF(values);
+                 return NULL;
+             }
++            Py_DECREF(value);  // frame_get_var returns a new reference, so we need to decref
+         }
+     }
+ 
+@@ -524,10 +540,10 @@ framelocalsproxy_items(PyObject *self, void *Py_UNUSED(ignored))
+ 
+     for (int i = 0; i < co->co_nlocalsplus; i++) {
+         PyObject *name = PyTuple_GET_ITEM(co->co_localsplusnames, i);
+-        PyObject *value = framelocalsproxy_getval(frame->f_frame, co, i);
+-
+-        if (value) {
++        PyObject *value;
++        if (frame_get_var(frame->f_frame, co, i, &value) && value != NULL) {
+             PyObject *pair = PyTuple_Pack(2, name, value);
++            Py_DECREF(value);  // frame_get_var returns a new reference, so we need to decref
+             if (pair == NULL) {
+                 Py_DECREF(items);
+                 return NULL;

@@ -1,0 +1,21 @@
+<?php
+
+function resize_arr() {
+    global $arr;
+    for ($i = 0; $i < 10; $i++) {
+        $arr[$i] = $i;
+    }
+}
+
+class C {
+    function __toString() {
+        resize_arr();
+        return '3';
+    }
+}
+
+$arr = ['a' => '1', '3' => new C, '2' => '2'];
+asort($arr);
+var_dump($arr);
+
+?>

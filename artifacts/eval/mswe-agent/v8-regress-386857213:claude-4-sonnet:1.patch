@@ -1,0 +1,55 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6d3ef302292..5c865635f30 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/js-date-time-format.cc b/src/objects/js-date-time-format.cc
+index c51ac6da12e..8a22ece5621 100644
+--- a/src/objects/js-date-time-format.cc
++++ b/src/objects/js-date-time-format.cc
+@@ -1686,16 +1686,28 @@ std::optional<std::string> GetOffsetTimeZone(Isolate* isolate,
+     return tz;
+   }
+   int32_t p = 3;
++  if (p >= len) {
++    // Error: not enough characters for minutes
++    return std::nullopt;
++  }
+   uint16_t m0 = flat.Get(p);
+   if (m0 == ':') {
+     // Ignore ':'
+     p++;
++    if (p >= len) {
++      // Error: not enough characters after ':'
++      return std::nullopt;
++    }
+     m0 = flat.Get(p);
+   }
+   if (len - p != 2) {
+     // Error
+     return std::nullopt;
+   }
++  if (p + 1 >= len) {
++    // Error: not enough characters for second minute digit
++    return std::nullopt;
++  }
+   uint16_t m1 = flat.Get(p + 1);
+   if (m0 >= '0' && m0 <= '5' && m1 >= '0' && m1 <= '9') {
+     tz += m0;
+diff --git a/test_fix b/test_fix
+new file mode 100755
+index 00000000000..62ddea0b907
+Binary files /dev/null and b/test_fix differ

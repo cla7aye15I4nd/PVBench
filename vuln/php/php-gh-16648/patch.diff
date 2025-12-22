@@ -1,0 +1,164 @@
+diff --git a/NEWS b/NEWS
+index 95f490e68b..6c38690d24 100644
+--- a/NEWS
++++ b/NEWS
+@@ -19,6 +19,7 @@ PHP                                                                        NEWS
+     (ilutov)
+   . Fixed bug GH-16508 (Incorrect line number in inheritance errors of delayed
+     early bound classes). (ilutov)
++  . Fixed bug GH-16648 (Use-after-free during array sorting). (ilutov)
+ 
+ - Curl:
+   . Fixed bug GH-16302 (CurlMultiHandle holds a reference to CurlHandle if
+diff --git a/Zend/zend_hash.c b/Zend/zend_hash.c
+index 1c06104944..35d3736bf6 100644
+--- a/Zend/zend_hash.c
++++ b/Zend/zend_hash.c
+@@ -2863,13 +2863,12 @@ ZEND_API void zend_hash_bucket_packed_swap(Bucket *p, Bucket *q)
+ 	q->h = h;
+ }
+ 
+-ZEND_API void ZEND_FASTCALL zend_hash_sort_ex(HashTable *ht, sort_func_t sort, bucket_compare_func_t compar, bool renumber)
++static void zend_hash_sort_internal(HashTable *ht, sort_func_t sort, bucket_compare_func_t compar, bool renumber)
+ {
+ 	Bucket *p;
+ 	uint32_t i, j;
+ 
+ 	IS_CONSISTENT(ht);
+-	HT_ASSERT_RC1(ht);
+ 
+ 	if (!(ht->nNumOfElements>1) && !(renumber && ht->nNumOfElements>0)) {
+ 		/* Doesn't require sorting */
+@@ -2956,6 +2955,33 @@ ZEND_API void ZEND_FASTCALL zend_hash_sort_ex(HashTable *ht, sort_func_t sort, b
+ 	}
+ }
+ 
++ZEND_API void ZEND_FASTCALL zend_hash_sort_ex(HashTable *ht, sort_func_t sort, bucket_compare_func_t compar, bool renumber)
++{
++	HT_ASSERT_RC1(ht);
++	zend_hash_sort_internal(ht, sort, compar, renumber);
++}
++
++void ZEND_FASTCALL zend_array_sort_ex(HashTable *ht, sort_func_t sort, bucket_compare_func_t compar, bool renumber)
++{
++	HT_ASSERT_RC1(ht);
++
++	/* Unpack the array early to avoid RCn assertion failures. */
++	if (HT_IS_PACKED(ht)) {
++		zend_hash_packed_to_hash(ht);
++	}
++
++	/* Adding a refcount prevents the array from going away. */
++	GC_ADDREF(ht);
++
++	zend_hash_sort_internal(ht, sort, compar, renumber);
++
++	if (UNEXPECTED(GC_DELREF(ht) == 0)) {
++		zend_array_destroy(ht);
++	} else {
++		gc_check_possible_root((zend_refcounted *)ht);
++	}
++}
++
+ static zend_always_inline int zend_hash_compare_impl(HashTable *ht1, HashTable *ht2, compare_func_t compar, bool ordered) {
+ 	uint32_t idx1, idx2;
+ 	zend_string *key1, *key2;
+diff --git a/Zend/zend_hash.h b/Zend/zend_hash.h
+index 5306fe34c7..87221eaa5e 100644
+--- a/Zend/zend_hash.h
++++ b/Zend/zend_hash.h
+@@ -296,12 +296,20 @@ ZEND_API void  zend_hash_bucket_packed_swap(Bucket *p, Bucket *q);
+ typedef int (*bucket_compare_func_t)(Bucket *a, Bucket *b);
+ ZEND_API int   zend_hash_compare(HashTable *ht1, HashTable *ht2, compare_func_t compar, bool ordered);
+ ZEND_API void  ZEND_FASTCALL zend_hash_sort_ex(HashTable *ht, sort_func_t sort_func, bucket_compare_func_t compare_func, bool renumber);
++void  ZEND_FASTCALL zend_array_sort_ex(HashTable *ht, sort_func_t sort_func, bucket_compare_func_t compare_func, bool renumber);
+ ZEND_API zval* ZEND_FASTCALL zend_hash_minmax(const HashTable *ht, compare_func_t compar, uint32_t flag);
+ 
+ static zend_always_inline void ZEND_FASTCALL zend_hash_sort(HashTable *ht, bucket_compare_func_t compare_func, zend_bool renumber) {
+ 	zend_hash_sort_ex(ht, zend_sort, compare_func, renumber);
+ }
+ 
++/* Use this variant over zend_hash_sort() when sorting user arrays that may
++ * trigger user code. It will ensure the user code cannot free the array during
++ * sorting. */
++static zend_always_inline void zend_array_sort(HashTable *ht, bucket_compare_func_t compare_func, zend_bool renumber) {
++	zend_array_sort_ex(ht, zend_sort, compare_func, renumber);
++}
++
+ static zend_always_inline uint32_t zend_hash_num_elements(const HashTable *ht) {
+ 	return ht->nNumOfElements;
+ }
+diff --git a/ext/intl/collator/collator_sort.c b/ext/intl/collator/collator_sort.c
+index 0634e68fc7..33e921f7b1 100644
+--- a/ext/intl/collator/collator_sort.c
++++ b/ext/intl/collator/collator_sort.c
+@@ -292,7 +292,7 @@ static void collator_sort_internal( int renumber, INTERNAL_FUNCTION_PARAMETERS )
+ 	INTL_G( current_collator ) = co->ucoll;
+ 
+ 	/* Sort specified array. */
+-	zend_hash_sort(hash, collator_compare_func, renumber);
++	zend_array_sort(hash, collator_compare_func, renumber);
+ 
+ 	/* Restore saved collator. */
+ 	INTL_G( current_collator ) = saved_collator;
+diff --git a/ext/standard/array.c b/ext/standard/array.c
+index 6c1975b121..d4e3742bb7 100644
+--- a/ext/standard/array.c
++++ b/ext/standard/array.c
+@@ -705,9 +705,9 @@ static void php_natsort(INTERNAL_FUNCTION_PARAMETERS, int fold_case) /* {{{ */
+ 	ZEND_PARSE_PARAMETERS_END();
+ 
+ 	if (fold_case) {
+-		zend_hash_sort(Z_ARRVAL_P(array), php_array_natural_case_compare, 0);
++		zend_array_sort(Z_ARRVAL_P(array), php_array_natural_case_compare, 0);
+ 	} else {
+-		zend_hash_sort(Z_ARRVAL_P(array), php_array_natural_compare, 0);
++		zend_array_sort(Z_ARRVAL_P(array), php_array_natural_compare, 0);
+ 	}
+ 
+ 	RETURN_TRUE;
+@@ -743,7 +743,7 @@ PHP_FUNCTION(asort)
+ 
+ 	cmp = php_get_data_compare_func(sort_type, 0);
+ 
+-	zend_hash_sort(Z_ARRVAL_P(array), cmp, 0);
++	zend_array_sort(Z_ARRVAL_P(array), cmp, 0);
+ 
+ 	RETURN_TRUE;
+ }
+@@ -764,7 +764,7 @@ PHP_FUNCTION(arsort)
+ 
+ 	cmp = php_get_data_compare_func(sort_type, 1);
+ 
+-	zend_hash_sort(Z_ARRVAL_P(array), cmp, 0);
++	zend_array_sort(Z_ARRVAL_P(array), cmp, 0);
+ 
+ 	RETURN_TRUE;
+ }
+@@ -785,7 +785,7 @@ PHP_FUNCTION(sort)
+ 
+ 	cmp = php_get_data_compare_func(sort_type, 0);
+ 
+-	zend_hash_sort(Z_ARRVAL_P(array), cmp, 1);
++	zend_array_sort(Z_ARRVAL_P(array), cmp, 1);
+ 
+ 	RETURN_TRUE;
+ }
+@@ -806,7 +806,7 @@ PHP_FUNCTION(rsort)
+ 
+ 	cmp = php_get_data_compare_func(sort_type, 1);
+ 
+-	zend_hash_sort(Z_ARRVAL_P(array), cmp, 1);
++	zend_array_sort(Z_ARRVAL_P(array), cmp, 1);
+ 
+ 	RETURN_TRUE;
+ }
+@@ -904,7 +904,7 @@ static void php_usort(INTERNAL_FUNCTION_PARAMETERS, bucket_compare_func_t compar
+ 	/* Copy array, so the in-place modifications will not be visible to the callback function */
+ 	arr = zend_array_dup(arr);
+ 
+-	zend_hash_sort(arr, compare_func, renumber);
++	zend_array_sort(arr, compare_func, renumber);
+ 
+ 	zval garbage;
+ 	ZVAL_COPY_VALUE(&garbage, array);

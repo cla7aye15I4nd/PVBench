@@ -1,0 +1,183 @@
+
+diff --git a/.gitignore b/.gitignore
+index 3aca5e6440c..0fd5f17b697 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 9205b523079..59e2a405077 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -43,6 +43,7 @@ typedef struct _spl_array_object {
+ 	uint32_t          ht_iter;
+ 	int               ar_flags;
+ 	unsigned char	  nApplyCount;
++	unsigned char	  nUnsetCount;
+ 	bool			  is_child;
+ 	Bucket			  *bucket;
+ 	zend_function     *fptr_offset_get;
+@@ -540,6 +541,11 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		return;
+ 	}
+ 
++	if (intern->nUnsetCount > 0) {
++		zend_throw_error(NULL, "Modification of ArrayObject during unset is prohibited");
++		return;
++	}
++
+ 	if (get_hash_key(&key, intern, offset) == FAILURE) {
+ 		zend_illegal_container_offset(object->ce->name, offset, BP_VAR_UNSET);
+ 		return;
+@@ -548,6 +554,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
++	/* Increment nUnsetCount to prevent re-entrant modifications during destruction */
++	intern->nUnsetCount++;
++
+ 	if (key.key) {
+ 		zval *data = zend_hash_find(ht, key.key);
+ 		if (data) {
+@@ -571,6 +580,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		zend_hash_index_del(ht, key.h);
+ 	}
+ 
++	/* Decrement nUnsetCount after destruction is complete */
++	intern->nUnsetCount--;
++
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
+@@ -1091,6 +1103,11 @@ PHP_METHOD(ArrayObject, exchangeArray)
+ 		RETURN_THROWS();
+ 	}
+ 
++	if (intern->nUnsetCount > 0) {
++		zend_throw_error(NULL, "Modification of ArrayObject during unset is prohibited");
++		RETURN_THROWS();
++	}
++
+ 	RETVAL_ARR(zend_array_dup(spl_array_get_hash_table(intern)));
+ 	spl_array_set_array(object, intern, array, 0L, 1);
+ }
+diff --git a/ext/spl/tests/ArrayObject_unset_during_destructor.phpt b/ext/spl/tests/ArrayObject_unset_during_destructor.phpt
+new file mode 100644
+index 00000000000..3ed8ecf19f3
+--- /dev/null
++++ b/ext/spl/tests/ArrayObject_unset_during_destructor.phpt
+@@ -0,0 +1,37 @@
++--TEST--
++Can't use exchangeArray() during unset operation that triggers destructor
++--FILE--
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        try {
++            $arr->exchangeArray([]);
++        } catch (Error $e) {
++            echo "Error: " . $e->getMessage() . "\n";
++        }
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
++--EXPECT--
++C::__destruct
++Error: Modification of ArrayObject during unset is prohibited
++object(ArrayObject)#1 (1) {
++  ["storage":"ArrayObject":private]=>
++  object(B)#2 (0) {
++  }
++}
+diff --git a/poc_readable.php b/poc_readable.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/poc_readable.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
+diff --git a/reproduce_issue.sh b/reproduce_issue.sh
+new file mode 100755
+index 00000000000..df7387c1450
+--- /dev/null
++++ b/reproduce_issue.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++USE_TRACKED_ALLOC=1 USE_ZEND_ALLOC=0 sapi/cli/php -f /home/poc/0.bin
+diff --git a/test_normal_operations.php b/test_normal_operations.php
+new file mode 100644
+index 00000000000..963c2d71975
+--- /dev/null
++++ b/test_normal_operations.php
+@@ -0,0 +1,24 @@
++<?php
++
++// Test normal ArrayObject operations to ensure they still work
++$arr = new ArrayObject(['a' => 1, 'b' => 2, 'c' => 3]);
++
++echo "Original array:\n";
++var_dump($arr->getArrayCopy());
++
++// Test normal unset
++unset($arr['b']);
++echo "\nAfter unset(\$arr['b']):\n";
++var_dump($arr->getArrayCopy());
++
++// Test normal exchangeArray
++$new_array = $arr->exchangeArray(['x' => 10, 'y' => 20]);
++echo "\nAfter exchangeArray:\n";
++echo "Old array returned: ";
++var_dump($new_array);
++echo "New array content: ";
++var_dump($arr->getArrayCopy());
++
++echo "\nScript completed successfully, no errors.\n";
++
++?>

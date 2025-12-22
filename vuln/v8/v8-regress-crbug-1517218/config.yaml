@@ -1,0 +1,13 @@
+id: v8-regress-crbug-1517218
+project: v8
+sanitizer: V8Sanitizer
+type: Always-Incorrect Control Flow
+trigger_commit: 0918f3eafb5a33480a5b735d8d20c29519824d57
+binary: d8
+patch:
+  commit: fe905733c25476147ff9bb3535cb04a1ee62af9b
+  date: 2024-01-11 11:51:28+00:00
+reference:
+- https://chromium.googlesource.com/v8/v8.git
+- https://chromium.googlesource.com/v8/v8.git/+/0918f3eafb5a33480a5b735d8d20c29519824d57
+- https://chromium.googlesource.com/v8/v8.git/+/fe905733c25476147ff9bb3535cb04a1ee62af9b

@@ -1,0 +1,76 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/Zend/zend_weakrefs.c b/Zend/zend_weakrefs.c
+index 3f2e517f3fe..77d3fd873a9 100644
+--- a/Zend/zend_weakrefs.c
++++ b/Zend/zend_weakrefs.c
+@@ -450,15 +450,17 @@ static HashTable *zend_weakmap_get_properties_for(zend_object *object, zend_prop
+ 	zval *val;
+ 	ZEND_HASH_MAP_FOREACH_NUM_KEY_VAL(&wm->ht, obj_key, val) {
+ 		zend_object *obj = zend_weakref_key_to_object(obj_key);
+-		zval pair;
+-		array_init(&pair);
++		if (obj) {
++			zval pair;
++			array_init(&pair);
+ 
+-		GC_ADDREF(obj);
+-		add_assoc_object(&pair, "key", obj);
+-		Z_TRY_ADDREF_P(val);
+-		add_assoc_zval(&pair, "value", val);
++			GC_ADDREF(obj);
++			add_assoc_object(&pair, "key", obj);
++			Z_TRY_ADDREF_P(val);
++			add_assoc_zval(&pair, "value", val);
+ 
+-		zend_hash_next_index_insert_new(ht, &pair);
++			zend_hash_next_index_insert_new(ht, &pair);
++		}
+ 	} ZEND_HASH_FOREACH_END();
+ 
+ 	return ht;
+@@ -486,9 +488,11 @@ static zend_object *zend_weakmap_clone_obj(zend_object *old_object)
+ 	zend_ulong obj_key;
+ 	zval *val;
+ 	ZEND_HASH_MAP_FOREACH_NUM_KEY_VAL(&new_wm->ht, obj_key, val) {
+-		zend_weakref_register(
+-			zend_weakref_key_to_object(obj_key), ZEND_WEAKREF_ENCODE(new_wm, ZEND_WEAKREF_TAG_MAP));
+-		zval_add_ref(val);
++		zend_object *obj = zend_weakref_key_to_object(obj_key);
++		if (obj) {
++			zend_weakref_register(obj, ZEND_WEAKREF_ENCODE(new_wm, ZEND_WEAKREF_TAG_MAP));
++			zval_add_ref(val);
++		}
+ 	} ZEND_HASH_FOREACH_END();
+ 	return new_object;
+ }
+@@ -534,7 +538,12 @@ static void zend_weakmap_iterator_get_current_key(zend_object_iterator *obj_iter
+ 		ZEND_ASSERT(0 && "Must have integer key");
+ 	}
+ 
+-	ZVAL_OBJ_COPY(key, zend_weakref_key_to_object(num_key));
++	zend_object *obj = zend_weakref_key_to_object(num_key);
++	if (obj) {
++		ZVAL_OBJ_COPY(key, obj);
++	} else {
++		ZVAL_NULL(key);
++	}
+ }
+ 
+ static void zend_weakmap_iterator_move_forward(zend_object_iterator *obj_iter)

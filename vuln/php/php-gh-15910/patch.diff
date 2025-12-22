@@ -1,0 +1,25 @@
+diff --git a/NEWS b/NEWS
+index cad3d431b2..fa7b1d9e73 100644
+--- a/NEWS
++++ b/NEWS
+@@ -5,6 +5,7 @@ PHP                                                                        NEWS
+ - DOM:
+   . Fix XML serializer errata: xmlns="" serialization should be allowed.
+     (nielsdos)
++  . Fixed bug GH-15910 (Assertion failure in ext/dom/element.c). (nielsdos)
+ 
+ - MBString:
+   . Fixed bug GH-15824 (mb_detect_encoding(): Argument $encodings contains
+diff --git a/ext/dom/element.c b/ext/dom/element.c
+index b449555983..06af759365 100644
+--- a/ext/dom/element.c
++++ b/ext/dom/element.c
+@@ -683,7 +683,7 @@ static void dom_element_set_attribute_node_common(INTERNAL_FUNCTION_PARAMETERS,
+ 	dom_object *intern, *attrobj, *oldobj;
+ 
+ 	id = ZEND_THIS;
+-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "O", &node, dom_get_node_ce(modern)) == FAILURE) {
++	if (zend_parse_parameters(ZEND_NUM_ARGS(), "O", &node, dom_get_attr_ce(modern)) == FAILURE) {
+ 		RETURN_THROWS();
+ 	}
+ 

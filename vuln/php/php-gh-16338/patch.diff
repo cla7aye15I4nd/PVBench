@@ -1,0 +1,146 @@
+diff --git a/NEWS b/NEWS
+index 520633f008..e0cbd5ac51 100644
+--- a/NEWS
++++ b/NEWS
+@@ -22,6 +22,8 @@ PHP                                                                        NEWS
+   . Fixed bug GH-16316 (DOMXPath breaks when not initialized properly).
+     (nielsdos)
+   . Add missing hierarchy checks to replaceChild. (nielsdos)
++  . Fixed bug GH-16336 (Attribute intern document mismanagement). (nielsdos)
++  . Fixed bug GH-16338 (Null-dereference in ext/dom/node.c). (nielsdos)
+ 
+ - EXIF:
+   . Fixed bug GH-16409 (Segfault in exif_thumbnail when not dealing with a
+diff --git a/ext/dom/element.c b/ext/dom/element.c
+index 0b4117fb08..78487b0dfd 100644
+--- a/ext/dom/element.c
++++ b/ext/dom/element.c
+@@ -642,9 +642,8 @@ PHP_METHOD(DOMElement, setAttributeNode)
+ 		xmlUnlinkNode((xmlNodePtr) attrp);
+ 	}
+ 
+-	if (attrp->doc == NULL && nodep->doc != NULL) {
+-		attrobj->document = intern->document;
+-		php_libxml_increment_doc_ref((php_libxml_node_object *)attrobj, NULL);
++	if (attrp->doc == NULL && nodep->doc != NULL && intern->document != NULL) {
++		dom_set_document_ref_pointers_attr(attrp, intern->document);
+ 	}
+ 
+ 	xmlAddChild(nodep, (xmlNodePtr) attrp);
+diff --git a/ext/dom/node.c b/ext/dom/node.c
+index 242e56ad2d..a222c171a7 100644
+--- a/ext/dom/node.c
++++ b/ext/dom/node.c
+@@ -820,11 +820,14 @@ int dom_node_text_content_write(dom_object *obj, zval *newval)
+ 
+ /* }}} */
+ 
+-/* Returns true if the node was changed, false otherwise. */
+-static bool dom_set_document_ref_obj_single(xmlNodePtr node, xmlDocPtr doc, php_libxml_ref_obj *document)
++/* Returns true if the node had the same document reference, false otherwise. */
++static bool dom_set_document_ref_obj_single(xmlNodePtr node, php_libxml_ref_obj *document)
+ {
+ 	dom_object *childobj = php_dom_object_get_data(node);
+-	if (childobj && !childobj->document) {
++	if (!childobj) {
++		return true;
++	}
++	if (!childobj->document) {
+ 		childobj->document = document;
+ 		document->refcount++;
+ 		return true;
+@@ -832,13 +835,41 @@ static bool dom_set_document_ref_obj_single(xmlNodePtr node, xmlDocPtr doc, php_
+ 	return false;
+ }
+ 
++void dom_set_document_ref_pointers_attr(xmlAttrPtr attr, php_libxml_ref_obj *document)
++{
++	ZEND_ASSERT(document != NULL);
++
++	dom_set_document_ref_obj_single((xmlNodePtr) attr, document);
++	for (xmlNodePtr attr_child = attr->children; attr_child; attr_child = attr_child->next) {
++		dom_set_document_ref_obj_single(attr_child, document);
++	}
++}
++
++static bool dom_set_document_ref_pointers_node(xmlNodePtr node, php_libxml_ref_obj *document)
++{
++	ZEND_ASSERT(document != NULL);
++
++	if (!dom_set_document_ref_obj_single(node, document)) {
++		return false;
++	}
++
++	if (node->type == XML_ELEMENT_NODE) {
++		for (xmlAttrPtr attr = node->properties; attr; attr = attr->next) {
++			dom_set_document_ref_pointers_attr(attr, document);
++		}
++	}
++
++	return true;
++}
++
+ /* TODO: on 8.4 replace the loop with the tree walk helper function. */
+-static void dom_set_document_pointers(xmlNodePtr node, xmlDocPtr doc, php_libxml_ref_obj *document)
++void dom_set_document_ref_pointers(xmlNodePtr node, php_libxml_ref_obj *document)
+ {
+-	/* Applies the document to the entire subtree. */
+-	xmlSetTreeDoc(node, doc);
++	if (!document) {
++		return;
++	}
+ 
+-	if (!dom_set_document_ref_obj_single(node, doc, document)) {
++	if (!dom_set_document_ref_pointers_node(node, document)) {
+ 		return;
+ 	}
+ 
+@@ -847,7 +878,7 @@ static void dom_set_document_pointers(xmlNodePtr node, xmlDocPtr doc, php_libxml
+ 	while (node != NULL) {
+ 		ZEND_ASSERT(node != base);
+ 
+-		if (!dom_set_document_ref_obj_single(node, doc, document)) {
++		if (!dom_set_document_ref_pointers_node(node, document)) {
+ 			break;
+ 		}
+ 
+@@ -974,7 +1005,7 @@ PHP_METHOD(DOMNode, insertBefore)
+ 	}
+ 
+ 	if (child->doc == NULL && parentp->doc != NULL) {
+-		dom_set_document_pointers(child, parentp->doc, intern->document);
++		dom_set_document_ref_pointers(child, intern->document);
+ 	}
+ 
+ 	php_libxml_invalidate_node_list_cache(intern->document);
+@@ -1137,7 +1168,7 @@ PHP_METHOD(DOMNode, replaceChild)
+ 	}
+ 
+ 	if (newchild->doc == NULL && nodep->doc != NULL) {
+-		dom_set_document_pointers(newchild, nodep->doc, intern->document);
++		dom_set_document_ref_pointers(newchild, intern->document);
+ 	}
+ 
+ 	if (newchild->type == XML_DOCUMENT_FRAG_NODE) {
+@@ -1240,7 +1271,7 @@ PHP_METHOD(DOMNode, appendChild)
+ 	}
+ 
+ 	if (child->doc == NULL && nodep->doc != NULL) {
+-		dom_set_document_pointers(child, nodep->doc, intern->document);
++		dom_set_document_ref_pointers(child, intern->document);
+ 	}
+ 
+ 	if (child->parent != NULL){
+diff --git a/ext/dom/php_dom.h b/ext/dom/php_dom.h
+index c5c888a64c..fe0c5471c6 100644
+--- a/ext/dom/php_dom.h
++++ b/ext/dom/php_dom.h
+@@ -154,6 +154,8 @@ bool php_dom_is_node_connected(const xmlNode *node);
+ bool php_dom_adopt_node(xmlNodePtr nodep, dom_object *dom_object_new_document, xmlDocPtr new_document);
+ xmlNsPtr dom_get_ns_resolve_prefix_conflict(xmlNodePtr tree, const char *uri);
+ xmlEntityPtr dom_entity_reference_fetch_and_sync_declaration(xmlNodePtr reference);
++void dom_set_document_ref_pointers(xmlNodePtr node, php_libxml_ref_obj *document);
++void dom_set_document_ref_pointers_attr(xmlAttrPtr attr, php_libxml_ref_obj *document);
+ 
+ /* parentnode */
+ void dom_parent_node_prepend(dom_object *context, zval *nodes, uint32_t nodesc);

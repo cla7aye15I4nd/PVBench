@@ -1,0 +1,77 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 257de4387c0..c6d27f4311d 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -39,6 +39,7 @@ typedef struct _ProfilerContext {
+     _PyTime_t subt;
+     struct _ProfilerContext *previous;
+     ProfilerEntry *ctxEntry;
++    int initializing;  /* flag to prevent freeing during initialization */
+ } ProfilerContext;
+ 
+ typedef struct {
+@@ -292,6 +293,7 @@ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+     self->ctxEntry = entry;
+     self->subt = 0;
+     self->previous = pObj->currentProfilerContext;
++    self->initializing = 1;  /* Mark as initializing to prevent freeing */
+     pObj->currentProfilerContext = self;
+     ++entry->recursionLevel;
+     if ((pObj->flags & POF_SUBCALLS) && self->previous) {
+@@ -303,7 +305,10 @@ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+         if (subentry)
+             ++subentry->recursionLevel;
+     }
++    /* Call timer after context is fully set up to avoid use-after-free
++       if external timer triggers profiler disable */
+     self->t0 = call_timer(pObj);
++    self->initializing = 0;  /* Clear initializing flag */
+ }
+ 
+ static void
+@@ -372,6 +377,8 @@ ptrace_enter_call(PyObject *self, void *key, PyObject *userObj)
+             goto restorePyerr;
+         }
+     }
++    /* Initialize the context fields */
++    pContext->initializing = 0;
+     initContext(pObj, pContext, profEntry);
+ 
+ restorePyerr:
+@@ -754,6 +761,13 @@ flush_unmatched(ProfilerObject *pObj)
+     while (pObj->currentProfilerContext) {
+         ProfilerContext *pContext = pObj->currentProfilerContext;
+         ProfilerEntry *profEntry= pContext->ctxEntry;
++        
++        /* Don't free contexts that are currently being initialized */
++        if (pContext->initializing) {
++            /* Skip this context for now, it will be handled later */
++            break;
++        }
++        
+         if (profEntry)
+             Stop(pObj, pContext, profEntry);
+         else
+@@ -761,7 +775,6 @@ flush_unmatched(ProfilerObject *pObj)
+         if (pContext)
+             PyMem_Free(pContext);
+     }
+-
+ }
+ 
+ PyDoc_STRVAR(disable_doc, "\

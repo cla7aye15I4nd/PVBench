@@ -1,0 +1,220 @@
+
+diff --git a/.gitignore b/.gitignore
+index cbaccb29d3..2067bd60aa 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -42,3 +42,14 @@ src/H5version.h
+ 
+ /.classpath
+ /CMakeUserPresets.json
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/conversion_test.h5 b/conversion_test.h5
+new file mode 100644
+index 0000000000..fd1bf71894
+Binary files /dev/null and b/conversion_test.h5 differ
+diff --git a/gdb_run.sh b/gdb_run.sh
+new file mode 100755
+index 0000000000..36f8b9ecd6
+--- /dev/null
++++ b/gdb_run.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash
++gdb -batch -ex "run" -ex "bt" ./poc
+diff --git a/poc b/poc
+new file mode 100755
+index 0000000000..50795147ee
+Binary files /dev/null and b/poc differ
+diff --git a/poc.c b/poc.c
+new file mode 100644
+index 0000000000..97b3c9a48d
+--- /dev/null
++++ b/poc.c
+@@ -0,0 +1,100 @@
++#include "hdf5.h"
++#include <stdlib.h>
++#include <stdio.h>
++#include <stdint.h>
++
++typedef struct src_t {
++     uint32_t a;
++     float b;
++  } src_t;
++
++typedef struct dst_t {
++     float b;
++  } dst_t;
++
++herr_t convert(hid_t src_id, hid_t dst_id, H5T_cdata_t *cdata,
++    size_t nelmts, size_t buf_stride, size_t bkg_stride, void *buf,
++    void *bkg, hid_t dxpl)
++{
++  herr_t retval = EXIT_SUCCESS;
++  switch (cdata->command)
++  {
++  case H5T_CONV_INIT:
++    printf("Initializing conversion function...\n");
++    break;
++  case H5T_CONV_CONV:
++    printf("Converting...\n");
++    for (size_t i = 0; i < nelmts; ++i)
++      ((dst_t*) buf)[i].b = ((src_t*) buf)[i].b;
++    break;
++  case H5T_CONV_FREE:
++    printf("Finalizing conversion function...\n");
++    break;
++  default:
++    break;
++  }
++  return retval;
++}
++
++int main() {
++  printf("DEBUG: Entered main()\n");
++  hid_t src = H5I_INVALID_HID;
++  hid_t dst = H5I_INVALID_HID;
++  hid_t file_id = H5I_INVALID_HID;
++  hid_t space_id = H5I_INVALID_HID;
++  hid_t dset_id = H5I_INVALID_HID;
++  
++  if ((src = H5Tcreate(H5T_COMPOUND, sizeof(struct src_t))) < 0) {
++    printf("src dtype creation failed\n");
++  }
++  printf("DEBUG: After H5Tcreate for src\n");
++
++  if (H5Tinsert(src, "a", HOFFSET(struct src_t, a), H5T_NATIVE_UINT32) < 0) {
++    printf("dtype insertion failed\n");
++  }
++
++  if (H5Tinsert(src, "b", HOFFSET(struct src_t, b), H5T_NATIVE_FLOAT) < 0) {
++    printf("dtype insertion failed\n");
++  }
++
++  if ((dst = H5Tcreate(H5T_COMPOUND, sizeof(struct dst_t))) < 0) {
++    printf("dst dtype creation failed\n");
++  }
++
++  if (H5Tinsert(dst, "b", HOFFSET(struct dst_t, b), H5T_IEEE_F32LE) < 0) {
++    printf("dtype insertion failed\n");
++  }
++  printf("DEBUG: About to call H5Tregister\n");
++  // if (H5Tregister(H5T_PERS_SOFT, "src_t->dst_t", src, dst, &convert) < 0) {
++  //   printf("conversion registration failed\n");
++  // }
++  // printf("DEBUG: After H5Tregister\n");
++  printf("DEBUG: After H5Tregister\n");
++
++  struct src_t buf[] = {{1, 1.0} , {2, 2.0}, {3, 3.0}, {4, 4.0} , {5, 5.0} };  
++  
++  if ((file_id = H5Fcreate("conversion_test.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
++    printf("file creation failed\n");
++  }
++
++  if ((space_id = H5Screate_simple(1, (const hsize_t[]) {5}, NULL)) < 0) {
++    printf("space creation failed\n");
++  }
++
++  if ((dset_id = H5Dcreate(file_id, "dset", dst, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
++    printf("dset creation failed\n");
++  }
++  printf("DEBUG: After H5Dcreate\n");
++  printf("Beginning dataset write\n");
++  printf("DEBUG: About to call H5Dwrite\n");
++  if (H5Dwrite(dset_id, src, space_id, H5S_ALL, H5P_DEFAULT, buf) < 0) {
++    printf("write failed\n");
++  }
++
++  H5Tclose(dst);
++  H5Tclose(src);
++  H5Fclose(file_id);
++  H5Sclose(space_id);
++  H5Dclose(dset_id);
++  return 0;
++}
+diff --git a/src/H5Dscatgath.c b/src/H5Dscatgath.c
+index 9b60d81b2b..69f4f8ee80 100644
+--- a/src/H5Dscatgath.c
++++ b/src/H5Dscatgath.c
+@@ -35,7 +35,7 @@
+ #define H5D__SCATGATH_USE_CMPD_OPT_READ(DSET_INFO, IN_PLACE_TCONV)                                           \
+     ((DSET_INFO)->type_info.cmpd_subset && H5T_SUBSET_FALSE != (DSET_INFO)->type_info.cmpd_subset->subset && \
+      !(IN_PLACE_TCONV))
+-
++  printf("DEBUG: Entered main()\n");
+ /* Macro to determine if we're using H5D__compound_opt_write() */
+ #define H5D__SCATGATH_USE_CMPD_OPT_WRITE(DSET_INFO, IN_PLACE_TCONV)                                          \
+     ((DSET_INFO)->type_info.cmpd_subset && H5T_SUBSET_DST == (DSET_INFO)->type_info.cmpd_subset->subset &&   \
+@@ -647,7 +647,7 @@ H5D__scatgath_write(const H5D_io_info_t *io_info, const H5D_dset_io_info_t *dset
+ 
+     /* Sanity check */
+     assert(io_info);
+-    assert(dset_info);
++    printf("DEBUG (start H5D__scatgath_write): dset_info->type_info.cmpd_subset = %p\n", (void*)dset_info->type_info.cmpd_subset);
+     assert(dset_info->mem_space);
+     assert(dset_info->file_space);
+     assert(dset_info->buf.cvp);
+@@ -743,7 +743,8 @@ H5D__scatgath_write(const H5D_io_info_t *io_info, const H5D_dset_io_info_t *dset
+          * directly from user's buffer and bypass the rest of steps.  If the source
+          * is a subset of the destination, the optimization is done in conversion
+          * function H5T_conv_struct_opt to protect the background data.
+-         */
++        /* Debug: print cmpd_subset pointer */
++        printf("DEBUG: dset_info->type_info.cmpd_subset = %p\n", (void*)dset_info->type_info.cmpd_subset);
+         if (H5D__SCATGATH_USE_CMPD_OPT_WRITE(dset_info, in_place_tconv)) {
+             if (H5D__compound_opt_write(smine_nelmts, &dset_info->type_info, tmp_buf) < 0)
+                 HGOTO_ERROR(H5E_DATASET, H5E_CANTINIT, FAIL, "datatype conversion failed");
+@@ -1392,6 +1393,9 @@ H5D__compound_opt_read(size_t nelmts, H5S_sel_iter_t *iter, const H5D_type_info_
+     size_t   vec_size;            /* Vector length */
+     herr_t   ret_value = SUCCEED; /* Return value		*/
+ 
++    /* Defensive check for NULL cmpd_subset */
++    if (!type_info->cmpd_subset)
++        return FAIL;
+     FUNC_ENTER_PACKAGE
+ 
+     /* Check args */
+@@ -1513,7 +1517,9 @@ H5D__compound_opt_write(size_t nelmts, const H5D_type_info_t *type_info, void *t
+     size_t   src_stride, dst_stride; /* Strides through source & destination datatypes */
+     size_t   i;                      /* Local index variable */
+ 
+-    FUNC_ENTER_PACKAGE_NOERR
++    /* Defensive check for NULL cmpd_subset */
++    if (!type_info->cmpd_subset)
++        return FAIL;
+ 
+     /* Check args */
+     assert(nelmts > 0);
+@@ -1534,5 +1540,5 @@ H5D__compound_opt_write(size_t nelmts, const H5D_type_info_t *type_info, void *t
+         xdbuf += dst_stride;
+     } /* end for */
+ 
+-    FUNC_LEAVE_NOAPI(SUCCEED)
++    return SUCCEED;
+ } /* end H5D__compound_opt_write() */
+diff --git a/test_minimal b/test_minimal
+new file mode 100755
+index 0000000000..a2e585d07c
+Binary files /dev/null and b/test_minimal differ
+diff --git a/test_minimal.c b/test_minimal.c
+new file mode 100644
+index 0000000000..ace64d3459
+--- /dev/null
++++ b/test_minimal.c
+@@ -0,0 +1,8 @@
++#include "hdf5.h"
++#include <stdio.h>
++
++int main() {
++    printf("Minimal HDF5 test: main entered.\n");
++    return 0;
++}
++

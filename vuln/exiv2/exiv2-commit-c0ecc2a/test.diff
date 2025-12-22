@@ -1,0 +1,42 @@
+diff --git a/test/data/issue_843_poc.crw b/test/data/issue_843_poc.crw
+new file mode 100644
+index 0000000000000000000000000000000000000000..56628e2d7cc369376c6bba2c53eab2176078f365
+GIT binary patch
+literal 309
+zcmebDlwx3D@NjhuaCUYH0y06M9!xg;7hq^%;ACUtU}NRvVCUfC<m6@r$`~;UFfajW
+zHg*OEi>^!t79g7ui0wFmL~uo3B?E(tsfB?t0|R%{EC!GcknD-3xp4M{4t1c208re4
+zfnfqO0}qhL48)8e6^v{Q%=;_)bMjIQ3{nhil@v-03Jmo1%gf94${839iqiEBEiEne
+z4Gav7%nXWB(hQ0#foue@aPssuFkmnMn&*cQMX-W_Oa%zADKSV(L&#udX=wq4|Dyr`
+Dtf4<K
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/bugfixes/github/test_issue_843.py b/tests/bugfixes/github/test_issue_843.py
+new file mode 100644
+index 000000000..2df9c1cf8
+--- /dev/null
++++ b/tests/bugfixes/github/test_issue_843.py
+@@ -0,0 +1,22 @@
++# -*- coding: utf-8 -*-
++
++from system_tests import CaseMeta, path
++
++
++class IntegerOverflowInCiffDirectoryReadDirectory(metaclass=CaseMeta):
++    """
++    Regression test for the bug described in:
++    https://github.com/Exiv2/exiv2/issues/843
++
++    An integer overflow causes an out-of-bounds read.
++    """
++    url = "https://github.com/Exiv2/exiv2/issues/843"
++
++    filename = path("$data_path/issue_843_poc.crw")
++    commands = ["$exiv2 $filename"]
++    stdout = [""]
++    stderr = [
++        """$exiv2_exception_message $filename:
++$kerCorruptedMetadata
++"""]
++    retval = [1]

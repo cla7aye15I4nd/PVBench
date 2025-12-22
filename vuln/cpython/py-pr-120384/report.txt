@@ -1,0 +1,28 @@
+==2984195==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000048 (pc 0x555555a21356 bp 0x7fffffff2f50 sp 0x7fffffff2c60 T0)
+==2984195==The signal is caused by a READ memory access.
+==2984195==Hint: address points to the zero page.
+    #0 0x555555a21356 in list_ass_subscript /tmp/py-pr-120384/build/Objects/listobject.c:3726:30
+    #1 0x55555592f415 in PyObject_SetItem /tmp/py-pr-120384/build/Objects/abstract.c:232:19
+    #2 0x555555d75dde in _PyEval_EvalFrameDefault /tmp/py-pr-120384/build/Python/generated_cases.c.h:5747:27
+    #3 0x555555d3ca51 in _PyEval_EvalFrame /tmp/py-pr-120384/build/./Include/internal/pycore_ceval.h:119:16
+    #4 0x555555d3c94e in _PyEval_Vector /tmp/py-pr-120384/build/Python/ceval.c:1842:12
+    #5 0x555555d3c2df in PyEval_EvalCode /tmp/py-pr-120384/build/Python/ceval.c:622:21
+    #6 0x555555efefe3 in run_eval_code_obj /tmp/py-pr-120384/build/Python/pythonrun.c:1292:9
+    #7 0x555555efed1b in run_mod /tmp/py-pr-120384/build/Python/pythonrun.c:1377:19
+    #8 0x555555efaa52 in pyrun_file /tmp/py-pr-120384/build/Python/pythonrun.c:1210:15
+    #9 0x555555ef93f2 in _PyRun_SimpleFileObject /tmp/py-pr-120384/build/Python/pythonrun.c:459:13
+    #10 0x555555ef8ba8 in _PyRun_AnyFileObject /tmp/py-pr-120384/build/Python/pythonrun.c:77:15
+    #11 0x555555f8bf76 in pymain_run_file_obj /tmp/py-pr-120384/build/Modules/main.c:357:15
+    #12 0x555555f8acdb in pymain_run_file /tmp/py-pr-120384/build/Modules/main.c:376:15
+    #13 0x555555f88be2 in pymain_run_python /tmp/py-pr-120384/build/Modules/main.c:640:21
+    #14 0x555555f88008 in Py_RunMain /tmp/py-pr-120384/build/Modules/main.c:719:5
+    #15 0x555555f89028 in pymain_main /tmp/py-pr-120384/build/Modules/main.c:749:12
+    #16 0x555555f89137 in Py_BytesMain /tmp/py-pr-120384/build/Modules/main.c:773:12
+    #17 0x5555557c5511 in main /tmp/py-pr-120384/build/./Programs/python.c:15:12
+    #18 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #19 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #20 0x5555556ec104 in _start (/tmp/py-pr-120384/build/python+0x198104) (BuildId: ce726f3232d20960907a392f40e04d824e2b1102)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/py-pr-120384/build/Objects/listobject.c:3726:30 in list_ass_subscript
+==2984195==ABORTING

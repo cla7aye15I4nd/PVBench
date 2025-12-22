@@ -1,0 +1,61 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/crwimage_int.cpp b/src/crwimage_int.cpp
+index c2fd5f3a5..a00f35573 100644
+--- a/src/crwimage_int.cpp
++++ b/src/crwimage_int.cpp
+@@ -235,15 +235,19 @@ namespace Exiv2 {
+                                ByteOrder   byteOrder)
+     {
+         if (size < 10) throw Error(kerNotACrwImage);
++        if (start > size || start > size - 2) throw Error(kerCorruptedMetadata);
+         tag_ = getUShort(pData + start, byteOrder);
+ 
+         DataLocId dl = dataLocation();
+         assert(dl == directoryData || dl == valueData);
+ 
+         if (dl == valueData) {
++            if (start > size - 6) throw Error(kerCorruptedMetadata);
+             size_   = getULong(pData + start + 2, byteOrder);
++            if (start > size - 10) throw Error(kerCorruptedMetadata);
+             offset_ = getULong(pData + start + 6, byteOrder);
+         }
++
+         if ( size_ > size || offset_ > size ) throw Error(kerOffsetOutOfRange); // #889
+         if (dl == directoryData) {
+             size_ = 8;
+@@ -281,7 +285,7 @@ namespace Exiv2 {
+         if (size < 4)
+             throw Error(kerCorruptedMetadata);
+         uint32_t o = getULong(pData + size - 4, byteOrder);
+-        if ( o+2 > size )
++        if ( o > size || o > size - 2 )
+             throw Error(kerCorruptedMetadata);
+         uint16_t count = getUShort(pData + o, byteOrder);
+ #ifdef DEBUG
+@@ -289,7 +293,7 @@ namespace Exiv2 {
+                   <<", " << count << " entries \n";
+ #endif
+         o += 2;
+-        if ( (o + (count * 10)) > size )
++        if ( o > size || (count > 0 && count > (size - o) / 10) )
+             throw Error(kerCorruptedMetadata);
+ 
+         for (uint16_t i = 0; i < count; ++i) {

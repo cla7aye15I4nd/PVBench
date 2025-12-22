@@ -1,0 +1,4 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+20|H5Gmove2(0, "./Soft2/CData", file, "./Data_link/Data_new1/CData")|ret == -1|Expected to fail with invalid source location

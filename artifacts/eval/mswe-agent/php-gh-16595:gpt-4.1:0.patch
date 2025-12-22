@@ -1,0 +1,111 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 0be317c173e..2ce4caea8af 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -131,7 +131,9 @@ static void spl_array_object_free_storage(zend_object *object)
+ 
+ 	zend_object_std_dtor(&intern->std);
+ 
+-	zval_ptr_dtor(&intern->array);
++	if (!(intern->ar_flags & SPL_ARRAY_USE_OTHER)) {
++		zval_ptr_dtor(&intern->array);
++	}
+ }
+ /* }}} */
+ 
+@@ -525,9 +527,12 @@ static void spl_array_write_dimension(zend_object *object, zval *offset, zval *v
+ 
+ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *object, zval *offset) /* {{{ */
+ {
+-	HashTable *ht;
+-	spl_array_object *intern = spl_array_from_obj(object);
+-	spl_hash_key key;
++    spl_array_object *intern = spl_array_from_obj(object);
++    if (intern->ar_flags & SPL_ARRAY_USE_OTHER) {
++        return;
++    }
++    spl_hash_key key;
++    HashTable *ht;
+ 
+ 	if (check_inherited && intern->fptr_offset_del) {
+ 		zend_call_method_with_1_params(object, object->ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
+@@ -545,6 +550,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	ht = spl_array_get_hash_table(intern);
++	if (!ht) {
++		return;
++	}
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
+ 	if (key.key) {
+@@ -552,28 +560,35 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		if (data) {
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+-				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
+-					ZVAL_UNDEF(data);
+-					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+-					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+-					if (spl_array_is_object(intern)) {
+-						spl_array_skip_protected(intern, ht);
++					if (Z_TYPE_P(data) != IS_UNDEF && Z_TYPE_P(data) != IS_NULL) {
++						zval tmp;
++						ZVAL_COPY_VALUE(&tmp, data);
++						ZVAL_UNDEF(data);
++						zval_ptr_dtor(&tmp);
++						ht = spl_array_get_hash_table(intern);
++						if (ht) {
++							HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
++							zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
++							if (spl_array_is_object(intern)) {
++								spl_array_skip_protected(intern, ht);
++							}
++						}
++						if (spl_array_is_object(intern)) {
++							spl_array_skip_protected(intern, ht);
++						}
+ 					}
+ 				}
+ 			} else {
+ 				zend_hash_del(ht, key.key);
+ 			}
++			spl_hash_key_release(&key);
++		} else {
++			zend_hash_index_del(ht, key.h);
+ 		}
+-		spl_hash_key_release(&key);
+-	} else {
+-		zend_hash_index_del(ht, key.h);
+-	}
+-
+-	if (refcount) {
+-		spl_array_set_refcount(intern->is_child, ht, refcount);
+-	}
+-} /* }}} */
++    if (refcount) {
++        spl_array_set_refcount(intern->is_child, ht, refcount);
++    }
++}
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+ {

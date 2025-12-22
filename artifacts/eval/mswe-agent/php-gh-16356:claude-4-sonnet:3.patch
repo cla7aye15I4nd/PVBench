@@ -1,0 +1,41 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/html5_serializer.c b/ext/dom/html5_serializer.c
+index f0048aa4aae..0584e1b626f 100644
+--- a/ext/dom/html5_serializer.c
++++ b/ext/dom/html5_serializer.c
+@@ -338,11 +338,15 @@ static zend_result dom_html5_serialize_node(dom_html5_serialize_context *ctx, co
+ 				if (node == bound) {
+ 					return SUCCESS;
+ 				}
+-				if (node->type == XML_ELEMENT_NODE) {
++				if (node && node->type == XML_ELEMENT_NODE) {
+ 					TRY(dom_html5_serialize_element_end(ctx, node));
+ 				}
+-			} while (node->next == NULL);
+-			node = node->next;
++			} while (node && node->next == NULL);
++			if (node) {
++				node = node->next;
++			} else {
++				break;
++			}
+ 		}
+ 	}
+ 

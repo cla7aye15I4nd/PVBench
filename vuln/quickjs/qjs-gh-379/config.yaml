@@ -1,0 +1,14 @@
+id: qjs-gh-379
+project: quickjs
+sanitizer: LeakAddressSanitizer
+type: Heap Buffer Overflow
+trigger_commit: 4fb2e38b8aa56728f0b444c752dd240ecd5ab7de
+binary: qjs
+patch:
+  commit: 8dcdb92047e4f15f65b4079eeeb55ca4eb5192c2
+  date: '2024-04-15T06:40:00+02:00'
+reference:
+- https://github.com/quickjs-ng/quickjs.git
+- https://github.com/quickjs-ng/quickjs/issues/379
+- https://github.com/quickjs-ng/quickjs/commit/4fb2e38b8aa56728f0b444c752dd240ecd5ab7de
+- https://github.com/quickjs-ng/quickjs/commit/8dcdb92047e4f15f65b4079eeeb55ca4eb5192c2

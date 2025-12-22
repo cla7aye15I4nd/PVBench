@@ -1,0 +1,64 @@
+
+diff --git a/.gitignore b/.gitignore
+index fa8fbb49d9d..d9670c75cbc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,3 +126,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 11ed284473a..27021e5a04c 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -329,10 +329,16 @@ MaybeHandle<Number> Object::ConvertToNumber(Isolate* isolate,
+     if (IsBigInt(*input)) {
+       THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kBigIntToNumber));
+     }
+-    ASSIGN_RETURN_ON_EXCEPTION(
+-        isolate, input,
+-        JSReceiver::ToPrimitive(isolate, Cast<JSReceiver>(input),
+-                                ToPrimitiveHint::kNumber));
++    if (IsJSReceiver(*input)) {
++      ASSIGN_RETURN_ON_EXCEPTION(
++          isolate, input,
++          JSReceiver::ToPrimitive(isolate, Cast<JSReceiver>(input),
++                                  ToPrimitiveHint::kNumber));
++    } else {
++      // If the input is not a JSReceiver and not any of the primitive types
++      // checked above, we cannot convert it to number.
++      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kCannotConvertToPrimitive));
++    }
+   }
+ }
+ 
+@@ -355,10 +361,16 @@ MaybeHandle<Numeric> Object::ConvertToNumeric(Isolate* isolate,
+     if (IsBigInt(*input)) {
+       return Cast<BigInt>(input);
+     }
+-    ASSIGN_RETURN_ON_EXCEPTION(
+-        isolate, input,
+-        JSReceiver::ToPrimitive(isolate, Cast<JSReceiver>(input),
+-                                ToPrimitiveHint::kNumber));
++    if (IsJSReceiver(*input)) {
++      ASSIGN_RETURN_ON_EXCEPTION(
++          isolate, input,
++          JSReceiver::ToPrimitive(isolate, Cast<JSReceiver>(input),
++                                  ToPrimitiveHint::kNumber));
++    } else {
++      // If the input is not a JSReceiver and not any of the primitive types
++      // checked above, we cannot convert it to numeric.
++      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kCannotConvertToPrimitive));
++    }
+   }
+ }
+ 

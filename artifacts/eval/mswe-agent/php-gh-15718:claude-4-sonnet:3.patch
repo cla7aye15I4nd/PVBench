@@ -1,0 +1,90 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/reflection/php_reflection.c b/ext/reflection/php_reflection.c
+index 531db004b3b..a330d9f15a6 100644
+--- a/ext/reflection/php_reflection.c
++++ b/ext/reflection/php_reflection.c
+@@ -6505,7 +6505,7 @@ ZEND_METHOD(ReflectionProperty, getHooks)
+ 
+ 	GET_REFLECTION_OBJECT_PTR(ref);
+ 
+-	if (!ref->prop->hooks) {
++	if (!ref->prop || !ref->prop->hooks) {
+ 		RETURN_EMPTY_ARRAY();
+ 	}
+ 
+diff --git a/test_gethooks.php b/test_gethooks.php
+new file mode 100644
+index 00000000000..d917608d6df
+--- /dev/null
++++ b/test_gethooks.php
+@@ -0,0 +1,16 @@
++<?php
++
++class TestClass {
++    public $prop;
++}
++
++// Try to create a ReflectionProperty and call getHooks on it
++$reflection = new ReflectionProperty('TestClass', 'prop');
++try {
++    $hooks = $reflection->getHooks();
++    var_dump($hooks);
++} catch (Exception $e) {
++    echo "Exception: " . $e->getMessage() . "\n";
++}
++
++?>
+diff --git a/test_null_prop.php b/test_null_prop.php
+new file mode 100644
+index 00000000000..ccbaf04f51c
+--- /dev/null
++++ b/test_null_prop.php
+@@ -0,0 +1,31 @@
++<?php
++
++// Try to create a scenario where ref->prop might be NULL
++class TestClass {
++    public $normalProp;
++}
++
++// Create reflection property
++$reflection = new ReflectionProperty('TestClass', 'normalProp');
++
++// Try to call getHooks - this should return empty array safely now
++try {
++    $hooks = $reflection->getHooks();
++    var_dump($hooks);
++    echo "getHooks() completed successfully\n";
++} catch (Exception $e) {
++    echo "Exception: " . $e->getMessage() . "\n";
++}
++
++// Also test with a non-existent property to see if that triggers the issue
++try {
++    $reflection2 = new ReflectionProperty('TestClass', 'nonExistentProp');
++    $hooks2 = $reflection2->getHooks();
++    var_dump($hooks2);
++    echo "getHooks() on non-existent property completed successfully\n";
++} catch (Exception $e) {
++    echo "Exception on non-existent property: " . $e->getMessage() . "\n";
++}
++
++echo "Script completed successfully, no crashes.\n";
++?>

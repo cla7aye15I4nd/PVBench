@@ -1,0 +1,25 @@
+diff --git a/Misc/NEWS.d/next/Library/2024-07-26-21-21-13.gh-issue-122332.fvw88r.rst b/Misc/NEWS.d/next/Library/2024-07-26-21-21-13.gh-issue-122332.fvw88r.rst
+new file mode 100644
+index 00000000000..55bb1dc44ad
+--- /dev/null
++++ b/Misc/NEWS.d/next/Library/2024-07-26-21-21-13.gh-issue-122332.fvw88r.rst
+@@ -0,0 +1,2 @@
++Fixed segfault with :meth:`asyncio.Task.get_coro` when using an eager task
++factory.
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 1a223f9bd0c..873c17cd787 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2500,7 +2500,11 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
+-    return Py_NewRef(self->task_coro);
++    if (self->task_coro) {
++        return Py_NewRef(self->task_coro);
++    }
++
++    Py_RETURN_NONE;
+ }
+ 
+ /*[clinic input]

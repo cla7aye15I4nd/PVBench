@@ -1,0 +1,45 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+mlir-opt: /tmp/llvm-gh-137333/build/mlir/lib/IR/Block.cpp:247: mlir::Operation* mlir::Block::getTerminator(): Assertion `mightHaveTerminator()' failed.
+Stack dump:
+0.	Program arguments: ./build/bin/mlir-opt /testcases/llvm-gh-137333/input/poc.mlir -test-lower-to-llvm
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:888:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - mlir::Block::getTerminator() mlir/lib/IR/Block.cpp:248:15
+    - lastNonTerminatorInRegion(mlir::Operation*) mlir/lib/Dialect/MemRef/IR/MemRefOps.cpp:401:63
+    - AllocaScopeHoister::matchAndRewrite(mlir::memref::AllocaScopeOp, mlir::PatternRewriter&) const mlir/lib/Dialect/MemRef/IR/MemRefOps.cpp:466:9
+    - mlir::detail::OpOrInterfaceRewritePatternBase<mlir::memref::AllocaScopeOp>::matchAndRewrite(mlir::Operation*, mlir::PatternRewriter&) const mlir/include/mlir/IR/PatternMatch.h:300:3
+    - mlir::PatternApplicator::matchAndRewrite(mlir::Operation*, mlir::PatternRewriter&, llvm::function_ref<bool (mlir::Pattern const&)>, llvm::function_ref<void (mlir::Pattern const&)>, llvm::function_ref<llvm::LogicalResult (mlir::Pattern const&)>)::'lambda'()::operator()() const mlir/lib/Rewrite/PatternApplicator.cpp:212:46
+    - void llvm::function_ref<void ()>::callback_fn<mlir::PatternApplicator::matchAndRewrite(mlir::Operation*, mlir::PatternRewriter&, llvm::function_ref<bool (mlir::Pattern const&)>, llvm::function_ref<void (mlir::Pattern const&)>, llvm::function_ref<llvm::LogicalResult (mlir::Pattern const&)>)::'lambda'()>(long) llvm/include/llvm/ADT/STLFunctionalExtras.h:47:40
+    - llvm::function_ref<void ()>::operator()() const llvm/include/llvm/ADT/STLFunctionalExtras.h:69:62
+    - void mlir::MLIRContext::executeAction<mlir::ApplyPatternAction, mlir::Pattern const&>(llvm::function_ref<void ()>, llvm::ArrayRef<mlir::IRUnit>, mlir::Pattern const&) mlir/include/mlir/IR/MLIRContext.h:281:3
+    - mlir::PatternApplicator::matchAndRewrite(mlir::Operation*, mlir::PatternRewriter&, llvm::function_ref<bool (mlir::Pattern const&)>, llvm::function_ref<void (mlir::Pattern const&)>, llvm::function_ref<llvm::LogicalResult (mlir::Pattern const&)>) mlir/lib/Rewrite/PatternApplicator.cpp:233:5
+    - (anonymous namespace)::GreedyPatternRewriteDriver::processWorklist() mlir/lib/Transforms/Utils/GreedyPatternRewriteDriver.cpp:616:32
+    - (anonymous namespace)::RegionPatternRewriteDriver::simplify(bool*) &&::'lambda'()::operator()() const mlir/lib/Transforms/Utils/GreedyPatternRewriteDriver.cpp:875:28
+    - void llvm::function_ref<void ()>::callback_fn<(anonymous namespace)::RegionPatternRewriteDriver::simplify(bool*) &&::'lambda'()>(long) llvm/include/llvm/ADT/STLFunctionalExtras.h:47:40
+    - llvm::function_ref<void ()>::operator()() const llvm/include/llvm/ADT/STLFunctionalExtras.h:69:62
+    - void mlir::MLIRContext::executeAction<(anonymous namespace)::GreedyPatternRewriteIteration, long&>(llvm::function_ref<void ()>, llvm::ArrayRef<mlir::IRUnit>, long&) mlir/include/mlir/IR/MLIRContext.h:281:3
+    - (anonymous namespace)::RegionPatternRewriteDriver::simplify(bool*) && mlir/lib/Transforms/Utils/GreedyPatternRewriteDriver.cpp:888:3
+    - mlir::applyPatternsGreedily(mlir::Region&, mlir::FrozenRewritePatternSet const&, mlir::GreedyRewriteConfig, bool*) mlir/lib/Transforms/Utils/GreedyPatternRewriteDriver.cpp:920:55
+    - mlir::applyPatternsGreedily(mlir::Operation*, mlir::FrozenRewritePatternSet const&, mlir::GreedyRewriteConfig, bool*) mlir/include/mlir/Transforms/GreedyPatternRewriteDriver.h:224:36
+    - (anonymous namespace)::Canonicalizer::runOnOperation() mlir/lib/Transforms/Canonicalizer.cpp:64:30
+    - mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int)::'lambda'()::operator()() const mlir/lib/Pass/Pass.cpp:529:22
+    - void llvm::function_ref<void ()>::callback_fn<mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int)::'lambda'()>(long) llvm/include/llvm/ADT/STLFunctionalExtras.h:47:40
+    - llvm::function_ref<void ()>::operator()() const llvm/include/llvm/ADT/STLFunctionalExtras.h:69:62
+    - void mlir::MLIRContext::executeAction<mlir::PassExecutionAction, mlir::Pass&>(llvm::function_ref<void ()>, llvm::ArrayRef<mlir::IRUnit>, mlir::Pass&) mlir/include/mlir/IR/MLIRContext.h:281:3
+    - mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int) mlir/lib/Pass/Pass.cpp:534:23
+    - mlir::detail::OpToOpPassAdaptor::runPipeline(mlir::OpPassManager&, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int, mlir::PassInstrumentor*, mlir::PassInstrumentation::PipelineParentInfo const*) mlir/lib/Pass/Pass.cpp:594:15
+    - mlir::PassManager::runPasses(mlir::Operation*, mlir::AnalysisManager) mlir/lib/Pass/Pass.cpp:907:40
+    - mlir::PassManager::run(mlir::Operation*) mlir/lib/Pass/Pass.cpp:887:69
+    - performActions(llvm::raw_ostream&, std::shared_ptr<llvm::SourceMgr> const&, mlir::MLIRContext*, mlir::MlirOptMainConfig const&) mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:484:13
+    - processBuffer(llvm::raw_ostream&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, mlir::MlirOptMainConfig const&, mlir::DialectRegistry&, llvm::ThreadPoolInterface*) mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:552:26
+    - mlir::MlirOptMain(llvm::raw_ostream&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, mlir::DialectRegistry&, mlir::MlirOptMainConfig const&)::'lambda'(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)::operator()(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&) const mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:636:25
+    - llvm::LogicalResult llvm::function_ref<llvm::LogicalResult (std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)>::callback_fn<mlir::MlirOptMain(llvm::raw_ostream&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, mlir::DialectRegistry&, mlir::MlirOptMainConfig const&)::'lambda'(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)>(long, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&) llvm/include/llvm/ADT/STLFunctionalExtras.h:46:52
+    - llvm::function_ref<llvm::LogicalResult (std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)>::operator()(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&) const llvm/include/llvm/ADT/STLFunctionalExtras.h:69:12
+    - mlir::splitAndProcessBuffer(std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::function_ref<llvm::LogicalResult (std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, llvm::raw_ostream&)>, llvm::raw_ostream&, llvm::StringRef, llvm::StringRef) mlir/lib/Support/ToolUtilities.cpp:27:30
+    - mlir::MlirOptMain(llvm::raw_ostream&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, mlir::DialectRegistry&, mlir::MlirOptMainConfig const&) mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:639:31
+    - mlir::MlirOptMain(int, char**, llvm::StringRef, llvm::StringRef, mlir::DialectRegistry&) mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:680:13
+    - mlir::MlirOptMain(int, char**, llvm::StringRef, mlir::DialectRegistry&) mlir/lib/Tools/mlir-opt/MlirOptMain.cpp:696:21
+    - main mlir/tools/mlir-opt/mlir-opt.cpp:339:0

@@ -1,0 +1,36 @@
+
+diff --git a/.gitignore b/.gitignore
+index 2a6f249275c..b3c9b7a4ed8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -173,3 +173,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/templateobject.c b/Objects/templateobject.c
+index 06cb19e0b6d..ed631ff4373 100644
+--- a/Objects/templateobject.c
++++ b/Objects/templateobject.c
+@@ -23,7 +23,7 @@ templateiter_next(PyObject *op)
+     if (self->from_strings) {
+         item = PyIter_Next(self->stringsiter);
+         self->from_strings = 0;
+-        if (PyUnicode_GET_LENGTH(item) == 0) {
++        if (item != NULL && PyUnicode_GET_LENGTH(item) == 0) {
+             Py_SETREF(item, PyIter_Next(self->interpolationsiter));
+             self->from_strings = 1;
+         }
+@@ -31,6 +31,7 @@ templateiter_next(PyObject *op)
+         item = PyIter_Next(self->interpolationsiter);
+         self->from_strings = 1;
+     }
++
+     return item;
+ }
+ 

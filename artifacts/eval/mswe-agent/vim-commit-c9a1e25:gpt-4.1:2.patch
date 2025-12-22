@@ -1,0 +1,106 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/ops.c b/src/ops.c
+index a75efab59..a496c3e6d 100644
+--- a/src/ops.c
++++ b/src/ops.c
+@@ -2563,8 +2563,15 @@ block_prep(
+ 	bdp->end_char_vcols = incr;
+ 	if (is_del && bdp->startspaces)
+ 	    pstart = prev_pstart;
+-	bdp->textlen = (int)(pend - pstart);
+-    }
++    bdp->textlen = (int)(pend - pstart);
++    // Clamp textlen to the actual line length to avoid buffer overflow
++    int line_len = (int)STRLEN(line);
++    int offset = (int)(pstart - line);
++    if (bdp->textlen > line_len - offset)
++        bdp->textlen = line_len - offset;
++    if (bdp->textlen < 0)
++        bdp->textlen = 0;
++
+     bdp->textcol = (colnr_T) (pstart - line);
+     bdp->textstart = pstart;
+ #ifdef FEAT_LINEBREAK
+@@ -2575,8 +2582,8 @@ block_prep(
+ /*
+  * Get block text from "start" to "end"
+  */
+-    void
+-charwise_block_prep(
++
++static void charwise_block_prep(
+     pos_T		start,
+     pos_T		end,
+     struct block_def	*bdp,
+@@ -2635,7 +2642,7 @@ charwise_block_prep(
+ 		{
+ 		    bdp->endspaces = end.coladd + inclusive;
+ 		    endcol -= inclusive;
+-		}
++
+ 	    }
+ 	}
+     }
+@@ -2644,7 +2651,15 @@ charwise_block_prep(
+     if (startcol > endcol || bdp->is_oneChar)
+ 	bdp->textlen = 0;
+     else
+-	bdp->textlen = endcol - startcol + inclusive;
++    // Clamp textlen to the actual line length to avoid buffer overflow
++    {
++        int line_len = (int)STRLEN(p);
++        int offset = (int)(startcol);
++        if (bdp->textlen > line_len - offset)
++            bdp->textlen = line_len - offset;
++        if (bdp->textlen < 0)
++            bdp->textlen = 0;
++    }
+     bdp->textcol = startcol;
+     bdp->textstart = p + startcol;
+ }
+@@ -4610,8 +4625,9 @@ do_pending_operator(cmdarg_T *cap, int old_col, int gui_yank)
+ // put byte 'c' at position 'lp', but
+ // verify, that the position to place
+ // is actually safe
+-    static void
+-pbyte(pos_T lp, int c)
++
++
++static void pbyte(pos_T lp, int c)
+ {
+     char_u *p = ml_get_buf(curbuf, lp.lnum, TRUE);
+     int	len = curbuf->b_ml.ml_line_len;
+diff --git a/src/proto/ops.pro b/src/proto/ops.pro
+index bebe63553..7137026a5 100644
+--- a/src/proto/ops.pro
++++ b/src/proto/ops.pro
+@@ -14,7 +14,7 @@ void adjust_cursor_eol(void);
+ char_u *skip_comment(char_u *line, int process, int include_space, int *is_comment);
+ int do_join(long count, int insert_space, int save_undo, int use_formatoptions, int setmark);
+ void block_prep(oparg_T *oap, struct block_def *bdp, linenr_T lnum, int is_del);
+-void charwise_block_prep(pos_T start, pos_T end, struct block_def *bdp, linenr_T lnum, int inclusive);
++
+ void op_addsub(oparg_T *oap, linenr_T Prenum1, int g_cmd);
+ void clear_oparg(oparg_T *oap);
+ void cursor_pos_info(dict_T *dict);
+@@ -23,3 +23,4 @@ void free_operatorfunc_option(void);
+ int set_ref_in_opfunc(int copyID);
+ void do_pending_operator(cmdarg_T *cap, int old_col, int gui_yank);
+ /* vim: set ft=c : */
++void charwise_block_prep(

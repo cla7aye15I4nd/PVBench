@@ -1,0 +1,67 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/Makefile b/src/Makefile
+index 257742f4c..030ff6b68 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -696,9 +696,9 @@ LINT_OPTIONS = -beprxzF
+ # $ export ASAN_OPTIONS="print_stacktrace=1 log_path=asan"
+ # $ export LSAN_OPTIONS="suppressions=`pwd`/testdir/lsan-suppress.txt"
+ # When running tests output can be found in testdir/asan.*
+-#SANITIZER_CFLAGS = -g -O0 -fsanitize-recover=all \
+-#		   -fsanitize=address -fsanitize=undefined \
+-#		   -fno-omit-frame-pointer
++SANITIZER_CFLAGS = -g -O0 -fsanitize-recover=all \
++		   -fsanitize=address -fsanitize=undefined \
++		   -fno-omit-frame-pointer
+ 
+ # Similarly when compiling with clang and using ubsan.
+ # $ export UBSAN_OPTIONS="print_stacktrace=1 log_path=ubsan"
+@@ -713,7 +713,7 @@ SANITIZER_LIBS = $(SANITIZER_CFLAGS)
+ # Configuration is in the .ccmalloc or ~/.ccmalloc file.
+ # Doesn't work very well, since memory linked to from global variables
+ # (in libraries) is also marked as leaked memory.
+-#LEAK_CFLAGS = -DEXITFREE
++LEAK_CFLAGS = -DEXITFREE
+ #LEAK_LIBS = -lccmalloc
+ 
+ # Uncomment this line to have Vim call abort() when an internal error is
+diff --git a/src/getchar.c b/src/getchar.c
+index 29323fa32..29a04e991 100644
+--- a/src/getchar.c
++++ b/src/getchar.c
+@@ -1037,7 +1037,10 @@ ins_typebuf(
+ 
+     addlen = (int)STRLEN(str);
+ 
+-    if (offset == 0 && addlen <= typebuf.tb_off)
++    if (offset == 0 && addlen <= typebuf.tb_off && 
++        typebuf.tb_off >= addlen && 
++        typebuf.tb_buf != NULL &&
++        typebuf.tb_off - addlen >= 0)
+     {
+ 	/*
+ 	 * Easy case: there is room in front of typebuf.tb_buf[typebuf.tb_off]
+@@ -1045,6 +1048,7 @@ ins_typebuf(
+ 	typebuf.tb_off -= addlen;
+ 	mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
+     }
++
+     else if (typebuf.tb_len == 0 && typebuf.tb_buflen
+ 					       >= addlen + 3 * (MAXMAPLEN + 4))
+     {

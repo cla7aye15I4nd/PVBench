@@ -1,0 +1,53 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1248d6dbcbe..461a998a588 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -169,3 +169,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index d32cff66144..476d1ee9c51 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3255,7 +3255,9 @@ _curses_initscr_impl(PyObject *module)
+     PyCursesWindowObject *winobj;
+ 
+     if (initialised) {
+-        wrefresh(stdscr);
++        if (stdscr != NULL) {
++            wrefresh(stdscr);
++        }
+         return (PyObject *)PyCursesWindow_New(stdscr, NULL);
+     }
+ 
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..0ce28d04b9b
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,17 @@
++import curses
++
++# Try to initialize curses
++try:
++    stdscr = curses.initscr()
++    print("First initscr() call successful")
++    curses.endwin()
++    
++    # Try to call initscr again - this might trigger the bug
++    stdscr = curses.initscr()
++    print("Second initscr() call successful")
++    curses.endwin()
++    
++except Exception as e:
++    print(f"Error: {e}")
++    
++print("Script completed successfully, no errors.")

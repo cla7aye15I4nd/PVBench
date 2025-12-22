@@ -1,0 +1,23 @@
+==1066060==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000008 (pc 0x55b8e6a51ca4 bp 0x7ffd7fe81450 sp 0x7ffd7fe81250 T0)
+==1066060==The signal is caused by a READ memory access.
+==1066060==Hint: address points to the zero page.
+    #0 0x55b8e6a51ca4 in dom_html5_serialize_text_node /php-gh-15570/build/ext/dom/html5_serializer.c:140:25
+    #1 0x55b8e6a511a2 in dom_html5_serialize_node /php-gh-15570/build/ext/dom/html5_serializer.c:282:5
+    #2 0x55b8e6a51957 in dom_html5_serialize_outer /php-gh-15570/build/ext/dom/html5_serializer.c:390:24
+    #3 0x55b8e6a447f5 in dom_common_save /php-gh-15570/build/ext/dom/html_document.c:1242:6
+    #4 0x55b8e6a452f2 in zim_Dom_HTMLDocument_saveHtml /php-gh-15570/build/ext/dom/html_document.c:1339:23
+    #5 0x55b8e7cb1463 in ZEND_DO_FCALL_SPEC_RETVAL_USED_HANDLER /php-gh-15570/build/Zend/zend_vm_execute.h:2014:4
+    #6 0x55b8e7b29e4c in execute_ex /php-gh-15570/build/Zend/zend_vm_execute.h:58221:7
+    #7 0x55b8e7b2b6e7 in zend_execute /php-gh-15570/build/Zend/zend_vm_execute.h:63873:2
+    #8 0x55b8e81b14c0 in zend_execute_script /php-gh-15570/build/Zend/zend.c:1913:3
+    #9 0x55b8e75e368d in php_execute_script_ex /php-gh-15570/build/main/main.c:2576:13
+    #10 0x55b8e75e3b18 in php_execute_script /php-gh-15570/build/main/main.c:2616:9
+    #11 0x55b8e81b9791 in do_cli /php-gh-15570/build/sapi/cli/php_cli.c:935:5
+    #12 0x55b8e81b76fb in main /php-gh-15570/build/sapi/cli/php_cli.c:1309:18
+    #13 0x7fcc488771c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x7fcc4887728a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x55b8e66033a4 in _start (/php-gh-15570/build/sapi/cli/php+0x4033a4) (BuildId: ca59bcab9394e4d0a372c63511bf246f3d9020d5)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-15570/build/ext/dom/html5_serializer.c:140:25 in dom_html5_serialize_text_node
+==1066060==ABORTING

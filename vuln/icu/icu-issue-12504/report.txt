@@ -1,0 +1,11 @@
+runtime error: signed integer overflow: 2147483646 + 3 cannot be represented in type 'int'
+    #0 0x7173a8a15886 in icu_60::PersianCalendar::handleComputeFields(int, UErrorCode&) /tmp/icu-issue-12504/build/i18n/.././icu4c/source/i18n/persncal.cpp:216:59
+    #1 0x7173a899813c in icu_60::Calendar::computeFields(UErrorCode&) /tmp/icu-issue-12504/build/i18n/.././icu4c/source/i18n/calendar.cpp:1531:5
+    #2 0x7173a89927cd in icu_60::Calendar::complete(UErrorCode&) /tmp/icu-issue-12504/build/i18n/.././icu4c/source/i18n/calendar.cpp:1422:9
+    #3 0x7173a899227d in icu_60::Calendar::get(UCalendarDateFields, UErrorCode&) const /tmp/icu-issue-12504/build/i18n/.././icu4c/source/i18n/calendar.cpp:1172:47
+    #4 0x5758a99a7f43 in main /tmp/icu-issue-12504/build/poc.cpp:26:22
+    #5 0x7173a61591c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x7173a615928a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x5758a997c484 in _start (/tmp/icu-issue-12504/build/poc+0x6484) (BuildId: 05cdbf8d253437f4d890ed3b87e5f24f7168a81d)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/persncal.cpp:216:59 

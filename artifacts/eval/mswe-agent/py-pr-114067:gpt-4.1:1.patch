@@ -1,0 +1,64 @@
+
+diff --git a/.gitignore b/.gitignore
+index c424a894c2a..94d6d1b74a0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -160,3 +160,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
+index 4b03cc3f4da..dedaf01b005 100644
+--- a/Objects/unicodeobject.c
++++ b/Objects/unicodeobject.c
+@@ -2375,15 +2375,18 @@ unicode_fromformat_write_str(_PyUnicodeWriter *writer, PyObject *str,
+     return 0;
+ }
+ 
+-static int
+-unicode_fromformat_write_cstr(_PyUnicodeWriter *writer, const char *str,
+-                              Py_ssize_t width, Py_ssize_t precision, int flags)
++static int unicode_fromformat_write_cstr(_PyUnicodeWriter *writer, const char *str, Py_ssize_t width, Py_ssize_t precision, int flags)
+ {
+     /* UTF-8 */
+     Py_ssize_t length;
+     PyObject *unicode;
+     int res;
+ 
++    if (str == NULL) {
++        str = "";
++    }
++    if (writer == NULL) {
++        return -1;
+     if (precision == -1) {
+         length = strlen(str);
+     }
+@@ -2402,11 +2405,8 @@ unicode_fromformat_write_cstr(_PyUnicodeWriter *writer, const char *str,
+     return res;
+ }
+ 
+-static int
+-unicode_fromformat_write_wcstr(_PyUnicodeWriter *writer, const wchar_t *str,
+-                              Py_ssize_t width, Py_ssize_t precision, int flags)
++static int unicode_fromformat_write_wcstr(_PyUnicodeWriter *writer, const wchar_t *str, Py_ssize_t width, Py_ssize_t precision, int flags)
+ {
+-    /* UTF-8 */
+     Py_ssize_t length;
+     PyObject *unicode;
+     int res;
+@@ -2440,8 +2440,8 @@ static const char * const formats_u[] = {"%u", "%lu", "%llu", "%zu", "%tu", "%ju
+ static const char * const formats_x[] = {"%x", "%lx", "%llx", "%zx", "%tx", "%jx"};
+ static const char * const formats_X[] = {"%X", "%lX", "%llX", "%zX", "%tX", "%jX"};
+ 
++
+ static const char*
+-unicode_fromformat_arg(_PyUnicodeWriter *writer,
+                        const char *f, va_list *vargs)
+ {
+     const char *p;

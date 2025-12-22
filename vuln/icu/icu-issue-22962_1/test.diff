@@ -1,0 +1,44 @@
+diff --git a/icu4c/source/test/intltest/caltest.cpp b/icu4c/source/test/intltest/caltest.cpp
+index 83b410967c4..12117085779 100644
+--- a/icu4c/source/test/intltest/caltest.cpp
++++ b/icu4c/source/test/intltest/caltest.cpp
+@@ -193,6 +193,7 @@ void CalendarTest::runIndexedTest( int32_t index, UBool exec, const char* &name,
+ 
+     TESTCASE_AUTO(Test22633ChineseOverflow);
+     TESTCASE_AUTO(Test22962ChineseOverflow);
++    TESTCASE_AUTO(Test22962BuddhistOverflow);
+     TESTCASE_AUTO(Test22633IndianOverflow);
+     TESTCASE_AUTO(Test22633IslamicUmalquraOverflow);
+     TESTCASE_AUTO(Test22633PersianOverflow);
+@@ -5665,6 +5666,19 @@ void CalendarTest::Test22633ChineseOverflow() {
+     assertTrue("Should return falure", U_FAILURE(status));
+ }
+ 
++void CalendarTest::Test22962BuddhistOverflow() {
++    UErrorCode status = U_ZERO_ERROR;
++    LocalPointer<Calendar> cal(Calendar::createInstance(Locale("en@calendar=uddhist"), status), status);
++    U_ASSERT(U_SUCCESS(status));
++    cal->clear();
++    cal->set(UCAL_WEEK_OF_YEAR, 1666136);
++    cal->set(UCAL_YEAR, -1887379272);
++    cal->fieldDifference(
++        261830011167902373443927125260580558779842815957727840993886210772873194951140935848493861585917165011373697198856398176256.000000,
++        UCAL_YEAR_WOY, status);
++    assertTrue("Should return falure", U_FAILURE(status));
++}
++
+ void CalendarTest::Test22962ChineseOverflow() {
+     UErrorCode status = U_ZERO_ERROR;
+     LocalPointer<Calendar> cal(Calendar::createInstance(Locale("en@calendar=chinese"), status), status);
+diff --git a/icu4c/source/test/intltest/caltest.h b/icu4c/source/test/intltest/caltest.h
+index c83c0ffe044..068db75b56f 100644
+--- a/icu4c/source/test/intltest/caltest.h
++++ b/icu4c/source/test/intltest/caltest.h
+@@ -336,6 +336,7 @@ class CalendarTest: public CalendarTimeZoneTest {
+     void TestRollWeekOfYear();
+     void Test22633ChineseOverflow();
+     void Test22962ChineseOverflow();
++    void Test22962BuddhistOverflow();
+     void Test22633IndianOverflow();
+     void Test22633IslamicUmalquraOverflow();
+     void Test22633PersianOverflow();

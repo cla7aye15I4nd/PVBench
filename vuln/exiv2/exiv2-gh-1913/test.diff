@@ -1,0 +1,57 @@
+diff --git a/test/data/issue_1912_poc.jpg b/test/data/issue_1912_poc.jpg
+new file mode 100644
+index 0000000000000000000000000000000000000000..837d2ebb015d636d47c9ff44b2b002ee4896ebba
+GIT binary patch
+literal 3754
+zcmeHKYi!$86u#F^`kKVrGPbd0!t>Uxj3sv5rcJD-WlNVX6Dg%BZ8ss1+c>RhVh6`-
+z(h3li!3IL23uV9rsB~q(#2;XTF_3tT=Re*935oF>{NeqYgvz<L;|{6tAE`IG_k2G0
+zyXT&J&aq?9otpa$Rqu$#q6lMzj=~Skou;4IR!~w1#p7rbLZ|{&;-!cJR0e$<SDSb_
+z;G1wQqCsN#A-oE?O^nb1yxPGJ;d+|`7O-HhT?V|vdllre`6u?(p-Kx=4}e4wN!3(q
+zWV*DxtS5#wgGmIKSb|K0mt;pv3OpYa`GCj=89pQi8bu+9(3**ZB@Zai#DflAzi*@M
+zO&3Cw2$h2s7cU6>Bwg~1+C1rU@TL2)#laMf_EV0Xo+3t7mKW4j#d&?Q=yLSwqTAsc
+z#d3RJh*7c9#?^qU9M1LAC4c-pKaFh;oO7BgMG8+&(+=J|bDpzy&&*N>-#JrluZ4)u
+zteD4#Ec=+GY_?>dV9MqYOrL{Yj?JmrvUxqwNCVI4Ga$_@E|i6ZbilVN2H`fqOldtx
+z(nwZUK(ByKstvA>fPgjb_+KDbS~}1#v5|`+m5I%aQJnw*kvfE3=nXKES*nldt<w;F
+zD=^4Tq~^&!cHPpwkn7Ugt5L1F7Ak}uMXSv!s0Dl@T4U;=hG{4uv#p1bm|A7aCR-Yo
+z><qyDG%5sRsv+yDl=e6DD5+FL%VafGR*h|_!RCW~V#hrNG6~(jCs4_rhs^hNB)q{!
+zgtjCiu^1?}@7&rQYxhQD{R_o=?sU})!-kO+IZn;_q@*?=`v$cPSCF!t-^X*PrLB;a
+z21jIr8IXq*HOzkh{EIB3B*Sc9AkN3L5qVhIKCa7&@y?#X@sYt$l5J~cS_)zzlg-G6
+z#1t}VH76FrtZ7^XOw=69m=t3q%=X8-n24s!Orx*S$9v6SuwX+^ro`^{sBHnR!mRCT
+zKA-pH8+@8R#Q8&^5XTFgAb5e{&5fysRPd^~btMb!a&AypvWB9m46!H;XuFLt3;Uan
+zNxQ+dg(4usGtLYFFo?I-F*4bO*`;`uh*@|bX}MwTU+B)XxdY3<9^z%Pnv1C^EzCA?
+zex_M~f#-PA=jX#L(*z-E7JPgrW2vKQDK|`t1(r+Xlwp?V{PvupXY!IRhuNr&m|j`W
+zkx)Q#ZPMj=Rn|MD46wSj0YzovN;;h*2g!;NU6u^F9eS80<>Tc8UOw1UdXQSAxRz8>
+zWB);NPAd|UWfKZ$A%h&`owE~9pi@V!%wk)Nz+wazBd{2O#R&Y5A^@*oF%RB_=+$){
+z9(dcN5aprT&=NirXcU5%@X$O|E2<#>hJ1hzdZ^}eFIxV=M8U1GxT_9qB2+zg_IO(C
+z2-M#-b*yHn{?lvbUP3h$cr%`)@mfUHV7dm+okSPGJE0q!&0Gcpe5|<KW#tu>RZD<y
+z3_jQ}O;aw~?RLS-I=+E?%(!aYwQK!b%Fe$+Drc`-CfvOL;fi%zpM3d(?stAz-!Pz0
+zR8}otvGT%IbsIL;U%aU?(9|3ZiIMhg(T?r09f_VRd;9u#?ix(Wsi9%z+MKa_G+!7S
+zzh%#@x9#0``yIu*r|vm$?|t_loH;c6$l*sHd;G{#Pai$@%(KUzJMqe^CtrL0jW^$V
+y``!26|KP)qPJR5z>CeCT@~f}EIrHszKmPRdFTeiw`yYRvCFg=K6zf<pqQ3zn0fK4(
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/bugfixes/github/test_issue_1912.py b/tests/bugfixes/github/test_issue_1912.py
+new file mode 100644
+index 000000000..de496a6a5
+--- /dev/null
++++ b/tests/bugfixes/github/test_issue_1912.py
+@@ -0,0 +1,17 @@
++# -*- coding: utf-8 -*-
++
++from system_tests import CaseMeta, path, check_no_ASAN_UBSAN_errors
++
++class TagsIntPrint0x0007IntegerOverflow(metaclass=CaseMeta):
++    """
++    Regression test for the bug described in:
++    https://github.com/Exiv2/exiv2/issues/1912
++    """
++    url = "https://github.com/Exiv2/exiv2/issues/1912"
++
++    filename = path("$data_path/issue_1912_poc.jpg")
++    commands = ["$exiv2 -q -Pt $filename"]
++    stderr = [""]
++    retval = [0]
++
++    compare_stdout = check_no_ASAN_UBSAN_errors

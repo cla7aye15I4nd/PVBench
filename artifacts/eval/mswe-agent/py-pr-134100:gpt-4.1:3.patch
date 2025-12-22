@@ -1,0 +1,75 @@
+
+diff --git a/.gitignore b/.gitignore
+index 2a6f249275c..b3c9b7a4ed8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -173,3 +173,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/import.c b/Python/import.c
+index 9dec0f488a3..fe296a49a92 100644
+--- a/Python/import.c
++++ b/Python/import.c
+@@ -3763,7 +3763,7 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
+     PyObject *package = NULL;
+     PyInterpreterState *interp = tstate->interp;
+     int has_from;
+-
++    PyObject *to_return = NULL;
+     if (name == NULL) {
+         _PyErr_SetString(tstate, PyExc_ValueError, "Empty module name");
+         goto error;
+@@ -3803,7 +3803,7 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
+     if (mod != NULL && mod != Py_None) {
+         if (import_ensure_initialized(tstate->interp, mod, abs_name) < 0) {
+             goto error;
+-        }
++
+     }
+     else {
+         Py_XDECREF(mod);
+@@ -3847,14 +3847,14 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
+             else {
+                 Py_ssize_t cut_off = len - dot;
+                 Py_ssize_t abs_name_len = PyUnicode_GET_LENGTH(abs_name);
+-                PyObject *to_return = PyUnicode_Substring(abs_name, 0,
++                to_return = PyUnicode_Substring(abs_name, 0,
+                                                         abs_name_len - cut_off);
+                 if (to_return == NULL) {
+                     goto error;
+                 }
+ 
+                 final_mod = import_get_module(tstate, to_return);
+-                Py_DECREF(to_return);
++                /* Py_DECREF(to_return);  // moved below error handling */
+                 if (final_mod == NULL) {
+                     if (!_PyErr_Occurred(tstate)) {
+                         _PyErr_Format(tstate, PyExc_KeyError,
+@@ -3888,11 +3888,13 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
+     Py_XDECREF(abs_name);
+     Py_XDECREF(mod);
+     Py_XDECREF(package);
++    Py_XDECREF(to_return);
+     if (final_mod == NULL) {
+         remove_importlib_frames(tstate);
+     }
+     return final_mod;
+ }
++}
+ 
+ PyObject *
+ PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObject *locals,
+diff --git a/asan_output.txt b/asan_output.txt
+new file mode 100644
+index 00000000000..b0047fa49f0
+--- /dev/null
++++ b/asan_output.txt
+@@ -0,0 +1 @@
++None

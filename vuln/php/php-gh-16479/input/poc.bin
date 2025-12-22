@@ -1,0 +1,16 @@
+<?php
+
+class C {
+    function __destruct() {
+        global $store;
+        $store->removeAll($store);
+    }
+}
+
+$o = new stdClass;
+$store = new SplObjectStorage;
+$store[$o] = new C;
+$store->setInfo(1);
+var_dump($store);
+
+?>

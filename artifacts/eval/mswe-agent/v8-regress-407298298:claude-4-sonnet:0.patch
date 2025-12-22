@@ -1,0 +1,68 @@
+
+diff --git a/.gitignore b/.gitignore
+index 243f9d5ac0b..b8063aa4207 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -131,3 +131,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/arguments.h b/src/execution/arguments.h
+index b7ee609dfc1..4a647b6c314 100644
+--- a/src/execution/arguments.h
++++ b/src/execution/arguments.h
+@@ -136,6 +136,21 @@ FullObjectSlot Arguments<T>::slot_from_address_at(int index, int offset) const {
+ 
+ #endif  // V8_RUNTIME_CALL_STATS
+ 
++#define RUNTIME_FUNCTION_RETURNS_TYPE_WASM_CALLABLE(Type, InternalType, Convert, Name) \
++  static V8_INLINE InternalType __RT_impl_##Name(RuntimeArguments args,    \
++                                                 Isolate* isolate);        \
++  RUNTIME_ENTRY_WITH_RCS(Type, InternalType, Convert, Name)                \
++  Type Name(int args_length, Address* args_object, Isolate* isolate) {     \
++    DCHECK(isolate->context().is_null() || IsContext(isolate->context())); \
++    /* Skip DCHECK(isolate->IsOnCentralStack()) for WASM-callable functions */ \
++    CLOBBER_DOUBLE_REGISTERS();                                            \
++    TEST_AND_CALL_RCS(Name)                                                \
++    RuntimeArguments args(args_length, args_object);                       \
++    return Convert(__RT_impl_##Name(args, isolate));                       \
++  }                                                                        \
++                                                                           \
++  static InternalType __RT_impl_##Name(RuntimeArguments args, Isolate* isolate)
++
+ #define RUNTIME_FUNCTION_RETURNS_TYPE(Type, InternalType, Convert, Name)   \
+   static V8_INLINE InternalType __RT_impl_##Name(RuntimeArguments args,    \
+                                                  Isolate* isolate);        \
+@@ -163,6 +178,10 @@ FullObjectSlot Arguments<T>::slot_from_address_at(int index, int offset) const {
+   RUNTIME_FUNCTION_RETURNS_TYPE(Address, Tagged<Object>, \
+                                 BUILTIN_CONVERT_RESULT, Name)
+ 
++#define RUNTIME_FUNCTION_WASM_CALLABLE(Name)             \
++  RUNTIME_FUNCTION_RETURNS_TYPE_WASM_CALLABLE(Address, Tagged<Object>, \
++                                              BUILTIN_CONVERT_RESULT, Name)
++
+ #define RUNTIME_FUNCTION_RETURN_PAIR(Name)              \
+   RUNTIME_FUNCTION_RETURNS_TYPE(ObjectPair, ObjectPair, \
+                                 BUILTIN_CONVERT_RESULT_PAIR, Name)
+diff --git a/src/runtime/runtime-typedarray.cc b/src/runtime/runtime-typedarray.cc
+index dd8ddfca795..3274ac5266f 100644
+--- a/src/runtime/runtime-typedarray.cc
++++ b/src/runtime/runtime-typedarray.cc
+@@ -66,7 +66,7 @@ RUNTIME_FUNCTION(Runtime_TypedArrayGetBuffer) {
+   return *holder->GetBuffer();
+ }
+ 
+-RUNTIME_FUNCTION(Runtime_GrowableSharedArrayBufferByteLength) {
++RUNTIME_FUNCTION_WASM_CALLABLE(Runtime_GrowableSharedArrayBufferByteLength) {
+   HandleScope scope(isolate);
+   DCHECK_EQ(1, args.length());
+   DirectHandle<JSArrayBuffer> array_buffer = args.at<JSArrayBuffer>(0);

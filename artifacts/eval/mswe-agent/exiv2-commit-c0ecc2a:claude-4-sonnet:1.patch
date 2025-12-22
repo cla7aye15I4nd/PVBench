@@ -1,0 +1,94 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/exiv2/types.hpp b/include/exiv2/types.hpp
+index 33ee3720b..62dce4b4f 100644
+--- a/include/exiv2/types.hpp
++++ b/include/exiv2/types.hpp
+@@ -296,6 +296,9 @@ namespace Exiv2 {
+     template <typename T>
+     uint16_t getUShort(const Slice<T>& buf, ByteOrder byteOrder)
+     {
++        if (buf.size() < 2) {
++            throw std::out_of_range("Buffer too small to read uint16_t");
++        }
+         if (byteOrder == littleEndian) {
+             return static_cast<byte>(buf.at(1)) << 8 | static_cast<byte>(buf.at(0));
+         } else {
+diff --git a/src/types.cpp b/src/types.cpp
+index 17ab051e5..aab20d764 100644
+--- a/src/types.cpp
++++ b/src/types.cpp
+@@ -277,6 +277,9 @@ namespace Exiv2 {
+ 
+     uint16_t getUShort(const byte* buf, ByteOrder byteOrder)
+     {
++        if (buf == NULL) {
++            throw std::invalid_argument("Buffer pointer is null");
++        }
+         return getUShort(makeSliceUntil(buf, 2), byteOrder);
+     }
+ 
+diff --git a/test_fix.cpp b/test_fix.cpp
+new file mode 100644
+index 000000000..5146b0e6d
+--- /dev/null
++++ b/test_fix.cpp
+@@ -0,0 +1,41 @@
++#include <iostream>
++#include <stdexcept>
++#include "../include/exiv2/types.hpp"
++#include "../include/exiv2/slice.hpp"
++
++int main() {
++    try {
++        // Test with empty slice - should throw exception
++        Exiv2::Slice<const unsigned char*> empty_slice;
++        Exiv2::getUShort(empty_slice, Exiv2::littleEndian);
++        std::cout << "ERROR: Should have thrown exception for empty slice" << std::endl;
++        return 1;
++    } catch (const std::out_of_range& e) {
++        std::cout << "SUCCESS: Caught expected exception for empty slice: " << e.what() << std::endl;
++    }
++    
++    try {
++        // Test with single byte slice - should throw exception
++        unsigned char single_byte = 0x42;
++        Exiv2::Slice<const unsigned char*> single_slice(&single_byte, &single_byte + 1);
++        Exiv2::getUShort(single_slice, Exiv2::littleEndian);
++        std::cout << "ERROR: Should have thrown exception for single byte slice" << std::endl;
++        return 1;
++    } catch (const std::out_of_range& e) {
++        std::cout << "SUCCESS: Caught expected exception for single byte slice: " << e.what() << std::endl;
++    }
++    
++    try {
++        // Test with valid 2-byte slice - should work
++        unsigned char two_bytes[] = {0x34, 0x12};
++        Exiv2::Slice<const unsigned char*> valid_slice(two_bytes, two_bytes + 2);
++        uint16_t result = Exiv2::getUShort(valid_slice, Exiv2::littleEndian);
++        std::cout << "SUCCESS: Valid slice returned: 0x" << std::hex << result << std::endl;
++    } catch (const std::exception& e) {
++        std::cout << "ERROR: Unexpected exception for valid slice: " << e.what() << std::endl;
++        return 1;
++    }
++    
++    std::cout << "All tests passed!" << std::endl;
++    return 0;
++}

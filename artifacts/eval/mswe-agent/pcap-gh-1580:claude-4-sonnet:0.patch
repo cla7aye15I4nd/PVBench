@@ -1,0 +1,1074 @@
+
+diff --git a/.gitignore b/.gitignore
+index 463ce5df..cfb1fc2a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -77,3 +77,8 @@ venv/**
+ 
+ #MacOS system files
+ **/.DS_Store
++Build/
++bin/
++lib/
++*.out
++*.exe
+diff --git a/Packet++/src/Packet.cpp b/Packet++/src/Packet.cpp
+index 30a2790f..ffd30416 100644
+--- a/Packet++/src/Packet.cpp
++++ b/Packet++/src/Packet.cpp
+@@ -86,7 +86,8 @@ namespace pcpp
+ 		{
+ 			m_LastLayer = curLayer->getPrevLayer();
+ 			delete curLayer;
+-			m_LastLayer->m_NextLayer = nullptr;
++			if (m_LastLayer != nullptr)
++				m_LastLayer->m_NextLayer = nullptr;
+ 		}
+ 
+ 		if (m_LastLayer != nullptr && parseUntil == UnknownProtocol && parseUntilLayer == OsiModelLayerUnknown)
+diff --git a/comprehensive_test b/comprehensive_test
+new file mode 100755
+index 00000000..d0ae64f2
+Binary files /dev/null and b/comprehensive_test differ
+diff --git a/comprehensive_test.cpp b/comprehensive_test.cpp
+new file mode 100644
+index 00000000..4ccb6190
+--- /dev/null
++++ b/comprehensive_test.cpp
+@@ -0,0 +1,61 @@
++#include <iostream>
++#include <sys/time.h>
++#include "Packet.h"
++#include "RawPacket.h"
++
++int main() {
++    timeval time;
++    gettimeofday(&time, nullptr);
++    
++    // Test with empty data (0 bytes) - this should trigger the original null pointer issue
++    uint8_t emptyData[1] = {0};
++    
++    try {
++        // Test different parsing layers with empty data
++        std::cout << "Testing with OsiModelPhysicalLayer..." << std::endl;
++        pcpp::RawPacket rawPacket1(emptyData, 0, time, true);
++        pcpp::Packet packet1(&rawPacket1, pcpp::OsiModelPhysicalLayer);
++        std::cout << "OsiModelPhysicalLayer test passed" << std::endl;
++        
++        std::cout << "Testing with OsiModelDataLinkLayer..." << std::endl;
++        pcpp::RawPacket rawPacket2(emptyData, 0, time, true);
++        pcpp::Packet packet2(&rawPacket2, pcpp::OsiModelDataLinkLayer);
++        std::cout << "OsiModelDataLinkLayer test passed" << std::endl;
++        
++        std::cout << "Testing with OsiModelNetworkLayer..." << std::endl;
++        pcpp::RawPacket rawPacket3(emptyData, 0, time, true);
++        pcpp::Packet packet3(&rawPacket3, pcpp::OsiModelNetworkLayer);
++        std::cout << "OsiModelNetworkLayer test passed" << std::endl;
++        
++        std::cout << "Testing with OsiModelTransportLayer..." << std::endl;
++        pcpp::RawPacket rawPacket4(emptyData, 0, time, true);
++        pcpp::Packet packet4(&rawPacket4, pcpp::OsiModelTransportLayer);
++        std::cout << "OsiModelTransportLayer test passed" << std::endl;
++        
++        std::cout << "Testing with OsiModelSesionLayer..." << std::endl;
++        pcpp::RawPacket rawPacket5(emptyData, 0, time, true);
++        pcpp::Packet packet5(&rawPacket5, pcpp::OsiModelSesionLayer);
++        std::cout << "OsiModelSesionLayer test passed" << std::endl;
++        
++        std::cout << "Testing with OsiModelPresentationLayer..." << std::endl;
++        pcpp::RawPacket rawPacket6(emptyData, 0, time, true);
++        pcpp::Packet packet6(&rawPacket6, pcpp::OsiModelPresentationLayer);
++        std::cout << "OsiModelPresentationLayer test passed" << std::endl;
++        
++        std::cout << "Testing with OsiModelApplicationLayer..." << std::endl;
++        pcpp::RawPacket rawPacket7(emptyData, 0, time, true);
++        pcpp::Packet packet7(&rawPacket7, pcpp::OsiModelApplicationLayer);
++        std::cout << "OsiModelApplicationLayer test passed" << std::endl;
++        
++        std::cout << "All tests completed successfully, no internal crashes!" << std::endl;
++        
++    } catch (const std::exception& e) {
++        std::cout << "Exception caught: " << e.what() << std::endl;
++        return 1;
++    } catch (...) {
++        std::cout << "Unknown exception caught" << std::endl;
++        return 1;
++    }
++    
++    return 0;
++}
+diff --git a/install/include/pcapplusplus/ArpLayer.h b/install/include/pcapplusplus/ArpLayer.h
+new file mode 100644
+index 00000000..a42db627
+--- /dev/null
++++ b/install/include/pcapplusplus/ArpLayer.h
+@@ -0,0 +1,179 @@
++#pragma once
++
++#include "Layer.h"
++#include "IpAddress.h"
++#include "MacAddress.h"
++
++/// @file
++
++/**
++ * \namespace pcpp
++ * \brief The main namespace for the PcapPlusPlus lib
++ */
++namespace pcpp
++{
++
++	/**
++	 * @struct arphdr
++	 * Represents an ARP protocol header
++	 */
++#pragma pack(push, 1)
++	struct arphdr
++	{
++		/** Hardware type (HTYPE) */
++		uint16_t hardwareType;
++		/** Protocol type (PTYPE). The permitted PTYPE values share a numbering space with those for EtherType */
++		uint16_t protocolType;
++		/** Hardware address length (HLEN). For IPv4, this has the value 0x0800 */
++		uint8_t hardwareSize;
++		/** Protocol length (PLEN). Length (in octets) of addresses used in the upper layer protocol. (The upper layer
++		 * protocol specified in PTYPE.) IPv4 address size is 4 */
++		uint8_t protocolSize;
++		/** Specifies the operation that the sender is performing: 1 (::ARP_REQUEST) for request, 2 (::ARP_REPLY) for
++		 * reply */
++		uint16_t opcode;
++		/** Sender hardware address (SHA) */
++		uint8_t senderMacAddr[6];
++		/** Sender protocol address (SPA) */
++		uint32_t senderIpAddr;
++		/** Target hardware address (THA) */
++		uint8_t targetMacAddr[6];
++		/** Target protocol address (TPA) */
++		uint32_t targetIpAddr;
++	};
++#pragma pack(pop)
++
++	/**
++	 * An enum for ARP message type
++	 */
++	enum ArpOpcode
++	{
++		ARP_REQUEST = 0x0001,  ///< ARP request
++		ARP_REPLY = 0x0002     ///< ARP reply (response)
++	};
++
++	/**
++	 * @class ArpLayer
++	 * Represents an ARP protocol layer. Currently only IPv4 ARP messages are supported
++	 */
++	class ArpLayer : public Layer
++	{
++	public:
++		/**
++		 * A constructor that creates the layer from an existing packet raw data
++		 * @param[in] data A pointer to the raw data (will be casted to @ref arphdr)
++		 * @param[in] dataLen Size of the data in bytes
++		 * @param[in] prevLayer A pointer to the previous layer
++		 * @param[in] packet A pointer to the Packet instance where layer will be stored in
++		 */
++		ArpLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
++		    : Layer(data, dataLen, prevLayer, packet, ARP)
++		{
++			m_DataLen = sizeof(arphdr);
++		}
++
++		/**
++		 * A constructor that allocates a new ARP header
++		 * @param[in] opCode ARP message type (ARP request or ARP reply)
++		 * @param[in] senderMacAddr The sender MAC address (will be put in arphdr#senderMacAddr)
++		 * @param[in] targetMacAddr The target MAC address (will be put in arphdr#targetMacAddr)
++		 * @param[in] senderIpAddr The sender IP address (will be put in arphdr#senderIpAddr)
++		 * @param[in] targetIpAddr The target IP address (will be put in arphdr#targetIpAddr)
++		 */
++		ArpLayer(ArpOpcode opCode, const MacAddress& senderMacAddr, const MacAddress& targetMacAddr,
++		         const IPv4Address& senderIpAddr, const IPv4Address& targetIpAddr);
++
++		~ArpLayer()
++		{}
++
++		/**
++		 * Get a pointer to the ARP header. Notice this points directly to the data, so every change will change the
++		 * actual packet data
++		 * @return A pointer to the @ref arphdr
++		 */
++		inline arphdr* getArpHeader() const
++		{
++			return (arphdr*)m_Data;
++		}
++
++		/**
++		 * Get the sender hardware address (SHA) in the form of MacAddress
++		 * @return A MacAddress containing the sender hardware address (SHA)
++		 */
++		inline MacAddress getSenderMacAddress() const
++		{
++			return MacAddress(getArpHeader()->senderMacAddr);
++		}
++
++		/**
++		 * Get the target hardware address (THA) in the form of MacAddress
++		 * @return A MacAddress containing the target hardware address (THA)
++		 */
++		inline MacAddress getTargetMacAddress() const
++		{
++			return MacAddress(getArpHeader()->targetMacAddr);
++		}
++
++		/**
++		 * Get the sender protocol address (SPA) in the form of IPv4Address
++		 * @return An IPv4Address containing the sender protocol address (SPA)
++		 */
++		inline IPv4Address getSenderIpAddr() const
++		{
++			return getArpHeader()->senderIpAddr;
++		}
++
++		/**
++		 * Get the target protocol address (TPA) in the form of IPv4Address
++		 * @return An IPv4Address containing the target protocol address (TPA)
++		 */
++		inline IPv4Address getTargetIpAddr() const
++		{
++			return getArpHeader()->targetIpAddr;
++		}
++
++		// implement abstract methods
++
++		/**
++		 * Does nothing for this layer (ArpLayer is always last)
++		 */
++		void parseNextLayer()
++		{}
++
++		/**
++		 * @return The size of @ref arphdr
++		 */
++		size_t getHeaderLen() const
++		{
++			return sizeof(arphdr);
++		}
++
++		/**
++		 * Calculate the following fields:
++		 * - @ref arphdr#hardwareType = Ethernet (1)
++		 * - @ref arphdr#hardwareSize = 6
++		 * - @ref arphdr#protocolType = ETHERTYPE_IP (assume IPv4 over ARP)
++		 * - @ref arphdr#protocolSize = 4 (assume IPv4 over ARP)
++		 * - if it's an ARP request: @ref arphdr#targetMacAddr = MacAddress("00:00:00:00:00:00")
++		 */
++		void computeCalculateFields();
++
++		/**
++		 * Is this packet an ARP request?
++		 */
++		bool isRequest() const;
++
++		/**
++		 * Is this packet an ARP reply?
++		 */
++		bool isReply() const;
++
++		std::string toString() const;
++
++		OsiModelLayer getOsiModelLayer() const
++		{
++			return OsiModelNetworkLayer;
++		}
++	};
++
++}  // namespace pcpp
+diff --git a/install/include/pcapplusplus/Asn1Codec.h b/install/include/pcapplusplus/Asn1Codec.h
+new file mode 100644
+index 00000000..7b5bffef
+--- /dev/null
++++ b/install/include/pcapplusplus/Asn1Codec.h
+@@ -0,0 +1,582 @@
++#pragma once
++
++#include <string>
++#include <memory>
++#include <typeinfo>
++#include <stdexcept>
++#include "PointerVector.h"
++
++/// @file
++
++/**
++ * \namespace pcpp
++ * \brief The main namespace for the PcapPlusPlus lib
++ */
++namespace pcpp
++{
++	/**
++	 * An enum for representing ASN.1 tag class
++	 */
++	enum class Asn1TagClass : uint8_t
++	{
++		/** The Universal tag class */
++		Universal = 0,
++		/** The Application tag class */
++		Application = 1,
++		/** The Context-Specific tag class */
++		ContextSpecific = 2,
++		/** The Private tag class */
++		Private = 3,
++	};
++
++	/**
++	 * An enum for representing ASN.1 Universal tag types
++	 */
++	enum class Asn1UniversalTagType : uint8_t
++	{
++		/** The reserved identifier for the End-of-Contents marker in an indefinite length encoding */
++		EndOfContent = 0,
++		/** The universal tag type for Boolean */
++		Boolean = 1,
++		/** The universal tag type for Integer */
++		Integer = 2,
++		/** The universal tag type for Bit String */
++		BitString = 3,
++		/** The universal tag type for Octet String */
++		OctetString = 4,
++		/** The universal tag type for Null */
++		Null = 5,
++		/** The universal tag type for Object Identifier */
++		ObjectIdentifier = 6,
++		/** The universal tag type for Object Descriptor */
++		ObjectDescriptor = 7,
++		/** The universal tag type for External */
++		External = 8,
++		/** The universal tag type for Real */
++		Real = 9,
++		/** The universal tag type for Enumerated */
++		Enumerated = 10,
++		/** The universal tag type for Embedded-PDV */
++		EmbeddedPDV = 11,
++		/** The universal tag type for UTF8 String */
++		UTF8String = 12,
++		/** The universal tag type for Relative Object Identifier */
++		RelativeObjectIdentifier = 13,
++		/** The universal tag type for Time */
++		Time = 14,
++		/** A reserved value */
++		Reserved = 15,
++		/** The universal tag type Sequence */
++		Sequence = 16,
++		/** The universal tag type for Set */
++		Set = 17,
++		/** The universal tag type for Numeric String */
++		NumericString = 18,
++		/** The universal tag type for Printable String */
++		PrintableString = 19,
++		/** The universal tag type for T61String */
++		T61String = 20,
++		/** The universal tag type for Videotex String */
++		VideotexString = 21,
++		/** The universal tag type for IA5String */
++		IA5String = 22,
++		/** The universal tag type for UTC time */
++		UTCTime = 23,
++		/** The universal tag type for Generalized time */
++		GeneralizedTime = 24,
++		/** The universal tag type for GraphicString */
++		GraphicString = 25,
++		/** The universal tag type for VisibleString */
++		VisibleString = 26,
++		/** The universal tag type for GeneralString */
++		GeneralString = 27,
++		/** The universal tag type for UniversalString */
++		UniversalString = 28,
++		/** The universal tag type for CharacterString */
++		CharacterString = 29,
++		/** The universal tag type for BMPString */
++		BMPString = 30,
++		/** The universal tag type for Date */
++		Date = 31,
++		/** The universal tag type for Time of Day */
++		TimeOfDay = 32,
++		/** The universal tag type for Date-Time */
++		DateTime = 33,
++		/** The universal tag type for Duration */
++		Duration = 34,
++		/** The universal tag type for Object Identifier Internationalized Resource Identifier (IRI) */
++		ObjectIdentifierIRI = 35,
++		/** The universal tag type for Relative Object Identifier Internationalized Resource Identifier (IRI) */
++		RelativeObjectIdentifierIRI = 36,
++		/** A non-applicable value */
++		NotApplicable = 255
++	};
++
++	/**
++	 * @class Asn1Record
++	 * Represents an ASN.1 record, as described in ITU-T Recommendation X.680:
++	 * <https://www.itu.int/rec/T-REC-X.680/en>
++	 *
++	 * <https://en.wikipedia.org/wiki/ASN.1>
++	 */
++	class Asn1Record
++	{
++	public:
++		/**
++		 * A static method to decode a byte array into an Asn1Record
++		 * @param data A byte array to decode
++		 * @param dataLen The byte array length
++		 * @param lazy Use lazy decoding, set to true by default. Lazy decoding entails delaying the decoding
++		 * of the record value until it is accessed
++		 * @return A smart pointer to the decoded ASN.1 record. If the byte stream is not a valid ASN.1 record
++		 * an exception is thrown
++		 */
++		static std::unique_ptr<Asn1Record> decode(const uint8_t* data, size_t dataLen, bool lazy = true);
++
++		/**
++		 * Encode this record and convert it to a byte stream
++		 * @retu... groupPolicyID;
++
++		/** VXLAN Network ID (VNI) */
++		uint32_t vni : 24;
++		/** Reserved bits */
++		uint32_t pad : 8;
++	};
++#pragma pack(pop)
++
++	/**
++	 * @class VxlanLayer
++	 * Represents a VXLAN (Virtual eXtensible Local Area Network) protocol layer
++	 */
++	class VxlanLayer : public Layer
++	{
++	public:
++		/** A constructor that creates the layer from an existing packet raw data
++		 * @param[in] data A pointer to the raw data
++		 * @param[in] dataLen Size of the data in bytes
++		 * @param[in] prevLayer A pointer to the previous layer
++		 * @param[in] packet A pointer to the Packet instance where layer will be stored in
++		 */
++		VxlanLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
++		    : Layer(data, dataLen, prevLayer, packet, VXLAN)
++		{}
++
++		/**
++		 * A constructor that creates a new VXLAN header and allocates the data. Note: the VNI present flag is set
++		 * automatically
++		 * @param[in] vni VNI (VXLAN Network ID) to set. Optional parameter (default is 0)
++		 * @param[in] groupPolicyID Group Policy ID to set. Optional parameter (default is 0)
++		 * @param[in] setGbpFlag Set GBP flag. Optional parameter (default is false)
++		 * @param[in] setPolicyAppliedFlag Set Policy Applied flag. Optional parameter (default is false)
++		 * @param[in] setDontLearnFlag Set Don't Learn flag. Optional parameter (default is false)
++		 */
++		explicit VxlanLayer(uint32_t vni = 0, uint16_t groupPolicyID = 0, bool setGbpFlag = false,
++		                    bool setPolicyAppliedFlag = false, bool setDontLearnFlag = false);
++
++		~VxlanLayer()
++		{}
++
++		/**
++		 * Get a pointer to the VXLAN header. Notice this points directly to the data, so every change will change the
++		 * actual packet data
++		 * @return A pointer to the vxlan_header
++		 */
++		vxlan_header* getVxlanHeader() const
++		{
++			return (vxlan_header*)m_Data;
++		}
++
++		/**
++		 * @return The VXLAN Network ID (VNI) value
++		 */
++		uint32_t getVNI() const;
++
++		/**
++		 * Set VXLAN Network ID (VNI) value
++		 * @param[in] vni VNI value to set
++		 */
++		void setVNI(uint32_t vni);
++
++		/**
++		 * A static method that checks whether the port is considered as VxLAN
++		 * @param[in] port The port number to be checked
++		 */
++		static bool isVxlanPort(uint16_t port)
++		{
++			return port == 4789;
++		}
++
++		// implement abstract methods
++
++		/**
++		 * Next layer for VXLAN is always Ethernet
++		 */
++		void parseNextLayer();
++
++		/**
++		 * @return Size of vxlan_header
++		 */
++		size_t getHeaderLen() const
++		{
++			return sizeof(vxlan_header);
++		}
++
++		/**
++		 * Does nothing for this layer
++		 */
++		void computeCalculateFields()
++		{}
++
++		std::string toString() const;
++
++		OsiModelLayer getOsiModelLayer() const
++		{
++			return OsiModelDataLinkLayer;
++		}
++	};
++
++}  // namespace pcpp
+diff --git a/install/include/pcapplusplus/WakeOnLanLayer.h b/install/include/pcapplusplus/WakeOnLanLayer.h
+new file mode 100644
+index 00000000..358bbb5a
+--- /dev/null
++++ b/install/include/pcapplusplus/WakeOnLanLayer.h
+@@ -0,0 +1,182 @@
++#pragma once
++
++#include "IpAddress.h"
++#include "Layer.h"
++#include "MacAddress.h"
++
++/// @file
++
++/**
++ * \namespace pcpp
++ * \brief The main namespace for the PcapPlusPlus lib
++ */
++namespace pcpp
++{
++	/**
++	 * Class for representing the Wake on LAN Layer
++	 */
++	class WakeOnLanLayer : public Layer
++	{
++	private:
++		void init(uint16_t len);
++
++	public:
++		/**
++		 * @struct wol_header
++		 * Wake On LAN protocol header
++		 */
++#pragma pack(push, 1)
++		struct wol_header
++		{
++			/// Sync stream (FF FF FF FF FF FF)
++			uint8_t sync[6];
++			/// Target MAC address repeated 16 times
++			uint8_t addrBody[6 * 16];
++		};
++#pragma pack(pop)
++
++		/**
++		 * A constructor that creates the layer from an existing packet raw data
++		 * @param[in] data A pointer to the raw data
++		 * @param[in] dataLen Size of the data in bytes
++		 * @param[in] prevLayer A pointer to the previous layer
++		 * @param[in] packet A pointer to the Packet instance where layer will be stored in
++		 */
++		WakeOnLanLayer(uint8_t* data, size_t dataLen, Layer* prevLayer, Packet* packet)
++		    : Layer(data, dataLen, prevLayer, packet, WakeOnLan)
++		{}
++
++		/**
++		 * Construct a new Wake On Lan Layer with provided values
++		 * @param[in] targetAddr Target MAC address
++		 */
++		explicit WakeOnLanLayer(const pcpp::MacAddress& targetAddr);
++
++		/**
++		 * Construct a new Wake On Lan Layer with provided values
++		 * @param[in] targetAddr Target MAC address
++		 * @param[in] password Password as array
++		 * @param[in] len Length of the password array, length of the password should be less than 6 bytes
++		 */
++		WakeOnLanLayer(const pcpp::MacAddress& targetAddr, uint8_t* password, uint8_t len);
++
++		/**
++		 * Construct a new Wake On Lan Layer with provided values
++		 * @param[in] targetAddr Target MAC address
++		 * @param[in] password Password as MAC address
++		 */
++		WakeOnLanLayer(const pcpp::MacAddress& targetAddr, const pcpp::MacAddress& password);
++
++		/**
++		 * Construct a new Wake On Lan Layer with provided values
++		 * @param[in] targetAddr Target MAC address
++		 * @param[in] password Password as IPv4 address
++		 */
++		WakeOnLanLayer(const pcpp::MacAddress& targetAddr, const IPv4Address& password);
++
++		/**
++		 * Get a pointer to the Wake On LAN header. Notice this points directly to the data, so every change will change
++		 * the actual packet data
++		 * @return A pointer to the wol_header
++		 */
++		inline wol_header* getWakeOnLanHeader() const
++		{
++			return (wol_header*)m_Data;
++		}
++
++		/**
++		 * Get the target MAC address of the command
++		 * @return MAC address of the target
++		 */
++		pcpp::MacAddress getTargetAddr() const;
++
++		/**
++		 * Set the target MAC address
++		 * @param[in] targetAddr MAC address of the target
++		 */
++		void setTargetAddr(const pcpp::MacAddress& targetAddr);
++
++		/**
++		 * Get the password of the command
++		 * @return Returns the password if exists, empty string otherwise
++		 */
++		std::string getPassword() const;
++
++		/**
++		 * Set the password of the command
++		 * @param[in] password Password as array
++		 * @param[in] len Length of the password array, length of the password should be less than 6 bytes
++		 * @return True if operation successful, false otherwise
++		 */
++		bool setPassword(const uint8_t* password, uint8_t len);
++
++		/**
++		 * Set the password of the command
++		 * @param[in] password Password as string. Length of the password should be less than 6 bytes
++		 * @return True if operation successful, false otherwise
++		 */
++		bool setPassword(const std::string& password);
++
++		/**
++		 * Set the password of the command
++		 * @param[in] addr Password as MAC address
++		 * @return True if operation successful, false otherwise
++		 */
++		bool setPassword(const MacAddress& addr);
++
++		/**
++		 * Set the password of the command
++		 * @param addr Password as IPv4 address
++		 * @return True if operation successful, false otherwise
++		 */
++		bool setPassword(const IPv4Address& addr);
++
++		/**
++		 * A static method that checks whether the port is considered as Wake on LAN
++		 * @param[in] port The port number to be checked
++		 */
++		static bool isWakeOnLanPort(uint16_t port)
++		{
++			return (port == 0) || (port == 7) || (port == 9);
++		}
++
++		/**
++		 * A static method that takes a byte array and detects whether it is a Wake on LAN message
++		 * @param[in] data A byte array
++		 * @param[in] dataSize The byte array size (in bytes)
++		 * @return True if the data is identified as Wake on LAN message
++		 */
++		static bool isDataValid(const uint8_t* data, size_t dataSize);
++
++		// overridden methods
++
++		/// Parses the next layer. Wake on LAN is the always last so does nothing for this layer
++		void parseNextLayer()
++		{}
++
++		/**
++		 * @return Get the size of the layer
++		 */
++		size_t getHeaderLen() const
++		{
++			return m_DataLen;
++		}
++
++		/// Does nothing for this layer
++		void computeCalculateFields()
++		{}
++
++		/**
++		 * @return The OSI layer level of Wake on LAN (Data Link Layer)
++		 */
++		OsiModelLayer getOsiModelLayer() const
++		{
++			return OsiModelDataLinkLayer;
++		}
++
++		/**
++		 * @return Returns the protocol info as readable string
++		 */
++		std::string toString() const;
++	};
++}  // namespace pcpp
+diff --git a/reproduce_bug.cpp b/reproduce_bug.cpp
+new file mode 100644
+index 00000000..9b490c6a
+--- /dev/null
++++ b/reproduce_bug.cpp
+@@ -0,0 +1,66 @@
++#include <iostream>
++#include <fstream>
++#include <cstring>
++#include <sys/time.h>
++#include "Packet.h"
++#include "RawPacket.h"
++{
++    std::ifstream infile(filename, std::ifstream::binary);
++    if (!infile)
++        return -1;
++    infile.seekg(0, infile.end);
++    int length = infile.tellg();
++    infile.close();
++    return length;
++}
++
++uint8_t* readFileIntoBuffer(const char* filename, int& bufferLength)
++{
++    int fileLength = getFileLength(filename);
++    if (fileLength == -1)
++        return nullptr;
++
++    std::ifstream infile(filename);
++    if (!infile)
++        return nullptr;
++
++    bufferLength = fileLength / 2 + 2;
++    uint8_t* result = new uint8_t[bufferLength];
++    int i = 0;
++    while (!infile.eof())
++    {
++        char byte[3];
++        memset(byte, 0, 3);
++        infile.read(byte, 2);
++        result[i] = (uint8_t)strtol(byte, nullptr, 16);
++        i++;
++    }
++    infile.close();
++    bufferLength -= 2;
++    return result;
++}
++
++#define READ_FILE_INTO_BUFFER(num, filename)                                                                           \
++	int bufferLength##num = 0;                                                                                         \
++	uint8_t* buffer##num = readFileIntoBuffer(filename, bufferLength##num);                                
++
++#define READ_FILE_AND_CREATE_PACKET(num, filename)                                                                     \
++	READ_FILE_INTO_BUFFER(num, filename);                                                                              \
++	pcpp::RawPacket rawPacket##num(static_cast<const uint8_t*>(buffer##num), bufferLength##num, time, true)
++
++int main(int argc, char* argv[]) {
++    timeval time;
++	gettimeofday(&time, nullptr);
++
++	READ_FILE_AND_CREATE_PACKET(0, "Tests/Packet++Test/PacketExamples/TcpPacketWithOptions3.dat");
++	pcpp::Packet packet0(&rawPacket0, pcpp::OsiModelPhysicalLayer);
++	packet0.getLastLayer();
++    packet0.getFirstLayer();
++
++	READ_FILE_AND_CREATE_PACKET(1, "Tests/Packet++Test/PacketExamples/TcpPacketWithOptions3.dat");
++	pcpp::Packet packet1(&rawPacket1, pcpp::OsiModelTransportLayer);
++	packet1.getLastLayer()->getOsiModelLayer();
++
++    std::cout << "Script completed successfully, no errors." << std::endl;
++    return 0;
++}
+diff --git a/reproduce_bug_fixed b/reproduce_bug_fixed
+new file mode 100755
+index 00000000..4ef9c92b
+Binary files /dev/null and b/reproduce_bug_fixed differ
+diff --git a/reproduce_bug_fixed.cpp b/reproduce_bug_fixed.cpp
+new file mode 100644
+index 00000000..17e0a33c
+--- /dev/null
++++ b/reproduce_bug_fixed.cpp
+@@ -0,0 +1,68 @@
++#include <iostream>
++#include <fstream>
++#include <cstring>
++#include <sys/time.h>
++#include "Packet.h"
++#include "RawPacket.h"
++
++int getFileLength(const char* filename)
++{
++    std::ifstream infile(filename, std::ifstream::binary);
++    if (!infile)
++        return -1;
++    infile.seekg(0, infile.end);
++    int length = infile.tellg();
++    infile.close();
++    return length;
++}
++
++uint8_t* readFileIntoBuffer(const char* filename, int& bufferLength)
++{
++    int fileLength = getFileLength(filename);
++    if (fileLength == -1)
++        return nullptr;
++
++    std::ifstream infile(filename);
++    if (!infile)
++        return nullptr;
++
++    bufferLength = fileLength / 2 + 2;
++    uint8_t* result = new uint8_t[bufferLength];
++    int i = 0;
++    while (!infile.eof())
++    {
++        char byte[3];
++        memset(byte, 0, 3);
++        infile.read(byte, 2);
++        result[i] = (uint8_t)strtol(byte, nullptr, 16);
++        i++;
++    }
++    infile.close();
++    bufferLength -= 2;
++    return result;
++}
++
++#define READ_FILE_INTO_BUFFER(num, filename)                                                                           \
++	int bufferLength##num = 0;                                                                                         \
++	uint8_t* buffer##num = readFileIntoBuffer(filename, bufferLength##num);                                
++
++#define READ_FILE_AND_CREATE_PACKET(num, filename)                                                                     \
++	READ_FILE_INTO_BUFFER(num, filename);                                                                              \
++	pcpp::RawPacket rawPacket##num(static_cast<const uint8_t*>(buffer##num), bufferLength##num, time, true)
++
++int main(int argc, char* argv[]) {
++    timeval time;
++	gettimeofday(&time, nullptr);
++
++	READ_FILE_AND_CREATE_PACKET(0, "Tests/Packet++Test/PacketExamples/TcpPacketWithOptions3.dat");
++	pcpp::Packet packet0(&rawPacket0, pcpp::OsiModelPhysicalLayer);
++	packet0.getLastLayer();
++    packet0.getFirstLayer();
++
++	READ_FILE_AND_CREATE_PACKET(1, "Tests/Packet++Test/PacketExamples/TcpPacketWithOptions3.dat");
++	pcpp::Packet packet1(&rawPacket1, pcpp::OsiModelTransportLayer);
++	packet1.getLastLayer()->getOsiModelLayer();
++
++    std::cout << "Script completed successfully, no errors." << std::endl;
++    return 0;
++}
+diff --git a/reproduce_with_asan b/reproduce_with_asan
+new file mode 100755
+index 00000000..8d9eb196
+Binary files /dev/null and b/reproduce_with_asan differ
+diff --git a/reproduce_with_empty_file b/reproduce_with_empty_file
+new file mode 100755
+index 00000000..13a7b6f9
+Binary files /dev/null and b/reproduce_with_empty_file differ
+diff --git a/reproduce_with_empty_file.cpp b/reproduce_with_empty_file.cpp
+new file mode 100644
+index 00000000..7bf095bb
+--- /dev/null
++++ b/reproduce_with_empty_file.cpp
+@@ -0,0 +1,68 @@
++#include <iostream>
++#include <fstream>
++#include <cstring>
++#include <sys/time.h>
++#include "Packet.h"
++#include "RawPacket.h"
++
++int getFileLength(const char* filename)
++{
++    std::ifstream infile(filename, std::ifstream::binary);
++    if (!infile)
++        return -1;
++    infile.seekg(0, infile.end);
++    int length = infile.tellg();
++    infile.close();
++    return length;
++}
++
++uint8_t* readFileIntoBuffer(const char* filename, int& bufferLength)
++{
++    int fileLength = getFileLength(filename);
++    if (fileLength == -1)
++        return nullptr;
++
++    std::ifstream infile(filename);
++    if (!infile)
++        return nullptr;
++
++    bufferLength = fileLength / 2 + 2;
++    uint8_t* result = new uint8_t[bufferLength];
++    int i = 0;
++    while (!infile.eof())
++    {
++        char byte[3];
++        memset(byte, 0, 3);
++        infile.read(byte, 2);
++        result[i] = (uint8_t)strtol(byte, nullptr, 16);
++        i++;
++    }
++    infile.close();
++    bufferLength -= 2;
++    return result;
++}
++
++#define READ_FILE_INTO_BUFFER(num, filename)                                                                           \
++	int bufferLength##num = 0;                                                                                         \
++	uint8_t* buffer##num = readFileIntoBuffer(filename, bufferLength##num);                                
++
++#define READ_FILE_AND_CREATE_PACKET(num, filename)                                                                     \
++	READ_FILE_INTO_BUFFER(num, filename);                                                                              \
++	pcpp::RawPacket rawPacket##num(static_cast<const uint8_t*>(buffer##num), bufferLength##num, time, true)
++
++int main(int argc, char* argv[]) {
++    timeval time;
++	gettimeofday(&time, nullptr);
++
++	READ_FILE_AND_CREATE_PACKET(0, "/home/poc/0.bin");
++	pcpp::Packet packet0(&rawPacket0, pcpp::OsiModelPhysicalLayer);
++	packet0.getLastLayer();
++    packet0.getFirstLayer();
++
++	READ_FILE_AND_CREATE_PACKET(1, "/home/poc/0.bin");
++	pcpp::Packet packet1(&rawPacket1, pcpp::OsiModelTransportLayer);
++	packet1.getLastLayer()->getOsiModelLayer();
++
++    std::cout << "Script completed successfully, no errors." << std::endl;
++    return 0;
++}
+diff --git a/simple_test b/simple_test
+new file mode 100755
+index 00000000..2bd34a53
+Binary files /dev/null and b/simple_test differ
+diff --git a/simple_test.cpp b/simple_test.cpp
+new file mode 100644
+index 00000000..22c713a7
+--- /dev/null
++++ b/simple_test.cpp
+@@ -0,0 +1,28 @@
++#include <iostream>
++#include <sys/time.h>
++#include "Packet.h"
++#include "RawPacket.h"
++
++int main() {
++    timeval time;
++    gettimeofday(&time, nullptr);
++    
++    // Create an empty raw packet (0 bytes) which should trigger the null pointer issue
++    uint8_t emptyData[1] = {0};
++    pcpp::RawPacket rawPacket(emptyData, 0, time, true);
++    
++    try {
++        pcpp::Packet packet(&rawPacket, pcpp::OsiModelTransportLayer);
++        std::cout << "Packet created successfully" << std::endl;
++        
++        // These calls might trigger the segfault
++        packet.getLastLayer();
++        packet.getFirstLayer();
++        
++        std::cout << "Script completed successfully, no errors." << std::endl;
++    } catch (...) {
++        std::cout << "Exception caught" << std::endl;
++    }
++    
++    return 0;
++}
+diff --git a/test_internal_fix b/test_internal_fix
+new file mode 100755
+index 00000000..f44947d2
+Binary files /dev/null and b/test_internal_fix differ
+diff --git a/test_internal_fix.cpp b/test_internal_fix.cpp
+new file mode 100644
+index 00000000..1d28f972
+--- /dev/null
++++ b/test_internal_fix.cpp
+@@ -0,0 +1,78 @@
++#include <iostream>
++#include <fstream>
++#include <cstring>
++#include <sys/time.h>
++#include "Packet.h"
++#include "RawPacket.h"
++
++int getFileLength(const char* filename)
++{
++    std::ifstream infile(filename, std::ifstream::binary);
++    if (!infile)
++        return -1;
++    infile.seekg(0, infile.end);
++    int length = infile.tellg();
++    infile.close();
++    return length;
++}
++
++uint8_t* readFileIntoBuffer(const char* filename, int& bufferLength)
++{
++    int fileLength = getFileLength(filename);
++    if (fileLength == -1)
++        return nullptr;
++
++    std::ifstream infile(filename);
++    if (!infile)
++        return nullptr;
++
++    bufferLength = fileLength / 2 + 2;
++    uint8_t* result = new uint8_t[bufferLength];
++    int i = 0;
++    while (!infile.eof())
++    {
++        char byte[3];
++        memset(byte, 0, 3);
++        infile.read(byte, 2);
++        result[i] = (uint8_t)strtol(byte, nullptr, 16);
++        i++;
++    }
++    infile.close();
++    bufferLength -= 2;
++    return result;
++}
++
++#define READ_FILE_INTO_BUFFER(num, filename)                                                                           \
++	int bufferLength##num = 0;                                                                                         \
++	uint8_t* buffer##num = readFileIntoBuffer(filename, bufferLength##num);                                
++
++#define READ_FILE_AND_CREATE_PACKET(num, filename)                                                                     \
++	READ_FILE_INTO_BUFFER(num, filename);                                                                              \
++	pcpp::RawPacket rawPacket##num(static_cast<const uint8_t*>(buffer##num), bufferLength##num, time, true)
++
++int main(int argc, char* argv[]) {
++    timeval time;
++	gettimeofday(&time, nullptr);
++
++	READ_FILE_AND_CREATE_PACKET(0, "/home/poc/0.bin");
++	pcpp::Packet packet0(&rawPacket0, pcpp::OsiModelPhysicalLayer);
++	
++	// Check if layers exist before calling methods on them
++	if (packet0.getLastLayer() != nullptr) {
++		packet0.getLastLayer();
++	}
++	if (packet0.getFirstLayer() != nullptr) {
++		packet0.getFirstLayer();
++	}
++
++	READ_FILE_AND_CREATE_PACKET(1, "/home/poc/0.bin");
++	pcpp::Packet packet1(&rawPacket1, pcpp::OsiModelTransportLayer);
++	
++	// Check if layers exist before calling methods on them
++	if (packet1.getLastLayer() != nullptr) {
++		packet1.getLastLayer()->getOsiModelLayer();
++	}
++
++    std::cout << "Script completed successfully, no errors." << std::endl;
++    return 0;
++}

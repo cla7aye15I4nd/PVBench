@@ -1,0 +1,31 @@
+diff --git a/NEWS b/NEWS
+index f127cce068..90c4c40d53 100644
+--- a/NEWS
++++ b/NEWS
+@@ -12,6 +12,10 @@ PHP                                                                        NEWS
+   . Fixed regression where signs after the first one were ignored while parsing
+     a signed integer, with the DateTimeInterface::modify() function. (Derick)
+ 
++- DOM:
++  . Fixed bug GH-16039 (Segmentation fault (access null pointer) in
++    ext/dom/parentnode/tree.c). (nielsdos)
++
+ - PHPDBG:
+   . Fixed bug GH-15901 (phpdbg: Assertion failure on i funcs). (cmb)
+ 
+diff --git a/ext/dom/parentnode.c b/ext/dom/parentnode.c
+index c30db6fcd7..ea4edb0774 100644
+--- a/ext/dom/parentnode.c
++++ b/ext/dom/parentnode.c
+@@ -272,6 +272,11 @@ static zend_result dom_sanity_check_node_list_for_insertion(php_libxml_ref_obj *
+ 			if (instanceof_function(ce, dom_node_class_entry)) {
+ 				xmlNodePtr node = dom_object_get_node(Z_DOMOBJ_P(nodes + i));
+ 
++				if (!node) {
++					php_dom_throw_error(INVALID_STATE_ERR, /* strict */ true);
++					return FAILURE;
++				}
++
+ 				if (node->doc != documentNode) {
+ 					php_dom_throw_error(WRONG_DOCUMENT_ERR, dom_get_strict_error(document));
+ 					return FAILURE;

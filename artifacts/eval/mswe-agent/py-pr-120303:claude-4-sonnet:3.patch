@@ -1,0 +1,111 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index a26714f9755..7696ce95a6e 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2523,9 +2523,14 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
+-    return Py_NewRef(self->task_coro);
++    if (self->task_coro) {
++        return Py_NewRef(self->task_coro);
++    }
++    
++    Py_RETURN_NONE;
+ }
+ 
++
+ /*[clinic input]
+ _asyncio.Task.get_context
+ [clinic start generated code]*/
+diff --git a/poc_script.py b/poc_script.py
+new file mode 100644
+index 00000000000..8f5473a6272
+--- /dev/null
++++ b/poc_script.py
+@@ -0,0 +1,15 @@
++import asyncio
++
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++
++    async def foo(): ...
++
++    task = asyncio.create_task(foo())
++    await task
++    print(task.get_coro())
++
++
++asyncio.run(main())
+\ No newline at end of file
+diff --git a/test_eager.py b/test_eager.py
+new file mode 100644
+index 00000000000..166287efd55
+--- /dev/null
++++ b/test_eager.py
+@@ -0,0 +1,17 @@
++import asyncio
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++
++    async def foo(): 
++        pass
++
++    task = asyncio.create_task(foo())
++    await task
++    print(f"Task state: {task.done()}")
++    coro = task.get_coro()
++    print(f"get_coro() result: {coro}")
++    print("Test completed successfully!")
++
++asyncio.run(main())
+diff --git a/test_fix.py b/test_fix.py
+new file mode 100644
+index 00000000000..47cd1dc8c58
+--- /dev/null
++++ b/test_fix.py
+@@ -0,0 +1,25 @@
++import asyncio
++
++async def simple_coro():
++    return "completed"
++
++async def main():
++    # Create a task
++    task = asyncio.create_task(simple_coro())
++    
++    # Before completion, get_coro() should return the coroutine
++    coro_before = task.get_coro()
++    print(f"Before completion: {coro_before}")
++    
++    # Wait for task to complete
++    result = await task
++    print(f"Task result: {result}")
++    
++    # After completion, get_coro() should return None (not crash)
++    coro_after = task.get_coro()
++    print(f"After completion: {coro_after}")
++    
++    print("Test completed successfully!")
++
++if __name__ == "__main__":
++    asyncio.run(main())

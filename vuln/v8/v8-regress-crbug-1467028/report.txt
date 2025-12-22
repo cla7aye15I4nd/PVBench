@@ -1,0 +1,22 @@
+#
+# Fatal error in ../../src/parsing/parser.cc, line 904
+# Debug check failed: !maybe_outer_scope_info.is_null().
+#
+#
+#
+#FailureMessage Object: 0x7f9a7308c460
+==== C stack trace ===============================
+
+    out/debug_asan/d8(__interceptor_backtrace+0x75) [0x55b5fbe9bde5]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x55b6022ef553]
+    out/debug_asan/d8(+0x8b2cb8a) [0x55b6022ecb8a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x26f) [0x55b6022ab00f]
+    out/debug_asan/d8(+0x8ae9f8f) [0x55b6022a9f8f]
+    out/debug_asan/d8(v8::internal::Parser::ParseFunction(v8::internal::Isolate*, v8::internal::ParseInfo*, v8::internal::Handle<v8::internal::SharedFunctionInfo>)+0x17e3) [0x55b5fde286d3]
+    out/debug_asan/d8(v8::internal::parsing::ParseFunction(v8::internal::ParseInfo*, v8::internal::Handle<v8::internal::SharedFunctionInfo>, v8::internal::Isolate*, v8::internal::parsing::ReportStatisticsMode)+0x3b5) [0x55b5fdecdd75]
+    out/debug_asan/d8(v8::internal::parsing::ParseAny(v8::internal::ParseInfo*, v8::internal::Handle<v8::internal::SharedFunctionInfo>, v8::internal::Isolate*, v8::internal::parsing::ReportStatisticsMode)+0xe8) [0x55b5fdece0b8]
+    out/debug_asan/d8(v8::internal::ErrorUtils::ThrowLoadFromNullOrUndefined(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Object>, v8::internal::MaybeHandle<v8::internal::Object>)+0x54e) [0x55b5fcb983de]
+    out/debug_asan/d8(v8::internal::LoadIC::Load(v8::internal::Handle<v8::internal::Object>, v8::internal::Handle<v8::internal::Name>, bool, v8::internal::Handle<v8::internal::Object>)+0x12a2) [0x55b5fd1bd062]
+    out/debug_asan/d8(+0x3a29fd5) [0x55b5fd1e9fd5]
+    out/debug_asan/d8(v8::internal::Runtime_LoadNoFeedbackIC_Miss(int, unsigned long*, v8::internal::Isolate*)+0x15a) [0x55b5fd1e91ca]
+    out/debug_asan/d8(+0x815f9fd) [0x55b60191f9fd]

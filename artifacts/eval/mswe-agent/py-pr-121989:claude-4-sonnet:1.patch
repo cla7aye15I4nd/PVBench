@@ -1,0 +1,250 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 257de4387c0..977d9d9328d 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -287,7 +287,7 @@ static void clearEntries(ProfilerObject *pObj)
+ }
+ 
+ static void
+-initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
++initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry, _PyTime_t t0)
+ {
+     self->ctxEntry = entry;
+     self->subt = 0;
+@@ -303,26 +303,29 @@ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+         if (subentry)
+             ++subentry->recursionLevel;
+     }
+-    self->t0 = call_timer(pObj);
++    self->t0 = t0;
+ }
+ 
+ static void
+ Stop(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+ {
+-    _PyTime_t tt = call_timer(pObj) - self->t0;
+-    _PyTime_t it = tt - self->subt;
+-    if (self->previous)
+-        self->previous->subt += tt;
+-    pObj->currentProfilerContext = self->previous;
++    _PyTime_t t0 = self->t0;
++    _PyTime_t subt = self->subt;
++    ProfilerContext *previous = self->previous;
++    _PyTime_t tt = call_timer(pObj) - t0;
++    _PyTime_t it = tt - subt;
++    if (previous)
++        previous->subt += tt;
++    pObj->currentProfilerContext = previous;
+     if (--entry->recursionLevel == 0)
+         entry->tt += tt;
+     else
+         ++entry->recursivecallcount;
+     entry->it += it;
+     entry->callcount++;
+-    if ((pObj->flags & POF_SUBCALLS) && self->previous) {
++    if ((pObj->flags & POF_SUBCALLS) && previous) {
+         /* find or create an entry for me in my caller's entry */
+-        ProfilerEntry *caller = self->previous->ctxEntry;
++        ProfilerEntry *caller = previous->ctxEntry;
+         ProfilerSubEntry *subentry = getSubEntry(pObj, caller, entry);
+         if (subentry) {
+             if (--subentry->recursionLevel == 0)
+@@ -372,7 +375,8 @@ ptrace_enter_call(PyObject *self, void *key, PyObject *userObj)
+             goto restorePyerr;
+         }
+     }
+-    initContext(pObj, pContext, profEntry);
++    _PyTime_t t0 = call_timer(pObj);
++    initContext(pObj, pContext, profEntry, t0);
+ 
+ restorePyerr:
+     PyErr_SetRaisedException(exc);
+@@ -389,16 +393,30 @@ ptrace_leave_call(PyObject *self, void *key)
+     pContext = pObj->currentProfilerContext;
+     if (pContext == NULL)
+         return;
++    
++    /* Save the previous pointer and current context before calling Stop */
++    ProfilerContext *previous = pContext->previous;
++    ProfilerContext *original_context = pContext;
++    
+     profEntry = getEntry(pObj, key);
+     if (profEntry) {
+         Stop(pObj, pContext, profEntry);
++        /* After Stop(), check if the current context is still the original context.
++         * If flush_unmatched() was called during Stop(), pContext would have been freed
++         * and currentProfilerContext would have been updated to previous. */
++        if (pObj->currentProfilerContext == original_context) {
++            /* Context is still valid, add it to free list */
++            pContext->previous = pObj->freelistProfilerContext;
++            pObj->freelistProfilerContext = pContext;
++        }
++        /* else: pContext was freed by flush_unmatched(), don't access it */
+     }
+     else {
+-        pObj->currentProfilerContext = pContext->previous;
++        pObj->currentProfilerContext = previous;
++        /* put pContext into the free list */
++        pContext->previous = pObj->freelistProfilerContext;
++        pObj->freelistProfilerContext = pContext;
+     }
+-    /* put pContext into the free list */
+-    pContext->previous = pObj->freelistProfilerContext;
+-    pObj->freelistProfilerContext = pContext;
+ }
+ 
+ static int
+diff --git a/test_profiler_bug.py b/test_profiler_bug.py
+new file mode 100644
+index 00000000000..0ea0d734e31
+--- /dev/null
++++ b/test_profiler_bug.py
+@@ -0,0 +1,47 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++import threading
++import time
++
++def recursive_function(depth):
++    if depth <= 0:
++        return
++    recursive_function(depth - 1)
++
++def threaded_function():
++    for i in range(10):
++        recursive_function(5)
++        time.sleep(0.001)
++
++def main():
++    # Create a profiler
++    profiler = cProfile.Profile()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Create multiple threads that will be profiled
++    threads = []
++    for i in range(3):
++        t = threading.Thread(target=threaded_function)
++        threads.append(t)
++        t.start()
++    
++    # Do some work in main thread
++    for i in range(100):
++        recursive_function(3)
++    
++    # Disable profiling while threads might still be running
++    # This could trigger the use-after-free
++    profiler.disable()
++    
++    # Wait for threads to complete
++    for t in threads:
++        t.join()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..117beff027e
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,27 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++
++def test_function():
++    # Simple function to profile
++    for i in range(100):
++        pass
++
++def main():
++    # Create a profiler
++    profiler = cProfile.Profile()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Call the test function
++    test_function()
++    
++    # Disable profiling - this is where the use-after-free might occur
++    profiler.disable()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_specific_bug.py b/test_specific_bug.py
+new file mode 100644
+index 00000000000..6b3bf3a3615
+--- /dev/null
++++ b/test_specific_bug.py
+@@ -0,0 +1,47 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++
++class CustomTimer:
++    def __init__(self):
++        self.profiler = None
++    
++    def __call__(self):
++        # This simulates the external timer calling back into Python
++        # which could trigger profiler_disable during initContext
++        if self.profiler:
++            self.profiler.disable()
++            self.profiler.enable()
++        return 0.0
++
++def test_function():
++    for i in range(10):
++        pass
++
++def main():
++    # Create a custom timer that can cause re-entrancy
++    timer = CustomTimer()
++    
++    # Create a profiler with the custom timer
++    profiler = cProfile.Profile(timer=timer)
++    timer.profiler = profiler
++    
++    try:
++        # Enable profiling
++        profiler.enable()
++        
++        # Call the test function - this should trigger the timer
++        test_function()
++        
++        # Disable profiling
++        profiler.disable()
++        
++        print("Test completed successfully")
++    except Exception as e:
++        print(f"Exception occurred: {e}")
++        import traceback
++        traceback.print_exc()
++
++if __name__ == "__main__":
++    main()

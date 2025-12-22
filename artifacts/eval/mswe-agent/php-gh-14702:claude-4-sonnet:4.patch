@@ -1,0 +1,155 @@
+
+diff --git a/.gitignore b/.gitignore
+index 3aca5e6440c..0fd5f17b697 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 9205b523079..9ff0309d9a8 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -554,7 +554,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
++					intern->nApplyCount++;
+ 					zval_ptr_dtor(data);
++					intern->nApplyCount--;
+ 					ZVAL_UNDEF(data);
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+diff --git a/final_test.php b/final_test.php
+new file mode 100644
+index 00000000000..a28f266a0ac
+--- /dev/null
++++ b/final_test.php
+@@ -0,0 +1,39 @@
++<?php
++
++echo "=== Testing normal ArrayObject operations ===\n";
++$arr1 = new ArrayObject(['a' => 1, 'b' => 2]);
++unset($arr1['a']);
++var_dump($arr1);
++
++echo "\n=== Testing destructor without modification ===\n";
++class SafeDestructor {
++    function __destruct() {
++        echo "Safe destructor called\n";
++    }
++}
++$arr2 = new ArrayObject(['key' => new SafeDestructor()]);
++unset($arr2['key']);
++var_dump($arr2);
++
++echo "\n=== Testing dangerous modification (should be prevented) ===\n";
++class DangerousDestructor {
++    function __destruct() {
++        global $arr3;
++        echo "Dangerous destructor trying to modify ArrayObject\n";
++        try {
++            $arr3->exchangeArray([]);
++        } catch (Exception $e) {
++            echo "Caught exception: " . $e->getMessage() . "\n";
++        }
++    }
++}
++$arr3 = new ArrayObject(['key' => new DangerousDestructor()]);
++try {
++    unset($arr3['key']);
++} catch (Exception $e) {
++    echo "Caught exception during unset: " . $e->getMessage() . "\n";
++}
++var_dump($arr3);
++
++echo "\nAll tests completed successfully!\n";
++?>
+diff --git a/poc_readable.php b/poc_readable.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/poc_readable.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
+diff --git a/reproduce_issue.sh b/reproduce_issue.sh
+new file mode 100755
+index 00000000000..df7387c1450
+--- /dev/null
++++ b/reproduce_issue.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++USE_TRACKED_ALLOC=1 USE_ZEND_ALLOC=0 sapi/cli/php -f /home/poc/0.bin
+diff --git a/test_edge_case.php b/test_edge_case.php
+new file mode 100644
+index 00000000000..650275fa021
+--- /dev/null
++++ b/test_edge_case.php
+@@ -0,0 +1,18 @@
++<?php
++
++class TestDestructor {
++    function __destruct() {
++        echo "Destructor called\n";
++    }
++}
++
++$arr = new ArrayObject(['key' => new TestDestructor()]);
++echo "Before unset:\n";
++var_dump($arr);
++
++unset($arr['key']);
++echo "After unset:\n";
++var_dump($arr);
++
++echo "Script completed successfully, no errors.\n";
++?>
+diff --git a/test_normal.php b/test_normal.php
+new file mode 100644
+index 00000000000..185bb3d083a
+--- /dev/null
++++ b/test_normal.php
+@@ -0,0 +1,12 @@
++<?php
++
++$arr = new ArrayObject(['a' => 1, 'b' => 2, 'c' => 3]);
++echo "Before unset:\n";
++var_dump($arr);
++
++unset($arr['b']);
++echo "After unset:\n";
++var_dump($arr);
++
++echo "Script completed successfully, no errors.\n";
++?>

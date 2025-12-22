@@ -1,0 +1,229 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/Python-ast.c b/Python/Python-ast.c
+index 4a58c0973d1..b53391d7da8 100644
+--- a/Python/Python-ast.c
++++ b/Python/Python-ast.c
+@@ -12,7 +12,48 @@
+ #include "pycore_unionobject.h"   // _Py_union_type_or
+ #include "structmember.h"
+ #include <stddef.h>
+-
++// "Zombie" type for AST objects to prevent use-after-free
++static PyTypeObject AST_zombie_type = {
++    PyVarObject_HEAD_INIT(NULL, 0)
++    "ast.zombie",             /* tp_name */
++    sizeof(PyObject),         /* tp_basicsize */
++    0,                        /* tp_itemsize */
++    0,                        /* tp_dealloc */
++    0,                        /* tp_print */
++    0,                        /* tp_getattr */
++    0,                        /* tp_setattr */
++    0,                        /* tp_reserved */
++    0,                        /* tp_repr */
++    0,                        /* tp_as_number */
++    0,                        /* tp_as_sequence */
++    0,                        /* tp_as_mapping */
++    0,                        /* tp_hash  */
++    0,                        /* tp_call */
++    0,                        /* tp_str */
++    0,                        /* tp_getattro */
++    0,                        /* tp_setattro */
++    0,                        /* tp_as_buffer */
++    Py_TPFLAGS_DEFAULT,       /* tp_flags */
++    0,                        /* tp_doc */
++    0,                        /* tp_traverse */
++    0,                        /* tp_clear */
++    0,                        /* tp_richcompare */
++    0,                        /* tp_weaklistoffset */
++    0,                        /* tp_iter */
++    0,                        /* tp_iternext */
++    0,                        /* tp_methods */
++    0,                        /* tp_members */
++    0,                        /* tp_getset */
++    0,                        /* tp_base */
++    0,                        /* tp_dict */
++    0,                        /* tp_descr_get */
++    0,                        /* tp_descr_set */
++    0,                        /* tp_dictoffset */
++    0,                        /* tp_init */
++    0,                        /* tp_alloc */
++    0,                        /* tp_new */
++    PyObject_GC_Del           /* tp_free */
++};
+ struct validator {
+     int recursion_depth;            /* current recursion depth */
+     int recursion_limit;            /* recursion limit */
+@@ -5015,12 +5056,9 @@ add_ast_annotations(struct ast_state *state)
+                                     type) == 0;
+         Py_DECREF(type);
+         if (!cond) {
+-            Py_DECREF(TypeVarTuple_annotations);
+-            return 0;
+-        }
+-    }
+-    cond = PyObject_SetAttrString(state->TypeVarTuple_type, "_field_types",
+-                                  TypeVarTuple_annotations) == 0;
++
++        cond = PyObject_SetAttrString(state->TypeVarTuple_type, "__annotations__",
++                                      TypeVarTuple_annotations) == 0;
+     if (!cond) {
+         Py_DECREF(TypeVarTuple_annotations);
+         return 0;
+@@ -5043,6 +5081,10 @@ typedef struct {
+     PyObject *dict;
+ } AST_object;
+ 
++
++
++static void
++
+ static void
+ ast_dealloc(PyObject *op)
+ {
+@@ -5053,7 +5095,8 @@ ast_dealloc(PyObject *op)
+     Py_CLEAR(self->dict);
+     freefunc free_func = PyType_GetSlot(tp, Py_tp_free);
+     assert(free_func != NULL);
+-    free_func(self);
++    Py_SET_TYPE(self, &AST_zombie_type);  // Set to zombie type before freeing
++    free_func((PyObject *)self);
+     Py_DECREF(tp);
+ }
+ 
+@@ -5082,6 +5125,122 @@ ast_type_init(PyObject *self, PyObject *args, PyObject *kw)
+         return -1;
+     }
+ 
++    Py_ssize_t i, numfields = 0;
++    int res = -1;
++    PyObject *key, *value, *fields, *attributes = NULL, *remaining_fields = NULL;
++    if (PyObject_GetOptionalAttr((PyObject*)Py_TYPE(self), state->_fields, &fields) < 0) {
++        goto cleanup;
++    }
++    if (fields) {
++        numfields = PySequence_Size(fields);
++        if (numfields == -1) {
++            goto cleanup;
++        }
++        remaining_fields = PySet_New(fields);
++    }
++    else {
++        remaining_fields = PySet_New(NULL);
++    }
++    // ... (rest of the function unchanged)
++{
++    struct ast_state *state = get_ast_state();
++    if (state == NULL) {
++        return -1;
++    }
++
++    Py_ssize_t i, numfields = 0;
++    int res = -1;
++    PyObject *key, *value, *fields, *attributes = NULL, *remaining_fields = NULL;
++    if (PyObject_GetOptionalAttr((PyObject*)Py_TYPE(self), state->_fields, &fields) < 0) {
++        goto cleanup;
++    }
++    if (fields) {
++        numfields = PySequence_Size(fields);
++        if (numfields == -1) {
++            goto cleanup;
++        }
++        remaining_fields = PySet_New(fields);
++    }
++    else {
++        remaining_fields = PySet_New(NULL);
++    }
++    // ... (rest of the function unchanged)
++{
++    struct ast_state *state = get_ast_state();
++    if (state == NULL) {
++        return -1;
++    }
++
++    Py_ssize_t i, numfields = 0;
++    int res = -1;
++    PyObject *key, *value, *fields, *attributes = NULL, *remaining_fields = NULL;
++    if (PyObject_GetOptionalAttr((PyObject*)Py_TYPE(self), state->_fields, &fields) < 0) {
++        goto cleanup;
++    }
++    if (fields) {
++        numfields = PySequence_Size(fields);
++        if (numfields == -1) {
++            goto cleanup;
++        }
++        remaining_fields = PySet_New(fields);
++    }
++    else {
++        remaining_fields = PySet_New(NULL);
++    }
++    // ... (rest of the function unchanged)
++{
++    struct ast_state *state = get_ast_state();
++    if (state == NULL) {
++        return -1;
++    }
++
++    Py_ssize_t i, numfields = 0;
++    int res = -1;
++    PyObject *key, *value, *fields, *attributes = NULL, *remaining_fields = NULL;
++    if (PyObject_GetOptionalAttr((PyObject*)Py_TYPE(self), state->_fields, &fields) < 0) {
++        goto cleanup;
++    }
++    if (fields) {
++        numfields = PySequence_Size(fields);
++        if (numfields == -1) {
++            goto cleanup;
++        }
++        remaining_fields = PySet_New(fields);
++    }
++    else {
++        remaining_fields = PySet_New(NULL);
++    }
++    // ... (rest of the function unchanged)
++{
++    struct ast_state *state = get_ast_state();
++    if (state == NULL) {
++        return -1;
++    }
++
++    Py_ssize_t i, numfields = 0;
++    int res = -1;
++    PyObject *key, *value, *fields, *attributes = NULL, *remaining_fields = NULL;
++    if (PyObject_GetOptionalAttr((PyObject*)Py_TYPE(self), state->_fields, &fields) < 0) {
++        goto cleanup;
++    }
++    if (fields) {
++        numfields = PySequence_Size(fields);
++        if (numfields == -1) {
++            goto cleanup;
++        }
++        remaining_fields = PySet_New(fields);
++    }
++    else {
++        remaining_fields = PySet_New(NULL);
++    }
++    // ... (rest of the function unchanged)
++ast_type_init(PyObject *self, PyObject *args, PyObject *kw)
++{
++    struct ast_state *state = get_ast_state();
++    if (state == NULL) {
++        return -1;
++    }
++
+     Py_ssize_t i, numfields = 0;
+     int res = -1;
+     PyObject *key, *value, *fields, *attributes = NULL, *remaining_fields = NULL;

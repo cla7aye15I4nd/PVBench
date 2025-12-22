@@ -1,0 +1,71 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8c8273fc7a3..bf30502d55e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -159,3 +159,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 6d06208dd1d..8cf583e01b6 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2491,7 +2491,11 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
+-    return Py_NewRef(self->task_coro);
++    if (self->task_coro) {
++        return Py_NewRef(self->task_coro);
++    }
++    
++    Py_RETURN_NONE;
+ }
+ 
+ /*[clinic input]
+@@ -2502,7 +2506,11 @@ static PyObject *
+ _asyncio_Task_get_context_impl(TaskObj *self)
+ /*[clinic end generated code: output=6996f53d3dc01aef input=87c0b209b8fceeeb]*/
+ {
+-    return Py_NewRef(self->task_context);
++    if (self->task_context) {
++        return Py_NewRef(self->task_context);
++    }
++    
++    Py_RETURN_NONE;
+ }
+ 
+ /*[clinic input]
+diff --git a/Objects/exceptions.c b/Objects/exceptions.c
+index 48623451c0d..887c3a2ca77 100644
+--- a/Objects/exceptions.c
++++ b/Objects/exceptions.c
+@@ -118,6 +118,10 @@ BaseException_traverse(PyBaseExceptionObject *self, visitproc visit, void *arg)
+ static PyObject *
+ BaseException_str(PyBaseExceptionObject *self)
+ {
++    if (!self->args) {
++        return PyUnicode_FromString("");
++    }
++    
+     switch (PyTuple_GET_SIZE(self->args)) {
+     case 0:
+         return PyUnicode_FromString("");
+@@ -132,6 +136,10 @@ static PyObject *
+ BaseException_repr(PyBaseExceptionObject *self)
+ {
+     const char *name = _PyType_Name(Py_TYPE(self));
++    if (!self->args) {
++        return PyUnicode_FromFormat("%s()", name);
++    }
++    
+     if (PyTuple_GET_SIZE(self->args) == 1)
+         return PyUnicode_FromFormat("%s(%R)", name,
+                                     PyTuple_GET_ITEM(self->args, 0));

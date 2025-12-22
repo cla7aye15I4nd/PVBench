@@ -1,0 +1,42 @@
+
+diff --git a/.gitignore b/.gitignore
+index 9142623efa8..926f616c81e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -124,3 +124,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index 7fb660a1774..09c0664e073 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -2137,7 +2137,8 @@ void WebAssemblyExceptionImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+       tag_object->serialized_signature(), i_isolate);
+   if (!EncodeExceptionValues(isolate, signature, tag_object, info[1], &thrower,
+                              values)) {
+-    return js_api_scope.AssertException();
++    js_api_scope.AssertException();
++    return;
+   }
+ 
+   // Third argument: optional ExceptionOption ({traceStack: <bool>}).
+@@ -2160,7 +2161,8 @@ void WebAssemblyExceptionImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
+       if (!i::ErrorUtils::CaptureStackTrace(i_isolate, runtime_exception,
+                                             i::SKIP_NONE, caller)
+                .ToHandle(&capture_result)) {
+-        return js_api_scope.AssertException();
++        js_api_scope.AssertException();
++        return;
+       }
+     }
+   }

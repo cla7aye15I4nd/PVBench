@@ -1,0 +1,66 @@
+
+diff --git a/.gitignore b/.gitignore
+index 49acc9f2e17..de22b095dfc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index 79802454e3f..1021a479371 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -536,7 +536,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
+ 		return;
+ 	}
+ 
+@@ -548,6 +548,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	ht = spl_array_get_hash_table(intern);
+ 	uint32_t refcount = spl_array_set_refcount(intern->is_child, ht, 1);
+ 
++	/* Increment nApplyCount to prevent recursive modifications during destruction */
++	intern->nApplyCount++;
++
+ 	if (key.key) {
+ 		zval *data = zend_hash_find(ht, key.key);
+ 		if (data) {
+@@ -571,6 +574,9 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		zend_hash_index_del(ht, key.h);
+ 	}
+ 
++	/* Decrement nApplyCount after destructive operations */
++	intern->nApplyCount--;
++
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
+@@ -1252,7 +1258,13 @@ PHP_METHOD(ArrayObject, exchangeArray)
+ 	}
+ 
+ 	if (intern->nApplyCount > 0) {
+-		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
++		zend_throw_error(NULL, "Modification of ArrayObject during iteration is prohibited");
++		RETURN_THROWS();
++	}
++
++	/* Prevent modification during object destruction */
++	if (OBJ_FLAGS(Z_OBJ_P(object)) & IS_OBJ_DESTRUCTOR_CALLED) {
++		zend_throw_error(NULL, "Modification of ArrayObject during destruction is prohibited");
+ 		RETURN_THROWS();
+ 	}
+ 

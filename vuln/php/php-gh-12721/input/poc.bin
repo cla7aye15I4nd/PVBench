@@ -1,0 +1,23 @@
+<?php
+
+file_put_contents('file1.gh12721', 'hello');
+
+echo "--- No slash ---\n";
+
+foreach (new GlobIterator('*.gh12721') as $fileInfo) {
+	echo $fileInfo->getFilename(), "\n";
+	echo $fileInfo->getExtension(), "\n";
+	echo $fileInfo->getBasename(), "\n";
+	var_dump($fileInfo->getFileInfo());
+}
+
+echo "--- With slash ---\n";
+
+foreach (new GlobIterator('./*.gh12721') as $fileInfo) {
+	echo $fileInfo->getFilename(), "\n";
+	echo $fileInfo->getExtension(), "\n";
+	echo $fileInfo->getBasename(), "\n";
+	var_dump($fileInfo->getFileInfo());
+}
+
+?>

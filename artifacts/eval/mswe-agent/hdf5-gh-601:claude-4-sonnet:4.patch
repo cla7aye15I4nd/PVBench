@@ -1,0 +1,870 @@
+
+diff --git a/.gitignore b/.gitignore
+index 3caf16a1c6..f5d4da06c1 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -41,3 +41,14 @@ src/H5overflow.h
+ src/H5version.h
+ 
+ /.classpath
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/install/include/H5ACpublic.h b/install/include/H5ACpublic.h
+new file mode 100644
+index 0000000000..f8f4f289c0
+--- /dev/null
++++ b/install/include/H5ACpublic.h
+@@ -0,0 +1,789 @@
++/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
++ * Copyright by The HDF Group.                                               *
++ * Copyright by the Board of Trustees of the University of Illinois.         *
++ * All rights reserved.                                                      *
++ *                                                                           *
++ * This file is part of HDF5.  The full HDF5 copyright notice, including     *
++ * terms governing use, modification, and redistribution, is contained in    *
++ * the COPYING file, which can be found at the root of the source code       *
++ * distribution tree, or in https://www.hdfgroup.org/licenses.               *
++ * If you do not have access to either file, you may request a copy from     *
++ * help@hdfgroup.org.                                                        *
++ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
++
++/*-------------------------------------------------------------------------
++ *
++ * Created:             H5ACpublic.h
++ *                      Jul 10 1997
++ *                      Robb Matzke
++ *
++ * Purpose:             Public include file for cache functions.
++ *
++ *-------------------------------------------------------------------------
++ */
++#ifndef H5ACpublic_H
++#define H5ACpublic_H
++
++/* Public headers needed by this file */
++#include "H5public.h"
++#include "H5Cpublic.h"
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/****************************************************************************
++ *
++ * structure H5AC_cache_config_t
++ *
++ * H5AC_cache_config_t is a public structure intended for use in public APIs.
++ * At least in its initial incarnation, it is basically a copy of struct
++ * H5C_auto_size_ctl_t, minus the report_fcn field, and plus the
++ * dirty_bytes_threshold field.
++ *
++ * The report_fcn field is omitted, as including it would require us to
++ * make H5C_t structure public.
++ *
++ * The dirty_bytes_threshold field does not appear in H5C_auto_size_ctl_t,
++ * as synchronization between caches on different processes is handled at
++ * the H5AC level, not at the level of H5C.  Note however that there is
++ * considerable interaction between this value and the other fields in this
++ * structure.
++ *
++ * Similarly, the open_trace_file, close_trace_file, and trace_file_name
++ * fields do not appear in H5C_auto_size_ctl_t, as most trace file
++ * issues are handled at the H5AC level.  The one exception is storage of
++ * the pointer to the trace file, which is handled by H5C.
++ *
++ * The structure is in H5ACpublic.h as we may wish to allow different
++ * configuration options for metadata and raw data caches.
++ *
++ * The fields of the structure are discussed individually below:
++ *
++ * version: Integer field containing the version number of this version
++ *      of the H5AC_cache_config_t structure.  Any instance of
++ *      H5AC_cache_config_t passed to the cache must have a known
++ *      version number, or an error will be flagged.
++ *
++ * rpt_fcn_enabled: Boolean field used to enable and disable the default
++ *    reporting function.  This function is invoked every time the
++ *    automatic cache resize code is run, and reports on its activities.
++ *
++ *    This is a debugging function, and should normally be turned off.
++ *
++ * open_trace_file: Boolean field indicating whether the trace_file_name
++ *     field should be used to open a trace file for the cache.
++ *
++ *      *** DEPRECATED *** Use H5Fstart/stop logging functions instead
++ *
++ *     The trace file is a debuging feature that allow the capture of
++ *     top level metadata cache requests for purposes of debugging and/or
++ *     optimization.  This field should normally be set to FALSE, as
++ *     trace file collection imposes considerable overhead.
++ *
++ *     This field should only be set to TRUE when the trace_file_name
++ *     contains the full path of the desired trace file, and either
++ *     there is no open trace file on the cache, or the close_trace_file
++ *     field is also TRUE.
++ *
++ * close_trace_file: Boolean field indicating whether the current trace
++ *     file (if any) should be closed.
++ *
++ *      *** DEPRECATED *** Use H5Fstart/stop logging functions instead
++ *
++ *     See the above comments on the open_trace_file field.  This field
++ *     should be set to FALSE unless there is an open trace file on the
++ *     cache that you wish to close.
++ *
++ * trace_file_name: Full path of the trace file to be opened if the
++ *     open_trace_file field is TRUE.
++ *
++ *      *** DEPRECATED *** Use H5Fstart/stop logging functions instead
++ *
++ *     In the parallel case, an ascii representation of the mpi rank of
++ *     the process will be appended to the file name to yield a unique
++ *     trace file name for each process.
++ *
++ *     The length of the path must not exceed H5AC__MAX_TRACE_FILE_NAME_LEN
++ *     characters.
++ *
++ * evictions_enabled:  Boolean field used to either report the current
++ *     evictions enabled status of the cache, or to set the cache's
++ *    evictions enabled status.
++ *
++ *     In general, the metadata cache should always be allowed to
++ *     evict entries.  However, in some cases it is advantageous to
++ *     disable evictions briefly, and thereby postpone metadata
++ *     writes.  However, this must be done with care, as the cache
++ *     can grow quickly.  If you do this, re-enable evictions as
++ *     soon as possible and monitor cache size.
++ *
++ *     At present, evictions can only be disabled if automatic
++ *     cache resizing is also disabled (that is, ( incr_mode ==
++ *    H5C_incr__off ) && ( decr_mode == H5C_decr__off )).  There
++ *    is no logical reason why this should be so, but it simplifies
++ *    implementation and testing, and I can't think of any reason
++ *    why it would be desireable.  If you can think of one, I'll
++ *    revisit the issue.
++ *
++ * set_initial_size: Boolean flag indicating whether the size of the
++ *      initial size of the cache is to be set to the value given in
++ *      the initial_size field.  If set_initial_size is FALSE, the
++ *      initial_size field is ignored.
++ *
++ * initial_size: If enabled, this field contain the size the cache is
++ *      to be set to upon receipt of this structure.  Needless to say,
++ *      initial_size must lie in the closed interval [min_size, max_size].
++ *
++ * min_clean_fraction: double in the range 0 to 1 indicating the fraction
++ *      of the cache that is to be kept clean.  This field is only used
++ *      in parallel mode.  Typical values are 0.1 to 0.5.
++ *
++ * max_size: Maximum size to which the cache can be adjusted.  The
++ *      supplied value must fall in the closed interval
++ *      [MIN_MAX_CACHE_SIZE, MAX_MAX_CACHE_SIZE].  Also, max_size must
++ *      be greater than or equal to min_size.
++ *
++ * min_size: Minimum size to which the cache can be adjusted.  The
++ *      supplied value must fall in the closed interval
++ *      [H5C__MIN_MAX_CACHE_SIZE, H5C__MAX_MAX_CACHE_SIZE].  Also, min_size
++ *      must be less than or equal to max_size.
++ *
++ * epoch_length: Number of accesses on the cache over which to collect
++ *      hit rate stats before running the automatic cache resize code,
++ *      if it is enabled.
++ *
++ *      At the end of an epoch, we discard prior hit rate data and start
++ *      collecting afresh.  The epoch_length must lie in the closed
++ *      interval [H5C__MIN_AR_EPOCH_LENGTH, H5C__MAX_AR_EPOCH_LENGTH].
++ *
++ *
++ * Cache size increase control fields:
++ *
++ * incr_mode: Instance of the H5C_cache_incr_mode enumerated type whose
++ *      value indicates how we determine whether the cache size should be
++ *      increased.  At present there are two possible values:
++ *
++ *      H5C_incr__off:  Don't attempt to increase the size of the cache
++ *              automatically.
++ *
++ *              When this increment mode is selected, the remaining fields
++ *              in the cache size increase section ar ignored.
++ *
++ *      H5C_incr__threshold: Attempt to increase the size of the cache
++ *              whenever the average hit rate over the last epoch drops
++ *              below the value supplied in the lower_hr_threshold
++ *              field.
++ *
++ *              Note that this attempt will fail if the cache is already
++ *              at its maximum size, or if the cache is not already using
++ *              all available space.
++ *
++ *      Note that you must set decr_mode to H5C_incr__off if you
++ *      disable metadata cache entry evictions.
++ *
++ * lower_hr_threshold: Lower hit rate threshold.  If the increment mode
++ *      (incr_mode) is H5C_incr__threshold and the hit rate drops below the
++ *      value supplied in this field in an epoch, increment the cache size by
++ *      size_increment.  Note that cache size may not be incremented above
++ *      max_size, and that the increment may be further restricted by the
++ *      max_increment field if it is enabled.
++ *
++ *      When enabled, this field must contain a value in the range [0.0, 1.0].
++ *      Depending on the incr_mode selected, it may also have to be less than
++ *      upper_hr_threshold.
++ *
++ * increment:  Double containing the multiplier used to derive the new
++ *      cache size from the old if a cache size increment is triggered.
++ *      The increment must be greater than 1.0, and should not exceed 2.0.
++ *
++ *      The new cache size is obtained my multiplying the current max cache
++ *      size by the increment, and then clamping to max_size and to stay
++ *      within the max_increment as necessary.
++ *
++ * apply_max_increment:  Boolean flag indicating whether the max_increment
++ *      field should be used to limit the maximum cache size increment.
++ *
++ * max_increment: If enabled by the apply_max_increment field described
++ *      above, this field contains the maximum number of bytes by which the
++ *      cache size can be increased in a single re-size.
++ *
++ * flash_incr_mode:  Instance of the H5C_cache_flash_incr_mode enumerated
++ *      type whose value indicates whether and by which algorithm we should
++ *      make flash increases in the size of the cache to accommodate insertion
++ *      of large entries and large increases in the size of a single entry.
++ *
++ *      The addition of the flash increment mode was occasioned by performance
++ *      problems that appear when a local heap is increased to a size in excess
++ *      of the current cache size.  While the existing re-size code dealt with
++ *      this eventually, performance was very bad for the remainder of the
++ *      epoch.
++ *
++ *      At present, there are two possible values for the flash_incr_mode:
++ *
++ *      H5C_flash_incr__off:  Don't perform flash increases in the size of
++ *              the cache.
++ *
++ *      H5C_flash_incr__add_space:  Let x be either the size of a newly
++ *              newly inserted entry, or the number of bytes by which the
++ *              size of an existing entry has been increased.
++ *
++ *              If
++ *                      x > flash_threshold * current max cache size,
++ *
++ *              increase the current maximum cache size by x * flash_multiple
++ *              less any free space in the cache, and star a new epoch.  For
++ *              now at least, pay no attention to the maximum increment.
++ *
++ *      In both of the above cases, the flash increment pays no attention to
++ *      the maximum increment (at least in this first incarnation), but DOES
++ *      stay within max_size.
++ *
++ *      With a little thought, it should be obvious that the above flash
++ *      cache size increase algorithm is not sufficient for all circumstances
++ *      -- for example, suppose the user round robins through
++ *      (1/flash_threshold) +1 groups, adding one data set to each on each
++ *      pass.  Then all will increase in size at about the same time, requiring
++ *      the max cache size to at least double to maintain acceptable
++ *      performance, however the above flash increment algorithm will not be
++ *      triggered.
++ *
++ *      Hopefully, the add space algorithms detailed above will be sufficient
++ *      for the performance problems encountered to date.  However, we should
++ *      expect to revisit the issue.
++ *
++ * flash_multiple: Double containing the multiple described above in the
++ *      H5C_flash_incr__add_space section of the discussion of the
++ *      flash_incr_mode section.  This field is ignored unless flash_incr_mode
++ *      is H5C_flash_incr__add_space.
++ *
++ * flash_threshold: Double containing the factor by which current max cache
++ *      size is multiplied to obtain the size threshold for the add_space flash
++ *      increment algorithm.  The field is ignored unless flash_incr_mode is
++ *      H5C_flash_incr__add_space.
++ *
++ *
++ * Cache size decrease control fields:
++ *
++ * decr_mode: Instance of the H5C_cache_decr_mode enumerated type whose
++ *      value indicates how we determine whether the cache size should be
++ *      decreased.  At present there are four possibilities.
++ *
++ *      H5C_decr__off:  Don't attempt to decrease the size of the cache
++ *              automatically.
++ *
++ *              When this increment mode is selected, the remaining fields
++ *              in the cache size decrease section are ignored.
++ *
++ *      H5C_decr__threshold: Attempt to decrease the size of the cache
++ *              whenever the average hit rate over the last epoch rises
++ *              above the value supplied in the upper_hr_threshold
++ *              field.
++ *
++ *      H5C_decr__age_out:  At the end of each epoch, search the cache for
++ *              entries that have not been accessed for at least the number
++ *              of epochs specified in the epochs_before_eviction field, and
++ *              evict these entries.  Conceptually, the maximum cache size
++ *              is then decreased to match the new actual cache size.  However,
++ *              this reduction may be modified by the min_size, the
++ *              max_decrement, and/or the empty_reserve.
++ *
++ *      H5C_decr__age_out_with_threshold:  Same as age_out, but we only
++ *              attempt to reduce the cache size when the hit rate observed
++ *              over the last epoch exceeds the value provided in the
++ *              upper_hr_threshold field.
++ *
++ *      Note that you must set decr_mode to H5C_decr__off if you
++ *      disable metadata cache entry evictions.
++ *
++ * upper_hr_threshold: Upper hit rate threshold.  The use of this field
++ *      varies according to the current decr_mode:
++ *
++ *      H5C_decr__off or H5C_decr__age_out:  The value of this field is
++ *              ignored.
++ *
++ *      H5C_decr__threshold:  If the hit rate exceeds this threshold in any
++ *              epoch, attempt to decrement the cache size by size_decrement.
++ *
++ *              Note that cache size may not be decremented below min_size.
++ *
++ *              Note also that if the upper_threshold is 1.0, the cache size
++ *              will never be reduced.
++ *
++ *      H5C_decr__age_out_with_threshold:  If the hit rate exceeds this
++ *              threshold in any epoch, attempt to reduce the cache size...X}/bin/h5unjam-shared"
++  )
++
++list(APPEND _cmake_import_check_targets h5unjam-shared )
++list(APPEND _cmake_import_check_files_for_h5unjam-shared "${_IMPORT_PREFIX}/bin/h5unjam-shared" )
++
++# Import target "h5copy" for configuration "Release"
++set_property(TARGET h5copy APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5copy PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5copy"
++  )
++
++list(APPEND _cmake_import_check_targets h5copy )
++list(APPEND _cmake_import_check_files_for_h5copy "${_IMPORT_PREFIX}/bin/h5copy" )
++
++# Import target "h5copy-shared" for configuration "Release"
++set_property(TARGET h5copy-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5copy-shared PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5copy-shared"
++  )
++
++list(APPEND _cmake_import_check_targets h5copy-shared )
++list(APPEND _cmake_import_check_files_for_h5copy-shared "${_IMPORT_PREFIX}/bin/h5copy-shared" )
++
++# Import target "h5stat" for configuration "Release"
++set_property(TARGET h5stat APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5stat PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5stat"
++  )
++
++list(APPEND _cmake_import_check_targets h5stat )
++list(APPEND _cmake_import_check_files_for_h5stat "${_IMPORT_PREFIX}/bin/h5stat" )
++
++# Import target "h5stat-shared" for configuration "Release"
++set_property(TARGET h5stat-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5stat-shared PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5stat-shared"
++  )
++
++list(APPEND _cmake_import_check_targets h5stat-shared )
++list(APPEND _cmake_import_check_files_for_h5stat-shared "${_IMPORT_PREFIX}/bin/h5stat-shared" )
++
++# Import target "h5dump" for configuration "Release"
++set_property(TARGET h5dump APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5dump PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5dump"
++  )
++
++list(APPEND _cmake_import_check_targets h5dump )
++list(APPEND _cmake_import_check_files_for_h5dump "${_IMPORT_PREFIX}/bin/h5dump" )
++
++# Import target "h5dump-shared" for configuration "Release"
++set_property(TARGET h5dump-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5dump-shared PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5dump-shared"
++  )
++
++list(APPEND _cmake_import_check_targets h5dump-shared )
++list(APPEND _cmake_import_check_files_for_h5dump-shared "${_IMPORT_PREFIX}/bin/h5dump-shared" )
++
++# Import target "h5format_convert" for configuration "Release"
++set_property(TARGET h5format_convert APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5format_convert PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5format_convert"
++  )
++
++list(APPEND _cmake_import_check_targets h5format_convert )
++list(APPEND _cmake_import_check_files_for_h5format_convert "${_IMPORT_PREFIX}/bin/h5format_convert" )
++
++# Import target "h5format_convert-shared" for configuration "Release"
++set_property(TARGET h5format_convert-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5format_convert-shared PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5format_convert-shared"
++  )
++
++list(APPEND _cmake_import_check_targets h5format_convert-shared )
++list(APPEND _cmake_import_check_files_for_h5format_convert-shared "${_IMPORT_PREFIX}/bin/h5format_convert-shared" )
++
++# Import target "hdf5_hl-static" for configuration "Release"
++set_property(TARGET hdf5_hl-static APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(hdf5_hl-static PROPERTIES
++  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C"
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libhdf5_hl.a"
++  )
++
++list(APPEND _cmake_import_check_targets hdf5_hl-static )
++list(APPEND _cmake_import_check_files_for_hdf5_hl-static "${_IMPORT_PREFIX}/lib/libhdf5_hl.a" )
++
++# Import target "hdf5_hl-shared" for configuration "Release"
++set_property(TARGET hdf5_hl-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(hdf5_hl-shared PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libhdf5_hl.so.1000.0.0"
++  IMPORTED_SONAME_RELEASE "libhdf5_hl.so.1000"
++  )
++
++list(APPEND _cmake_import_check_targets hdf5_hl-shared )
++list(APPEND _cmake_import_check_files_for_hdf5_hl-shared "${_IMPORT_PREFIX}/lib/libhdf5_hl.so.1000.0.0" )
++
++# Import target "gif2h5" for configuration "Release"
++set_property(TARGET gif2h5 APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(gif2h5 PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/gif2h5"
++  )
++
++list(APPEND _cmake_import_check_targets gif2h5 )
++list(APPEND _cmake_import_check_files_for_gif2h5 "${_IMPORT_PREFIX}/bin/gif2h5" )
++
++# Import target "gif2h5-shared" for configuration "Release"
++set_property(TARGET gif2h5-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(gif2h5-shared PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/gif2h5-shared"
++  )
++
++list(APPEND _cmake_import_check_targets gif2h5-shared )
++list(APPEND _cmake_import_check_files_for_gif2h5-shared "${_IMPORT_PREFIX}/bin/gif2h5-shared" )
++
++# Import target "h52gif" for configuration "Release"
++set_property(TARGET h52gif APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h52gif PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h52gif"
++  )
++
++list(APPEND _cmake_import_check_targets h52gif )
++list(APPEND _cmake_import_check_files_for_h52gif "${_IMPORT_PREFIX}/bin/h52gif" )
++
++# Import target "h52gif-shared" for configuration "Release"
++set_property(TARGET h52gif-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h52gif-shared PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h52gif-shared"
++  )
++
++list(APPEND _cmake_import_check_targets h52gif-shared )
++list(APPEND _cmake_import_check_files_for_h52gif-shared "${_IMPORT_PREFIX}/bin/h52gif-shared" )
++
++# Import target "h5watch" for configuration "Release"
++set_property(TARGET h5watch APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5watch PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5watch"
++  )
++
++list(APPEND _cmake_import_check_targets h5watch )
++list(APPEND _cmake_import_check_files_for_h5watch "${_IMPORT_PREFIX}/bin/h5watch" )
++
++# Import target "h5watch-shared" for configuration "Release"
++set_property(TARGET h5watch-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
++set_target_properties(h5watch-shared PROPERTIES
++  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/bin/h5watch-shared"
++  )
++
++list(APPEND _cmake_import_check_targets h5watch-shared )
++list(APPEND _cmake_import_check_files_for_h5watch-shared "${_IMPORT_PREFIX}/bin/h5watch-shared" )
++
++# Commands beyond this point should not need to know the version.
++set(CMAKE_IMPORT_FILE_VERSION)
+diff --git a/install/share/cmake/hdf5/hdf5-targets.cmake b/install/share/cmake/hdf5/hdf5-targets.cmake
+new file mode 100644
+index 0000000000..073f053932
+--- /dev/null
++++ b/install/share/cmake/hdf5/hdf5-targets.cmake
+@@ -0,0 +1,265 @@
++# Generated by CMake
++
++if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" LESS 2.8)
++   message(FATAL_ERROR "CMake >= 2.8.0 required")
++endif()
++if(CMAKE_VERSION VERSION_LESS "2.8.3")
++   message(FATAL_ERROR "CMake >= 2.8.3 required")
++endif()
++cmake_policy(PUSH)
++cmake_policy(VERSION 2.8.3...3.26)
++#----------------------------------------------------------------
++# Generated CMake target import file.
++#----------------------------------------------------------------
++
++# Commands may need to know the format version.
++set(CMAKE_IMPORT_FILE_VERSION 1)
++
++# Protect against multiple inclusion, which would fail when already imported targets are added once more.
++set(_cmake_targets_defined "")
++set(_cmake_targets_not_defined "")
++set(_cmake_expected_targets "")
++foreach(_cmake_expected_target IN ITEMS hdf5-static hdf5-shared mirror_server mirror_server_stop hdf5_tools-static hdf5_tools-shared h5diff h5diff-shared h5ls h5ls-shared h5debug h5repart h5mkgrp h5clear h5delete h5debug-shared h5repart-shared h5mkgrp-shared h5clear-shared h5delete-shared h5import h5import-shared h5repack h5repack-shared h5jam h5unjam h5jam-shared h5unjam-shared h5copy h5copy-shared h5stat h5stat-shared h5dump h5dump-shared h5format_convert h5format_convert-shared hdf5_hl-static hdf5_hl-shared gif2h5 gif2h5-shared h52gif h52gif-shared h5watch h5watch-shared)
++  list(APPEND _cmake_expected_targets "${_cmake_expected_target}")
++  if(TARGET "${_cmake_expected_target}")
++    list(APPEND _cmake_targets_defined "${_cmake_expected_target}")
++  else()
++    list(APPEND _cmake_targets_not_defined "${_cmake_expected_target}")
++  endif()
++endforeach()
++unset(_cmake_expected_target)
++if(_cmake_targets_defined STREQUAL _cmake_expected_targets)
++  unset(_cmake_targets_defined)
++  unset(_cmake_targets_not_defined)
++  unset(_cmake_expected_targets)
++  unset(CMAKE_IMPORT_FILE_VERSION)
++  cmake_policy(POP)
++  return()
++endif()
++if(NOT _cmake_targets_defined STREQUAL "")
++  string(REPLACE ";" ", " _cmake_targets_defined_text "${_cmake_targets_defined}")
++  string(REPLACE ";" ", " _cmake_targets_not_defined_text "${_cmake_targets_not_defined}")
++  message(FATAL_ERROR "Some (but not all) targets in this export set were already defined.\nTargets Defined: ${_cmake_targets_defined_text}\nTargets not yet defined: ${_cmake_targets_not_defined_text}\n")
++endif()
++unset(_cmake_targets_defined)
++unset(_cmake_targets_not_defined)
++unset(_cmake_expected_targets)
++
++
++# Compute the installation prefix relative to this file.
++get_filename_component(_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
++get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
++get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
++get_filename_component(_IMPORT_PREFIX "${_IMPORT_PREFIX}" PATH)
++if(_IMPORT_PREFIX STREQUAL "/")
++  set(_IMPORT_PREFIX "")
++endif()
++
++# Create imported target hdf5-static
++add_library(hdf5-static STATIC IMPORTED)
++
++set_target_properties(hdf5-static PROPERTIES
++  INTERFACE_COMPILE_DEFINITIONS "_POSIX_C_SOURCE=200809L;_GNU_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE64_SOURCE;_LARGEFILE_SOURCE"
++  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
++  INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:m>;\$<LINK_ONLY:dl>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:>>;\$<\$<NOT:\$<PLATFORM_ID:Windows>>:dl>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:Threads::Threads>>"
++)
++
++# Create imported target hdf5-shared
++add_library(hdf5-shared SHARED IMPORTED)
++
++set_target_properties(hdf5-shared PROPERTIES
++  INTERFACE_COMPILE_DEFINITIONS "H5_BUILT_AS_DYNAMIC_LIB;_POSIX_C_SOURCE=200809L;_GNU_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE64_SOURCE;_LARGEFILE_SOURCE"
++  INTERFACE_INCLUDE_DIRECTORIES "\$<\$<BOOL:OFF>:>;${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
++  INTERFACE_LINK_LIBRARIES "\$<\$<NOT:\$<PLATFORM_ID:Windows>>:dl>"
++)
++
++# Create imported target mirror_server
++add_executable(mirror_server IMPORTED)
++
++# Create imported target mirror_server_stop
++add_executable(mirror_server_stop IMPORTED)
++
++# Create imported target hdf5_tools-static
++add_library(hdf5_tools-static STATIC IMPORTED)
++
++set_target_properties(hdf5_tools-static PROPERTIES
++  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
++  INTERFACE_LINK_LIBRARIES "hdf5-static;\$<LINK_ONLY:\$<\$<BOOL:OFF>:>>"
++)
++
++# Create imported target hdf5_tools-shared
++add_library(hdf5_tools-shared SHARED IMPORTED)
++
++set_target_properties(hdf5_tools-shared PROPERTIES
++  INTERFACE_COMPILE_DEFINITIONS "H5_BUILT_AS_DYNAMIC_LIB"
++  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
++  INTERFACE_LINK_LIBRARIES "hdf5-shared"
++)
++
++# Create imported target h5diff
++add_executable(h5diff IMPORTED)
++
++# Create imported target h5diff-shared
++add_executable(h5diff-shared IMPORTED)
++
++# Create imported target h5ls
++add_executable(h5ls IMPORTED)
++
++# Create imported target h5ls-shared
++add_executable(h5ls-shared IMPORTED)
++
++# Create imported target h5debug
++add_executable(h5debug IMPORTED)
++
++# Create imported target h5repart
++add_executable(h5repart IMPORTED)
++
++# Create imported target h5mkgrp
++add_executable(h5mkgrp IMPORTED)
++
++# Create imported target h5clear
++add_executable(h5clear IMPORTED)
++
++# Create imported target h5delete
++add_executable(h5delete IMPORTED)
++
++# Create imported target h5debug-shared
++add_executable(h5debug-shared IMPORTED)
++
++# Create imported target h5repart-shared
++add_executable(h5repart-shared IMPORTED)
++
++# Create imported target h5mkgrp-shared
++add_executable(h5mkgrp-shared IMPORTED)
++
++# Create imported target h5clear-shared
++add_executable(h5clear-shared IMPORTED)
++
++# Create imported target h5delete-shared
++add_executable(h5delete-shared IMPORTED)
++
++# Create imported target h5import
++add_executable(h5import IMPORTED)
++
++# Create imported target h5import-shared
++add_executable(h5import-shared IMPORTED)
++
++# Create imported target h5repack
++add_executable(h5repack IMPORTED)
++
++# Create imported target h5repack-shared
++add_executable(h5repack-shared IMPORTED)
++
++# Create imported target h5jam
++add_executable(h5jam IMPORTED)
++
++# Create imported target h5unjam
++add_executable(h5unjam IMPORTED)
++
++# Create imported target h5jam-shared
++add_executable(h5jam-shared IMPORTED)
++
++# Create imported target h5unjam-shared
++add_executable(h5unjam-shared IMPORTED)
++
++# Create imported target h5copy
++add_executable(h5copy IMPORTED)
++
++# Create imported target h5copy-shared
++add_executable(h5copy-shared IMPORTED)
++
++# Create imported target h5stat
++add_executable(h5stat IMPORTED)
++
++# Create imported target h5stat-shared
++add_executable(h5stat-shared IMPORTED)
++
++# Create imported target h5dump
++add_executable(h5dump IMPORTED)
++
++# Create imported target h5dump-shared
++add_executable(h5dump-shared IMPORTED)
++
++# Create imported target h5format_convert
++add_executable(h5format_convert IMPORTED)
++
++# Create imported target h5format_convert-shared
++add_executable(h5format_convert-shared IMPORTED)
++
++# Create imported target hdf5_hl-static
++add_library(hdf5_hl-static STATIC IMPORTED)
++
++set_target_properties(hdf5_hl-static PROPERTIES
++  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
++  INTERFACE_LINK_LIBRARIES "hdf5-static"
++)
++
++# Create imported target hdf5_hl-shared
++add_library(hdf5_hl-shared SHARED IMPORTED)
++
++set_target_properties(hdf5_hl-shared PROPERTIES
++  INTERFACE_COMPILE_DEFINITIONS "H5_BUILT_AS_DYNAMIC_LIB"
++  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
++  INTERFACE_LINK_LIBRARIES "hdf5-shared"
++)
++
++# Create imported target gif2h5
++add_executable(gif2h5 IMPORTED)
++
++# Create imported target gif2h5-shared
++add_executable(gif2h5-shared IMPORTED)
++
++# Create imported target h52gif
++add_executable(h52gif IMPORTED)
++
++# Create imported target h52gif-shared
++add_executable(h52gif-shared IMPORTED)
++
++# Create imported target h5watch
++add_executable(h5watch IMPORTED)
++
++# Create imported target h5watch-shared
++add_executable(h5watch-shared IMPORTED)
++
++if(CMAKE_VERSION VERSION_LESS 2.8.12)
++  message(FATAL_ERROR "This file relies on consumers using CMake 2.8.12 or greater.")
++endif()
++
++# Load information for each installed configuration.
++file(GLOB _cmake_config_files "${CMAKE_CURRENT_LIST_DIR}/hdf5-targets-*.cmake")
++foreach(_cmake_config_file IN LISTS _cmake_config_files)
++  include("${_cmake_config_file}")
++endforeach()
++unset(_cmake_config_file)
++unset(_cmake_config_files)
++
++# Cleanup temporary variables.
++set(_IMPORT_PREFIX)
++
++# Loop over all imported files and verify that they actually exist
++foreach(_cmake_target IN LISTS _cmake_import_check_targets)
++  foreach(_cmake_file IN LISTS "_cmake_import_check_files_for_${_cmake_target}")
++    if(NOT EXISTS "${_cmake_file}")
++      message(FATAL_ERROR "The imported target \"${_cmake_target}\" references the file
++   \"${_cmake_file}\"
++but this file does not exist.  Possible reasons include:
++* The file was deleted, renamed, or moved to another location.
++* An install or uninstall procedure did not complete successfully.
++* The installation package was faulty and contained
++   \"${CMAKE_CURRENT_LIST_FILE}\"
++but not all the files it references.
++")
++    endif()
++  endforeach()
++  unset(_cmake_file)
++  unset("_cmake_import_check_files_for_${_cmake_target}")
++endforeach()
++unset(_cmake_target)
++unset(_cmake_import_check_targets)
++
++# This file does not depend on other imported targets which have
++# been exported from the same project but in a separate export set.
++
++# Commands beyond this point should not need to know the version.
++set(CMAKE_IMPORT_FILE_VERSION)
++cmake_policy(POP)
+diff --git a/poc b/poc
+new file mode 100755
+index 0000000000..5bd0b08387
+Binary files /dev/null and b/poc differ
+diff --git a/poc.c b/poc.c
+new file mode 100644
+index 0000000000..37e92e1ce4
+--- /dev/null
++++ b/poc.c
+@@ -0,0 +1,33 @@
++#include "hdf5.h"
++#include <stdlib.h>
++#define LOG_LOCATION "cache_logging.out"
++
++int main() {
++   hid_t   fapl = -1;
++    hbool_t is_enabled;
++    hbool_t is_enabled_out;
++    hbool_t start_on_access;
++    hbool_t start_on_access_out;
++    char *  location = NULL;
++    size_t  size;
++
++    hid_t   fid = -1;
++    hid_t   gid = -1;
++    hbool_t is_currently_logging;
++    char    group_name[12];
++    char    filename[1024];
++    int     i;
++
++    fapl = H5Pcreate(H5P_FILE_ACCESS);
++    H5Pset_fapl_core(fapl, 0, 0);
++
++    /* Set up metadata cache logging */
++    is_enabled      = 1;
++    start_on_access = 0;
++    H5Pset_mdc_log_options(fapl, is_enabled, LOG_LOCATION, start_on_access);
++    H5Pset_mdc_log_options(fapl, is_enabled, LOG_LOCATION, start_on_access);
++
++    H5Fclose(fapl);
++
++  return 0;
++}
+diff --git a/poc_fixed b/poc_fixed
+new file mode 100755
+index 0000000000..3b9dfe910a
+Binary files /dev/null and b/poc_fixed differ
+diff --git a/poc_fixed.c b/poc_fixed.c
+new file mode 100644
+index 0000000000..790c3c8e25
+--- /dev/null
++++ b/poc_fixed.c
+@@ -0,0 +1,35 @@
++#include "hdf5.h"
++#include <stdlib.h>
++#include <stdio.h>
++#define LOG_LOCATION "cache_logging.out"
++
++int main() {
++   hid_t   fapl = -1;
++    hbool_t is_enabled;
++    hbool_t is_enabled_out;
++    hbool_t start_on_access;
++    hbool_t start_on_access_out;
++    char *  location = NULL;
++    size_t  size;
++
++    hid_t   fid = -1;
++    hid_t   gid = -1;
++    hbool_t is_currently_logging;
++    char    group_name[12];
++    char    filename[1024];
++    int     i;
++
++    fapl = H5Pcreate(H5P_FILE_ACCESS);
++    H5Pset_fapl_core(fapl, 0, 0);
++
++    /* Set up metadata cache logging */
++    is_enabled      = 1;
++    start_on_access = 0;
++    H5Pset_mdc_log_options(fapl, is_enabled, LOG_LOCATION, start_on_access);
++    H5Pset_mdc_log_options(fapl, is_enabled, LOG_LOCATION, start_on_access);
++
++    H5Pclose(fapl);  /* Fixed: use H5Pclose instead of H5Fclose */
++
++    printf("Script completed successfully, no errors.\n");
++    return 0;
++}
+diff --git a/src/H5Pfapl.c b/src/H5Pfapl.c
+index c085b71886..9a7701b326 100644
+--- a/src/H5Pfapl.c
++++ b/src/H5Pfapl.c
+@@ -4237,12 +4237,8 @@ H5Pset_mdc_log_options(hid_t plist_id, hbool_t is_enabled, const char *location,
+     if (NULL == (plist = H5P_object_verify(plist_id, H5P_FILE_ACCESS)))
+         HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "plist_id is not a file access property list")
+ 
+-    /* Get the current location string and free it */
+-    if (H5P_get(plist, H5F_ACS_MDC_LOG_LOCATION_NAME, &tmp_location) < 0)
+-        HGOTO_ERROR(H5E_PLIST, H5E_CANTGET, FAIL, "can't get current log location")
+-    H5MM_xfree(tmp_location);
+-
+     /* Make a copy of the passed-in location */
++
+     if (NULL == (tmp_location = H5MM_xstrdup(location)))
+         HGOTO_ERROR(H5E_PLIST, H5E_CANTCOPY, FAIL, "can't copy passed-in log location")
+ 

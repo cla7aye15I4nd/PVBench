@@ -1,0 +1,36 @@
+
+diff --git a/.gitignore b/.gitignore
+index d3090138a..109566f69 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,4 +23,13 @@ src/doxygen.hpp
+ test/tmp/*
+ doc/html
+ contrib/vms/.vagrant
+-/.vscode
+\ No newline at end of file
++/.vscodebuild/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/tags_int.cpp b/src/tags_int.cpp
+index f9a3ea287..679f02a12 100644
+--- a/src/tags_int.cpp
++++ b/src/tags_int.cpp
+@@ -2775,8 +2775,8 @@ namespace Exiv2 {
+             if (sec != static_cast<int>(sec)) p = 1;
+ 
+             const int hh = static_cast<int>(sec / 3600);
+-            const int mm = static_cast<int>((sec - 3600 * hh) / 60);
+-            const float ss = sec - 3600 * hh - 60 * mm;
++            const int mm = static_cast<int>((sec - 3600.0 * hh) / 60.0);
++            const float ss = sec - 3600.0 * hh - 60.0 * mm;
+ 
+             os << std::setw(2) << std::setfill('0') << std::right << hh << ":"
+                << std::setw(2) << std::setfill('0') << std::right << mm << ":"

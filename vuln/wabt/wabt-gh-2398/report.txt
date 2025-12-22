@@ -1,0 +1,24 @@
+==712486==ERROR: AddressSanitizer: SEGV on unknown address 0x511000081078 (pc 0x61ac629f35af bp 0x7ffc4f4c4b70 sp 0x7ffc4f4c4b50 T0)
+==712486==The signal is caused by a READ memory access.
+    #0 0x61ac629f35af in wabt::interp::FreeList<wabt::interp::Object*>::IsUsed(unsigned long) const /tmp/wabt-gh-2398/build/include/wabt/interp/interp-inl.h:180:39
+    #1 0x61ac62aa7877 in wabt::interp::Store::IsValid(wabt::interp::Ref) const /tmp/wabt-gh-2398/build/include/wabt/interp/interp-inl.h:482:19
+    #2 0x61ac62a897c5 in wabt::interp::Store::HasValueType(wabt::interp::Ref, wabt::Type) const /tmp/wabt-gh-2398/build/src/interp/interp.cc:213:8
+    #3 0x61ac62a8d61b in wabt::interp::Table::Grow(wabt::interp::Store&, unsigned int, wabt::interp::Ref) /tmp/wabt-gh-2398/build/src/interp/interp.cc:505:3
+    #4 0x61ac62aa2073 in wabt::interp::Thread::DoTableGrow(wabt::interp::Instr, wabt::interp::RefPtr<wabt::interp::Trap>*) /tmp/wabt-gh-2398/build/src/interp/interp.cc:2178:21
+    #5 0x61ac62a9981d in wabt::interp::Thread::StepInternal(wabt::interp::RefPtr<wabt::interp::Trap>*) /tmp/wabt-gh-2398/build/src/interp/interp.cc:1536:31
+    #6 0x61ac62a95398 in wabt::interp::Thread::Run(int, wabt::interp::RefPtr<wabt::interp::Trap>*) /tmp/wabt-gh-2398/build/src/interp/interp.cc:1094:19
+    #7 0x61ac62a8c9c0 in wabt::interp::Thread::Run(wabt::interp::RefPtr<wabt::interp::Trap>*) /tmp/wabt-gh-2398/build/src/interp/interp.cc:1086:14
+    #8 0x61ac62a8beb0 in wabt::interp::DefinedFunc::DoCall(wabt::interp::Thread&, std::vector<wabt::interp::Value, std::allocator<wabt::interp::Value>> const&, std::vector<wabt::interp::Value, std::allocator<wabt::interp::Value>>&, wabt::interp::RefPtr<wabt::interp::Trap>*) /tmp/wabt-gh-2398/build/src/interp/interp.cc:428:19
+    #9 0x61ac62a8b898 in wabt::interp::Func::Call(wabt::interp::Store&, std::vector<wabt::interp::Value, std::allocator<wabt::interp::Value>> const&, std::vector<wabt::interp::Value, std::allocator<wabt::interp::Value>>&, wabt::interp::RefPtr<wabt::interp::Trap>*, wabt::Stream*) /tmp/wabt-gh-2398/build/src/interp/interp.cc:394:10
+    #10 0x61ac62a937fb in wabt::interp::Instance::Instantiate(wabt::interp::Store&, wabt::interp::Ref, std::vector<wabt::interp::Ref, std::allocator<wabt::interp::Ref>> const&, wabt::interp::RefPtr<wabt::interp::Trap>*) /tmp/wabt-gh-2398/build/src/interp/interp.cc:952:22
+    #11 0x61ac629e6436 in InstantiateModule(std::vector<wabt::interp::Ref, std::allocator<wabt::interp::Ref>>&, wabt::interp::RefPtr<wabt::interp::Module> const&, wabt::interp::RefPtr<wabt::interp::Instance>*) /tmp/wabt-gh-2398/build/src/tools/wasm-interp.cc:340:19
+    #12 0x61ac629e00de in ReadAndRunModule(char const*) /tmp/wabt-gh-2398/build/src/tools/wasm-interp.cc:423:3
+    #13 0x61ac629df114 in ProgramMain(int, char**) /tmp/wabt-gh-2398/build/src/tools/wasm-interp.cc:450:25
+    #14 0x61ac629e0291 in main /tmp/wabt-gh-2398/build/src/tools/wasm-interp.cc:456:10
+    #15 0x760e477cb1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #16 0x760e477cb28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x61ac62902474 in _start (/tmp/wabt-gh-2398/build/build/wasm-interp+0xca474) (BuildId: 5c8f228daebbe8d0a2b7ae5c1dd1ed81604ddc1f)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/wabt-gh-2398/build/include/wabt/interp/interp-inl.h:180:39 in wabt::interp::FreeList<wabt::interp::Object*>::IsUsed(unsigned long) const
+==712486==ABORTING

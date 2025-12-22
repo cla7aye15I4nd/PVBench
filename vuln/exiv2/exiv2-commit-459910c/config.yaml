@@ -1,0 +1,13 @@
+id: exiv2-commit-459910c
+project: exiv2
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: exiv2
+trigger_commit: a2cb06a28eb9fe2a189a63ad1e50de707e4eb96b
+patch:
+  commit: 459910c36a21369c09b75bcfa82f287c9da56abf
+  date: '2022-10-08T21:40:04+01:00'
+reference:
+- https://github.com/Exiv2/exiv2
+- https://github.com/Exiv2/exiv2/commit/a2cb06a28eb9fe2a189a63ad1e50de707e4eb96b
+- https://github.com/Exiv2/exiv2/commit/459910c36a21369c09b75bcfa82f287c9da56abf

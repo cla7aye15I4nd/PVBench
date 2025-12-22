@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index d35b588ef65..29d98592a37 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index d2c95105a68..d38b4fdf628 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -1088,6 +1088,8 @@ bool GetOptionalIntegerProperty(v8::Isolate* isolate, ErrorThrower* thrower,
+                                 uint64_t upper_bound) {
+   v8::Local<v8::Value> value;
+   if (!object->Get(context, property).ToLocal(&value)) {
++    // If object->Get() failed, there should be a pending exception.
++    // We don't need to set an additional error in the thrower.
+     return false;
+   }
+ 

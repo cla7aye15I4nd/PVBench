@@ -1,0 +1,231 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index 743b9e37fbc..dab8f4befda 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3255,7 +3255,9 @@ _curses_initscr_impl(PyObject *module)
+     PyCursesWindowObject *winobj;
+ 
+     if (initialised) {
+-        wrefresh(stdscr);
++        if (stdscr != NULL) {
++            wrefresh(stdscr);
++        }
+         return (PyObject *)PyCursesWindow_New(stdscr, NULL);
+     }
+ 
+diff --git a/final_test.py b/final_test.py
+new file mode 100644
+index 00000000000..76aba820172
+--- /dev/null
++++ b/final_test.py
+@@ -0,0 +1,40 @@
++import curses
++import sys
++
++def test_initscr_crash_scenario():
++    """Test the specific scenario that was causing the crash"""
++    print("Testing initscr crash scenario...")
++    
++    try:
++        # This should work without crashing
++        stdscr = curses.initscr()
++        print("First initscr() successful")
++        
++        # Call initscr again while already initialized
++        # This was causing the crash before the fix
++        stdscr2 = curses.initscr()
++        print("Second initscr() successful (this was crashing before)")
++        
++        # Try one more time
++        stdscr3 = curses.initscr()
++        print("Third initscr() successful")
++        
++        print("SUCCESS: No crash occurred!")
++        return True
++        
++    except Exception as e:
++        print(f"FAILED: Exception occurred: {e}")
++        return False
++    finally:
++        try:
++            curses.endwin()
++        except:
++            pass
++
++if __name__ == "__main__":
++    success = test_initscr_crash_scenario()
++    if success:
++        print("Test completed successfully, no errors.")
++        sys.exit(0)
++    else:
++        sys.exit(1)
+diff --git a/reproduce_crash.sh b/reproduce_crash.sh
+new file mode 100755
+index 00000000000..01759b9e13b
+--- /dev/null
++++ b/reproduce_crash.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++TERM=xterm ./python /home/poc/0.bin
+diff --git a/test_curses.py b/test_curses.py
+new file mode 100644
+index 00000000000..ca53c031eb4
+--- /dev/null
++++ b/test_curses.py
+@@ -0,0 +1,21 @@
++import curses
++
++# Try to trigger the crash by calling initscr multiple times or in unusual ways
++try:
++    print("Calling curses.initscr()...")
++    stdscr = curses.initscr()
++    print("initscr() successful")
++    
++    # Try calling initscr again while already initialized
++    print("Calling curses.initscr() again...")
++    stdscr2 = curses.initscr()
++    print("Second initscr() successful")
++    
++except Exception as e:
++    print(f"Exception: {e}")
++finally:
++    try:
++        curses.endwin()
++        print("endwin() called")
++    except:
++        pass
+diff --git a/test_curses_comprehensive.py b/test_curses_comprehensive.py
+new file mode 100644
+index 00000000000..03cf4f73a16
+--- /dev/null
++++ b/test_curses_comprehensive.py
+@@ -0,0 +1,72 @@
++import curses
++import sys
++
++def test_multiple_initscr():
++    """Test calling initscr multiple times"""
++    print("Test 1: Multiple initscr calls")
++    try:
++        # First call
++        stdscr1 = curses.initscr()
++        print("  First initscr() successful")
++        
++        # Second call (should handle the case where initialised=TRUE)
++        stdscr2 = curses.initscr()
++        print("  Second initscr() successful")
++        
++        # Third call
++        stdscr3 = curses.initscr()
++        print("  Third initscr() successful")
++        
++        print("  Test 1 PASSED")
++        return True
++    except Exception as e:
++        print(f"  Test 1 FAILED: {e}")
++        return False
++    finally:
++        try:
++            curses.endwin()
++        except:
++            pass
++
++def test_initscr_after_endwin():
++    """Test initscr after endwin"""
++    print("Test 2: initscr after endwin")
++    try:
++        # Initialize
++        stdscr1 = curses.initscr()
++        print("  Initial initscr() successful")
++        
++        # End
++        curses.endwin()
++        print("  endwin() successful")
++        
++        # Initialize again
++        stdscr2 = curses.initscr()
++        print("  Second initscr() after endwin() successful")
++        
++        print("  Test 2 PASSED")
++        return True
++    except Exception as e:
++        print(f"  Test 2 FAILED: {e}")
++        return False
++    finally:
++        try:
++            curses.endwin()
++        except:
++            pass
++
++def main():
++    print("Running comprehensive curses tests...")
++    
++    test1_result = test_multiple_initscr()
++    test2_result = test_initscr_after_endwin()
++    
++    if test1_result and test2_result:
++        print("\nAll tests PASSED!")
++        return 0
++    else:
++        print("\nSome tests FAILED!")
++        return 1
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/test_poc.py b/test_poc.py
+new file mode 100644
+index 00000000000..8f5473a6272
+--- /dev/null
++++ b/test_poc.py
+@@ -0,0 +1,15 @@
++import asyncio
++
++
++async def main():
++    loop = asyncio.get_running_loop()
++    loop.set_task_factory(asyncio.eager_task_factory)
++
++    async def foo(): ...
++
++    task = asyncio.create_task(foo())
++    await task
++    print(task.get_coro())
++
++
++asyncio.run(main())
+\ No newline at end of file
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..34ee6197f8e
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,14 @@
++#!/usr/bin/env python3
++import curses
++
++# Try to reproduce the crash
++try:
++    curses.initscr()
++    print("initscr() completed successfully")
++except Exception as e:
++    print(f"Error: {e}")
++finally:
++    try:
++        curses.endwin()
++    except:
++        pass

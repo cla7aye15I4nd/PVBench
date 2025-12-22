@@ -1,0 +1,55 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6a0e7e46b..d217e0f49 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -35,3 +35,13 @@ tags
+ 
+ /doc/api
+ /doc/capi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/hash.c b/src/hash.c
+index 289f02a91..1d693c641 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -636,6 +636,11 @@ ib_it_next(index_buckets_iter *it)
+   uint32_t slid_ary_index = slid_bit_pos / IB_TYPE_BIT;
+   it->ary_index = slid_ary_index + it->pos / IB_TYPE_BIT * it->bit;
+   it->shift2 = (slid_ary_index + 1) * IB_TYPE_BIT - slid_bit_pos - 1;
++  uint32_t ib_ary_size = ib_bit_to_capa(it->bit) / IB_TYPE_BIT * it->bit;
++  if (it->ary_index >= ib_ary_size) {
++    it->ea_index = 0; /* or some invalid value, depending on usage */
++    return;
++  }
+   it->ea_index = (ht_ib(it->h)[it->ary_index] >> it->shift2) & it->mask;
+   if (IB_TYPE_BIT - it->bit < it->shift2) {
+     it->shift1 = IB_TYPE_BIT - it->shift2;
+@@ -658,16 +663,18 @@ ib_it_set(index_buckets_iter *it, uint32_t ea_index)
+ {
+   uint32_t mask, i;
+   it->ea_index = ea_index;
++  uint32_t ib_ary_size = ib_bit_to_capa(it->bit) / IB_TYPE_BIT * it->bit;
+   if (it->shift1) {
+     i = it->ary_index - 1;
++    if (i >= ib_ary_size) return;
+     mask = it->mask >> it->shift1;
+     ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index >> it->shift1);
+   }
+   i = it->ary_index;
++  if (i >= ib_ary_size) return;
+   mask = it->mask << it->shift2;
+   ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index << it->shift2);
+ }
+-
+ static void
+ ib_it_delete(index_buckets_iter *it)
+ {

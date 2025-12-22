@@ -1,0 +1,69 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..3e9430fa1ac 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -555,8 +555,21 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 			if (Z_TYPE_P(data) == IS_INDIRECT) {
+ 				data = Z_INDIRECT_P(data);
+ 				if (Z_TYPE_P(data) != IS_UNDEF) {
+-					zval_ptr_dtor(data);
++					zval old_data;
++					ZVAL_COPY_VALUE(&old_data, data);
+ 					ZVAL_UNDEF(data);
++					
++					/* Restore refcount before calling destructor to avoid assertion failures */
++					if (refcount) {
++						spl_array_set_refcount(intern->is_child, ht, refcount);
++					}
++					
++					zval_ptr_dtor(&old_data);
++					
++					/* Re-get hash table and set refcount again, as destructor may have changed it */
++					ht = spl_array_get_hash_table(intern);
++					refcount = spl_array_set_refcount(intern->is_child, ht, 1);
++					
+ 					HT_FLAGS(ht) |= HASH_FLAG_HAS_EMPTY_IND;
+ 					zend_hash_move_forward_ex(ht, spl_array_get_pos_ptr(ht, intern));
+ 					if (spl_array_is_object(intern)) {
+@@ -575,6 +588,7 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 	if (refcount) {
+ 		spl_array_set_refcount(intern->is_child, ht, refcount);
+ 	}
++
+ } /* }}} */
+ 
+ static void spl_array_unset_dimension(zend_object *object, zval *offset) /* {{{ */
+diff --git a/ext/spl/spl_observer.c b/ext/spl/spl_observer.c
+index 21b19cffa38..b01baf7fefd 100644
+--- a/ext/spl/spl_observer.c
++++ b/ext/spl/spl_observer.c
+@@ -746,8 +746,10 @@ PHP_METHOD(SplObjectStorage, setInfo)
+ 	if ((element = zend_hash_get_current_data_ptr_ex(&intern->storage, &intern->pos)) == NULL) {
+ 		RETURN_NULL();
+ 	}
+-	zval_ptr_dtor(&element->inf);
++	zval old_inf;
++	ZVAL_COPY_VALUE(&old_inf, &element->inf);
+ 	ZVAL_COPY(&element->inf, inf);
++	zval_ptr_dtor(&old_inf);
+ } /* }}} */
+ 
+ /* {{{ Moves position forward */

@@ -1,0 +1,90 @@
+
+diff --git a/.gitignore b/.gitignore
+index 24208ddbb..e3bfbe6e6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -31,3 +31,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ # VS Code and Visual Studio
+ .vs
+ .vscode
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/Support/SHA1.h b/include/hermes/Support/SHA1.h
+index cfc82b4e2..0b34fbef3 100644
+--- a/include/hermes/Support/SHA1.h
++++ b/include/hermes/Support/SHA1.h
+@@ -10,7 +10,7 @@
+ 
+ #include <array>
+ #include <string>
+-
++#include <cstdint>
+ namespace hermes {
+ 
+ constexpr size_t SHA1_NUM_BYTES = 20;
+diff --git a/lib/Parser/JSParserImpl.cpp b/lib/Parser/JSParserImpl.cpp
+index 0589efb3a..e8674b781 100644
+--- a/lib/Parser/JSParserImpl.cpp
++++ b/lib/Parser/JSParserImpl.cpp
+@@ -5525,6 +5525,16 @@ Optional<ESTree::Node *> JSParserImpl::parseAssignmentExpression(
+     AllowTypedArrowFunction allowTypedArrowFunction,
+     CoverTypedParameters coverTypedParameters,
+     ESTree::Node *typeParams) {
++  assignmentRecursionDepth_++;
++  struct RecursionGuard {
++    unsigned &depth;
++    RecursionGuard(unsigned &d) : depth(d) {}
++    ~RecursionGuard() { --depth; }
++  } guard(assignmentRecursionDepth_);
++  if (assignmentRecursionDepth_ > kMaxAssignmentRecursionDepth) {
++    error(tok_->getStartLoc(), "Maximum expression nesting depth exceeded");
++    return llvh::None;
++  }
+   struct State {
+     SMLoc leftStartLoc = {};
+     Optional<ESTree::Node *> optLeftExpr = llvh::None;
+@@ -5533,7 +5543,6 @@ Optional<ESTree::Node *> JSParserImpl::parseAssignmentExpression(
+ 
+     explicit State() {}
+   };
+-
+   auto parseHelper = [this](
+                          State &state,
+                          Param param,
+diff --git a/lib/Parser/JSParserImpl.h b/lib/Parser/JSParserImpl.h
+index 3043ab094..24ba83ae3 100644
+--- a/lib/Parser/JSParserImpl.h
++++ b/lib/Parser/JSParserImpl.h
+@@ -167,7 +167,9 @@ class JSParserImpl {
+     return useStaticBuiltin_;
+   }
+ 
+- private:
++  // Recursion depth tracking for assignment/conditional expressions.
++  unsigned assignmentRecursionDepth_ = 0;
++  static constexpr unsigned kMaxAssignmentRecursionDepth = 1000;
+   /// Called when the parser detects 'use static builtin' directive from the
+   /// source.
+   void setUseStaticBuiltin() {
+diff --git a/public/hermes/Public/DebuggerTypes.h b/public/hermes/Public/DebuggerTypes.h
+index fe651803f..ad4cbc686 100644
+--- a/public/hermes/Public/DebuggerTypes.h
++++ b/public/hermes/Public/DebuggerTypes.h
+@@ -10,7 +10,7 @@
+ 
+ #include <string>
+ #include <vector>
+-
++#include <cstdint>
+ namespace hermes {
+ namespace vm {
+ class Debugger;

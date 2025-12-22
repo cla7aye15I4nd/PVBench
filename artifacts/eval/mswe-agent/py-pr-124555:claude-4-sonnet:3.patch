@@ -1,0 +1,46 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index ece6b13c788..29188d52130 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3003,7 +3003,14 @@ De-initialize the library, and return terminal to normal status.
+ static PyObject *
+ _curses_endwin_impl(PyObject *module)
+ /*[clinic end generated code: output=c0150cd96d2f4128 input=e172cfa43062f3fa]*/
+-NoArgNoReturnFunctionBody(endwin)
++{
++    PyCursesStatefulInitialised(module);
++    int result = endwin();
++    if (result != ERR) {
++        curses_initscr_called = FALSE;
++    }
++    return PyCursesCheckERR(module, result, "endwin");
++}
+ 
+ /*[clinic input]
+ _curses.erasechar
+@@ -3366,7 +3373,9 @@ _curses_initscr_impl(PyObject *module)
+     WINDOW *win;
+ 
+     if (curses_initscr_called) {
+-        wrefresh(stdscr);
++        if (stdscr != NULL) {
++            wrefresh(stdscr);
++        }
+         return (PyObject *)PyCursesWindow_New(stdscr, NULL);
+     }
+ 

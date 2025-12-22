@@ -1,0 +1,47 @@
+diff --git a/result/errors/754947.xml b/result/errors/754947.xml
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/result/errors/754947.xml.err b/result/errors/754947.xml.err
+new file mode 100644
+index 00000000..f45cb5a2
+--- /dev/null
++++ b/result/errors/754947.xml.err
+@@ -0,0 +1,7 @@
++./test/errors/754947.xml:1: parser error : Input is not proper UTF-8, indicate encoding !
++Bytes: 0xEE 0x5D 0x5D 0x3E
++<d><![CDATA[0000000000000î]]>
++                         ^
++./test/errors/754947.xml:1: parser error : Premature end of data in tag d line 1
++<d><![CDATA[0000000000000î]]>
++                             ^
+diff --git a/result/errors/754947.xml.str b/result/errors/754947.xml.str
+new file mode 100644
+index 00000000..4d2f52e3
+--- /dev/null
++++ b/result/errors/754947.xml.str
+@@ -0,0 +1,5 @@
++./test/errors/754947.xml:1: parser error : Input is not proper UTF-8, indicate encoding !
++Bytes: 0xEE 0x5D 0x5D 0x3E
++<d><![CDATA[0000000000000î]]>
++                         ^
++./test/errors/754947.xml : failed to parse
+diff --git a/result/errors/cdata.xml.str b/result/errors/cdata.xml.str
+index e043441a..cf83d2b3 100644
+--- a/result/errors/cdata.xml.str
++++ b/result/errors/cdata.xml.str
+@@ -1,5 +1,5 @@
+ ./test/errors/cdata.xml:2: parser error : Input is not proper UTF-8, indicate encoding !
+-Bytes: 0x5B 0x43 0xE1 0x72
++Bytes: 0xE1 0x72 0x5D 0x5D
+ <A><![CDATA[Cár]]></A>
+-           ^
++             ^
+ ./test/errors/cdata.xml : failed to parse
+diff --git a/test/errors/754947.xml b/test/errors/754947.xml
+new file mode 100644
+index 00000000..bd9997e3
+--- /dev/null
++++ b/test/errors/754947.xml
+@@ -0,0 +1 @@
++<d><![CDATA[0000000000000î]]>
+\ No newline at end of file

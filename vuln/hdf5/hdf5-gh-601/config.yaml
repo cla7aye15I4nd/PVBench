@@ -1,0 +1,14 @@
+id: hdf5-gh-601
+project: hdf5
+sanitizer: AddressSanitizer
+type: Double Free
+binary: poc
+trigger_commit: 138bc52facad0e6be4cfd13a860bb628c1dfd626
+patch:
+  commit: 16f9b070ce084313de37cc73968f70f2cba0b75a
+  date: '2021-04-29T09:33:43-05:00'
+reference:
+- https://github.com/HDFGroup/hdf5
+- https://github.com/HDFGroup/hdf5/issues/601
+- https://github.com/HDFGroup/hdf5/commit/138bc52facad0e6be4cfd13a860bb628c1dfd626
+- https://github.com/HDFGroup/hdf5/commit/16f9b070ce084313de37cc73968f70f2cba0b75a

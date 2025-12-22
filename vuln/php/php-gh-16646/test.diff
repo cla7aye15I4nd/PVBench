@@ -1,0 +1,69 @@
+diff --git a/ext/spl/tests/gh16646.phpt b/ext/spl/tests/gh16646.phpt
+new file mode 100644
+index 0000000000..b6cb503d8e
+--- /dev/null
++++ b/ext/spl/tests/gh16646.phpt
+@@ -0,0 +1,32 @@
++--TEST--
++GH-16646: Use-after-free in ArrayObject::unset() with destructor
++--FILE--
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
++--EXPECT--
++C::__destruct
++object(ArrayObject)#1 (1) {
++  ["storage":"ArrayObject":private]=>
++  array(0) {
++  }
++}
+diff --git a/ext/spl/tests/gh16646_2.phpt b/ext/spl/tests/gh16646_2.phpt
+new file mode 100644
+index 0000000000..d006583500
+--- /dev/null
++++ b/ext/spl/tests/gh16646_2.phpt
+@@ -0,0 +1,25 @@
++--TEST--
++GH-16646: Use-after-free in ArrayObject::exchangeArray() with destructor
++--FILE--
++<?php
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new C);
++$arr->exchangeArray([]);
++var_dump($arr);
++
++?>
++--EXPECT--
++C::__destruct
++object(ArrayObject)#1 (1) {
++  ["storage":"ArrayObject":private]=>
++  array(0) {
++  }
++}

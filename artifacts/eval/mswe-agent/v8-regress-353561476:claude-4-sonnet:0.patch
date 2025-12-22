@@ -1,0 +1,53 @@
+
+diff --git a/.gitignore b/.gitignore
+index 075446de1e1..7e0cadd6054 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -122,3 +122,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 530a249adde..198f062df80 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -2688,14 +2688,23 @@ void Scope::AllocateScopeInfosRecursively(
+   auto it = scope_infos_to_reuse.find(UniqueIdInScript());
+   if (it != scope_infos_to_reuse.end()) {
+     scope_info_ = it->second;
+-    CHECK(NeedsContext());
+-    // The ScopeInfo chain mirrors the context chain, so we only link to the
+-    // next outer scope that needs a context.
+-    next_outer_scope = scope_info_;
+-    DCHECK(!scope_info_.is_null());
++    // Only use the reused scope info if the current scope still needs a context.
++    // If the scope no longer needs a context, we should not reuse the old scope info
++    // as it would create inconsistencies in the scope chain.
++    if (NeedsContext()) {
++      // The ScopeInfo chain mirrors the context chain, so we only link to the
++      // next outer scope that needs a context.
++      next_outer_scope = scope_info_;
++    } else {
++      // If we don't need a context anymore, clear the scope info to avoid inconsistencies
++      scope_info_ = {};
++    }
++    DCHECK(!scope_info_.is_null() || !NeedsContext());
+     DCHECK(!is_hidden_catch_scope());
+-    CHECK_EQ(scope_info_->scope_type(), scope_type_);
+-    CHECK_EQ(scope_info_->ContextLength(), num_heap_slots_);
++    if (!scope_info_.is_null()) {
++      CHECK_EQ(scope_info_->scope_type(), scope_type_);
++      CHECK_EQ(scope_info_->ContextLength(), num_heap_slots_);
++    }
+ #ifdef DEBUG
+     // Consume the scope info.
+     it->second = {};

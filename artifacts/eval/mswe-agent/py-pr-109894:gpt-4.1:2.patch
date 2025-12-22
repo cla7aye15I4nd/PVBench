@@ -1,0 +1,127 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8c8273fc7a3..bf30502d55e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -159,3 +159,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/Setup b/Modules/Setup
+index 1367f0ef4fa..7ab6fcb398a 100644
+--- a/Modules/Setup
++++ b/Modules/Setup
+@@ -144,7 +144,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+ #_pickle _pickle.c
+ #_queue _queuemodule.c
+ #_random _randommodule.c
+-#_socket socketmodule.c
++_socket socketmodule.c
+ #_statistics _statisticsmodule.c
+ #_struct _struct.c
+ #_typing _typingmodule.c
+diff --git a/Objects/exceptions.c b/Objects/exceptions.c
+index 48623451c0d..8c4c644a152 100644
+--- a/Objects/exceptions.c
++++ b/Objects/exceptions.c
+@@ -55,7 +55,20 @@ BaseException_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+     self->suppress_context = 0;
+ 
+     if (args) {
+-        self->args = Py_NewRef(args);
++        if (PyTuple_Check(args)) {
++            self->args = Py_NewRef(args);
++        } else {
++            PyObject *seq = PySequence_Tuple(args);
++            if (seq) {
++                self->args = seq;
++            } else {
++                self->args = PyTuple_New(0);
++                if (!self->args) {
++                    Py_DECREF(self);
++                    return NULL;
++                }
++            }
++        }
+         return (PyObject *)self;
+     }
+ 
+@@ -74,7 +87,11 @@ BaseException_init(PyBaseExceptionObject *self, PyObject *args, PyObject *kwds)
+     if (!_PyArg_NoKeywords(Py_TYPE(self)->tp_name, kwds))
+         return -1;
+ 
+-    Py_XSETREF(self->args, Py_NewRef(args));
++    if (args == NULL) {
++        Py_XSETREF(self->args, PyTuple_New(0));
++    } else {
++        Py_XSETREF(self->args, Py_NewRef(args));
++    }
+     return 0;
+ }
+ 
+@@ -107,17 +124,27 @@ static int
+ BaseException_traverse(PyBaseExceptionObject *self, visitproc visit, void *arg)
+ {
+     Py_VISIT(self->dict);
+-    Py_VISIT(self->args);
+-    Py_VISIT(self->notes);
+-    Py_VISIT(self->traceback);
++
++    Py_VISIT(self->cause);
++    Py_VISIT(self->context);
++    return 0;
+     Py_VISIT(self->cause);
+     Py_VISIT(self->context);
+     return 0;
+ }
+ 
++
++
+ static PyObject *
+ BaseException_str(PyBaseExceptionObject *self)
+ {
++    fprintf(stderr, "DEBUG: self=%p, self->args=%p\n", (void*)self, (void*)self->args);
++    fflush(stderr);
++    if (self->args == NULL) {
++        fprintf(stderr, "DEBUG: self->args is NULL in BaseException_str!\n");
++        return PyUnicode_FromString("");
++    }
++
+     switch (PyTuple_GET_SIZE(self->args)) {
+     case 0:
+         return PyUnicode_FromString("");
+@@ -127,11 +154,14 @@ BaseException_str(PyBaseExceptionObject *self)
+         return PyObject_Str(self->args);
+     }
+ }
+-
+ static PyObject *
++
+ BaseException_repr(PyBaseExceptionObject *self)
+ {
+     const char *name = _PyType_Name(Py_TYPE(self));
++    if (self->args == NULL) {
++        return PyUnicode_FromFormat("%s()", name);
++    }
+     if (PyTuple_GET_SIZE(self->args) == 1)
+         return PyUnicode_FromFormat("%s(%R)", name,
+                                     PyTuple_GET_ITEM(self->args, 0));
+@@ -1816,7 +1846,11 @@ oserror_init(PyOSErrorObject *self, PyObject **p_args,
+ #endif
+ 
+     /* Steals the reference to args */
+-    Py_XSETREF(self->args, args);
++    if (args == NULL) {
++        Py_XSETREF(self->args, PyTuple_New(0));
++    } else {
++        Py_XSETREF(self->args, args);
++    }
+     *p_args = args = NULL;
+ 
+     return 0;

@@ -1,0 +1,66 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/getchar.c b/src/getchar.c
+index 29323fa32..900f77d6a 100644
+--- a/src/getchar.c
++++ b/src/getchar.c
+@@ -1039,25 +1039,30 @@ ins_typebuf(
+ 
+     if (offset == 0 && addlen <= typebuf.tb_off)
+     {
+-	/*
+-	 * Easy case: there is room in front of typebuf.tb_buf[typebuf.tb_off]
+-	 */
+-	typebuf.tb_off -= addlen;
+-	mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
++        /*
++         * Easy case: there is room in front of typebuf.tb_buf[typebuf.tb_off]
++         * Defensive: ensure we do not underflow tb_off or overflow the buffer.
++         */
++        if (addlen > typebuf.tb_off) {
++            // Not enough room, fall back to reallocation branch below.
++            goto need_realloc;
++        }
++        typebuf.tb_off -= addlen;
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
+     }
+-    else if (typebuf.tb_len == 0 && typebuf.tb_buflen
+-					       >= addlen + 3 * (MAXMAPLEN + 4))
++    else if (typebuf.tb_len == 0 && typebuf.tb_buflen >= addlen + 3 * (MAXMAPLEN + 4))
+     {
+-	/*
+-	 * Buffer is empty and string fits in the existing buffer.
+-	 * Leave some space before and after, if possible.
+-	 */
+-	typebuf.tb_off = (typebuf.tb_buflen - addlen - 3 * (MAXMAPLEN + 4)) / 2;
+-	mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
++        /*
++         * Buffer is empty and string fits in the existing buffer.
++         * Leave some space before and after, if possible.
++         */
++        typebuf.tb_off = (typebuf.tb_buflen - addlen - 3 * (MAXMAPLEN + 4)) / 2;
++        mch_memmove(typebuf.tb_buf + typebuf.tb_off, str, (size_t)addlen);
+     }
+     else
++need_realloc:
+     {
+-	int extra;
++        int extra;
+ 
+ 	/*
+ 	 * Need to allocate a new buffer.

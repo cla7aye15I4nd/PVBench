@@ -1,0 +1,14 @@
+id: wabt-gh-989
+project: wabt
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: wat2wasm
+trigger_commit: 21a9de42020492451dbefd95173ad06613dcf176
+patch:
+  commit: 943164db9bc1147a856dc202f177cf32b64231b7
+  date: '2018-12-20T15:54:59-08:00'
+reference:
+- https://github.com/WebAssembly/wabt
+- https://github.com/WebAssembly/wabt/issues/989
+- https://github.com/WebAssembly/wabt/commit/21a9de42020492451dbefd95173ad06613dcf176
+- https://github.com/WebAssembly/wabt/commit/943164db9bc1147a856dc202f177cf32b64231b7

@@ -1,0 +1,55 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_elementtree.c b/Modules/_elementtree.c
+index b73bd844626..73bca1c4e43 100644
+--- a/Modules/_elementtree.c
++++ b/Modules/_elementtree.c
+@@ -1641,17 +1641,19 @@ _elementtree_Element_remove_impl(ElementObject *self, PyObject *subelement)
+         return NULL;
+     }
+ 
+-    for (i = 0; i < self->extra->length; i++) {
+-        if (self->extra->children[i] == subelement)
++    for (i = 0; self->extra && i < self->extra->length; i++) {
++        if (self->extra && self->extra->children[i] == subelement)
+             break;
+-        rc = PyObject_RichCompareBool(self->extra->children[i], subelement, Py_EQ);
+-        if (rc > 0)
+-            break;
+-        if (rc < 0)
+-            return NULL;
++        if (self->extra) {
++            rc = PyObject_RichCompareBool(self->extra->children[i], subelement, Py_EQ);
++            if (rc > 0)
++                break;
++            if (rc < 0)
++                return NULL;
++        }
+     }
+ 
+-    if (i >= self->extra->length) {
++    if (!self->extra || i >= self->extra->length) {
+         /* subelement is not in children, so raise exception */
+         PyErr_SetString(
+             PyExc_ValueError,
+@@ -1668,6 +1670,7 @@ _elementtree_Element_remove_impl(ElementObject *self, PyObject *subelement)
+ 
+     Py_DECREF(found);
+     Py_RETURN_NONE;
++
+ }
+ 
+ static PyObject*

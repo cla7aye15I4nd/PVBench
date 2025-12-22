@@ -1,0 +1,47 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 66190522e70..31bb24c40e5 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -512,8 +512,7 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+                          std::end(kTemplatesWithMismatchedArguments), index)) {
+             builder.AppendCString("undefined");
+           } else {
+-            FATAL("Missing argument to template (got %zu): %s", args.size(),
+-                  template_string);
++            FATAL("Missing argument to template (got %zu): template contains unescaped %%", args.size());
+           }
+         } else {
+           Handle<String> arg = remaining_args[0];
+@@ -528,8 +527,8 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+   if (!remaining_args.empty() &&
+       std::count(std::begin(kTemplatesWithMismatchedArguments),
+                  std::end(kTemplatesWithMismatchedArguments), index) == 0) {
+-    FATAL("Too many arguments to template (expected %zu, got %zu): %s",
+-          args.size() - remaining_args.size(), args.size(), template_string);
++    FATAL("Too many arguments to template (expected %zu, got %zu): template contains unescaped %%",
++          args.size() - remaining_args.size(), args.size());
+   }
+ 
+   return builder.Finish();
+diff --git a/test_fix b/test_fix
+new file mode 100755
+index 00000000000..9a9d63a585f
+Binary files /dev/null and b/test_fix differ

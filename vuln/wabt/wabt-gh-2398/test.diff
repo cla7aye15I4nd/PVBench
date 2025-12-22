@@ -1,0 +1,42 @@
+diff --git a/src/tools/spectest-interp.cc b/src/tools/spectest-interp.cc
+index 130edd66..9e7e32e3 100644
+--- a/src/tools/spectest-interp.cc
++++ b/src/tools/spectest-interp.cc
+@@ -1406,8 +1406,9 @@ ActionResult CommandRunner::RunAction(int line_number,
+   switch (action->type) {
+     case ActionType::Invoke: {
+       auto* func = cast<interp::Func>(extern_.get());
+-      func->Call(store_, action->args, result.values, &result.trap,
+-                 s_trace_stream);
++      auto ok = func->Call(store_, action->args, result.values, &result.trap,
++                           s_trace_stream);
++      assert((ok == Result::Ok) == (!result.trap));
+       result.types = func->type().results;
+       if (verbose == RunVerbosity::Verbose) {
+         WriteCall(s_stdout_stream.get(), action->field_name, func->type(),
+diff --git a/test/regress/recursion-issue.txt b/test/regress/recursion-issue.txt
+new file mode 100644
+index 00000000..a5fa660b
+--- /dev/null
++++ b/test/regress/recursion-issue.txt
+@@ -0,0 +1,20 @@
++;;; TOOL: run-interp-spec
++;;; NOTE: ref: issue-2398
++(module
++  (type $out-i32 (func (result i32)))
++
++  (table funcref
++    (elem
++      $runaway-with-return
++    )
++  )
++
++  (func $runaway-with-return (export "runaway-with-return") (type $out-i32)
++    (call_indirect (type $out-i32) (i32.const 0))
++  )
++)
++
++(assert_exhaustion (invoke "runaway-with-return") "call stack exhausted")
++(;; STDOUT ;;;
++2/2 tests passed.
++;;; STDOUT ;;)

@@ -1,0 +1,34 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_elementtree.c b/Modules/_elementtree.c
+index d20bbcd21fd..2c01149b3fa 100644
+--- a/Modules/_elementtree.c
++++ b/Modules/_elementtree.c
+@@ -1250,10 +1250,13 @@ _elementtree.Element.find
+ static PyObject *
+ _elementtree_Element_find_impl(ElementObject *self, PyTypeObject *cls,
+                                PyObject *path, PyObject *namespaces)
+-/*[clinic end generated code: output=18f77d393c9fef1b input=94df8a83f956acc6]*/
+ {
+     Py_ssize_t i;
+     elementtreestate *st = get_elementtree_state_by_cls(cls);
++    if (!Element_Check(st, self)) {
++        PyErr_SetString(PyExc_TypeError, "expected an Element object");
++        return NULL;
++    }
+ 
+     if (checkpath(path) || namespaces != Py_None) {
+         return PyObject_CallMethodObjArgs(

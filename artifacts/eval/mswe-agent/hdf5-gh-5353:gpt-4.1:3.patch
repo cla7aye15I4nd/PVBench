@@ -1,0 +1,53 @@
+
+diff --git a/.gitignore b/.gitignore
+index 7cc8e384cc..1525b9fa94 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -17,3 +17,14 @@ src/H5config.h.in
+ /.classpath
+ /CMakeUserPresets.json
+ HDF5Examples/CMakeUserPresets.json
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/H5Shyper.c b/src/H5Shyper.c
+index 7d6739a7fb..bd924622da 100644
+--- a/src/H5Shyper.c
++++ b/src/H5Shyper.c
+@@ -4834,6 +4834,7 @@ H5Sget_select_hyper_blocklist(hid_t spaceid, hsize_t startblock, hsize_t numbloc
+ {
+     H5S_t *space;     /* Dataspace to modify selection of */
+     herr_t ret_value; /* return value */
++    hssize_t nblocks; /* Number of available blocks */
+ 
+     FUNC_ENTER_API(FAIL)
+ 
+@@ -4844,9 +4845,19 @@ H5Sget_select_hyper_blocklist(hid_t spaceid, hsize_t startblock, hsize_t numbloc
+         HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a dataspace");
+     if (H5S_GET_SELECT_TYPE(space) != H5S_SEL_HYPERSLABS)
+         HGOTO_ERROR(H5E_ARGS, H5E_BADTYPE, FAIL, "not a hyperslab selection");
+-    if (space->select.sel_info.hslab->unlim_dim >= 0)
++    if (space->extent.type == H5S_NULL)
++        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "dataspace has 'none' extent");
+         HGOTO_ERROR(H5E_DATASPACE, H5E_UNSUPPORTED, FAIL, "cannot get blocklist for unlimited selection");
+ 
++    /* Get the number of available blocks */
++    nblocks = H5S__get_select_hyper_nblocks(space, true);
++    if (nblocks < 0)
++        HGOTO_ERROR(H5E_ARGS, H5E_BADVALUE, FAIL, "could not get number of blocks");
++
++    /* Adjust numblocks if it exceeds the available blocks */
++    if ((hssize_t)numblocks > nblocks)
++        numblocks = (hsize_t)nblocks;
++
+     /* Go get the correct number of blocks */
+     if (numblocks > 0)
+         ret_value = H5S__get_select_hyper_blocklist(space, startblock, numblocks, buf);

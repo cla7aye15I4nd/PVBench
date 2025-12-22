@@ -1,0 +1,67 @@
+
+diff --git a/.gitignore b/.gitignore
+index 048ced9db..6bfd5ec11 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -119,3 +119,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/strings.c b/src/strings.c
+index b8ea00bb3..64f6695d0 100644
+--- a/src/strings.c
++++ b/src/strings.c
+@@ -1,4 +1,4 @@
+-/* vi:set ts=8 sts=4 sw=4 noet:
++/*
+  *
+  * VIM - Vi IMproved	by Bram Moolenaar
+  *
+@@ -13,7 +13,8 @@
+ 
+ #define USING_FLOAT_STUFF
+ #include "vim.h"
+-
++#include <string.h>
++#include <stdlib.h>
+ /*
+  * Copy "string" into newly allocated memory.
+  */
+@@ -786,15 +787,20 @@ reverse_text(char_u *s)
+ 
+     for (size_t s_i = 0, rev_i = len; s_i < len; ++s_i)
+     {
+-	if (has_mbyte)
+-	{
+-	    int mb_len = (*mb_ptr2len)(s + s_i);
+-	    rev_i -= mb_len;
+-	    mch_memmove(rev + rev_i, s + s_i, mb_len);
+-	    s_i += mb_len - 1;
+-	}
+-	else
+-	    rev[--rev_i] = s[s_i];
++        if (has_mbyte)
++        {
++            int mb_len = (*mb_ptr2len)(s + s_i);
++            if (mb_len <= 0 || mb_len > rev_i)
++            {
++                // Invalid multibyte length or would overflow buffer, stop reversing
++                break;
++            }
++            rev_i -= mb_len;
++            mch_memmove(rev + rev_i, s + s_i, mb_len);
++            s_i += mb_len - 1;
++        }
++        else
++            rev[--rev_i] = s[s_i];
+     }
+     rev[len] = NUL;
+     return rev;

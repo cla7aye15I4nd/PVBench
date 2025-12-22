@@ -1,0 +1,31 @@
+==2178228==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000008 (pc 0x7ffff5310c5c bp 0x7fffffff4020 sp 0x7fffffff3ed0 T0)
+==2178228==The signal is caused by a READ memory access.
+==2178228==Hint: address points to the zero page.
+    #0 0x7ffff5310c5c in _elementtree_Element_remove_impl /tmp/py-pr-126033/build/./Modules/_elementtree.c:1644:19
+    #1 0x7ffff530cc8f in _elementtree_Element_remove /tmp/py-pr-126033/build/./Modules/clinic/_elementtree.c.h:826:20
+    #2 0x55555599a4b0 in method_vectorcall_O /tmp/py-pr-126033/build/Objects/descrobject.c:476:24
+    #3 0x55555597171f in _PyObject_VectorcallTstate /tmp/py-pr-126033/build/./Include/internal/pycore_call.h:169:11
+    #4 0x555555973339 in PyObject_Vectorcall /tmp/py-pr-126033/build/Objects/call.c:327:12
+    #5 0x555555d7c439 in _PyEval_EvalFrameDefault /tmp/py-pr-126033/build/Python/generated_cases.c.h:1366:35
+    #6 0x555555d75471 in _PyEval_EvalFrame /tmp/py-pr-126033/build/./Include/internal/pycore_ceval.h:119:16
+    #7 0x555555d752fc in _PyEval_Vector /tmp/py-pr-126033/build/Python/ceval.c:1908:12
+    #8 0x555555d74bda in PyEval_EvalCode /tmp/py-pr-126033/build/Python/ceval.c:836:21
+    #9 0x555555f52116 in run_eval_code_obj /tmp/py-pr-126033/build/Python/pythonrun.c:1365:12
+    #10 0x555555f51e57 in run_mod /tmp/py-pr-126033/build/Python/pythonrun.c:1436:19
+    #11 0x555555f4d1c2 in pyrun_file /tmp/py-pr-126033/build/Python/pythonrun.c:1293:15
+    #12 0x555555f4afdd in _PyRun_SimpleFileObject /tmp/py-pr-126033/build/Python/pythonrun.c:521:13
+    #13 0x555555f4a668 in _PyRun_AnyFileObject /tmp/py-pr-126033/build/Python/pythonrun.c:81:15
+    #14 0x555555febc96 in pymain_run_file_obj /tmp/py-pr-126033/build/Modules/main.c:396:15
+    #15 0x555555fea93c in pymain_run_file /tmp/py-pr-126033/build/Modules/main.c:415:15
+    #16 0x555555fe895f in pymain_run_python /tmp/py-pr-126033/build/Modules/main.c:680:21
+    #17 0x555555fe7c72 in Py_RunMain /tmp/py-pr-126033/build/Modules/main.c:761:5
+    #18 0x555555fe8da8 in pymain_main /tmp/py-pr-126033/build/Modules/main.c:791:12
+    #19 0x555555fe8eb7 in Py_BytesMain /tmp/py-pr-126033/build/Modules/main.c:815:12
+    #20 0x5555557cf511 in main /tmp/py-pr-126033/build/./Programs/python.c:15:12
+    #21 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #22 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #23 0x5555556f6104 in _start (/tmp/py-pr-126033/build/python+0x1a2104) (BuildId: 41e32c00ab415afe35c52658f91c72d4caca509b)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/py-pr-126033/build/./Modules/_elementtree.c:1644:19 in _elementtree_Element_remove_impl
+==2178228==ABORTING

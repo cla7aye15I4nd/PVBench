@@ -1,0 +1,45 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp b/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp
+index 6027572f1e84..7d06da53f5b8 100644
+--- a/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp
++++ b/llvm/lib/Transforms/Vectorize/VPlanRecipes.cpp
+@@ -2127,7 +2127,11 @@ void VPScalarIVStepsRecipe::execute(VPTransformState &State) {
+           Builder.CreateMul(StartIdx0, ConstantInt::get(StartIdx0->getType(),
+                                                         getUnrollPart(*this)));
+     }
+-    StartIdx0 = Builder.CreateTrunc(StartIdx0, IntStepTy);
++    if (StartIdx0->getType()->getScalarSizeInBits() > IntStepTy->getScalarSizeInBits())
++      StartIdx0 = Builder.CreateTrunc(StartIdx0, IntStepTy);
++    else if (StartIdx0->getType()->getScalarSizeInBits() < IntStepTy->getScalarSizeInBits())
++      StartIdx0 = Builder.CreateZExt(StartIdx0, IntStepTy);
++    // If bit widths are equal, no cast is needed
+   }
+ 
+   if (!FirstLaneOnly && State.VF.isScalable()) {
+diff --git a/test_script.sh b/test_script.sh
+new file mode 100755
+index 000000000000..f36f26576949
+--- /dev/null
++++ b/test_script.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++./build/bin/opt -passes=loop-vectorize -slp-threshold=-99999 -force-vector-width=4 $1

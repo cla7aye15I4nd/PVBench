@@ -1,0 +1,20 @@
+#
+# Fatal error in ../../src/wasm/wasm-js.cc, line 1232
+# Debug check failed: i_isolate->has_pending_exception() || thrower.error().
+#
+#
+#
+#FailureMessage Object: 0x7f3f7ef15060
+==== C stack trace ===============================
+
+    out/debug_asan/d8(___interceptor_backtrace+0x75) [0x560c5d546de5]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x13) [0x560c63bcc553]
+    out/debug_asan/d8(+0x8e64b8a) [0x560c63bc9b8a]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x26f) [0x560c63b8800f]
+    out/debug_asan/d8(+0x8e21f8f) [0x560c63b86f8f]
+    out/debug_asan/d8(+0x605cb56) [0x560c60dc1b56]
+    out/debug_asan/d8(v8::internal::FunctionCallbackArguments::Call(v8::internal::CallHandlerInfo)+0x397) [0x560c5d93de07]
+    out/debug_asan/d8(+0x2bd57c2) [0x560c5d93a7c2]
+    out/debug_asan/d8(+0x2bd2802) [0x560c5d937802]
+    out/debug_asan/d8(v8::internal::Builtin_HandleApiConstruct(int, unsigned long*, v8::internal::Isolate*)+0x203) [0x560c5d936493]
+    out/debug_asan/d8(+0x84672fd) [0x560c631cc2fd]

@@ -1,0 +1,77 @@
+==4440==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x519000000981 at pc 0x5cc6fe7556be bp 0x7ffc4344dc00 sp 0x7ffc4344d3a0
+WRITE of size 1308 at 0x519000000981 thread T0
+    #0 0x5cc6fe7556bd in strcat (/tmp/vim-gh-1600/build/src/vim+0x17c6bd) (BuildId: 535e1d47d233f5c79995f313f5dee7b4b20eacbb)
+    #1 0x5cc6fe81b9b5 in ins_compl_next /tmp/vim-gh-1600/build/src/edit.c:4957:2
+    #2 0x5cc6fe81ac4e in ins_compl_check_keys /tmp/vim-gh-1600/build/src/edit.c:5024:8
+    #3 0x5cc6fe82858f in ins_compl_get_exp /tmp/vim-gh-1600/build/src/edit.c:4636:3
+    #4 0x5cc6fe81b3f9 in ins_compl_next /tmp/vim-gh-1600/build/src/edit.c:4855:20
+    #5 0x5cc6fe80fb85 in ins_complete /tmp/vim-gh-1600/build/src/edit.c:5552:9
+    #6 0x5cc6fe7f7ea9 in edit /tmp/vim-gh-1600/build/src/edit.c:1459:10
+    #7 0x5cc6feae4e80 in invoke_edit /tmp/vim-gh-1600/build/src/normal.c:9173:9
+    #8 0x5cc6feacc06b in nv_edit /tmp/vim-gh-1600/build/src/normal.c:9143:2
+    #9 0x5cc6feaa6eb4 in normal_cmd /tmp/vim-gh-1600/build/src/normal.c:1150:5
+    #10 0x5cc6fe913700 in exec_normal /tmp/vim-gh-1600/build/src/ex_docmd.c:10475:2
+    #11 0x5cc6fe91349f in exec_normal_cmd /tmp/vim-gh-1600/build/src/ex_docmd.c:10458:5
+    #12 0x5cc6fe912fa3 in ex_normal /tmp/vim-gh-1600/build/src/ex_docmd.c:10367:6
+    #13 0x5cc6fe8fc4bf in do_one_cmd /tmp/vim-gh-1600/build/src/ex_docmd.c:3021:2
+    #14 0x5cc6fe8f2628 in do_cmdline /tmp/vim-gh-1600/build/src/ex_docmd.c:1160:17
+    #15 0x5cc6fe8501a8 in ex_execute /tmp/vim-gh-1600/build/src/eval.c:8345:6
+    #16 0x5cc6fe8fc4bf in do_one_cmd /tmp/vim-gh-1600/build/src/ex_docmd.c:3021:2
+    #17 0x5cc6fe8f2628 in do_cmdline /tmp/vim-gh-1600/build/src/ex_docmd.c:1160:17
+    #18 0x5cc6fe8ebd1f in do_source /tmp/vim-gh-1600/build/src/ex_cmds2.c:4313:5
+    #19 0x5cc6fe8ea3ef in cmd_source /tmp/vim-gh-1600/build/src/ex_cmds2.c:3926:14
+    #20 0x5cc6fe8ea45d in ex_source /tmp/vim-gh-1600/build/src/ex_cmds2.c:3901:2
+    #21 0x5cc6fe8fc4bf in do_one_cmd /tmp/vim-gh-1600/build/src/ex_docmd.c:3021:2
+    #22 0x5cc6fe8f2628 in do_cmdline /tmp/vim-gh-1600/build/src/ex_docmd.c:1160:17
+    #23 0x5cc6fe8f4d20 in do_cmdline_cmd /tmp/vim-gh-1600/build/src/ex_docmd.c:760:12
+    #24 0x5cc6fedd829b in exe_commands /tmp/vim-gh-1600/build/src/main.c:2913:2
+    #25 0x5cc6fedd5fac in vim_main2 /tmp/vim-gh-1600/build/src/main.c:789:2
+    #26 0x5cc6fedd10d2 in main /tmp/vim-gh-1600/build/src/main.c:418:12
+    #27 0x781e78d5e1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #28 0x781e78d5e28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #29 0x5cc6fe6d3964 in _start (/tmp/vim-gh-1600/build/src/vim+0xfa964) (BuildId: 535e1d47d233f5c79995f313f5dee7b4b20eacbb)
+
+0x519000000981 is located 0 bytes after 1025-byte region [0x519000000580,0x519000000981)
+allocated by thread T0 here:
+    #0 0x5cc6fe76e7b3 in malloc (/tmp/vim-gh-1600/build/src/vim+0x1957b3) (BuildId: 535e1d47d233f5c79995f313f5dee7b4b20eacbb)
+    #1 0x5cc6fea6734a in lalloc /tmp/vim-gh-1600/build/src/misc2.c:942:21
+    #2 0x5cc6fea672a9 in alloc /tmp/vim-gh-1600/build/src/misc2.c:840:13
+    #3 0x5cc6fedd1354 in common_init /tmp/vim-gh-1600/build/src/main.c:928:19
+    #4 0x5cc6fedd0e98 in main /tmp/vim-gh-1600/build/src/main.c:176:5
+    #5 0x781e78d5e1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x781e78d5e28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x5cc6fe6d3964 in _start (/tmp/vim-gh-1600/build/src/vim+0xfa964) (BuildId: 535e1d47d233f5c79995f313f5dee7b4b20eacbb)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow (/tmp/vim-gh-1600/build/src/vim+0x17c6bd) (BuildId: 535e1d47d233f5c79995f313f5dee7b4b20eacbb) in strcat
+Shadow bytes around the buggy address:
+  0x519000000700: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000780: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000800: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000880: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x519000000980:[01]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x519000000a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x519000000a80: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000b00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000b80: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000c00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==4440==ABORTING

@@ -1,0 +1,49 @@
+diff --git a/NEWS b/NEWS
+index e5f8e3eba5..0cc2d50baf 100644
+--- a/NEWS
++++ b/NEWS
+@@ -9,6 +9,8 @@ PHP                                                                        NEWS
+     Zend/zend_opcode.c). (nielsdos)
+   . Fixed bug GH-13942 (Align the behavior of zend-max-execution-timers with
+     other timeout implementations). (Kévin Dunglas)
++  . Fixed bug GH-14003 (Broken cleanup of unfinished calls with callable convert
++    parameters). (ilutov)
+ 
+ - Fibers:
+   . Fixed bug GH-13903 (ASAN false positive underflow when executing copy()).
+diff --git a/Zend/zend_execute.c b/Zend/zend_execute.c
+index 0df529203c..5a060540db 100644
+--- a/Zend/zend_execute.c
++++ b/Zend/zend_execute.c
+@@ -4104,6 +4104,7 @@ ZEND_API void zend_unfinished_calls_gc(zend_execute_data *execute_data, zend_exe
+ 				case ZEND_DO_ICALL:
+ 				case ZEND_DO_UCALL:
+ 				case ZEND_DO_FCALL_BY_NAME:
++				case ZEND_CALLABLE_CONVERT:
+ 					level++;
+ 					break;
+ 				case ZEND_INIT_FCALL:
+@@ -4159,6 +4160,7 @@ ZEND_API void zend_unfinished_calls_gc(zend_execute_data *execute_data, zend_exe
+ 					case ZEND_DO_ICALL:
+ 					case ZEND_DO_UCALL:
+ 					case ZEND_DO_FCALL_BY_NAME:
++					case ZEND_CALLABLE_CONVERT:
+ 						level++;
+ 						break;
+ 					case ZEND_INIT_FCALL:
+@@ -4237,6 +4239,7 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+ 					case ZEND_DO_ICALL:
+ 					case ZEND_DO_UCALL:
+ 					case ZEND_DO_FCALL_BY_NAME:
++					case ZEND_CALLABLE_CONVERT:
+ 						level++;
+ 						break;
+ 					case ZEND_INIT_FCALL:
+@@ -4292,6 +4295,7 @@ static void cleanup_unfinished_calls(zend_execute_data *execute_data, uint32_t o
+ 						case ZEND_DO_ICALL:
+ 						case ZEND_DO_UCALL:
+ 						case ZEND_DO_FCALL_BY_NAME:
++						case ZEND_CALLABLE_CONVERT:
+ 							level++;
+ 							break;
+ 						case ZEND_INIT_FCALL:

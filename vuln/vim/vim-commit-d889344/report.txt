@@ -1,0 +1,66 @@
+==5413==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x519000000981 at pc 0x6380254593b5 bp 0x7fff9e609ed0 sp 0x7fff9e609ec8
+WRITE of size 1 at 0x519000000981 thread T0
+    #0 0x6380254593b4 in append_command /tmp/vim-commit-d889344/build/src/ex_docmd.c:3449:8
+    #1 0x638025437a0b in do_one_cmd /tmp/vim-commit-d889344/build/src/ex_docmd.c:2618:6
+    #2 0x63802542f95d in do_cmdline /tmp/vim-commit-d889344/build/src/ex_docmd.c:992:17
+    #3 0x6380253ad65f in ex_execute /tmp/vim-commit-d889344/build/src/eval.c:6644:6
+    #4 0x6380254371e0 in do_one_cmd /tmp/vim-commit-d889344/build/src/ex_docmd.c:2567:2
+    #5 0x63802542f95d in do_cmdline /tmp/vim-commit-d889344/build/src/ex_docmd.c:992:17
+    #6 0x6380257eb85f in do_source_ext /tmp/vim-commit-d889344/build/src/scriptfile.c:1674:5
+    #7 0x6380257e97e0 in do_source /tmp/vim-commit-d889344/build/src/scriptfile.c:1801:12
+    #8 0x6380257e937f in cmd_source /tmp/vim-commit-d889344/build/src/scriptfile.c:1174:14
+    #9 0x6380257e8e7d in ex_source /tmp/vim-commit-d889344/build/src/scriptfile.c:1200:2
+    #10 0x6380254371e0 in do_one_cmd /tmp/vim-commit-d889344/build/src/ex_docmd.c:2567:2
+    #11 0x63802542f95d in do_cmdline /tmp/vim-commit-d889344/build/src/ex_docmd.c:992:17
+    #12 0x638025431e40 in do_cmdline_cmd /tmp/vim-commit-d889344/build/src/ex_docmd.c:586:12
+    #13 0x638025b49dac in exe_commands /tmp/vim-commit-d889344/build/src/main.c:3108:2
+    #14 0x638025b47ba6 in vim_main2 /tmp/vim-commit-d889344/build/src/main.c:780:2
+    #15 0x638025b42639 in main /tmp/vim-commit-d889344/build/src/main.c:432:12
+    #16 0x7ce6bcf491c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #17 0x7ce6bcf4928a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #18 0x6380251a0a24 in _start (/tmp/vim-commit-d889344/build/src/vim+0x146a24) (BuildId: ad0e5100445d326fd0c18dc5f16894eb9e427cf0)
+
+0x519000000981 is located 0 bytes after 1025-byte region [0x519000000580,0x519000000981)
+allocated by thread T0 here:
+    #0 0x63802523b873 in malloc (/tmp/vim-commit-d889344/build/src/vim+0x1e1873) (BuildId: ad0e5100445d326fd0c18dc5f16894eb9e427cf0)
+    #1 0x63802527a1d6 in lalloc /tmp/vim-commit-d889344/build/src/alloc.c:246:11
+    #2 0x63802527a139 in alloc /tmp/vim-commit-d889344/build/src/alloc.c:151:12
+    #3 0x638025b42669 in common_init /tmp/vim-commit-d889344/build/src/main.c:914:19
+    #4 0x638025b422f2 in main /tmp/vim-commit-d889344/build/src/main.c:185:5
+    #5 0x7ce6bcf491c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x7ce6bcf4928a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x6380251a0a24 in _start (/tmp/vim-commit-d889344/build/src/vim+0x146a24) (BuildId: ad0e5100445d326fd0c18dc5f16894eb9e427cf0)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /tmp/vim-commit-d889344/build/src/ex_docmd.c:3449:8 in append_command
+Shadow bytes around the buggy address:
+  0x519000000700: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000780: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000800: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000880: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x519000000900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x519000000980:[01]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x519000000a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x519000000a80: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000b00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000b80: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x519000000c00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==5413==ABORTING

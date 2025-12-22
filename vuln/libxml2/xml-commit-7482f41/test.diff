@@ -1,0 +1,58 @@
+diff --git a/result/XPath/expr/floats b/result/XPath/expr/floats
+index b6255ce0..157bd767 100644
+--- a/result/XPath/expr/floats
++++ b/result/XPath/expr/floats
+@@ -242,3 +242,11 @@ Object is a number : -1
+ ========================
+ Expression: 8 mod 3 = 2
+ Object is a Boolean : true
++
++========================
++Expression: 12345678901234567890
++Object is a number : 1.23457e+19
++
++========================
++Expression: -12345678901234567890
++Object is a number : -1.23457e+19
+diff --git a/result/XPath/expr/strings b/result/XPath/expr/strings
+index fad7048f..1ae5cc40 100644
+--- a/result/XPath/expr/strings
++++ b/result/XPath/expr/strings
+@@ -19,6 +19,14 @@ Object is a string : true
+ Expression: string(false())
+ Object is a string : false
+ 
++========================
++Expression: string(12345678901234567890)
++Object is a string : 1.23456789012346e+19
++
++========================
++Expression: string(-12345678901234567890)
++Object is a string : -1.23456789012346e+19
++
+ ========================
+ Expression: concat("titi","toto")
+ Object is a string : tititoto
+diff --git a/test/XPath/expr/floats b/test/XPath/expr/floats
+index 96c10d15..b4475240 100644
+--- a/test/XPath/expr/floats
++++ b/test/XPath/expr/floats
+@@ -59,3 +59,5 @@ number('f') div 1
+ -5 mod 2
+ -5 mod -2
+ 8 mod 3 = 2
++12345678901234567890
++-12345678901234567890
+diff --git a/test/XPath/expr/strings b/test/XPath/expr/strings
+index 849ca14c..ba02c794 100644
+--- a/test/XPath/expr/strings
++++ b/test/XPath/expr/strings
+@@ -3,6 +3,8 @@ string(0.5)
+ string(-0.5)
+ string(true())
+ string(false())
++string(12345678901234567890)
++string(-12345678901234567890)
+ concat("titi","toto")
+ concat("titi","toto","tata")
+ concat("titi",'toto')

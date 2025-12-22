@@ -1,0 +1,50 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/builtins/proxy-revocable.tq b/src/builtins/proxy-revocable.tq
+index 6a07a8b7f75..c4604b9b402 100644
+--- a/src/builtins/proxy-revocable.tq
++++ b/src/builtins/proxy-revocable.tq
+@@ -34,7 +34,7 @@ transitioning javascript builtin ProxyRevocable(
+     // 8. Return result.
+     return NewJSProxyRevocableResult(proxy, revoke);
+   } label ThrowProxyNonObject deferred {
+-    ThrowTypeError(MessageTemplate::kProxyNonObject, 'Proxy.revocable');
++    ThrowTypeError(MessageTemplate::kProxyNonObject);
+   }
+ }
+ }
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 176c5c16ff9..1c68dc2cdbc 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -2961,12 +2961,10 @@ Maybe<bool> JSProxy::CheckDeleteTrap(Isolate* isolate, Handle<Name> name,
+ MaybeHandle<JSProxy> JSProxy::New(Isolate* isolate, Handle<Object> target,
+                                   Handle<Object> handler) {
+   if (!IsJSReceiver(*target)) {
+-    THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kProxyNonObject),
+-                    JSProxy);
++    THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kProxyNonObject));
+   }
+   if (!IsJSReceiver(*handler)) {
+-    THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kProxyNonObject),
+-                    JSProxy);
++    THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kProxyNonObject));
+   }
+   return isolate->factory()->NewJSProxy(Handle<JSReceiver>::cast(target),
+                                         Handle<JSReceiver>::cast(handler));

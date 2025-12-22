@@ -1,0 +1,1274 @@
+
+diff --git a/.gitignore b/.gitignore
+index 4efac556dfe..bab3442fbea 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -278,3 +278,6 @@ tools/unicode/c/genprops/genprops.[0-9]
+ tools/unicode/c/genuca/genuca
+ tools/unicode/c/genuca/genuca.8
+ tools/unicode/c/icudefs.txt
++build/
++Build/
++*.exe
+diff --git a/icu4c/source/common/ustring.cpp b/icu4c/source/common/ustring.cpp
+index 7ab2e1bf891..cf1161b953c 100644
+--- a/icu4c/source/common/ustring.cpp
++++ b/icu4c/source/common/ustring.cpp
+@@ -1290,18 +1290,22 @@ u_unescapeAt(UNESCAPE_CHAR_AT charAt,
+          * there is a trail surrogate after it, either as an escape or
+          * as a literal.  If so, join them up into a supplementary.
+          */
+-        if (*offset < length && U16_IS_LEAD(result)) {
++        // Iteratively process consecutive escaped surrogates to avoid recursion
++        while (*offset < length && U16_IS_LEAD(result)) {
+             int32_t ahead = *offset + 1;
+             c = charAt(*offset, context);
+             if (c == 0x5C /*'\\'*/ && ahead < length) {
+-                c = (UChar) u_unescapeAt(charAt, &ahead, length, context);
+-            }
+-            if (U16_IS_TRAIL(c)) {
+-                *offset = ahead;
+-                result = U16_GET_SUPPLEMENTARY(result, c);
++                UChar trail = (UChar) u_unescapeAt(charAt, &ahead, length, context);
++                if (U16_IS_TRAIL(trail)) {
++                    *offset = ahead;
++                    result = U16_GET_SUPPLEMENTARY(result, trail);
++                    continue;
++                }
+             }
++            break;
+         }
+         return result;
++
+     }
+ 
+     /* Convert C-style escapes in table */
+diff --git a/icu4c/source/install/include/unicode/alphaindex.h b/icu4c/source/install/include/unicode/alphaindex.h
+new file mode 100644
+index 00000000000..e3c68ea7cce
+--- /dev/null
++++ b/icu4c/source/install/include/unicode/alphaindex.h
+@@ -0,0 +1,766 @@
++// © 2016 and later: Unicode, Inc. and others.
++// License & terms of use: http://www.unicode.org/copyright.html
++/*
++*******************************************************************************
++*
++*   Copyright (C) 2011-2014 International Business Machines
++*   Corporation and others.  All Rights Reserved.
++*
++*******************************************************************************
++*/
++
++#ifndef INDEXCHARS_H
++#define INDEXCHARS_H
++
++#include "unicode/utypes.h"
++
++#if U_SHOW_CPLUSPLUS_API
++
++#include "unicode/uobject.h"
++#include "unicode/locid.h"
++#include "unicode/unistr.h"
++
++#if !UCONFIG_NO_COLLATION
++
++/**
++ * \file
++ * \brief C++ API: Index Characters
++ */
++
++U_CDECL_BEGIN
++
++/**
++ * Constants for Alphabetic Index Label Types.
++ * The form of these enum constants anticipates having a plain C API
++ * for Alphabetic Indexes that will also use them.
++ * @stable ICU 4.8
++ */
++typedef enum UAlphabeticIndexLabelType {
++    /**
++     *  Normal Label, typically the starting letter of the names
++     *  in the bucket with this label.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_NORMAL    = 0,
++
++    /**
++     * Undeflow Label.  The bucket with this label contains names
++     * in scripts that sort before any of the bucket labels in this index.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_UNDERFLOW = 1,
++
++    /**
++     * Inflow Label.  The bucket with this label contains names
++     * in scripts that sort between two of the bucket labels in this index.
++     * Inflow labels are created when an index contains normal labels for
++     * multiple scripts, and skips other scripts that sort between some of the
++     * included scripts.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_INFLOW    = 2,
++
++    /**
++     * Overflow Label. Te bucket with this label contains names in scripts
++     * that sort after all of the bucket labels in this index.
++     * @stable ICU 4.8
++     */
++    U_ALPHAINDEX_OVERFLOW  = 3
++} UAlphabeticIndexLabelType;
++
++
++struct UHashtable;
++U_CDECL_END
++
++U_NAMESPACE_BEGIN
++
++// Forward Declarations
++
++class BucketList;
++class Collator;
++class RuleBasedCollator;
++class StringEnumeration;
++class UnicodeSet;
++class UVector;
++
++/**
++ * AlphabeticIndex supports the creation of a UI index appropriate for a given language.
++ * It can support either direct use, or use with a client that doesn't support localized collation.
++ * The following is an example of what an index might look like in a UI:
++ * 
++ * <pre>
++ *  <b>... A B C D E F G H I J K L M N O P Q R S T U V W X Y Z  ...</b>
++ *
++ *  <b>A</b>
++ *     Addison
++ *     Albertson
++ *     Azensky
++ *  <b>B</b>
++ *     Baker
++ *  ...
++ * </pre>
++ *
++ * The class can generate a list of labels for use as a UI "index", that is, a list of
++ * clickable characters (or character sequences) that allow the user to see a segment
++ * (bucket) of a larger "target" list. That is, each label corresponds to a bucket in
++ * the target list, where everything in the bucket is greater than or equal to the character
++ * (according to the locale's collation). Strings can be added to the index;
++ * they will be in sorted order in the right bucket.
++ * <p>
++ * The class also supports having buckets for strings before the first (underflow),
++ * after the last (overflow), and between scripts (inflow). For example, if the index
++ * is constructed with labels for Russian and English, Greek characters would fall
++ * into an inflow bucket between the other two scripts.
++ * <p>
++ * The AlphabeticIndex class is not intended for public subclassing.
++ *
++ * <p><em>Note:</em> If you expect to have a lot of ASCII or Latin characters
++ * as well as characters from the user's language,
++ * then it is a good idea to call addLabels(Locale::getEnglish(), status).</p>
++ *
++ * <h2>Direct Use</h2>
++ * <p>The following shows an example of building an index directly.
++ *  The "show..." methods below are just to illustrate usage.
++ *
++ * <pre>
++ * // Create a simple index.  "Item" is assumed to be an application
++ * // defined type that the application's UI and other processing knows about,
++ * //  and that has a name.
++ *
++ * UErrorCode status = U_ZERO_ERROR;
++ * AlphabeticIndex index = new AlphabeticIndex(desiredLocale, status);
++ * index->addLabels(additionalLocale, status);
++ * for (Item *item in some source of Items ) {
++ *     index->addRecord(item->name(), item, status);
++ * }
++ * ...
++ * // Show index at top. We could skip or gray out empty buckets
++ *
++ * while (index->nextBucket(status)) {
++ *     if (showAll || index->getBucketRecordCount() != 0) {
++ *         showLabelAtTop(UI, index->getBucketLabel());
++ *     }
++ * }
++ *  ...
++ * // Show the buckets with their contents, skipping empty buckets
++ *
++ * index->resetBucketIterator(status);
++ * while (index->nextBucket(status)) {
++ *    if (index->getBucketRecordCount() != 0) {
++ *        showLabelInList(UI, index->getBucketLabel());
++ *        while (index->nextRecord(status)) {
++ *            showIndexedItem(UI, static_cast<Item *>(index->getRecordData()))
++ * </pre>
++ *
++ * The caller can build different UIs using this class.
++ * For example, an index character could be omitted or grayed-out
++ * if its bucket is empty. Small buckets could also be combined based on size, such as:
++ *
++ * <pre>
++ * <b>... A-F G-N O-Z ...</b>
++ * </pre>
++ *
++ * <h2>Client Support</h2>
++ * <p>Callers can also use the AlphabeticIndex::ImmutableIndex, or the AlphabeticIndex itself,
++ * to support sorting on a client that doesn't support AlphabeticIndex functionality.
++ *
++ * <p>The ImmutableIndex is both immutable and thread-safe.
++ * The corresponding AlphabeticIndex methods are not thread-safe because
++ * they "lazily" build the index buckets.
++ * <ul>
++ * <li>ImmutableIndex.getBucket(index) provides random access to all
++ *     buckets and their labels and label types.
++ * <li>The AlphabeticIndex bucket iterator or ImmutableIndex.getBucket(0..getBucketCount-1)
++ *     can be used to get a list of the labels,
++ *     such as "...", "A", "B",..., and send that list to the client.
++ * <li>When the client has a new name, it sends that name to the server.
++ * The server needs to call the following methods,
++ * and communicate the bucketIndex and collationKey back to the client.
++ *
++ * <pre>
++ * int32_t bucketIndex = index.getBucketIndex(name, status);
++ * const UnicodeString &label = immutableIndex.getBucket(bucketIndex)->getLabel();  // optional
++ * int32_t skLength = collator.getSortKey(name, sk, skCapacity);
++ * </pre>
++ *
++ * <li>The client would put the name (and associated information) into its bucket for bucketIndex. The sort key sk is a
++ * sequence of bytes that can be compared with a binary compare, and produce the right localized result.</li>
++ * </ul>
++ *
++ * @stable ICU 4.8
++ */
++class U_I18N_API AlphabeticIndex: public UObject {
++public:
++     /**
++      * An index "bucket" with a label string and type.
++      * It is referenced by getBucketIndex(),
++      * and returned by ImmutableIndex.getBucket().
++      *
++      * The Bucket class is not intended for public subclassing.
++      * @stable ICU 51
++      */
++     class U_I18N_API Bucket : public UObject {
++     public:
++        /**
++         * Destructor.
++         * @stable ICU 51
++         */
++        virtual ~Bucket();
++
++        /**
++         * Returns the label string.
++         *
++         * @return the label string for the bucket
++         * @stable ICU 51
++         */
++        const UnicodeString &getLabel() const { return label_; }
++        /**
++         * Returns whether this bucket is a normal, underflow, overflow, or inflow bucket.
++         *
++         * @return the bucket label type
++         * @stable ICU 51
++         */
++        UAlphabeticIndexLabelType getLabelType() const { return labelType_; }
++
++     private:
++        friend class AlphabeticIndex;
++        friend class BucketList;
++
++        UnicodeString label_;
++        UnicodeString lowerBoundary_;
++        UAlphabeticIndexLabelType labelType_;
++        Bucket *displayBucket_;
++        int32_t displayIndex_;
++        UVector *records_;  // Records are owned by the inputList_ vector.
++
++        Bucket(const UnicodeString &label,   // Parameter strings are copied.
++               const UnicodeString &lowerBoundary,
++               UAlphabeticIndexLabelType type);
++     };
++
++    /**
++     * Immutable, thread-safe version of AlphabeticIndex.
++     * This class provides thread-safe methods for bucketing,
++     * and random access to buckets and their properties,
++     * but does not offer adding records to the index.
++     *
++     * The ImmutableIndex class is not intended for public subclassing.
++     *
++     * @stable ICU 51
++     */
++    class U_I18N_API ImmutableIndex : public UObject {
++    public:
++        /**
++         * Destructor.
++         * @stable ICU 51
++         */
++        virtual ~ImmutableIndex();
++
++        /**
++         * Returns the number of index buckets and labels, including underflow/inflow/overflow.
++         *
++         * @return the number of index buckets
++         * @stable ICU 51
++         */
++        int32_t getBucketCount() const;
++
++        /**
++         * Finds the index bucket for the given name and returns the number of that bucket.
++         * Use getBucket() to get the bucket's properties.
++         *
++         * @param name the string to be sorted into an index bucket
++         * @param errorCode Error code, will be set with the reason if the
++         *                  operation fails.
++         * @return the bucket number for the name
++         * @stable ICU 51
++         */
++        int32_t getBucketIndex(const UnicodeString &name, UErrorCode &errorCode) const;
++
++        /**
++         * Returns the index-th bucket. Returns NULL if the index is out of range.
++         *
++         * @param index bucket number
++         * @return the index-th bucket
++         * @stable ICU 51
++         */
++        const Bucket *getBucket(int32_t index) const;
++
++    private:
++        friend class AlphabeticIndex;
++
++        ImmutableIndex(BucketList *bucketList, Collator *collatorPrimaryOnly)
++                : buckets_(bucketList), collatorPrimaryOnly_(collatorPrimaryOnly) {}
++
++        BucketList *buckets_;
++        Collator *collatorPrimaryOnly_;
++    };
++
++    /**
++     * Construct an AlphabeticIndex object for the specified locale.  If the locale's
++     * data does not include index characters, a set of them will be
++     * synthesized based on the locale's exemplar characters.  The locale
++     * determines the sorting order for both the index characters and the
++     * user item names appearing under each Index character.
++     *
++     * @param locale the desired locale.
++     * @param status Error code, will be set with the reason if the construction
++     *               of the AlphabeticIndex object fails.
++     * @stable ICU 4.8
++     */
++     AlphabeticIndex(const Locale &locale, UErrorCode &status);
++
++   /** 
++     * Construct an AlphabeticIndex that uses a specific collator.
++     * 
++     * The index will be created with no labels; the addLabels() function must be called
++     * after creation to add the desired labels to the index.
++     * 
++     * The index adopts the collator, and is responsible for deleting it. 
++     * The caller should make no further use of the collator after creating the index.
++     * 
++     * @param collator The collator to use to order the contents of this index.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @stable ICU 51
++     */
++    AlphabeticIndex(RuleBasedCollator *collator, UErrorCode &status);
++
++    /**
++     * Add Labels to this Index.  The labels are additions to those
++     * that are already in the index; they do not replace the existing
++     * ones.
++     * @param additions The additional characters to add to the index, such as A-Z.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @return this, for chaining
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &addLabels(const UnicodeSet &additions, UErrorCode &status);
++
++    /**
++     * Add the index characters from a Locale to the index.  The labels
++     * are added to those that are already in the index; they do not replace the
++     * existing index characters.  The collation order for this index is not
++     * changed; it remains that of the locale that was originally specified
++     * when creating this Index.
++     *
++     * @param locale The locale whose index characters are to be added.
++     * @param status Error code, will be set with the reason if the 
++     *               operation fails.
++     * @return this, for chaining
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &addLabels(const Locale &locale, UErrorCode &status);
++
++     /**
++      * Destructor
++      * @stable ICU 4.8
++      */
++    virtual ~AlphabeticIndex();
++
++    /**
++     * Builds an immutable, thread-safe version of this instance, without data records.
++     *
++     * @return an immutable index instance
++     * @stable ICU 51
++     */
++    ImmutableIndex *buildImmutableIndex(UErrorCode &errorCode);
++
++    /**
++     * Get the Collator that establishes the ordering of the items in this index.
++     * Ownership of the collator remains with the AlphabeticIndex instance.
++     *
++     * The returned collator is a reference to the internal collator used by this
++     * index.  It may be safely used to compare the names of items or to get
++     * sort keys for names.  However if any settings need to be changed,
++     * or other non-const methods called, a cloned copy must be made first.
++     *
++     * @return The collator
++     * @stable ICU 4.8
++     */
++    virtual const RuleBasedCollator &getCollator() const;
++
++
++   /**
++     * Get the default label used for abbreviated buckets *between* other index characters.
++     * For example, consider the labels when Latin (X Y Z) and Greek (Α Β Γ) are used:
++     *
++     *     X Y Z ... Α Β Γ.
++     *
++     * @return inflow label
++     * @stable ICU 4.8
++     */
++    virtual const UnicodeString &getInflowLabel() const;
++
++   /**
++     * Set the default label used for abbreviated buckets <i>between</i> other index characters.
++     * An inflow label will be automatically inserted if two otherwise-adjacent label characters
++     * are from different scripts, e.g. Latin and Cyrillic, and a third script, e.g. Greek,
++     * sorts between the two.  The default inflow character is an ellipsis (...)
++     *
++     * @param inflowLabel the new Inflow label.
++     * @param status Error code, will be set with the reason if the operation fails.
++     * @return this
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &setInflowLabel(const UnicodeString &inflowLabel, UErrorCode &status);
++
++
++   /**
++     * Get the special label used for items that sort after the last normal label,
++     * and that would not otherwise have an appropriate label.
++     *
++     * @return the overflow label
++     * @stable ICU 4.8
++     */
++    virtual const UnicodeString &getOverflowLabel() const;
++
++
++   /**
++     * Set the label used for items that sort after the last normal label,
++     * and that would not otherwise have an appropriate label.
++     *
++     * @param overflowLabel the new overflow label.
++     * @param status Error code, will be set with the reason if the operation fails.
++     * @return this
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &setOverflowLabel(const UnicodeString &overflowLabel, UErrorCode &status);
++
++   /**
++     * Get the special label used for items that sort before the first normal label,
++     * and that would not otherwise have an appropriate label.
++     *
++     * @return underflow label
++     * @stable ICU 4.8
++     */
++    virtual const UnicodeString &getUnderflowLabel() const;
++
++   /**
++     * Set the label used for items that sort before the first normal label,
++     * and that would not otherwise have an appropriate label.
++     *
++     * @param underflowLabel the new underflow label.
++     * @param status Error code, will be set with the reason if the operation fails.
++     * @return this
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &setUnderflowLabel(const UnicodeString &underflowLabel, UErrorCode &status);
++
++
++    /**
++     * Get the limit on the number of labels permitted in the index.
++     * The number does not include over, under and inflow labels.
++     *
++     * @return maxLabelCount maximum number of labels.
++     * @stable ICU 4.8
++     */
++    virtual int32_t getMaxLabelCount() const;
++
++    /**
++     * Set a limit on the number of labels permitted in the index.
++     * The number does not include over, under and inflow labels.
++     * Currently, if the number is exceeded, then every
++     * nth item is removed to bring the count down.
++     * A more sophisticated mechanism may be available in the future.
++     *
++     * @param maxLabelCount the maximum number of labels.
++     * @param status error code
++     * @return This, for chaining
++     * @stable ICU 4.8
++     */
++    virtual AlphabeticIndex &setMaxLabelCount(int32_t maxLabelCount, UErrorCode &status);
++
++
++   ...\fP, \fB\-\-mode" " mode"
++]
++.BI "\-p\fP, \fB\-\-name" " name"
++.BI "\-O\fP, \fB\-\-bldopt" " options"
++[
++.BI "\-e\fP, \fB\-\-entrypoint" " name"
++]
++[
++.BI "\-r\fP, \fB\-\-revision" " version"
++]
++[
++.BI "\-F\fP, \fB\-\-rebuild"
++]
++[
++.BI "\-I\fP, \fB\-\-install"
++]
++[
++.BI "\-s\fP, \fB\-\-sourcedir" " source"
++]
++[
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++]
++[
++.BI "\-T\fP, \fB\-\-tempdir" " directory"
++]
++[
++.IR file " .\|.\|."
++]
++.SH DESCRIPTION
++.B pkgdata
++takes a set of data files and packages them for use by ICU or
++applications that use ICU. The typical reason to package files using
++.B pkgdata
++is to make their distribution easier and their loading by ICU faster
++and less consuming of limited system resources such as file
++descriptors.
++Packaged data also allow applications to be distributed with fewer
++resource files, or even with none at all if they link against the
++packaged data directly.
++.PP
++.B pkgdata
++supports a few different methods of packaging data that serve
++different purposes.
++.PP
++The default packaging
++.I mode
++is
++.BR common ,
++or
++.BR archive .
++In this mode, the different data files are bundled together as an
++architecture-dependent file that can later be memory mapped for use by
++ICU. Data packaged using this mode will be looked up under the ICU
++data directory. Such packaging is easy to use for applications resource
++bundles, for example, as long as the application can install the
++packaged file in the ICU data directory.
++.PP
++Another packaging mode is the
++.BR dll ,
++or
++.BR library ,
++mode, where the data files are compiled into a shared library. ICU
++used to be able to dynamically load these shared libraries, but as of
++ICU 2.0, such support has been removed. This mode is still useful for
++two main purposes: to build ICU itself, as the ICU data is packaged as
++a shared library by default; and to build resource bundles that are
++linked to the application that uses them. Such resource bundles can
++then be placed anywhere where the system's dynamic linker will be
++looking for shared libraries, instead of being forced to live inside
++the ICU data directory.
++.PP
++The
++.BR static
++packaging mode is similar to the shared library one except that it
++produces a static library.
++.\" Note that many platforms are not able to
++.\" dynamically load symbols from static object files, so for this reason
++.\" .BR udata_setAppData() 
++.\" must be called
++.\" to install this data. As a convenience, pkgdata will build a C source file
++.\" and a header file. Given a data package named
++.\" .IR name, in the output 
++.\" directory will be created
++.\" .IR name .c
++.\" and
++.\" .IR name .h with the single
++.\" function
++.\" .BR "udata_install_\fcIname\fB(UErrorCode *err)" ,
++.\" where
++.\" .I cname
++.\" is
++.\" .I name
++.\" turned into a valid C identifier.
++.\" The application need to call this function once. The error code returned
++.\" is that of
++.\" .BR udata_setAppData() .
++.\" .PP
++.\" Data pakackaged in a library, whether shared or static, 
++.\" Subsequently, the application can access this data by passing
++.\" .I name for the
++.\" .I path 
++.\" rgument to functions such as
++.\" .BR Bures_open() .
++.PP
++Finally,
++.B pkgdata
++supports a
++.B files
++mode which simply copies the data files instead of packaging
++them as a single file or library. This mode is mainly intended to
++provide support for building ICU before it is packaged as separate
++small packages for distribution with operating systems such as Debian
++GNU/Linux for example. Please refer to the packaging documentation in
++the ICU source distribution for further information on the use of this
++mode.
++.PP
++.B pkgdata
++builds, packages, installs, or cleans the appropriate data based on the options given
++without the need to call GNU
++.BR make
++anymore.
++.SH OPTIONS
++.TP
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++Print help about usage and exit.
++.TP
++.BR "\-v\fP, \fB\-\-verbose"
++Display extra informative messages during execution.
++.TP
++.BR "\-c\fP, \fB\-\-copyright"
++Include a copyright notice in the binary data.
++.TP
++.BI "\-C\fP, \fB\-\-comment" " comment"
++Includes the specified
++.I comment
++in the resulting data instead of the ICU copyright notice. 
++.TP
++.BI "\-m\fP, \fB\-\-mode" " mode"
++Set the packaging
++.I mode
++to be used by 
++.BR pkgdata .
++The different modes and their meaning are explained in the
++.B DESCRIPTION
++section above. The valid mode names are
++.BR common
++(or
++.BR archive ),
++.BR dll
++(or
++.BR library ),
++and
++.BR files .
++.TP
++.BI "\-O\fP, \fB\-\-bldopt" " options"
++Specify options for the builder. The builder is used internally by
++.B pkgdata
++to generate the correct packaged file. Such options include, but are
++not limited to, setting variables used by
++.BR make (1)
++during the build of the packaged file. Note: If 
++.BR icu-config 
++is available, then this option is not needed.
++.TP
++.BI "\-p\fP, \fB\-\-name" " name"
++Set the packaged file name to
++.IR name .
++This name is also used as the default entry point name after having
++been turned into a valid C identifier.
++.TP
++.BI "\-e\fP, \fB\-\-entrypoint" " name"
++Set the data entry point (used for linking against the data in a
++shared library form) to
++.IR name .
++The default entry point name is the name set by the
++.BI "\-n\fP, \fB\-\-name"
++option.
++.TP
++.BI "\-r\fP, \fB\-\-revision" " version"
++Enable versioning of the shared library produced in
++.BR dll ,
++or
++.BR library ,
++mode. The version number has the format
++.I major\fP.\fIminor\fP.\fIpatchlevel
++and all parts except for
++.I major
++are optional. If only
++.I major
++is supplied then the version is
++assumed to be
++.IR major .0
++for versioning purposes.
++.TP
++.BI "\-F\fP, \fB\-\-rebuild"
++Force the rebuilding of all data and their repackaging.
++.TP
++.BI "\-I\fP, \fB\-\-install"
++Install the packaged file (or all the files in the
++.B files
++mode). If the variable
++.B DESTDIR
++is set it will be used for installation.
++.TP
++.BI "\-s\fP, \fB\-\-sourcedir" " source"
++Set the source directory to
++.IR source .
++The default source directory is the current directory.
++.TP
++.BI "\-d\fP, \fB\-\-destdir" " destination"
++Set the destination directory to
++.IR destination .
++The default destination directory is the current directory.
++.TP
++.BI "\-T\fP, \fB\-\-tempdir" " directory"
++Set the directory used to generate temporary files to
++.IR directory .
++The default temporary directory is the same as the destination
++directory
++as set by the
++.BI "\-d\fP, \fB\-\-destdir"
++option.
++.SH AUTHORS
++Steven Loomis
++.br
++Yves Arrouye
++.SH VERSION
++67.1
++.SH COPYRIGHT
++Copyright (C) 2000-2009 IBM, Inc. and others.
++
+diff --git a/icu4c/source/install/share/man/man1/uconv.1 b/icu4c/source/install/share/man/man1/uconv.1
+new file mode 100644
+index 00000000000..5d3875fe128
+--- /dev/null
++++ b/icu4c/source/install/share/man/man1/uconv.1
+@@ -0,0 +1,445 @@
++.\" Hey, Emacs! This is -*-nroff-*- you know...
++.\"
++.\" uconv.1: manual page for the uconv utility.
++.\"
++.\" Copyright (C) 2016 and later: Unicode, Inc. and others.
++.\" License & terms of use: http://www.unicode.org/copyright.html
++.\" Copyright (C) 2000-2013 IBM, Inc. and others.
++.\"
++.\" Manual page by Yves Arrouye <yves@realnames.com>.
++.\"
++.TH UCONV 1 "2005-jul-1" "ICU MANPAGE" "ICU 67.1 Manual"
++.SH NAME
++.B uconv
++\- convert data from one encoding to another
++.SH SYNOPSIS
++.B uconv
++[
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++]
++[
++.BI "\-V\fP, \fB\-\-version"
++]
++[
++.BI "\-s\fP, \fB\-\-silent"
++]
++[
++.BI "\-v\fP, \fB\-\-verbose"
++]
++[
++.BI "\-l\fP, \fB\-\-list"
++|
++.BI "\-l\fP, \fB\-\-list\-code" " code"
++|
++.BI "\-\-default-code"
++|
++.BI "\-L\fP, \fB\-\-list\-transliterators"
++]
++[
++.BI "\-\-canon"
++]
++[
++.BI "\-x" " transliteration
++]
++[
++.BI "\-\-to\-callback" " callback"
++|
++.B "\-c"
++]
++[
++.BI "\-\-from\-callback" " callback"
++|
++.B "\-i"
++]
++[
++.BI "\-\-callback" " callback"
++]
++[
++.BI "\-\-fallback"
++|
++.BI "\-\-no\-fallback"
++]
++[
++.BI "\-b\fP, \fB\-\-block\-size" " size"
++]
++[
++.BI "\-f\fP, \fB\-\-from\-code" " encoding"
++]
++[
++.BI "\-t\fP, \fB\-\-to\-code" " encoding"
++]
++[
++.BI "\-\-add\-signature"
++]
++[
++.BI "\-\-remove\-signature"
++]
++[
++.BI "\-o\fP, \fB\-\-output" " file"
++]
++[
++.IR file .\|.\|.
++]
++.SH DESCRIPTION
++.B uconv
++converts, or transcodes, each given
++.I file
++(or its standard input if no
++.I file
++is specified) from one
++.I encoding
++to another. 
++The transcoding is done using Unicode as a pivot encoding
++(i.e. the data are first transcoded from their original encoding to
++Unicode, and then from Unicode to the destination encoding).
++.PP
++If an
++.I encoding
++is not specified or is
++.BR - ,
++the default encoding is used. Thus, calling
++.B uconv
++with no
++.I encoding
++provides an easy way to validate and sanitize data files for
++further consumption by tools requiring data in the default encoding.
++.PP
++When calling
++.BR uconv ,
++it is possible to specify callbacks that are used to handle invalid
++characters in the input, or characters that cannot be transcoded to
++the destination encoding. Some encodings, for example, offer a default
++substitution character that can be used to represent the occurrence of
++such characters in the input. Other callbacks offer a useful visual
++representation of the invalid data.
++.PP
++.B uconv
++can also run the specified
++.IR transliteration
++on the transcoded data,
++in which case transliteration will happen as an intermediate step,
++after the data have been transcoded to Unicode.
++The
++.I transliteration
++can be either a list of semicolon-separated transliterator names,
++or an arbitrarily complex set of rules in the ICU transliteration
++rules format.
++.PP
++For transcoding purposes,
++.B uconv
++options are compatible with those of
++.BR iconv (1),
++making it easy to replace it in scripts. It is not necessarily the case,
++however, that the encoding names used by
++.B uconv
++and ICU are the same as the ones used by
++.BR iconv (1).
++Also, options that provide informational data, such as the
++.B \-l\fP, \fB\-\-list
++one offered by some 
++.BR iconv (1)
++variants such as GNU's, produce data in a slightly different and
++easier to parse format.
++.SH OPTIONS
++.TP
++.BR "\-h\fP, \fB\-?\fP, \fB\-\-help"
++Print help about usage and exit.
++.TP
++.BR "\-V\fP, \fB\-\-version"
++Print the version of
++.B uconv
++and exit.
++.TP
++.BI "\-s\fP, \fB\-\-silent"
++Suppress messages during execution.
++.TP
++.BI "\-v\fP, \fB\-\-verbose"
++Display extra informative messages during execution.
++.TP
++.BI "\-l\fP, \fB\-\-list"
++List all the available encodings and exit.
++.TP
++.BI "\-l\fP, \fB\-\-list\-code" " code"
++List only the
++.I code
++encoding and exit. If
++.I code
++is not a proper encoding, exit with an error.
++.TP
++.BI "\-\-default-code"
++List only the name of the default encoding and exit.
++.TP
++.BI "\-L\fP, \fB\-\-list\-transliterators"
++List all the available transliterators and exit.
++.TP
++.BI "\--canon"
++If used with
++.BI "\-l\fP, \fB\-\-list"
++or
++.BR "\-\-default-code" ,
++the list of encodings is produced in a format compatible with
++.BR convrtrs.txt (5).
++If used with
++.BR "\-L\fP, \fB\-\-list\-transliterators" ,
++print only one transliterator name per line.
++.TP
++.BI "\-x" " transliteration"
++Run the given
++.IR transliteration
++on the transcoded Unicode data,
++and use the transliterated data as input for the transcoding to
++the destination encoding.
++.TP
++.BI "\-\-to\-callback" " callback"
++Use
++.I callback
++to handle characters that cannot be transcoded to the destination
++encoding. See section
++.B CALLBACKS
++for details on valid callbacks.
++.TP
++.B "\-c"
++Omit invalid characters from the output.
++Same as
++.BR "\-\-to\-callback skip" .
++.TP
++.BI "\-\-from\-callback" " callback"
++Use
++.I callback
++to handle characters that cannot be transcoded from the original
++encoding. See section
++.B CALLBACKS
++for details on valid callbacks.
++.TP
++.B "\-i"
++Ignore invalid sequences in the input.
++Same as
++.BR "\-\-from\-callback skip" .
++.TP
++.BI "\-\-callback" " callback"
++Use
++.I callback
++to handle both characters that cannot be transcoded from the original
++encoding and characters that cannot be transcoded to the destination
++encoding. See section
++.B CALLBACKS
++for details on valid callbacks.
++.TP
++.BI "\-\-fallback"
++Use the fallback mapping when transcoding from
++Unicode to the destination encoding.
++.TP
++.BI "\-\-no\-fallback"
++Do not use the fallback mapping when transcoding from Unicode to the
++destination encoding.
++This is the default.
++.TP
++.BI "\-b\fP, \fB\-\-block\-size" " size"
++Read input in blocks of
++.I size
++bytes at a time. The default block size is
++4096.
++.TP
++.BI "\-f\fP, \fB\-\-from\-code" " encoding"
++Set the original encoding of the data to 
++.IR encoding .
++.TP
++.BI "\-t\fP, \fB\-\-to\-code" " encoding"
++Transcode the data to
++.IR encoding .
++.TP
++.BI "\-\-add\-signature"
++Add a U+FEFF Unicode signature character (BOM) if the output charset
++supports it and does not add one anyway.
++.TP
++.BI "\-\-remove\-signature"
++Remove a U+FEFF Unicode signature character (BOM).
++.TP
++.BI "\-o\fP, \fB\-\-output" " file"
++Write the transcoded data to
++.IR file .
++.SH CALLBACKS
++.B uconv
++supports specifying callbacks to handle invalid data. Callbacks can be
++set for both directions of transcoding: from the original encoding to
++Unicode, with the
++.BR "\-\-from\-callback"
++option, and from Unicode to the destination encoding, with the
++.BR "\-\-to\-callback"
++option.
++.PP
++The following is a list of valid
++.I callback
++names, along with a description of their behavior. The list of
++callbacks actually supported by
++.B uconv
++is displayed when it is called with
++.BR "\-h\fP, \fB\-\-help" .
++.PP
++.TP \w'\fBescape-unicode'u+3n
++.B substitute
++Write the encoding's substitute sequence, or the Unicode
++replacement character
++.B U+FFFD
++when transcoding to Unicode.
++.TP
++.B skip
++Ignore the invalid data.
++.TP
++.B stop
++Stop with an error when encountering invalid data.
++This is the default callback.
++.TP
++.B escape
++Same as
++.BR escape-icu .
++.TP
++.B escape-icu
++Replace the missing characters with a string of the format
++.BR %U\fIhhhh\fP
++for plane 0 characters, and
++.BR %U\fIhhhh\fP%U\fIhhhh\fP
++for planes 1 and above characters,
++where
++.I hhhh
++is the hexadecimal value of one of the UTF-16 code units representing the
++character. Characters from planes 1 and above are written as a pair of
++UTF-16 surrogate code units.
++.TP
++.B escape-java
++Replace the missing characters with a string of the format
++.BR \eu\fIhhhh\fP
++for plane 0 characters, and
++.BR \eu\fIhhhh\fP\eu\fIhhhh\fP
++for planes 1 and above characters,
++where
++.I hhhh
++is the hexadecimal value of one of the UTF-16 code units representing the
++character. Characters from planes 1 and above are written as a pair of
++UTF-16 surrogate code units.
++.TP
++.B escape-c
++Replace the missing characters with a string of the format
++.BR \eu\fIhhhh\fP
++for plane 0 characters, and
++.BR \eU\fIhhhhhhhh\fP
++for planes 1 and above characters,
++where
++.I hhhh
++and
++.I hhhhhhhh
++are the hexadecimal values of the Unicode codepoint.
++.TP
++.B escape-xml
++Same as
++.BR escape-xml-hex .
++.TP
++.B escape-xml-hex
++Replace the missing characters with a string of the format
++.BR &#x\fIhhhh\fP; ,
++where
++.I hhhh
++is the hexadecimal value of the Unicode codepoint.
++.TP
++.B escape-xml-dec
++Replace the missing characters with a string of the format
++.BR &#\fInnnn\fP; ,
++where
++.I nnnn
++is the decimal value of the Unicode codepoint.
++.TP
++.B escape-unicode
++Replace the missing characters with a string of the format
++.BR {U+\fIhhhh\fP} ,
++where
++.I hhhh
++is the hexadecimal value of the Unicode codepoint.
++That hexadecimal string is of variable length and can use from 4 to
++6 digits.
++This is the format universally used to denote a Unicode codepoint in
++the literature, delimited by curly braces for easy recognition of those
++substitutions in the output.
++.SH EXAMPLES
++Convert data from a given
++.I encoding
++to the platform encoding:
++
++.RS 4
++.B \fR$ \fPuconv \-f \fIencoding\fP
++.RE
++.PP
++Check if a
++.I file
++contains valid data for a given
++.IR encoding :
++
++.RS 4
++.B \fR$ \fPuconv \-f \fIencoding\fP \-c \fIfile\fP >/dev/null
++.RE
++.PP
++Convert a UTF-8
++.I file
++to a given
++.I encoding
++and ensure that the resulting text is good for any version of HTML:
++
++.RS 4
++.B \fR$ \fPuconv \-f utf-8 \-t \fIencoding\fP \e
++.br
++.B "    \-\-callback escape-xml-dec \fIfile\fP"
++.RE
++.PP
++Display the names of the Unicode code points in a UTF-file:
++
++.RS 4
++.B \fR$ \fPuconv \-f utf-8 \-x any-name \fIfile\fP
++.RE
++.PP
++Print the name of a Unicode code point whose value is known (\fBU+30AB\fP
++in this example):
++
++.RS 4
++.B \fR$ \fPecho '\eu30ab' | uconv \-x 'hex-any; any-name'; echo
++.br
++{KATAKANA LETTER KA}{LINE FEED}
++.br
++$ 
++.RE
++
++(The names are delimited by curly braces.
++Also, the name of the line terminator is also displayed.)
++.PP
++Normalize UTF-8 data using Unicode NFKC, remove all control characters,
++and map Katakana to Hiragana:
++
++.RS 4
++.B \fR$ \fPuconv \-f utf-8 \-t utf-8 \e
++.br
++.B "      \-x '::nfkc; [:Cc:] >; ::katakana-hiragana;'"
++.SH CAVEATS AND BUGS
++.B uconv
++does report errors as occurring at the first invalid byte
++encountered. This may be confusing to users of GNU
++.BR iconv (1),
++which reports errors as occurring at the first byte of an invalid
++sequence. For multi-byte character sets or encodings, this means that
++.BR uconv
++error positions may be at a later offset in the input stream than
++would be the case with GNU
++.BR iconv (1).
++.PP
++The reporting of error positions when a transliterator is used may be
++inaccurate or unavailable, in which case
++.BR uconv
++will report the offset in the output stream at which the error
++occurred.
++.SH AUTHORS
++Jonas Utterstroem
++.br
++Yves Arrouye
++.SH VERSION
++67.1
++.SH COPYRIGHT
++Copyright (C) 2000-2005 IBM, Inc. and others.
++.SH SEE ALSO
++.BR iconv (1)
+diff --git a/poc.cpp b/poc.cpp
+new file mode 100644
+index 00000000000..9f9621ecb5e
+--- /dev/null
++++ b/poc.cpp
+@@ -0,0 +1,61 @@
++#include "unicode/ustring.h"
++#include "unicode/urename.h"
++#include <cstdlib>
++#include <iostream>
++#include <cstring>
++
++using namespace icu;
++int main() {
++    const int32_t repeat = 20000;
++    const int32_t srclen = repeat * 6 + 2;
++    char *src = (char*)malloc(srclen);
++    UChar *dest = (UChar*) malloc(sizeof(UChar) * (repeat + 1));
++    if (src == NULL || dest == NULL) {
++        std::cerr << "memory allocation error" << std::endl;
++        return 1;
++    }
++    for (int32_t i = 0; i < repeat; i++) {
++      strcpy(src + (i * 6), "\\\\ud841");
++    }
++    int32_t len = u_unescape(src, dest, repeat);
++    if (len != repeat) {
++        std::cerr << "failure in u_unescape()" << std::endl;
++        return 1;
++    }
++    for (int32_t i = 0; i < repeat; i++) {
++      if (dest[i] != 0xd841) {
++        std::cerr << "failure in u_unescape() return value" << std::endl;
++        return 1;
++      }
++    }
++    free(src);
++
++    // A few simple test cases to make sure that the code recovers properly
++    u_unescape("\\\\ud841\\\\x5A", dest, repeat);
++    const UChar expected1[] = {0xd841, 'Z', 0};
++    if (u_strcmp(dest, expected1)!=0) {
++        std::cerr << "u_unescape() should return u\"\\\\ud841Z\" but got " << dest << std::endl;
++        return 1;
++    }
++
++    u_unescape("\\\\ud841\\\\U00050005", dest, repeat);
++    const UChar expected2[] = {0xd841, 0xd900, 0xdc05, 0};
++    if (u_strcmp(dest, expected2)!=0) {
++        std::cerr << "u_unescape() should return u\"\\\\ud841\\\\ud900\\\\udc05\" "
++                  << "but got " << dest << std::endl;
++        return 1;
++    }
++
++    // \\\\xXX is ill-formed. The documentation states:
++    // If an escape sequence is ill-formed, this method returns an empty string.
++    u_unescape("\\\\ud841\\\\xXX", dest, repeat);
++    const UChar expected3[] = { 0 };
++    if (u_strcmp(dest, expected3)!=0) {
++        std::cerr << "u_unescape() should return empty string" << std::endl;
++        return 1;
++    }
++
++    free(dest);
++    
++    return 0;
++}

@@ -1,0 +1,37 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index d6b4065e130..4ae235e063d 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -135,8 +135,15 @@ framelocalsproxy_getitem(PyObject *self, PyObject *key)
+     }
+     if (i >= 0) {
+         PyObject *value = framelocalsproxy_getval(frame->f_frame, co, i);
+-        assert(value != NULL);
+-        return Py_NewRef(value);
++        if (value == NULL) {
++            // Value became NULL between the check in framelocalsproxy_getkeyindex
++            // and now - this can happen due to concurrent modifications
++            PyErr_Format(PyExc_KeyError, "local variable '%R' is not defined", key);
++            return NULL;
++        }
++        // Take a strong reference to prevent use-after-free
++        Py_INCREF(value);
++        return value;
+     }
+ 
+     // Okay not in the fast locals, try extra locals

@@ -1,0 +1,38 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+clang-21: /tmp/llvm-gh-134471/build/clang/lib/AST/ASTContext.cpp:6593: clang::QualType clang::ASTContext::getDeducedTemplateSpecializationTypeInternal(clang::TemplateName, clang::QualType, bool, clang::QualType) const: Assertion `ID == TempID && "ID does not match"' failed.
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-134471/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-134471/build -fcoverage-compilation-dir=/tmp/llvm-gh-134471/build -resource-dir /tmp/llvm-gh-134471/build/build/lib/clang/21 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13 -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/backward -internal-isystem /tmp/llvm-gh-134471/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -std=c++20 -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fno-implicit-modules -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-500077.o -x c++ /testcases/llvm-gh-134471/input/poc.c
+1.	/testcases/llvm-gh-134471/input/poc.c:7:7: current parser token ';'
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:880:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - clang::ASTContext::getDeducedTemplateSpecializationTypeInternal(clang::TemplateName, clang::QualType, bool, clang::QualType) const clang/lib/AST/ASTContext.cpp:6594:18
+    - clang::ASTContext::getDeducedTemplateSpecializationType(clang::TemplateName, clang::QualType, bool) const clang/lib/AST/ASTContext.cpp:6611:1
+    - (anonymous namespace)::SubstituteDeducedTypeTransform::TransformDeducedTemplateSpecializationType(clang::TypeLocBuilder&, clang::DeducedTemplateSpecializationTypeLoc) clang/lib/Sema/SemaTemplateDeduction.cpp:5102:77
+    - clang::TreeTransform<(anonymous namespace)::SubstituteDeducedTypeTransform>::TransformType(clang::TypeLocBuilder&, clang::TypeLoc) build/tools/clang/include/clang/AST/TypeNodes.inc:42:1
+    - clang::TreeTransform<(anonymous namespace)::SubstituteDeducedTypeTransform>::TransformElaboratedType(clang::TypeLocBuilder&, clang::ElaboratedTypeLoc) clang/lib/Sema/TreeTransform.h:7494:47
+    - clang::TreeTransform<(anonymous namespace)::SubstituteDeducedTypeTransform>::TransformType(clang::TypeLocBuilder&, clang::TypeLoc) build/tools/clang/include/clang/AST/TypeNodes.inc:49:1
+    - clang::TreeTransform<(anonymous namespace)::SubstituteDeducedTypeTransform>::TransformType(clang::TypeSourceInfo*) clang/lib/Sema/TreeTransform.h:5168:47
+    - clang::Sema::SubstAutoTypeSourceInfo(clang::TypeSourceInfo*, clang::QualType) clang/lib/Sema/SemaTemplateDeduction.cpp:5396:21
+    - clang::Sema::DeduceTemplateSpecializationFromInitializer(clang::TypeSourceInfo*, clang::InitializedEntity const&, clang::InitializationKind const&, llvm::MutableArrayRef<clang::Expr*>) clang/lib/Sema/SemaInit.cpp:10257:20
+    - clang::Sema::deduceVarTypeFromInitializer(clang::VarDecl*, clang::DeclarationName, clang::QualType, clang::TypeSourceInfo*, clang::SourceRange, bool, clang::Expr*) clang/lib/Sema/SemaDecl.cpp:13030:55
+    - clang::Sema::DeduceVariableDeclarationType(clang::VarDecl*, bool, clang::Expr*) clang/lib/Sema/SemaDecl.cpp:13128:54
+    - clang::Sema::AddInitializerToDecl(clang::Decl*, clang::Expr*, bool) clang/lib/Sema/SemaDecl.cpp:13616:5
+    - clang::Parser::ParseDeclarationAfterDeclaratorAndAttributes(clang::Declarator&, clang::Parser::ParsedTemplateInfo const&, clang::Parser::ForRangeInit*) clang/lib/Parse/ParseDecl.cpp:2931:5
+    - clang::Parser::ParseDeclGroup(clang::ParsingDeclSpec&, clang::DeclaratorContext, clang::ParsedAttributes&, clang::Parser::ParsedTemplateInfo&, clang::SourceLocation*, clang::Parser::ForRangeInit*) clang/lib/Parse/ParseDecl.cpp:2550:51
+    - clang::Parser::ParseDeclOrFunctionDefInternal(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec&, clang::AccessSpecifier) clang/lib/Parse/Parser.cpp:1261:24
+    - clang::Parser::ParseDeclarationOrFunctionDefinition(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*, clang::AccessSpecifier) clang/lib/Parse/Parser.cpp:1283:42
+    - clang::Parser::ParseExternalDeclaration(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*) clang/lib/Parse/Parser.cpp:1086:50
+    - clang::Parser::ParseTopLevelDecl(clang::OpaquePtr<clang::DeclGroupRef>&, clang::Sema::ModuleImportState&) clang/lib/Parse/Parser.cpp:772:36
+    - clang::ParseAST(clang::Sema&, bool, bool) clang/lib/Parse/ParseAST.cpp:171:37
+    - clang::ASTFrontendAction::ExecuteAction() clang/lib/Frontend/FrontendAction.cpp:1345:11
+    - clang::CodeGenAction::ExecuteAction() clang/lib/CodeGen/CodeGenAction.cpp:1112:5
+    - clang::FrontendAction::Execute() clang/lib/Frontend/FrontendAction.cpp:1231:38
+    - clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) clang/lib/Frontend/CompilerInstance.cpp:1055:42
+    - clang::ExecuteCompilerInvocation(clang::CompilerInstance*) clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+    - cc1_main(llvm::ArrayRef<char const*>, char const*, void*) clang/tools/driver/cc1_main.cpp:294:40
+    - ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) clang/tools/driver/driver.cpp:218:20
+    - clang_main(int, char**, llvm::ToolContext const&) clang/tools/driver/driver.cpp:259:26
+    - main build/tools/clang/tools/driver/clang-driver.cpp:17:20

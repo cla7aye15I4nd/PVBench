@@ -1,0 +1,184 @@
+diff --git a/src/testdir/dumps/Test_pum_maxwidth_with_many_items_01.dump b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_01.dump
+new file mode 100644
+index 000000000..6453b70c2
+--- /dev/null
++++ b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_01.dump
+@@ -0,0 +1,8 @@
++|f+0&#ffffff0|o@1> @71
++|f+0#0000001#e0e0e08|o@1| |f|o@1|K|i|n|d| |f|o@1|M|e|n|u| | +0#4040ff13#ffffff0@54
++|b+0#0000001#ffd7ff255|a|r| |b|a|r|K|i|n|d| |b|a|r|M|e|n|u| | +0#4040ff13#ffffff0@54
++|b+0#0000001#ffd7ff255|a|z| |b|a|z|K|i|n|d| |b|a|z|M|e|n|u| | +0#4040ff13#ffffff0@54
++|~| @73
++|~| @73
++|~| @73
++|~| @73
+diff --git a/src/testdir/dumps/Test_pum_maxwidth_with_many_items_02.dump b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_02.dump
+new file mode 100644
+index 000000000..e8d9d9784
+--- /dev/null
++++ b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_02.dump
+@@ -0,0 +1,8 @@
++|f+0&#ffffff0|o@1> @71
++|f+0#0000001#e0e0e08|o@1| |f|o@1|K|i|n|d| |f|o@1|M|e|n|u| +0#4040ff13#ffffff0@55
++|b+0#0000001#ffd7ff255|a|r| |b|a|r|K|i|n|d| |b|a|r|M|e|n|u| +0#4040ff13#ffffff0@55
++|b+0#0000001#ffd7ff255|a|z| |b|a|z|K|i|n|d| |b|a|z|M|e|n|u| +0#4040ff13#ffffff0@55
++|~| @73
++|~| @73
++|~| @73
++|~| @73
+diff --git a/src/testdir/dumps/Test_pum_maxwidth_with_many_items_03.dump b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_03.dump
+new file mode 100644
+index 000000000..f31cda1e5
+--- /dev/null
++++ b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_03.dump
+@@ -0,0 +1,8 @@
++|f+0&#ffffff0|o@1> @71
++|f+0#0000001#e0e0e08|o@1| |f|o@1|K|i|n|d| |f|o@1|.@2| +0#4040ff13#ffffff0@56
++|b+0#0000001#ffd7ff255|a|r| |b|a|r|K|i|n|d| |b|a|r|.@2| +0#4040ff13#ffffff0@56
++|b+0#0000001#ffd7ff255|a|z| |b|a|z|K|i|n|d| |b|a|z|.@2| +0#4040ff13#ffffff0@56
++|~| @73
++|~| @73
++|~| @73
++|~| @73
+diff --git a/src/testdir/dumps/Test_pum_maxwidth_with_many_items_04.dump b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_04.dump
+new file mode 100644
+index 000000000..f6f22b134
+--- /dev/null
++++ b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_04.dump
+@@ -0,0 +1,8 @@
++|f+0&#ffffff0|o@1> @71
++|f+0#0000001#e0e0e08|o@1| |f|o@1|K|i|n|d| |f|.@2| +0#4040ff13#ffffff0@58
++|b+0#0000001#ffd7ff255|a|r| |b|a|r|K|i|n|d| |b|.@2| +0#4040ff13#ffffff0@58
++|b+0#0000001#ffd7ff255|a|z| |b|a|z|K|i|n|d| |b|.@2| +0#4040ff13#ffffff0@58
++|~| @73
++|~| @73
++|~| @73
++|~| @73
+diff --git a/src/testdir/dumps/Test_pum_maxwidth_with_many_items_05.dump b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_05.dump
+new file mode 100644
+index 000000000..1002ef385
+--- /dev/null
++++ b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_05.dump
+@@ -0,0 +1,8 @@
++|f+0&#ffffff0|o@1> @71
++|f+0#0000001#e0e0e08|o@1| |f|o@1|K|i|n|d| |f|o@1| +0#4040ff13#ffffff0@59
++|b+0#0000001#ffd7ff255|a|r| |b|a|r|K|i|n|d| |b|a|r| +0#4040ff13#ffffff0@59
++|b+0#0000001#ffd7ff255|a|z| |b|a|z|K|i|n|d| |b|a|z| +0#4040ff13#ffffff0@59
++|~| @73
++|~| @73
++|~| @73
++|~| @73
+diff --git a/src/testdir/dumps/Test_pum_maxwidth_with_many_items_06.dump b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_06.dump
+new file mode 100644
+index 000000000..a9a63a6fe
+--- /dev/null
++++ b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_06.dump
+@@ -0,0 +1,8 @@
++|f+0&#ffffff0|o@1> @71
++|f+0#0000001#e0e0e08|o@1| |f|o@1|K|i|n|d| | +0#4040ff13#ffffff0@62
++|b+0#0000001#ffd7ff255|a|r| |b|a|r|K|i|n|d| | +0#4040ff13#ffffff0@62
++|b+0#0000001#ffd7ff255|a|z| |b|a|z|K|i|n|d| | +0#4040ff13#ffffff0@62
++|~| @73
++|~| @73
++|~| @73
++|~| @73
+diff --git a/src/testdir/dumps/Test_pum_maxwidth_with_many_items_07.dump b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_07.dump
+new file mode 100644
+index 000000000..12091b438
+--- /dev/null
++++ b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_07.dump
+@@ -0,0 +1,8 @@
++|f+0&#ffffff0|o@1> @71
++|f+0#0000001#e0e0e08|o@1| |f|o@1|.@2| +0#4040ff13#ffffff0@64
++|b+0#0000001#ffd7ff255|a|r| |b|a|r|.@2| +0#4040ff13#ffffff0@64
++|b+0#0000001#ffd7ff255|a|z| |b|a|z|.@2| +0#4040ff13#ffffff0@64
++|~| @73
++|~| @73
++|~| @73
++|~| @73
+diff --git a/src/testdir/dumps/Test_pum_maxwidth_with_many_items_08.dump b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_08.dump
+new file mode 100644
+index 000000000..01c3e7d25
+--- /dev/null
++++ b/src/testdir/dumps/Test_pum_maxwidth_with_many_items_08.dump
+@@ -0,0 +1,8 @@
++|f+0&#ffffff0|o@1> @71
++|f+0#0000001#e0e0e08| +0#4040ff13#ffffff0@73
++|b+0#0000001#ffd7ff255| +0#4040ff13#ffffff0@73
++|b+0#0000001#ffd7ff255| +0#4040ff13#ffffff0@73
++|~| @73
++|~| @73
++|~| @73
++|~| @73
+diff --git a/src/testdir/test_popup.vim b/src/testdir/test_popup.vim
+index e216a6d58..445a2befc 100644
+--- a/src/testdir/test_popup.vim
++++ b/src/testdir/test_popup.vim
+@@ -2070,4 +2070,67 @@ func Test_pum_maxwidth_multibyte()
+   call StopVimInTerminal(buf)
+ endfunc
+ 
++func Test_pum_maxwidth_with_many_items()
++  CheckScreendump
++
++  let lines =<< trim END
++    func Omni_test(findstart, base)
++    if a:findstart
++      return col(".")
++    endif
++    return [
++      \ #{word: "foo", menu: "fooMenu", kind: "fooKind"},
++      \ #{word: "bar", menu: "barMenu", kind: "barKind"},
++      \ #{word: "baz", menu: "bazMenu", kind: "bazKind"},
++      \ ]
++    endfunc
++    set omnifunc=Omni_test
++  END
++  call writefile(lines, 'Xtest', 'D')
++  let  buf = RunVimInTerminal('-S Xtest', {})
++  call TermWait(buf)
++
++  call term_sendkeys(buf, ":set pummaxwidth=20\<CR>")
++  call term_sendkeys(buf, "S\<C-X>\<C-O>")
++  call VerifyScreenDump(buf, 'Test_pum_maxwidth_with_many_items_01', {'rows': 8})
++  call term_sendkeys(buf, "\<ESC>")
++
++  call term_sendkeys(buf, ":set pummaxwidth=19\<CR>")
++  call term_sendkeys(buf, "S\<C-X>\<C-O>")
++  call VerifyScreenDump(buf, 'Test_pum_maxwidth_with_many_items_02', {'rows': 8})
++  call term_sendkeys(buf, "\<ESC>")
++
++  call term_sendkeys(buf, ":set pummaxwidth=18\<CR>")   " display Ellipsis
++  call term_sendkeys(buf, "S\<C-X>\<C-O>")
++  call VerifyScreenDump(buf, 'Test_pum_maxwidth_with_many_items_03', {'rows': 8})
++  call term_sendkeys(buf, "\<ESC>")
++
++  call term_sendkeys(buf, ":set pummaxwidth=16\<CR>")   " display Ellipsis
++  call term_sendkeys(buf, "S\<C-X>\<C-O>")
++  call VerifyScreenDump(buf, 'Test_pum_maxwidth_with_many_items_04', {'rows': 8})
++  call term_sendkeys(buf, "\<ESC>")
++
++  call term_sendkeys(buf, ":set pummaxwidth=15\<CR>")
++  call term_sendkeys(buf, "S\<C-X>\<C-O>")
++  call VerifyScreenDump(buf, 'Test_pum_maxwidth_with_many_items_05', {'rows': 8})
++  call term_sendkeys(buf, "\<ESC>")
++
++  call term_sendkeys(buf, ":set pummaxwidth=12\<CR>")
++  call term_sendkeys(buf, "S\<C-X>\<C-O>")
++  call VerifyScreenDump(buf, 'Test_pum_maxwidth_with_many_items_06', {'rows': 8})
++  call term_sendkeys(buf, "\<ESC>")
++
++  call term_sendkeys(buf, ":set pummaxwidth=10\<CR>")   " display Ellipsis
++  call term_sendkeys(buf, "S\<C-X>\<C-O>")
++  call VerifyScreenDump(buf, 'Test_pum_maxwidth_with_many_items_07', {'rows': 8})
++  call term_sendkeys(buf, "\<ESC>")
++
++  call term_sendkeys(buf, ":set pummaxwidth=1\<CR>")
++  call term_sendkeys(buf, "S\<C-X>\<C-O>")
++  call VerifyScreenDump(buf, 'Test_pum_maxwidth_with_many_items_08', {'rows': 8})
++  call term_sendkeys(buf, "\<ESC>")
++
++  call StopVimInTerminal(buf)
++endfunc
++
+ " vim: shiftwidth=2 sts=2 expandtab

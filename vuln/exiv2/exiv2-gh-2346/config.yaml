@@ -1,0 +1,14 @@
+id: exiv2-gh-2346
+project: exiv2
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: exiv2
+trigger_commit: 56249bb1a0a3f188574640b0ec155b57b3af8204
+patch:
+  commit: 640b0fbf5dd1561ae2d262d654a10f6c8fd2b251
+  date: '2022-09-21T14:54:37+01:00'
+reference:
+- https://github.com/Exiv2/exiv2
+- https://github.com/Exiv2/exiv2/issues/2346
+- https://github.com/Exiv2/exiv2/commit/56249bb1a0a3f188574640b0ec155b57b3af8204
+- https://github.com/Exiv2/exiv2/commit/640b0fbf5dd1561ae2d262d654a10f6c8fd2b251

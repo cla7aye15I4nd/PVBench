@@ -1,0 +1,69 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/dom/inner_html_mixin.c b/ext/dom/inner_html_mixin.c
+index 262c85411aa..4a726e34621 100644
+--- a/ext/dom/inner_html_mixin.c
++++ b/ext/dom/inner_html_mixin.c
+@@ -181,9 +181,14 @@ static lxb_dom_document_cmode_t dom_translate_quirks_mode(php_libxml_quirks_mode
+ /* https://html.spec.whatwg.org/#html-fragment-parsing-algorithm */
+ static xmlNodePtr dom_html_fragment_parsing_algorithm(dom_object *obj, xmlNodePtr context_node, const zend_string *input, php_libxml_quirks_mode quirks_mode)
+ {
++	/* Check if context_node is NULL to prevent segmentation fault */
++	if (context_node == NULL) {
++		php_dom_throw_error(INVALID_STATE_ERR, true);
++		return NULL;
++	}
++
+ 	/* The whole algorithm is implemented in Lexbor, we just have to be the adapter between the
+ 	 * data structures used in PHP and what Lexbor expects. */
+-
+ 	lxb_html_document_t *document = lxb_html_document_create();
+ 	document->dom_document.compat_mode = dom_translate_quirks_mode(quirks_mode);
+ 	lxb_dom_element_t *element = lxb_dom_element_interface_create(&document->dom_document);
+@@ -222,6 +227,9 @@ static xmlNodePtr dom_html_fragment_parsing_algorithm(dom_object *obj, xmlNodePt
+ 
+ static void dom_xml_parser_tag_name(const xmlNode *context_node, xmlParserCtxtPtr parser)
+ {
++	if (context_node == NULL) {
++		return;
++	}
+ 	if (context_node->ns != NULL && context_node->ns->prefix != NULL) {
+ 		xmlParseChunk(parser, (const char *) context_node->ns->prefix, xmlStrlen(context_node->ns->prefix), 0);
+ 		xmlParseChunk(parser, ":", 1, 0);
+@@ -232,6 +240,9 @@ static void dom_xml_parser_tag_name(const xmlNode *context_node, xmlParserCtxtPt
+ 
+ static void dom_xml_fragment_parsing_algorithm_parse(php_dom_libxml_ns_mapper *ns_mapper, const xmlNode *context_node, const zend_string *input, xmlParserCtxtPtr parser)
+ {
++	if (context_node == NULL) {
++		return;
++	}
+ 	xmlParseChunk(parser, "<", 1, 0);
+ 	dom_xml_parser_tag_name(context_node, parser);
+ 
+@@ -268,6 +279,10 @@ static void dom_xml_fragment_parsing_algorithm_parse(php_dom_libxml_ns_mapper *n
+ /* https://html.spec.whatwg.org/#xml-fragment-parsing-algorithm */
+ static xmlNodePtr dom_xml_fragment_parsing_algorithm(dom_object *obj, const xmlNode *context_node, const zend_string *input)
+ {
++	if (context_node == NULL) {
++		php_dom_throw_error(INVALID_STATE_ERR, true);
++		return NULL;
++	}
+ 	/* Steps 1-4 below */
+ 	xmlParserCtxtPtr parser = xmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL);
+ 	if (UNEXPECTED(parser == NULL)) {

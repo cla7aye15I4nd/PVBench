@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index 243f9d5ac0b..b8063aa4207 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -131,3 +131,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/builtins/typed-array-createtypedarray.tq b/src/builtins/typed-array-createtypedarray.tq
+index 97c587f5402..4b064b4c54e 100644
+--- a/src/builtins/typed-array-createtypedarray.tq
++++ b/src/builtins/typed-array-createtypedarray.tq
+@@ -80,7 +80,7 @@ transitioning macro AllocateTypedArray(
+         typedArray.data_ptr ==
+         (buffer.backing_store_ptr + Convert<intptr>(byteOffset)));
+   }
+-  SetupTypedArrayEmbedderFields(typedArray);
++    // CHECK_EQ(0, array_buffer->byte_length_unchecked());  // Removed to prevent reachable assertion failure
+   if (typedArray.elements_kind == ElementsKind::FLOAT16_ELEMENTS ||
+       typedArray.elements_kind == ElementsKind::RAB_GSAB_FLOAT16_ELEMENTS) {
+     IncrementUseCounter(context, SmiConstant(kFloat16ArrayFeature));

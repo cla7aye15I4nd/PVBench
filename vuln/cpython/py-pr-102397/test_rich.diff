@@ -1,0 +1,42 @@
+diff --git a/Lib/test/test_signal.py b/Lib/test/test_signal.py
+index 6aa529b0620..6ff4ed4ed8b 100644
+--- a/Lib/test/test_signal.py
++++ b/Lib/test/test_signal.py
+@@ -1413,6 +1413,37 @@ def handler(a, b):
+         signal.raise_signal(signal.SIGINT)
+         self.assertTrue(is_ok)
+ 
++    def test__thread_interrupt_main(self):
++        # See https://github.com/python/cpython/issues/102397
++        code = """if 1:
++        import _thread
++        class Foo():
++            def __del__(self):
++                _thread.interrupt_main()
++
++        x = Foo()
++        """
++
++        rc, out, err = assert_python_ok('-c', code)
++        self.assertIn(b'OSError: Signal 2 ignored due to race condition', err)
++
++        code = """if 1:
++        import _thread
++        import signal
++        class Foo():
++            def __del__(self):
++                signal.signal(signal.SIGINT, lambda *args: print("SIGINT"))
++                _thread.interrupt_main()
++
++        x = Foo()
++        """
++
++        rc, out, err = assert_python_ok('-c', code)
++        self.assertEqual(rc, 0)
++        self.assertIn(b'SIGINT', out)
++        self.assertEqual(err, b'')
++
++
+ 
+ class PidfdSignalTest(unittest.TestCase):
+ 

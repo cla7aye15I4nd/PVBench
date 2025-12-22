@@ -1,0 +1,25 @@
+
+diff --git a/.gitignore b/.gitignore
+index 075446de1e1..7e0cadd6054 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -122,3 +122,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/BUILD_BLOCKED.txt b/BUILD_BLOCKED.txt
+new file mode 100644
+index 00000000000..b04c04a0ef6
+--- /dev/null
++++ b/BUILD_BLOCKED.txt
+@@ -0,0 +1 @@
++Missing required V8 build dependencies and source files. Cannot proceed with build or reproduction.

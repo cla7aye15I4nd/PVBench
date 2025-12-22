@@ -1,0 +1,52 @@
+
+diff --git a/.gitignore b/.gitignore
+index d3090138a..109566f69 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,4 +23,13 @@ src/doxygen.hpp
+ test/tmp/*
+ doc/html
+ contrib/vms/.vagrant
+-/.vscode
+\ No newline at end of file
++/.vscodebuild/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/panasonicmn_int.cpp b/src/panasonicmn_int.cpp
+index 617c5d209..f432f39d5 100644
+--- a/src/panasonicmn_int.cpp
++++ b/src/panasonicmn_int.cpp
+@@ -693,7 +693,7 @@ namespace Exiv2 {
+     {
+         // value is stored as unsigned int, but should be readed as signed int, so manually convert it
+         int i = value.toLong();
+-        i = i - ((i & 0x8000) >> 15) * 0xffff;
++        if (i & 0x8000) i -= 0x10000;
+         return os << i;
+     }  // PanasonicMakerNote::printAccelerometer
+ 
+@@ -701,7 +701,7 @@ namespace Exiv2 {
+     {
+         // roll angle is stored as signed int, but tag states to be unsigned int
+         int i = value.toLong();
+-        i = i - ((i & 0x8000) >> 15) * 0xffff;
++        if (i & 0x8000) i -= 0x10000;
+         std::ostringstream oss;
+         oss.copyfmt(os);
+         os << std::fixed << std::setprecision(1) << i / 10.0;
+@@ -715,7 +715,7 @@ namespace Exiv2 {
+         // pitch angle is stored as signed int, but tag states to be unsigned int
+         // change sign to be compatible with ExifTool: positive is upwards
+         int i = value.toLong();
+-        i = i - ((i & 0x8000) >> 15) * 0xffff;
++        if (i & 0x8000) i -= 0x10000;
+         std::ostringstream oss;
+         oss.copyfmt(os);
+         os << std::fixed << std::setprecision(1) << -i / 10.0;

@@ -1,0 +1,9 @@
+# Expected Failure Cases
+# Format: line|function_call|expected_result|comment
+
+46|H5Fget_create_plist(dset_id)|plist == -1|dset_id is not file ID
+51|H5Fget_access_plist(fapl_id)|plist == -1|fapl_id is not file ID
+56|H5Fget_intent(dset_id, &intent)|ret == -1|dset_id is not file ID
+62|H5Fget_fileno(dset_id, &fileno)|ret == -1|dset_id is not file ID
+67|H5Fget_freespace(dset_id)|free_space == -1|dset_id is not file ID
+73|H5Fget_vfd_handle(fapl_id, H5P_DEFAULT, &os_file_handle)|ret == -1|fapl_id is not file ID

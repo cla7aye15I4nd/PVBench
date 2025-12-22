@@ -1,0 +1,20 @@
+==405605==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000008 (pc 0x564142583e97 bp 0x7ffe1ab43dd0 sp 0x7ffe1ab43660 T0)
+==405605==The signal is caused by a READ memory access.
+==405605==Hint: address points to the zero page.
+    #0 0x564142583e97 in pass_two /php-gh-13931/build/Zend/zend_opcode.c:1074:73
+    #1 0x56414244ee67 in zend_compile /php-gh-13931/build/Zend/zend_language_scanner.l:623:3
+    #2 0x564142451e2b in compile_string /php-gh-13931/build/Zend/zend_language_scanner.l:814:13
+    #3 0x564142f6efde in phpdbg_compile_string /php-gh-13931/build/sapi/phpdbg/phpdbg_list.c:320:10
+    #4 0x56414256a221 in zend_eval_stringl /php-gh-13931/build/Zend/zend_execute_API.c:1286:17
+    #5 0x564142f35e40 in phpdbg_do_ev /php-gh-13931/build/sapi/phpdbg/phpdbg_prompt.c:972:7
+    #6 0x564142f88cc1 in phpdbg_internal_stack_execute /php-gh-13931/build/sapi/phpdbg/phpdbg_cmd.c:670:11
+    #7 0x564142f88a79 in phpdbg_stack_execute /php-gh-13931/build/sapi/phpdbg/phpdbg_cmd.c:731:18
+    #8 0x564142f42a19 in phpdbg_interactive /php-gh-13931/build/sapi/phpdbg/phpdbg_prompt.c:1551:11
+    #9 0x564142f18c28 in main /php-gh-13931/build/sapi/phpdbg/phpdbg.c:1614:5
+    #10 0x7f83e87e71c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7f83e87e728a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x564141603174 in _start (/php-gh-13931/build/sapi/phpdbg/phpdbg+0x403174) (BuildId: 6d620fbcfda5c7be16716520dbcf31288fe52d7c)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-13931/build/Zend/zend_opcode.c:1074:73 in pass_two
+==405605==ABORTING

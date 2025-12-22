@@ -1,0 +1,49 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 66190522e70..99a23f07290 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -512,8 +512,8 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+                          std::end(kTemplatesWithMismatchedArguments), index)) {
+             builder.AppendCString("undefined");
+           } else {
+-            FATAL("Missing argument to template (got %zu): %s", args.size(),
+-                  template_string);
++            FATAL("Missing argument to template (got %zu): %.*s", args.size(),
++                  static_cast<int>(strlen(template_string)), template_string);
+           }
+         } else {
+           Handle<String> arg = remaining_args[0];
+@@ -528,8 +528,9 @@ MaybeHandle<String> MessageFormatter::TryFormat(
+   if (!remaining_args.empty() &&
+       std::count(std::begin(kTemplatesWithMismatchedArguments),
+                  std::end(kTemplatesWithMismatchedArguments), index) == 0) {
+-    FATAL("Too many arguments to template (expected %zu, got %zu): %s",
+-          args.size() - remaining_args.size(), args.size(), template_string);
++    FATAL("Too many arguments to template (expected %zu, got %zu): %.*s",
++          args.size() - remaining_args.size(), args.size(), 
++          static_cast<int>(strlen(template_string)), template_string);
+   }
+ 
+   return builder.Finish();
+diff --git a/test_fix b/test_fix
+new file mode 100755
+index 00000000000..36a115e3d33
+Binary files /dev/null and b/test_fix differ

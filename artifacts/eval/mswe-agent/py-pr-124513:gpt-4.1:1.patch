@@ -1,0 +1,53 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index 9f1c031dcb9..36b9ddf436f 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -308,6 +308,7 @@ framelocalsproxy_dealloc(PyObject *self)
+ }
+ 
+ static PyObject *
++
+ framelocalsproxy_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+ {
+     PyFrameLocalsProxyObject *self = (PyFrameLocalsProxyObject *)type->tp_alloc(type, 0);
+@@ -315,10 +316,22 @@ framelocalsproxy_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+         return NULL;
+     }
+ 
+-    PyFrameObject *frame = (PyFrameObject*)PyTuple_GET_ITEM(args, 0);
+-    assert(PyFrame_Check(frame));
++    // Check that args is a tuple with at least one item
++    if (!PyTuple_Check(args) || PyTuple_Size(args) < 1) {
++        Py_DECREF(self);
++        PyErr_SetString(PyExc_TypeError, "framelocalsproxy_new: args must be a tuple with at least one item");
++        return NULL;
++    }
++
++    PyObject *frame_obj = PyTuple_GET_ITEM(args, 0);
++    if (!PyFrame_Check(frame_obj)) {
++        Py_DECREF(self);
++        PyErr_SetString(PyExc_TypeError, "framelocalsproxy_new: first argument must be a frame object");
++        return NULL;
++    }
+ 
+-    ((PyFrameLocalsProxyObject*)self)->frame = (PyFrameObject*)Py_NewRef(frame);
++    PyFrameObject *frame = (PyFrameObject *)frame_obj;
++    self->frame = (PyFrameObject *)Py_NewRef(frame);
+ 
+     return (PyObject *)self;
+ }

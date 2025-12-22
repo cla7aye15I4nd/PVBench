@@ -1,0 +1,13 @@
+id: xml-commit-1d4f5d2
+project: libxml2
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: xmllint
+trigger_commit: f2392dc464ac6927b2bd59a5e0d10283afbfe5b6
+patch:
+  commit: 1d4f5d24ac3976012ab1f5b811385e7b00caaecf
+  date: '2022-09-13T16:56:59+02:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/f2392dc464ac6927b2bd59a5e0d10283afbfe5b6
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/1d4f5d24ac3976012ab1f5b811385e7b00caaecf

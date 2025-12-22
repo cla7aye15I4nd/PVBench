@@ -1,0 +1,14 @@
+<?php
+
+function foo(string $key): string {
+    throw new \Exception('Test');
+}
+
+array_filter(
+    array_combine(
+        ['a'],
+        array_map(foo(...), ['a']),
+    ),
+);
+
+?>

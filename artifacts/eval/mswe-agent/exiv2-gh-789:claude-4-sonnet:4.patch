@@ -1,0 +1,65 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6f76849e2..06ada5b75 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -18,3 +18,13 @@ test/tmp/*
+ doc/html
+ 
+ contrib/vms/.vagrant
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/pngimage.cpp b/src/pngimage.cpp
+index 4ccec39d8..e91356b31 100644
+--- a/src/pngimage.cpp
++++ b/src/pngimage.cpp
+@@ -461,14 +461,40 @@ namespace Exiv2 {
+                     PngChunk::decodeTXTChunk(this, chunkData, PngChunk::iTXt_Chunk);
+                 } else if (chunkType == "iCCP") {
+                     // The ICC profile name can vary from 1-79 characters.
++                    // An iCCP chunk must have at least 2 bytes: profile name (min 1 byte) + null terminator + compression flag
++                    if (chunkLength < 2) {
++                        // Invalid iCCP chunk - too small
++                        continue;
++                    }
++                    
++                    // Additional safety check: ensure we have valid data buffer
++                    if (!chunkData.pData_ || chunkData.size_ < 2) {
++                        // Invalid chunk data buffer
++                        continue;
++                    }
++                    
+                     uint32_t iccOffset = 0;
+-                    while (iccOffset < 80 && iccOffset < chunkLength) {
++                    while (iccOffset < 80 && iccOffset < chunkLength && iccOffset < chunkData.size_) {
+                          if (chunkData.pData_[iccOffset++] ==  0x00) {
+                             break;
+                          }
+                     }
++                    
++                    // Ensure we found a null terminator and have a valid profile name
++                    if (iccOffset == 0 || iccOffset > chunkLength || iccOffset > chunkData.size_) {
++                        // Invalid iCCP chunk - no null terminator found or offset out of bounds
++                        continue;
++                    }
++                    
+                     profileName_ = std::string(reinterpret_cast<char *>(chunkData.pData_), iccOffset-1);
+                     ++iccOffset; // +1 = 'compressed' flag
++                    
++                    // Ensure we don't go beyond the buffer bounds
++                    if (iccOffset > chunkLength || iccOffset > chunkData.size_) {
++                        // Invalid iCCP chunk - offset out of bounds
++                        continue;
++                    }
++                    
+                     enforce(iccOffset <= chunkLength, Exiv2::kerCorruptedMetadata);
+ 
+                     zlibToDataBuf(chunkData.pData_ + iccOffset, chunkLength - iccOffset, iccProfile_);

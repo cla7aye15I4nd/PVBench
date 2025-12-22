@@ -1,0 +1,44 @@
+
+diff --git a/.gitignore b/.gitignore
+index 9142623efa8..926f616c81e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -124,3 +124,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/js-atomics-synchronization.cc b/src/objects/js-atomics-synchronization.cc
+index d091021dbd5..0bfb044416e 100644
+--- a/src/objects/js-atomics-synchronization.cc
++++ b/src/objects/js-atomics-synchronization.cc
+@@ -1227,6 +1227,9 @@ uint32_t JSAtomicsCondition::Notify(Isolate* requester,
+   return DequeueExplicit(
+       requester, cv, state, [=](WaiterQueueNode** waiter_head) -> uint32_t {
+         WaiterQueueNode* old_head;
++        if (count == 0) {
++          return 0;
++        }
+         if (count == 1) {
+           old_head = WaiterQueueNode::Dequeue(waiter_head);
+           if (!old_head) return 0;
+@@ -1239,6 +1242,7 @@ uint32_t JSAtomicsCondition::Notify(Isolate* requester,
+         } else {
+           old_head = WaiterQueueNode::Split(waiter_head, count);
+         }
++
+         if (!old_head) return 0;
+         // Notify while holding the queue lock to avoid notifying
+         // waiters that have been deleted in other threads.
+diff --git a/test_fix b/test_fix
+new file mode 100755
+index 00000000000..7af6ded7687
+Binary files /dev/null and b/test_fix differ

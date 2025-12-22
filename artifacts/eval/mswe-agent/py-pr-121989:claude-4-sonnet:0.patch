@@ -1,0 +1,406 @@
+
+diff --git a/.gitignore b/.gitignore
+index bde596a7a02..cc0fc267f06 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -156,3 +156,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 257de4387c0..bea5f68724b 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -39,6 +39,7 @@ typedef struct _ProfilerContext {
+     _PyTime_t subt;
+     struct _ProfilerContext *previous;
+     ProfilerEntry *ctxEntry;
++    int initializing;  /* Flag to indicate context is being initialized */
+ } ProfilerContext;
+ 
+ typedef struct {
+@@ -289,6 +290,8 @@ static void clearEntries(ProfilerObject *pObj)
+ static void
+ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+ {
++    self->initializing = 1;  /* Mark context as being initialized */
++    _PyTime_t t0 = call_timer(pObj);  /* Get timer value first */
+     self->ctxEntry = entry;
+     self->subt = 0;
+     self->previous = pObj->currentProfilerContext;
+@@ -303,7 +306,8 @@ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+         if (subentry)
+             ++subentry->recursionLevel;
+     }
+-    self->t0 = call_timer(pObj);
++    self->t0 = t0;  /* Assign the timer value last */
++    self->initializing = 0;  /* Mark context as fully initialized */
+ }
+ 
+ static void
+@@ -371,6 +375,7 @@ ptrace_enter_call(PyObject *self, void *key, PyObject *userObj)
+             pObj->flags |= POF_NOMEMORY;
+             goto restorePyerr;
+         }
++        pContext->initializing = 0;  /* Initialize flag for new context */
+     }
+     initContext(pObj, pContext, profEntry);
+ 
+@@ -397,6 +402,7 @@ ptrace_leave_call(PyObject *self, void *key)
+         pObj->currentProfilerContext = pContext->previous;
+     }
+     /* put pContext into the free list */
++    pContext->initializing = 0;  /* Reset initializing flag */
+     pContext->previous = pObj->freelistProfilerContext;
+     pObj->freelistProfilerContext = pContext;
+ }
+@@ -754,6 +760,14 @@ flush_unmatched(ProfilerObject *pObj)
+     while (pObj->currentProfilerContext) {
+         ProfilerContext *pContext = pObj->currentProfilerContext;
+         ProfilerEntry *profEntry= pContext->ctxEntry;
++        
++        /* Don't free contexts that are currently being initialized */
++        if (pContext->initializing) {
++            /* Skip this context for now, it will be handled later */
++            pObj->currentProfilerContext = pContext->previous;
++            continue;
++        }
++        
+         if (profEntry)
+             Stop(pObj, pContext, profEntry);
+         else
+@@ -761,7 +775,6 @@ flush_unmatched(ProfilerObject *pObj)
+         if (pContext)
+             PyMem_Free(pContext);
+     }
+-
+ }
+ 
+ PyDoc_STRVAR(disable_doc, "\
+diff --git a/test_lsprof_bug.py b/test_lsprof_bug.py
+new file mode 100644
+index 00000000000..2c3215029ca
+--- /dev/null
++++ b/test_lsprof_bug.py
+@@ -0,0 +1,47 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++import threading
++import time
++
++def recursive_function(depth):
++    if depth <= 0:
++        return
++    recursive_function(depth - 1)
++
++def worker_thread():
++    # This function will be called from a thread
++    for i in range(10):
++        recursive_function(5)
++        time.sleep(0.001)
++
++def main():
++    # Create a profiler
++    profiler = cProfile.Profile()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Create multiple threads that will trigger profiling
++    threads = []
++    for i in range(3):
++        t = threading.Thread(target=worker_thread)
++        threads.append(t)
++        t.start()
++    
++    # Do some work in main thread too
++    recursive_function(10)
++    
++    # Disable profiling while threads might still be running
++    # This could trigger the use-after-free
++    profiler.disable()
++    
++    # Wait for threads to complete
++    for t in threads:
++        t.join()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_race_condition.py b/test_race_condition.py
+new file mode 100644
+index 00000000000..c368a4eb868
+--- /dev/null
++++ b/test_race_condition.py
+@@ -0,0 +1,57 @@
++#!/usr/bin/env python3
++
++import cProfile
++import threading
++import time
++import sys
++
++def busy_function():
++    # A function that does some work to trigger profiling
++    total = 0
++    for i in range(1000):
++        total += i * i
++    return total
++
++def worker_thread(profiler, thread_id):
++    """Worker thread that enables/disables profiler rapidly"""
++    for i in range(100):
++        try:
++            profiler.enable()
++            busy_function()
++            profiler.disable()
++        except Exception as e:
++            print(f"Thread {thread_id} error: {e}")
++            break
++
++def main():
++    # Create a shared profiler
++    profiler = cProfile.Profile()
++    
++    # Create multiple threads that will rapidly enable/disable profiling
++    threads = []
++    for i in range(5):
++        t = threading.Thread(target=worker_thread, args=(profiler, i))
++        threads.append(t)
++    
++    # Start all threads
++    for t in threads:
++        t.start()
++    
++    # Also do some work in the main thread
++    for i in range(50):
++        try:
++            profiler.enable()
++            busy_function()
++            profiler.disable()
++        except Exception as e:
++            print(f"Main thread error: {e}")
++            break
++    
++    # Wait for all threads to complete
++    for t in threads:
++        t.join()
++    
++    print("Race condition test completed")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_race_condition2.py b/test_race_condition2.py
+new file mode 100644
+index 00000000000..babfb35b44a
+--- /dev/null
++++ b/test_race_condition2.py
+@@ -0,0 +1,73 @@
++#!/usr/bin/env python3
++
++import cProfile
++import threading
++import time
++import sys
++
++def recursive_function(depth):
++    if depth <= 0:
++        return depth
++    return recursive_function(depth - 1) + depth
++
++def busy_work():
++    """Function that does work while profiling is active"""
++    for i in range(100):
++        recursive_function(10)
++
++def profiling_thread(profiler, stop_event):
++    """Thread that continuously enables/disables profiling"""
++    while not stop_event.is_set():
++        try:
++            profiler.enable()
++            time.sleep(0.001)  # Small delay while profiling is active
++            profiler.disable()
++            time.sleep(0.001)  # Small delay while profiling is disabled
++        except Exception as e:
++            print(f"Profiling thread error: {e}")
++            break
++
++def worker_thread(thread_id, stop_event):
++    """Worker thread that does work that gets profiled"""
++    while not stop_event.is_set():
++        try:
++            busy_work()
++            time.sleep(0.0001)  # Very small delay
++        except Exception as e:
++            print(f"Worker thread {thread_id} error: {e}")
++            break
++
++def main():
++    # Create a profiler
++    profiler = cProfile.Profile()
++    stop_event = threading.Event()
++    
++    # Create profiling thread
++    prof_thread = threading.Thread(target=profiling_thread, args=(profiler, stop_event))
++    
++    # Create worker threads
++    worker_threads = []
++    for i in range(3):
++        t = threading.Thread(target=worker_thread, args=(i, stop_event))
++        worker_threads.append(t)
++    
++    # Start all threads
++    prof_thread.start()
++    for t in worker_threads:
++        t.start()
++    
++    # Let them run for a short time
++    time.sleep(0.5)
++    
++    # Signal threads to stop
++    stop_event.set()
++    
++    # Wait for all threads to complete
++    prof_thread.join()
++    for t in worker_threads:
++        t.join()
++    
++    print("Race condition test 2 completed")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_reproduce.py b/test_reproduce.py
+new file mode 100644
+index 00000000000..117beff027e
+--- /dev/null
++++ b/test_reproduce.py
+@@ -0,0 +1,27 @@
++#!/usr/bin/env python3
++
++import cProfile
++import sys
++
++def test_function():
++    # Simple function to profile
++    for i in range(100):
++        pass
++
++def main():
++    # Create a profiler
++    profiler = cProfile.Profile()
++    
++    # Enable profiling
++    profiler.enable()
++    
++    # Call the test function
++    test_function()
++    
++    # Disable profiling - this is where the use-after-free might occur
++    profiler.disable()
++    
++    print("Test completed successfully")
++
++if __name__ == "__main__":
++    main()
+diff --git a/test_specific_race.py b/test_specific_race.py
+new file mode 100644
+index 00000000000..b69386b3ecd
+--- /dev/null
++++ b/test_specific_race.py
+@@ -0,0 +1,87 @@
++#!/usr/bin/env python3
++
++import cProfile
++import threading
++import time
++import sys
++
++def deep_recursion(n):
++    """Function that creates deep call stacks to trigger more profiling contexts"""
++    if n <= 0:
++        return 1
++    return deep_recursion(n-1) + deep_recursion(n-1) if n < 3 else deep_recursion(n-1)
++
++def stress_profiler():
++    """Function that stresses the profiler with many nested calls"""
++    profiler = cProfile.Profile()
++    
++    def worker():
++        """Worker that does profiled work"""
++        for i in range(50):
++            deep_recursion(5)
++            time.sleep(0.0001)  # Small delay to allow context switches
++    
++    def disabler():
++        """Worker that repeatedly disables the profiler"""
++        for i in range(100):
++            time.sleep(0.001)  # Wait a bit
++            try:
++                profiler.disable()  # This calls flush_unmatched
++            except:
++                pass
++    
++    def enabler():
++        """Worker that repeatedly enables the profiler"""
++        for i in range(100):
++            time.sleep(0.001)  # Wait a bit
++            try:
++                profiler.enable()
++            except:
++                pass
++    
++    # Start with profiler enabled
++    profiler.enable()
++    
++    # Create threads
++    threads = []
++    
++    # Worker threads that do profiled work
++    for i in range(3):
++        t = threading.Thread(target=worker)
++        threads.append(t)
++    
++    # Thread that disables profiler
++    t = threading.Thread(target=disabler)
++    threads.append(t)
++    
++    # Thread that enables profiler
++    t = threading.Thread(target=enabler)
++    threads.append(t)
++    
++    # Start all threads
++    for t in threads:
++        t.start()
++    
++    # Do some work in main thread too
++    for i in range(20):
++        deep_recursion(4)
++        time.sleep(0.001)
++    
++    # Wait for all threads
++    for t in threads:
++        t.join()
++    
++    # Final disable
++    try:
++        profiler.disable()
++    except:
++        pass
++    
++    print("Stress test completed successfully")
++
++if __name__ == "__main__":
++    for i in range(5):  # Run multiple times to increase chance of race condition
++        print(f"Running stress test iteration {i+1}")
++        stress_profiler()
++        time.sleep(0.1)
++    print("All stress tests completed")

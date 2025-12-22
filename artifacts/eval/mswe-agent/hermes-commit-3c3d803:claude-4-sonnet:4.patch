@@ -1,0 +1,77 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/reproduce_overflow.js b/reproduce_overflow.js
+new file mode 100644
+index 000000000..f9cdfe32f
+--- /dev/null
++++ b/reproduce_overflow.js
+@@ -0,0 +1,11 @@
++// Reproduce the stack overflow issue
++try {
++    // Create a very large string like the original POC
++    var largeString = new Uint16Array(33880).join(-1);
++    print("Created large string of length:", largeString.length);
++    
++    // Try to eval it - this might trigger the regex stack overflow
++    eval(largeString);
++} catch (e) {
++    print("Error:", e.message);
++}
+diff --git a/test_regex_overflow.js b/test_regex_overflow.js
+new file mode 100644
+index 000000000..267f642f3
+--- /dev/null
++++ b/test_regex_overflow.js
+@@ -0,0 +1,19 @@
++// Test case to trigger regex stack overflow with nested lookaround assertions
++// This creates a pattern that can cause infinite recursion in lookaround processing
++var pattern = /(?=(?=(?=(?=(?=(?=(?=(?=(?=(?=a))))))))))/;
++var str = "a";
++try {
++    var result = pattern.test(str);
++    print("Pattern matched:", result);
++} catch (e) {
++    print("Error:", e.message);
++}
++
++// Try another pattern that might cause recursion
++var pattern2 = /(?=a(?=a(?=a(?=a(?=a(?=a(?=a(?=a(?=a(?=a))))))))))/;
++try {
++    var result2 = pattern2.test("aaaaaaaaaa");
++    print("Pattern2 matched:", result2);
++} catch (e) {
++    print("Error2:", e.message);
++}
+diff --git a/test_smaller.js b/test_smaller.js
+new file mode 100644
+index 000000000..b300fe35a
+--- /dev/null
++++ b/test_smaller.js
+@@ -0,0 +1,9 @@
++// Test with smaller size to see if we can trigger regex stack overflow
++try {
++    // Try with a smaller but still large size
++    var largeString = new Uint16Array(10000).join(-1);
++    print("Created string of length:", largeString.length);
++    eval(largeString);
++} catch (e) {
++    print("Error:", e.message);
++}

@@ -1,0 +1,50 @@
+
+diff --git a/.gitignore b/.gitignore
+index 02b6d1ad7..15fa78f8f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -28,3 +28,13 @@ contrib/vms/.vagrant
+ CMakeUserPresets.json
+ 
+ *cppcheck*
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/quicktimevideo.cpp b/src/quicktimevideo.cpp
+index 352fe4b0d..f548b80ac 100644
+--- a/src/quicktimevideo.cpp
++++ b/src/quicktimevideo.cpp
+@@ -830,20 +830,21 @@ void QuickTimeVideo::userDataDecoder(size_t size_external) {
+     else if (equalsQTimeTag(buf, "CNCV") || equalsQTimeTag(buf, "CNFV") || equalsQTimeTag(buf, "CNMN") ||
+              equalsQTimeTag(buf, "NCHD") || equalsQTimeTag(buf, "FFMV")) {
+       io_->readOrThrow(buf.data(), size - 8);
+-      xmpData_[exvGettext(tv->label_)] = Exiv2::toString(buf.data());
++      if (tv) {
++        xmpData_[exvGettext(tv->label_)] = Exiv2::toString(buf.data());
++      }
+     }
+-
+     else if (equalsQTimeTag(buf, "CMbo") || equalsQTimeTag(buf, "Cmbo")) {
+       io_->readOrThrow(buf.data(), 2);
+       buf.data()[2] = '\0';
+       tv_internal = find(cameraByteOrderTags, Exiv2::toString(buf.data()));
+-
+-      if (tv_internal)
++      if (tv && tv_internal)
+         xmpData_[exvGettext(tv->label_)] = exvGettext(tv_internal->label_);
+-      else
++      else if (tv)
+         xmpData_[exvGettext(tv->label_)] = Exiv2::toString(buf.data());
+     }
+ 
++
+     else if (tv) {
+       const size_t tv_size = size - 12;
+       if (tv_size >= buf.size()) {

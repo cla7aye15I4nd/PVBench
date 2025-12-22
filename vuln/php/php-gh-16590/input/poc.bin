@@ -1,0 +1,19 @@
+<?php
+
+class C {
+    function __serialize() {
+        $_SESSION = [];
+        return [];
+    }
+}
+
+session_start();
+
+$_SESSION['Lz'] = new C;
+for ($i = 0; $i < 2; $i++) {
+    $_SESSION[$i] = $i;
+}
+
+var_dump(session_encode());
+
+?>

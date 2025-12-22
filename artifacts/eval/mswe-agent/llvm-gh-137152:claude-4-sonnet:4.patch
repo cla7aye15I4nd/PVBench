@@ -1,0 +1,173 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/debug_test.ll b/debug_test.ll
+new file mode 100644
+index 000000000000..0da55db2b2ef
+--- /dev/null
++++ b/debug_test.ll
+@@ -0,0 +1,22 @@
++target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
++target triple = "x86_64-unknown-linux-gnu"
++
++@g = internal global i32 0, align 4
++
++define void @set_true() {
++entry:
++  store atomic i32 1, ptr @g seq_cst, align 4
++  ret void
++}
++
++define void @set_false() {
++entry:
++  store atomic i32 0, ptr @g seq_cst, align 4
++  ret void
++}
++
++define i32 @get_value() {
++entry:
++  %val = load atomic i32, ptr @g seq_cst, align 4
++  ret i32 %val
++}
+diff --git a/llvm/lib/Transforms/IPO/GlobalOpt.cpp b/llvm/lib/Transforms/IPO/GlobalOpt.cpp
+index cfba8dcc05b2..e1b928f9be4f 100644
+--- a/llvm/lib/Transforms/IPO/GlobalOpt.cpp
++++ b/llvm/lib/Transforms/IPO/GlobalOpt.cpp
+@@ -1279,9 +1279,11 @@ static bool TryToShrinkGlobalToBoolean(GlobalVariable *GV, Constant *OtherVal) {
+         if (LoadInst *LI = dyn_cast<LoadInst>(StoredVal)) {
+           assert(LI->getOperand(0) == GV && "Not a copy!");
+           // Insert a new load, to preserve the saved value.
++
+           StoreVal =
+               new LoadInst(NewGV->getValueType(), NewGV, LI->getName() + ".b",
+-                           false, Align(1), LI->getOrdering(),
++                           false, Align(1), 
++                           NewGV->getValueType()->isIntegerTy(1) ? AtomicOrdering::NotAtomic : LI->getOrdering(),
+                            LI->getSyncScopeID(), LI->getIterator());
+           cast<LoadInst>(StoreVal)->setDebugLoc(LI->getDebugLoc());
+         } else {
+@@ -1292,7 +1294,8 @@ static bool TryToShrinkGlobalToBoolean(GlobalVariable *GV, Constant *OtherVal) {
+         }
+       }
+       StoreInst *NSI =
+-          new StoreInst(StoreVal, NewGV, false, Align(1), SI->getOrdering(),
++          new StoreInst(StoreVal, NewGV, false, Align(1), 
++                        NewGV->getValueType()->isIntegerTy(1) ? AtomicOrdering::NotAtomic : SI->getOrdering(),
+                         SI->getSyncScopeID(), SI->getIterator());
+       NSI->setDebugLoc(SI->getDebugLoc());
+     } else {
+@@ -1300,7 +1303,8 @@ static bool TryToShrinkGlobalToBoolean(GlobalVariable *GV, Constant *OtherVal) {
+       LoadInst *LI = cast<LoadInst>(UI);
+       LoadInst *NLI = new LoadInst(
+           NewGV->getValueType(), NewGV, LI->getName() + ".b", false, Align(1),
+-          LI->getOrdering(), LI->getSyncScopeID(), LI->getIterator());
++          NewGV->getValueType()->isIntegerTy(1) ? AtomicOrdering::NotAtomic : LI->getOrdering(), 
++          LI->getSyncScopeID(), LI->getIterator());
+       Instruction *NSI;
+       if (IsOneZero)
+         NSI = new ZExtInst(NLI, LI->getType(), "", LI->getIterator());
+diff --git a/poc_atomic.ll b/poc_atomic.ll
+new file mode 100644
+index 000000000000..0ce5ba76c4b3
+--- /dev/null
++++ b/poc_atomic.ll
+@@ -0,0 +1,11 @@
++target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
++target triple = "x86_64-unknown-linux-gnu"
++
++@g.init = global i1 false
++
++define void @test() {
++entry:
++  store atomic i1 true, ptr @g.init seq_cst, align 1
++  %g.init.val = load atomic i1, ptr @g.init seq_cst, align 1
++  ret void
++}
+diff --git a/test_atomic_bool.ll b/test_atomic_bool.ll
+new file mode 100644
+index 000000000000..0da55db2b2ef
+--- /dev/null
++++ b/test_atomic_bool.ll
+@@ -0,0 +1,22 @@
++target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
++target triple = "x86_64-unknown-linux-gnu"
++
++@g = internal global i32 0, align 4
++
++define void @set_true() {
++entry:
++  store atomic i32 1, ptr @g seq_cst, align 4
++  ret void
++}
++
++define void @set_false() {
++entry:
++  store atomic i32 0, ptr @g seq_cst, align 4
++  ret void
++}
++
++define i32 @get_value() {
++entry:
++  %val = load atomic i32, ptr @g seq_cst, align 4
++  ret i32 %val
++}
+diff --git a/test_globalopt.ll b/test_globalopt.ll
+new file mode 100644
+index 000000000000..e119a764ae55
+--- /dev/null
++++ b/test_globalopt.ll
+@@ -0,0 +1,22 @@
++target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
++target triple = "x86_64-unknown-linux-gnu"
++
++@g = global i32 0
++
++define void @test() {
++entry:
++  store atomic i32 1, ptr @g seq_cst, align 4
++  ret void
++}
++
++define void @test2() {
++entry:
++  store atomic i32 0, ptr @g seq_cst, align 4
++  ret void
++}
++
++define i32 @test3() {
++entry:
++  %val = load atomic i32, ptr @g seq_cst, align 4
++  ret i32 %val
++}
+diff --git a/test_script.sh b/test_script.sh
+new file mode 100755
+index 000000000000..fedc876adabf
+--- /dev/null
++++ b/test_script.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++./build/bin/opt -S -passes=globalopt $1
+diff --git a/test_valid_atomic.ll b/test_valid_atomic.ll
+new file mode 100644
+index 000000000000..8b137891791f
+--- /dev/null
++++ b/test_valid_atomic.ll
+@@ -0,0 +1 @@
++

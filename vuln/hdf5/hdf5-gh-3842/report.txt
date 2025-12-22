@@ -1,0 +1,19 @@
+==18201==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000020 (pc 0x7b3d74036f3f bp 0x7ffed104f610 sp 0x7ffed104f120 T0)
+==18201==The signal is caused by a READ memory access.
+==18201==Hint: address points to the zero page.
+    #0 0x7b3d74036f3f in H5D__scatgath_write /tmp/hdf5-gh-3842/build/src/H5Dscatgath.c:747:13
+    #1 0x7b3d73fbfbac in H5D__contig_write /tmp/hdf5-gh-3842/build/src/H5Dcontig.c:915:13
+    #2 0x7b3d74026428 in H5D__write /tmp/hdf5-gh-3842/build/src/H5Dio.c:823:17
+    #3 0x7b3d74a63d45 in H5VL__native_dataset_write /tmp/hdf5-gh-3842/build/src/H5VLnative_dataset.c:419:9
+    #4 0x7b3d74a1b120 in H5VL__dataset_write /tmp/hdf5-gh-3842/build/src/H5VLcallback.c:2236:9
+    #5 0x7b3d74a1ac7d in H5VL_dataset_write_direct /tmp/hdf5-gh-3842/build/src/H5VLcallback.c:2280:9
+    #6 0x7b3d73f4d06f in H5D__write_api_common /tmp/hdf5-gh-3842/build/src/H5D.c:1315:9
+    #7 0x7b3d73f4bb34 in H5Dwrite /tmp/hdf5-gh-3842/build/src/H5D.c:1369:9
+    #8 0x5733460acdef in main /tmp/hdf5-gh-3842/build/poc.c:84:7
+    #9 0x7b3d7390b1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x7b3d7390b28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x573345fd3414 in _start (/tmp/hdf5-gh-3842/build/poc+0x2c414) (BuildId: b93a0d624ddea3192780534eb53b1948ed7ed193)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/hdf5-gh-3842/build/src/H5Dscatgath.c:747:13 in H5D__scatgath_write
+==18201==ABORTING

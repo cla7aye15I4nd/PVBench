@@ -1,0 +1,250 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8ed2f65d..5ee85e95 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,8 @@ Examples/Tutorials/**/*.exe
+ #venv
+ .venv/**
+ venv/**
++Build/
++bin/
++lib/
++*.out
++*.exe
+diff --git a/Packet++/header/DnsResourceData.h b/Packet++/header/DnsResourceData.h
+index 9acd8a76..c7ef933d 100644
+--- a/Packet++/header/DnsResourceData.h
++++ b/Packet++/header/DnsResourceData.h
+@@ -83,7 +83,7 @@ namespace pcpp
+ 		 * @return True if the DNS RR data was successfully converted into a byte array and written to the given array or
+ 		 * false if stored DNS RR data is invalid or if it could not be written to the given array
+ 		 */
+-		virtual bool toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource* dnsResource) const = 0;
++		virtual bool toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource* dnsResource) const = 0;
+ 	};
+ 
+ 
+@@ -165,7 +165,7 @@ namespace pcpp
+ 		// implement abstract methods
+ 
+ 		std::string toString() const { return m_Data; }
+-		bool toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource* dnsResource) const;
++		bool toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource* dnsResource) const;
+ 	};
+ 
+ 
+@@ -214,7 +214,7 @@ namespace pcpp
+ 		// implement abstract methods
+ 
+ 		std::string toString() const { return m_Data.toString(); }
+-		bool toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource* dnsResource) const;
++		bool toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource* dnsResource) const;
+ 	};
+ 
+ 
+@@ -263,7 +263,7 @@ namespace pcpp
+ 		// implement abstract methods
+ 
+ 		std::string toString() const { return m_Data.toString(); }
+-		bool toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource* dnsResource) const;
++		bool toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource* dnsResource) const;
+ 	};
+ 
+ 
+@@ -337,7 +337,7 @@ namespace pcpp
+ 		 */
+ 		std::string toString() const;
+ 
+-		bool toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource* dnsResource) const;
++		bool toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource* dnsResource) const;
+ 
+ 	private:
+ 		MxData m_Data;
+@@ -391,7 +391,7 @@ namespace pcpp
+ 		// implement abstract methods
+ 
+ 		std::string toString() const;
+-		bool toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource* dnsResource) const;
++		bool toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource* dnsResource) const;
+ 	};
+ 
+ }
+diff --git a/Packet++/src/DnsResource.cpp b/Packet++/src/DnsResource.cpp
+index 8c72cc57..0694e2aa 100644
+--- a/Packet++/src/DnsResource.cpp
++++ b/Packet++/src/DnsResource.cpp
+@@ -214,8 +214,8 @@ DnsClass IDnsResource::getDnsClass() const
+ {
+ 	uint16_t dnsClass = *(uint16_t*)(getRawData() + m_NameLength + sizeof(uint16_t));
+ 	return (DnsClass)be16toh(dnsClass);
++	return (DnsClass)be16toh(dnsClass);
+ }
+-
+ void IDnsResource::setDnsClass(DnsClass newClass)
+ {
+ 	uint16_t newClassAsInt = htobe16((uint16_t)newClass);
+@@ -406,7 +406,7 @@ bool DnsResource::setData(IDnsResourceData* data)
+ 	}
+ 
+ 	// convert the IDnsResourceData to byte array
+-	if (!data->toByteArr(dataAsByteArr, dataLength, this))
++	if (!data->toByteArr(dataAsByteArr, sizeof(dataAsByteArr), dataLength, this))
+ 	{
+ 		PCPP_LOG_ERROR("Cannot convert DNS resource data to byte array, data is probably invalid");
+ 		return false;
+@@ -455,5 +455,4 @@ void DnsResource::setCustomDnsClass(uint16_t customValue)
+ {
+ 	memcpy(getRawData() + m_NameLength + sizeof(uint16_t), &customValue, sizeof(uint16_t));
+ }
+-
+-}
++} // namespace pcpp
+diff --git a/Packet++/src/DnsResourceData.cpp b/Packet++/src/DnsResourceData.cpp
+index 8183511d..c974f2d1 100644
+--- a/Packet++/src/DnsResourceData.cpp
++++ b/Packet++/src/DnsResourceData.cpp
+@@ -46,10 +46,17 @@ StringDnsResourceData::StringDnsResourceData(const uint8_t* dataPtr, size_t data
+ 		PCPP_LOG_ERROR("Cannot decode name, dataPtr is NULL or length is 0");
+ }
+ 
+-bool StringDnsResourceData::toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource* dnsResource) const
++bool StringDnsResourceData::toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource* dnsResource) const
+ {
+-	encodeName(m_Data, (char*)arr, arrLength, dnsResource);
+-	return true;
++    size_t requiredLen = 0;
++    encodeName(m_Data, (char*)arr, requiredLen, dnsResource);
++    if (requiredLen > arrCapacity) {
++        PCPP_LOG_ERROR("StringDnsResourceData: buffer too small for encoded name");
++        return false;
++    }
++    arrLength = requiredLen;
++    encodeName(m_Data, (char*)arr, arrLength, dnsResource);
++    return true;
+ }
+ 
+ IPv4DnsResourceData::IPv4DnsResourceData(const uint8_t* dataPtr, size_t dataLen)
+@@ -57,24 +64,23 @@ IPv4DnsResourceData::IPv4DnsResourceData(const uint8_t* dataPtr, size_t dataLen)
+ 	if (dataLen != 4)
+ 	{
+ 		PCPP_LOG_ERROR("DNS type is A but resource length is not 4 - malformed data");
+-		return;
+ 	}
+-
+-	uint32_t addrAsInt = *(uint32_t*)dataPtr;
+-	m_Data = IPv4Address(addrAsInt);
+ }
+ 
+-bool IPv4DnsResourceData::toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource*) const
++bool IPv4DnsResourceData::toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource*) const
+ {
+-	if (!m_Data.isValid())
+-	{
+-		PCPP_LOG_ERROR("Cannot convert IPv4 address to byte array because address is not valid");
+-		return false;
+-	}
+-
+-	arrLength = sizeof(uint32_t);
+-	memcpy(arr, m_Data.toBytes(), sizeof(uint32_t));
+-	return true;
++    if (!m_Data.isValid())
++    {
++        PCPP_LOG_ERROR("Cannot convert IPv4 address to byte array because address is not valid");
++        return false;
++    }
++    if (arrCapacity < sizeof(uint32_t)) {
++        PCPP_LOG_ERROR("IPv4DnsResourceData: buffer too small for IPv4 address");
++        return false;
++    }
++    arrLength = sizeof(uint32_t);
++    memcpy(arr, m_Data.toBytes(), sizeof(uint32_t));
++    return true;
+ }
+ 
+ IPv6DnsResourceData::IPv6DnsResourceData(const uint8_t* dataPtr, size_t dataLen)
+@@ -88,17 +94,20 @@ IPv6DnsResourceData::IPv6DnsResourceData(const uint8_t* dataPtr, size_t dataLen)
+ 	m_Data = IPv6Address((uint8_t*)dataPtr);
+ }
+ 
+-bool IPv6DnsResourceData::toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource*) const
++bool IPv6DnsResourceData::toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource*) const
+ {
+-	if (!m_Data.isValid())
+-	{
+-		PCPP_LOG_ERROR("Cannot convert IPv6 address to byte array because address is not valid");
+-		return false;
+-	}
+-
+-	arrLength = 16;
+-	m_Data.copyTo(arr);
+-	return true;
++    if (!m_Data.isValid())
++    {
++        PCPP_LOG_ERROR("Cannot convert IPv6 address to byte array because address is not valid");
++        return false;
++    }
++    if (arrCapacity < 16) {
++        PCPP_LOG_ERROR("IPv6DnsResourceData: buffer too small for IPv6 address");
++        return false;
++    }
++    arrLength = 16;
++    m_Data.copyTo(arr);
++    return true;
+ }
+ 
+ MxDnsResourceData::MxDnsResourceData(uint8_t* dataPtr, size_t dataLen, IDnsResource* dnsResource)
+@@ -140,14 +149,20 @@ std::string MxDnsResourceData::toString() const
+ 	return result.str();
+ }
+ 
+-bool MxDnsResourceData::toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource* dnsResource) const
++bool MxDnsResourceData::toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource* dnsResource) const
+ {
+-	uint16_t netOrderPreference = htobe16(m_Data.preference);
+-	memcpy(arr, &netOrderPreference, sizeof(uint16_t));
+-	encodeName(m_Data.mailExchange, (char*)(arr + sizeof(uint16_t)), arrLength, dnsResource);
+-	arrLength += sizeof(uint16_t);
+-
+-	return true;
++    size_t nameLen = 0;
++    encodeName(m_Data.mailExchange, nullptr, nameLen, dnsResource);
++    size_t totalLen = sizeof(uint16_t) + nameLen;
++    if (arrCapacity < totalLen) {
++        PCPP_LOG_ERROR("MxDnsResourceData: buffer too small for MX data");
++        return false;
++    }
++    uint16_t netOrderPreference = htobe16(m_Data.preference);
++    memcpy(arr, &netOrderPreference, sizeof(uint16_t));
++    encodeName(m_Data.mailExchange, (char*)(arr + sizeof(uint16_t)), nameLen, dnsResource);
++    arrLength = totalLen;
++    return true;
+ }
+ 
+ GenericDnsResourceData::GenericDnsResourceData(uint8_t* dataPtr, size_t dataLen)
+@@ -214,17 +229,15 @@ std::string GenericDnsResourceData::toString() const
+ 	return byteArrayToHexString(m_Data, m_DataLen);
+ }
+ 
+-bool GenericDnsResourceData::toByteArr(uint8_t* arr, size_t& arrLength, IDnsResource*) const
++bool GenericDnsResourceData::toByteArr(uint8_t* arr, size_t arrCapacity, size_t& arrLength, IDnsResource*) const
+ {
+-	if (m_DataLen == 0 || m_Data == nullptr)
+-	{
+-		PCPP_LOG_ERROR("Input data is null or illegal");
+-		return false;
+-	}
+-
+-	arrLength = m_DataLen;
+-	memcpy(arr, m_Data, m_DataLen);
+-	return true;
++    if (m_DataLen > arrCapacity) {
++        PCPP_LOG_ERROR("GenericDnsResourceData: buffer too small for resource data");
++        return false;
++    }
++    memcpy(arr, m_Data, m_DataLen);
++    arrLength = m_DataLen;
++    return true;
+ }
+ 
+ }

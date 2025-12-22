@@ -1,0 +1,72 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6a0e7e46b..d217e0f49 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -35,3 +35,13 @@ tags
+ 
+ /doc/api
+ /doc/capi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/hash.c b/src/hash.c
+index 289f02a91..bc2114423 100644
+--- a/src/hash.c
++++ b/src/hash.c
+@@ -98,14 +98,10 @@ typedef struct index_buckets_iter {
+   uint32_t step;
+ } index_buckets_iter;
+ 
+-/*
+- * `c_` :: receiver class (category)
+- * `n_` :: attribute name
+- * `t_` :: attribute type
+- * `p_` :: struct member path
+- * `k_` :: macro key
+- */
+-#define DEFINE_GETTER(c_, n_, t_, p_)                                         \
++
++
++static uint32_t ib_byte_size_for(uint32_t ib_bit);
++#define DEFINE_GETTER(c_, n_, t_, p_) \
+   MRB_INLINE t_ c_##_##n_(const struct RHash *h) {return h->p_;}
+ #define DEFINE_SETTER(c_, n_, t_, p_)                                         \
+   MRB_INLINE void c_##_set_##n_(struct RHash *h, t_ v) {h->p_ = v;}
+@@ -636,6 +632,11 @@ ib_it_next(index_buckets_iter *it)
+   uint32_t slid_ary_index = slid_bit_pos / IB_TYPE_BIT;
+   it->ary_index = slid_ary_index + it->pos / IB_TYPE_BIT * it->bit;
+   it->shift2 = (slid_ary_index + 1) * IB_TYPE_BIT - slid_bit_pos - 1;
++  uint32_t ib_ary_size = ib_byte_size_for(it->bit) / sizeof(uint32_t);
++  if (it->ary_index >= ib_ary_size) {
++    it->ea_index = ib_it_deleted_value(it);
++    return;
++  }
+   it->ea_index = (ht_ib(it->h)[it->ary_index] >> it->shift2) & it->mask;
+   if (IB_TYPE_BIT - it->bit < it->shift2) {
+     it->shift1 = IB_TYPE_BIT - it->shift2;
+@@ -661,11 +662,15 @@ ib_it_set(index_buckets_iter *it, uint32_t ea_index)
+   if (it->shift1) {
+     i = it->ary_index - 1;
+     mask = it->mask >> it->shift1;
+-    ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index >> it->shift1);
++    if (i < ib_byte_size_for(it->bit) / sizeof(uint32_t)) {
++      ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index >> it->shift1);
++    }
+   }
+   i = it->ary_index;
+   mask = it->mask << it->shift2;
+-  ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index << it->shift2);
++  if (i < ib_byte_size_for(it->bit) / sizeof(uint32_t)) {
++    ht_ib(it->h)[i] = (ht_ib(it->h)[i] & ~mask) | (ea_index << it->shift2);
++  }
+ }
+ 
+ static void

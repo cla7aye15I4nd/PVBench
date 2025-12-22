@@ -1,0 +1,16 @@
+==9878==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000008 (pc 0x60104c5acbce bp 0x7ffd11f5d830 sp 0x7ffd11f5d7e0 T0)
+==9878==The signal is caused by a READ memory access.
+==9878==Hint: address points to the zero page.
+    #0 0x60104c5acbce in wabt::Stream::WriteData(void const*, unsigned long, char const*, wabt::PrintChars) /tmp/wabt-gh-989/build/src/stream.cc:57:15
+    #1 0x60104c5ad07d in wabt::Stream::Writef(char const*, ...) /tmp/wabt-gh-989/build/src/stream.cc:75:3
+    #2 0x60104c5ac8f6 in wabt::Stream::WriteMemoryDump(void const*, unsigned long, unsigned long, wabt::PrintChars, char const*, char const*) /tmp/wabt-gh-989/build/src/stream.cc:92:5
+    #3 0x60104c53be84 in WriteBufferToFile(wabt::string_view, wabt::OutputBuffer const&) /tmp/wabt-gh-989/build/src/tools/wat2wasm.cc:109:21
+    #4 0x60104c53b1b2 in ProgramMain(int, char**) /tmp/wabt-gh-989/build/src/tools/wat2wasm.cc:156:9
+    #5 0x60104c53bee1 in main /tmp/wabt-gh-989/build/src/tools/wat2wasm.cc:169:10
+    #6 0x74828846b1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x74828846b28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x60104c45f424 in _start (/tmp/wabt-gh-989/build/build/wat2wasm+0x1b9424) (BuildId: e94ba53289171b1dfb9bc17629ff38ee6e153e8e)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/wabt-gh-989/build/src/stream.cc:57:15 in wabt::Stream::WriteData(void const*, unsigned long, char const*, wabt::PrintChars)
+==9878==ABORTING

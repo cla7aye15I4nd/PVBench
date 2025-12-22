@@ -1,0 +1,13 @@
+id: v8-regress-crbug-1486048
+project: v8
+sanitizer: V8Sanitizer
+type: Heap Buffer Overflow
+trigger_commit: 38a387798e502b200b1a53cb8e413f93322f2309
+binary: d8
+patch:
+  commit: af684939d2666aabdb056e9278a2f568a1f93066
+  date: 2023-09-26 16:06:03+00:00
+reference:
+- https://chromium.googlesource.com/v8/v8.git
+- https://chromium.googlesource.com/v8/v8.git/+/38a387798e502b200b1a53cb8e413f93322f2309
+- https://chromium.googlesource.com/v8/v8.git/+/af684939d2666aabdb056e9278a2f568a1f93066

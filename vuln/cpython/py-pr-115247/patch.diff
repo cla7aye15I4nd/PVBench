@@ -1,0 +1,22 @@
+diff --git a/Misc/NEWS.d/next/Security/2024-02-12-00-33-01.gh-issue-115243.e1oGX8.rst b/Misc/NEWS.d/next/Security/2024-02-12-00-33-01.gh-issue-115243.e1oGX8.rst
+new file mode 100644
+index 00000000000..ae0e910c7d1
+--- /dev/null
++++ b/Misc/NEWS.d/next/Security/2024-02-12-00-33-01.gh-issue-115243.e1oGX8.rst
+@@ -0,0 +1 @@
++Fix possible crashes in :meth:`collections.deque.index` when the deque is concurrently modified.
+diff --git a/Modules/_collectionsmodule.c b/Modules/_collectionsmodule.c
+index ef77d34b10e..4fa76d62bc3 100644
+--- a/Modules/_collectionsmodule.c
++++ b/Modules/_collectionsmodule.c
+@@ -1218,8 +1218,9 @@ deque_index_impl(dequeobject *deque, PyObject *v, Py_ssize_t start,
+     n = stop - i;
+     while (--n >= 0) {
+         CHECK_NOT_END(b);
+-        item = b->data[index];
++        item = Py_NewRef(b->data[index]);
+         cmp = PyObject_RichCompareBool(item, v, Py_EQ);
++        Py_DECREF(item);
+         if (cmp > 0)
+             return PyLong_FromSsize_t(stop - n - 1);
+         if (cmp < 0)

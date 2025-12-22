@@ -1,0 +1,88 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6d3ef302292..5c865635f30 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -130,3 +130,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/js-date-time-format.cc b/src/objects/js-date-time-format.cc
+index c51ac6da12e..9d46186e89e 100644
+--- a/src/objects/js-date-time-format.cc
++++ b/src/objects/js-date-time-format.cc
+@@ -1686,10 +1686,18 @@ std::optional<std::string> GetOffsetTimeZone(Isolate* isolate,
+     return tz;
+   }
+   int32_t p = 3;
++  if (p >= len) {
++    // Error: not enough characters for minutes
++    return std::nullopt;
++  }
+   uint16_t m0 = flat.Get(p);
+   if (m0 == ':') {
+     // Ignore ':'
+     p++;
++    if (p >= len) {
++      // Error: not enough characters after ':'
++      return std::nullopt;
++    }
+     m0 = flat.Get(p);
+   }
+   if (len - p != 2) {
+diff --git a/test_timezone.js b/test_timezone.js
+new file mode 100644
+index 00000000000..1011509b41b
+--- /dev/null
++++ b/test_timezone.js
+@@ -0,0 +1,41 @@
++// Test cases that would trigger the GetOffsetTimeZone function
++// and potentially cause the bounds check failure
++
++try {
++    // Test case 1: Short timezone string that could cause bounds issues
++    console.log("Testing short timezone strings...");
++    
++    // These should trigger the GetOffsetTimeZone parsing
++    var formatter1 = new Intl.DateTimeFormat('en-US', {
++        timeZone: '+01'  // This is 3 characters, could trigger bounds issue
++    });
++    console.log("Test 1 passed: +01");
++    
++    var formatter2 = new Intl.DateTimeFormat('en-US', {
++        timeZone: '+01:'  // This is 4 characters with colon, could trigger bounds issue
++    });
++    console.log("Test 2 passed: +01:");
++    
++} catch (e) {
++    console.log("Error caught:", e.message);
++}
++
++try {
++    // Test case 2: Valid timezone strings that should work
++    console.log("Testing valid timezone strings...");
++    
++    var formatter3 = new Intl.DateTimeFormat('en-US', {
++        timeZone: '+01:30'  // Valid format
++    });
++    console.log("Test 3 passed: +01:30");
++    
++    var formatter4 = new Intl.DateTimeFormat('en-US', {
++        timeZone: '+0130'  // Valid format without colon
++    });
++    console.log("Test 4 passed: +0130");
++    
++} catch (e) {
++    console.log("Error caught:", e.message);
++}
++
++console.log("All tests completed successfully!");

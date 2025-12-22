@@ -1,0 +1,50 @@
+diff --git a/test/data/issue_789_poc1.png b/test/data/issue_789_poc1.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..9d01361b2738ab7f2bfed49d72597d028d45d4f1
+GIT binary patch
+literal 26
+fcmeAS@N?(olHy_jf=p-Ufb7(=^8BjQqErR|Pf!NS
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/bugfixes/github/test_issue_789.py b/tests/bugfixes/github/test_issue_789.py
+new file mode 100644
+index 000000000..70f4be0d1
+--- /dev/null
++++ b/tests/bugfixes/github/test_issue_789.py
+@@ -0,0 +1,34 @@
++import system_tests
++
++
++class SegvInPngImageReadMetadata(
++        metaclass=system_tests.CaseMeta):
++    """
++    Regression test for the bug described in:
++    https://github.com/Exiv2/exiv2/issues/789
++    """
++    url = "https://github.com/Exiv2/exiv2/issues/789"
++
++    filename = system_tests.path(
++        "$data_path/issue_789_poc1.png"
++    )
++    commands = ["$exiv2 $filename"]
++    stdout = [""]
++    stderr = [""]
++    retval = [1]
++
++    compare_stderr = system_tests.check_no_ASAN_UBSAN_errors
++
++class SegvInPngImageReadMetadata2(metaclass=system_tests.CaseMeta):
++    url = "https://github.com/Exiv2/exiv2/issues/789"
++
++    filename = system_tests.path(
++        "$data_path/issue_789_poc1.png"
++    )
++    commands = ["$exiv2 $filename"]
++    stdout = [""]
++    stderr = ["""Exiv2 exception in print action for file $filename:
++corrupted image metadata
++"""
++]
++    retval = [1]

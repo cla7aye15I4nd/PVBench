@@ -1,0 +1,146 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 5cf9eba243b..911f4ef3c7a 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -293,6 +293,11 @@ static void clearEntries(ProfilerObject *pObj)
+ static void
+ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+ {
++    /* Get the timer value first, before setting up context linkage.
++     * This prevents use-after-free if call_timer triggers re-entrant
++     * calls that might disable the profiler and free contexts. */
++    PyTime_t t0 = call_timer(pObj);
++    
+     self->ctxEntry = entry;
+     self->subt = 0;
+     self->previous = pObj->currentProfilerContext;
+@@ -307,26 +312,43 @@ initContext(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+         if (subentry)
+             ++subentry->recursionLevel;
+     }
+-    self->t0 = call_timer(pObj);
++    self->t0 = t0;
+ }
+ 
+ static void
+ Stop(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+ {
+-    PyTime_t tt = call_timer(pObj) - self->t0;
+-    PyTime_t it = tt - self->subt;
+-    if (self->previous)
+-        self->previous->subt += tt;
+-    pObj->currentProfilerContext = self->previous;
++    /* Save all context values before calling timer, since call_timer
++     * might trigger re-entrant calls that free the context. */
++    PyTime_t t0 = self->t0;
++    PyTime_t subt = self->subt;
++    ProfilerContext *previous = self->previous;
++    
++    /* Put the context back in the free list before calling timer,
++     * since the timer call might trigger re-entrant calls that could
++     * free this context. */
++    self->previous = pObj->freelistProfilerContext;
++    pObj->freelistProfilerContext = self;
++    
++    /* Update the current context pointer before calling timer */
++    pObj->currentProfilerContext = previous;
++    
++    /* Now get the current timer value */
++    PyTime_t current_time = call_timer(pObj);
++    PyTime_t tt = current_time - t0;
++    PyTime_t it = tt - subt;
++    
++    if (previous)
++        previous->subt += tt;
+     if (--entry->recursionLevel == 0)
+         entry->tt += tt;
+     else
+         ++entry->recursivecallcount;
+     entry->it += it;
+     entry->callcount++;
+-    if ((pObj->flags & POF_SUBCALLS) && self->previous) {
++    if ((pObj->flags & POF_SUBCALLS) && previous) {
+         /* find or create an entry for me in my caller's entry */
+-        ProfilerEntry *caller = self->previous->ctxEntry;
++        ProfilerEntry *caller = previous->ctxEntry;
+         ProfilerSubEntry *subentry = getSubEntry(pObj, caller, entry);
+         if (subentry) {
+             if (--subentry->recursionLevel == 0)
+@@ -393,16 +415,20 @@ ptrace_leave_call(PyObject *self, void *key)
+     pContext = pObj->currentProfilerContext;
+     if (pContext == NULL)
+         return;
++    
+     profEntry = getEntry(pObj, key);
+     if (profEntry) {
+         Stop(pObj, pContext, profEntry);
++        /* Stop() handles putting the context back in the free list
++         * and updating pObj->currentProfilerContext */
+     }
+     else {
++        /* No profEntry found, just update the current context */
+         pObj->currentProfilerContext = pContext->previous;
++        /* put pContext into the free list */
++        pContext->previous = pObj->freelistProfilerContext;
++        pObj->freelistProfilerContext = pContext;
+     }
+-    /* put pContext into the free list */
+-    pContext->previous = pObj->freelistProfilerContext;
+-    pObj->freelistProfilerContext = pContext;
+ }
+ 
+ static int
+@@ -755,17 +781,34 @@ profiler_enable(ProfilerObject *self, PyObject *args, PyObject *kwds)
+ static void
+ flush_unmatched(ProfilerObject *pObj)
+ {
++    /* First, collect all contexts that are currently active */
++    ProfilerContext *active_contexts = NULL;
+     while (pObj->currentProfilerContext) {
+         ProfilerContext *pContext = pObj->currentProfilerContext;
+         ProfilerEntry *profEntry= pContext->ctxEntry;
+         if (profEntry)
+             Stop(pObj, pContext, profEntry);
+-        else
++        else {
+             pObj->currentProfilerContext = pContext->previous;
+-        if (pContext)
+-            PyMem_Free(pContext);
++            /* Add to our list of active contexts to free */
++            pContext->previous = active_contexts;
++            active_contexts = pContext;
++        }
++    }
++    
++    /* Free all active contexts */
++    while (active_contexts) {
++        ProfilerContext *pContext = active_contexts;
++        active_contexts = pContext->previous;
++        PyMem_Free(pContext);
++    }
++    
++    /* Clear the free list since all contexts should be freed */
++    while (pObj->freelistProfilerContext) {
++        ProfilerContext *pContext = pObj->freelistProfilerContext;
++        pObj->freelistProfilerContext = pContext->previous;
++        PyMem_Free(pContext);
+     }
+-
+ }
+ 
+ PyDoc_STRVAR(disable_doc, "\

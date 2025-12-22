@@ -1,0 +1,276 @@
+
+diff --git a/.gitignore b/.gitignore
+index d54334f599a..3a5943bfb9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/dom/lexbor/patches/*.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/session/session.c b/ext/session/session.c
+index b23f1fce358..3ce17b0b22e 100644
+--- a/ext/session/session.c
++++ b/ext/session/session.c
+@@ -1056,20 +1056,58 @@ PS_SERIALIZER_ENCODE_FUNC(php) /* {{{ */
+ {
+ 	smart_str buf = {0};
+ 	php_serialize_data_t var_hash;
+-	PS_ENCODE_VARS;
++	HashTable *ht;
++	zend_string *key;
++	zend_ulong num_key;
++	zval *struc;
++	zend_string **keys = NULL;
++	uint32_t key_count = 0;
++	uint32_t i;
+ 
+ 	PHP_VAR_SERIALIZE_INIT(var_hash);
+ 
+-	PS_ENCODE_LOOP(
+-		smart_str_appendl(&buf, ZSTR_VAL(key), ZSTR_LEN(key));
+-		if (memchr(ZSTR_VAL(key), PS_DELIMITER, ZSTR_LEN(key))) {
+-			PHP_VAR_SERIALIZE_DESTROY(var_hash);
+-			smart_str_free(&buf);
+-			return NULL;
+-		}
+-		smart_str_appendc(&buf, PS_DELIMITER);
+-		php_var_serialize(&buf, struc, &var_hash);
+-	);
++	/* First, collect all keys to avoid iterator invalidation during serialization */
++	ht = Z_ARRVAL_P(Z_REFVAL(PS(http_session_vars)));
++	key_count = zend_hash_num_elements(ht);
++	
++	if (key_count > 0) {
++		keys = emalloc(key_count * sizeof(zend_string*));
++		i = 0;
++		
++		ZEND_HASH_FOREACH_KEY(ht, num_key, key) {
++			if (key == NULL) {
++				php_error_docref(NULL, E_WARNING,
++						"Skipping numeric key " ZEND_LONG_FMT, num_key);
++				continue;
++			}
++			keys[i++] = zend_string_copy(key);
++		} ZEND_HASH_FOREACH_END();
++		
++		key_count = i; /* Update count in case we skipped numeric keys */
++		
++		/* Now serialize using the collected keys */
++		for (i = 0; i < key_count; i++) {
++			key = keys[i];
++			if ((struc = php_get_session_var(key))) {
++				smart_str_appendl(&buf, ZSTR_VAL(key), ZSTR_LEN(key));
++				if (memchr(ZSTR_VAL(key), PS_DELIMITER, ZSTR_LEN(key))) {
++					PHP_VAR_SERIALIZE_DESTROY(var_hash);
++					smart_str_free(&buf);
++					/* Clean up keys */
++					for (uint32_t j = 0; j < key_count; j++) {
++						zend_string_release(keys[j]);
++					}
++					efree(keys);
++					return NULL;
++				}
++				smart_str_appendc(&buf, PS_DELIMITER);
++				php_var_serialize(&buf, struc, &var_hash);
++			}
++			zend_string_release(keys[i]);
++		}
++		
++		efree(keys);
++	}
+ 
+ 	smart_str_0(&buf);
+ 
+diff --git a/poc_readable.php b/poc_readable.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/poc_readable.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
+diff --git a/session_reproduce.php b/session_reproduce.php
+new file mode 100644
+index 00000000000..711604bc4fc
+--- /dev/null
++++ b/session_reproduce.php
+@@ -0,0 +1,41 @@
++<?php
++
++class DestructorModifier {
++    public function __destruct() {
++        // Modify the session array during destruction
++        // This should happen during serialization and cause use-after-free
++        global $_SESSION;
++        $_SESSION['new_var'] = 'added_during_destruction';
++        unset($_SESSION['victim']);
++    }
++}
++
++class SerializeModifier {
++    public function __serialize() {
++        // Modify session during serialization
++        global $_SESSION;
++        $_SESSION['serialize_added'] = 'added_during_serialize';
++        unset($_SESSION['another_victim']);
++        return ['data' => 'test'];
++    }
++}
++
++// Start session
++session_start();
++
++// Set up multiple session variables
++$_SESSION['modifier'] = new DestructorModifier();
++$_SESSION['serializer'] = new SerializeModifier();
++$_SESSION['victim'] = 'will_be_deleted';
++$_SESSION['another_victim'] = 'will_also_be_deleted';
++$_SESSION['normal_var'] = 'normal_value';
++
++// Force garbage collection to trigger destructors during serialization
++gc_collect_cycles();
++
++// This should trigger the use-after-free in ps_srlzr_encode_php
++echo "Calling session_encode()...\n";
++$encoded = session_encode();
++echo "Session encoded: " . strlen($encoded) . " bytes\n";
++
++?>
+diff --git a/session_test.php b/session_test.php
+new file mode 100644
+index 00000000000..e8ce2a63492
+--- /dev/null
++++ b/session_test.php
+@@ -0,0 +1,31 @@
++<?php
++
++class TestClass {
++    public $data;
++    
++    function __construct($data) {
++        $this->data = $data;
++    }
++    
++    function __destruct() {
++        // This destructor might cause issues during serialization
++        echo "Destructor called\n";
++    }
++    
++    function __serialize() {
++        // Custom serialization that might trigger the issue
++        return ['data' => $this->data];
++    }
++}
++
++// Start session
++session_start();
++
++// Create an object that might cause issues during serialization
++$_SESSION['test_obj'] = new TestClass("test data");
++
++// Try to encode the session - this should trigger ps_srlzr_encode_php
++$encoded = session_encode();
++echo "Session encoded: " . $encoded . "\n";
++
++?>
+diff --git a/session_uaf_test.php b/session_uaf_test.php
+new file mode 100644
+index 00000000000..c2afe339ea9
+--- /dev/null
++++ b/session_uaf_test.php
+@@ -0,0 +1,26 @@
++<?php
++
++class BadObject {
++    public function __serialize() {
++        // During serialization, modify the session array
++        // This should cause the hash table iterator to become invalid
++        $_SESSION['new_key'] = 'new_value';
++        unset($_SESSION['other_key']);
++        return ['data' => 'serialized'];
++    }
++}
++
++// Start session
++session_start();
++
++// Set up session variables that will trigger the issue
++$_SESSION['bad_obj'] = new BadObject();
++$_SESSION['other_key'] = 'other_value';
++$_SESSION['third_key'] = 'third_value';
++
++// This should trigger the use-after-free in ps_srlzr_encode_php
++echo "Calling session_encode()...\n";
++$encoded = session_encode();
++echo "Session encoded successfully: " . $encoded . "\n";
++
++?>
+diff --git a/targeted_test.php b/targeted_test.php
+new file mode 100644
+index 00000000000..8c1e6ca01b0
+--- /dev/null
++++ b/targeted_test.php
+@@ -0,0 +1,34 @@
++<?php
++
++class HashTableModifier {
++    public function __serialize() {
++        // This should modify the session hash table during serialization
++        // which would cause use-after-free in the old implementation
++        $_SESSION['added_during_serialize'] = 'new_value';
++        unset($_SESSION['to_be_removed']);
++        $_SESSION['another_new'] = 'another_value';
++        return ['modified' => true];
++    }
++}
++
++// Start session
++session_start();
++
++// Set up session variables that will trigger the hash table modification
++$_SESSION['modifier'] = new HashTableModifier();
++$_SESSION['to_be_removed'] = 'will_be_deleted';
++$_SESSION['normal_var1'] = 'value1';
++$_SESSION['normal_var2'] = 'value2';
++$_SESSION['normal_var3'] = 'value3';
++
++echo "Before session_encode(), session has " . count($_SESSION) . " variables\n";
++
++// This should trigger the use-after-free in the old implementation
++// but work correctly with our fix
++$encoded = session_encode();
++
++echo "After session_encode(), session has " . count($_SESSION) . " variables\n";
++echo "Session encoded successfully: " . strlen($encoded) . " bytes\n";
++echo "Session content: " . $encoded . "\n";
++
++?>

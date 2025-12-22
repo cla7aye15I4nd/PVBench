@@ -1,0 +1,13 @@
+id: xml-commit-30a6533
+project: libxml2
+sanitizer: UndefinedBehaviorSanitizer
+type: Integer Overflow
+binary: testXPath
+trigger_commit: 09797c139e5b0168c87f41b2cea1078d7244638d
+patch:
+  commit: 30a6533e010c740a7281a0c8960b4db9212f5f75
+  date: '2019-03-08T14:29:59+01:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/09797c139e5b0168c87f41b2cea1078d7244638d
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/30a6533e010c740a7281a0c8960b4db9212f5f75

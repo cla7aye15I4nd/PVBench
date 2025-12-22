@@ -1,0 +1,107 @@
+
+diff --git a/.gitignore b/.gitignore
+index 307814a276a..3127999a700 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -170,3 +170,9 @@ Python/frozen_modules/MANIFEST
+ /python
+ !/Python/
+ 
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_ctypes/stgdict.c b/Modules/_ctypes/stgdict.c
+index ad82e4891c5..3508a44b45d 100644
+--- a/Modules/_ctypes/stgdict.c
++++ b/Modules/_ctypes/stgdict.c
+@@ -1,29 +1,29 @@
+-#ifndef Py_BUILD_CORE_BUILTIN
+-#  define Py_BUILD_CORE_MODULE 1
+-#endif
+-
+-#include "Python.h"
+-// windows.h must be included before pycore internal headers
+-#ifdef MS_WIN32
+-#  include <windows.h>
+-#endif
+-
+-#include "pycore_call.h"          // _PyObject_CallNoArgs()
+-#include "pycore_dict.h"          // _PyDict_SizeOf()
+-#include <ffi.h>
+-#ifdef MS_WIN32
+-#  include <malloc.h>
+-#endif
+-#include "ctypes.h"
+-
+-/* This file relates to StgInfo -- type-specific information for ctypes.
+- * See ctypes.h for details.
+- */
+-
+-int
+-PyCStgInfo_clone(StgInfo *dst_info, StgInfo *src_info)
+-{
+-    Py_ssize_t size;
++import ctypes
++
++# Try to create a structure that causes total_align to be 0
++class TestStruct(ctypes.Structure):
++    _fields_ = []
++    _align_ = 0  # This should cause total_align to be 0
++
++# Try to trigger the divide by zero
++try:
++    s = TestStruct()
++    print("TestStruct created successfully")
++except Exception as e:
++    print(f"Error creating TestStruct: {e}")
++
++# Try another approach with union
++class TestUnion(ctypes.Union):
++    _fields_ = []
++    _align_ = 0  # This should cause total_align to be 0
++
++try:
++    u = TestUnion()
++    print("TestUnion created successfully")
++except Exception as e:
++    print(f"Error creating TestUnion: {e}")
++
++print("Test completed")
+ 
+     ctype_clear_stginfo(dst_info);
+     PyMem_Free(dst_info->ffi_type_pointer.elements);
+diff --git a/test_ctypes_divide_by_zero.py b/test_ctypes_divide_by_zero.py
+new file mode 100644
+index 00000000000..edbb9616b8d
+--- /dev/null
++++ b/test_ctypes_divide_by_zero.py
+@@ -0,0 +1,26 @@
++import ctypes
++
++# Try to create a structure that might cause total_align to be 0
++class TestStruct(ctypes.Structure):
++    _fields_ = []
++    _align_ = 0  # This should cause total_align to be 0
++
++# Try to trigger the divide by zero
++try:
++    s = TestStruct()
++    print("TestStruct created successfully")
++except Exception as e:
++    print(f"Error creating TestStruct: {e}")
++
++# Try another approach with union
++class TestUnion(ctypes.Union):
++    _fields_ = []
++    _align_ = 0  # This should cause total_align to be 0
++
++try:
++    u = TestUnion()
++    print("TestUnion created successfully")
++except Exception as e:
++    print(f"Error creating TestUnion: {e}")
++
++print("Test completed")

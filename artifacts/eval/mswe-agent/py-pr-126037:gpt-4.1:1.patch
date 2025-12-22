@@ -1,0 +1,95 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_elementtree.c b/Modules/_elementtree.c
+index d20bbcd21fd..cd3095c53dc 100644
+--- a/Modules/_elementtree.c
++++ b/Modules/_elementtree.c
+@@ -1249,16 +1249,18 @@ _elementtree.Element.find
+ 
+ static PyObject *
+ _elementtree_Element_find_impl(ElementObject *self, PyTypeObject *cls,
+-                               PyObject *path, PyObject *namespaces)
++                               PyObject *path, PyObject *namespaces) {
+ /*[clinic end generated code: output=18f77d393c9fef1b input=94df8a83f956acc6]*/
+-{
+     Py_ssize_t i;
+     elementtreestate *st = get_elementtree_state_by_cls(cls);
+ 
++    if (!self)
++        Py_RETURN_NONE;
++
+     if (checkpath(path) || namespaces != Py_None) {
+         return PyObject_CallMethodObjArgs(
+             st->elementpath_obj, st->str_find, self, path, namespaces, NULL
+-            );
++        );
+     }
+ 
+     if (!self->extra)
+@@ -1280,31 +1282,21 @@ _elementtree_Element_find_impl(ElementObject *self, PyTypeObject *cls,
+     Py_RETURN_NONE;
+ }
+ 
+-/*[clinic input]
+-_elementtree.Element.findtext
+-
+-    cls: defining_class
+-    /
+-    path: object
+-    default: object = None
+-    namespaces: object = None
+-
+-[clinic start generated code]*/
+-
+ static PyObject *
+ _elementtree_Element_findtext_impl(ElementObject *self, PyTypeObject *cls,
+                                    PyObject *path, PyObject *default_value,
+-                                   PyObject *namespaces)
+-/*[clinic end generated code: output=6af7a2d96aac32cb input=32f252099f62a3d2]*/
+-{
++                                   PyObject *namespaces) {
+     Py_ssize_t i;
+     elementtreestate *st = get_elementtree_state_by_cls(cls);
+ 
++    if (!self)
++        Py_RETURN_NONE;
++
+     if (checkpath(path) || namespaces != Py_None)
+         return PyObject_CallMethodObjArgs(
+             st->elementpath_obj, st->str_findtext,
+             self, path, default_value, namespaces, NULL
+-            );
++        );
+ 
+     if (!self->extra) {
+         return Py_NewRef(default_value);
+@@ -1346,12 +1338,12 @@ _elementtree.Element.findall
+ 
+ static PyObject *
+ _elementtree_Element_findall_impl(ElementObject *self, PyTypeObject *cls,
+-                                  PyObject *path, PyObject *namespaces)
+-/*[clinic end generated code: output=65e39a1208f3b59e input=7aa0db45673fc9a5]*/
+-{
++                                  PyObject *path, PyObject *namespaces) {
++    PyObject *out;
+     Py_ssize_t i;
+-    PyObject* out;
+     elementtreestate *st = get_elementtree_state_by_cls(cls);
++    if (!self)
++        Py_RETURN_NONE;
+ 
+     if (checkpath(path) || namespaces != Py_None) {
+         return PyObject_CallMethodObjArgs(

@@ -1,0 +1,40 @@
+==3425645==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000010 (pc 0x55ac04878e2a bp 0x7fff472ea7f0 sp 0x7fff472ea360 T0)
+==3425645==The signal is caused by a READ memory access.
+==3425645==Hint: address points to the zero page.
+    #0 0x55ac04878e2a in php_url_scanner_session_handler_impl /php-gh-15179/build/ext/standard/url_scanner_ex.re:694:37
+    #1 0x55ac04878c17 in php_url_scanner_output_handler /php-gh-15179/build/ext/standard/url_scanner_ex.re:727:2
+    #2 0x55ac049da61b in php_output_handler_compat_func /php-gh-15179/build/main/output.c:1270:3
+    #3 0x55ac049d68e7 in php_output_handler_op /php-gh-15179/build/main/output.c:998:19
+    #4 0x55ac049d7a1f in php_output_stack_pop /php-gh-15179/build/main/output.c:1235:4
+    #5 0x55ac049d7c80 in php_output_discard_all /php-gh-15179/build/main/output.c:365:3
+    #6 0x55ac04982fed in php_error_cb /php-gh-15179/build/main/main.c:1276:3
+    #7 0x55ac04bdd6b6 in zend_error_zstr_at /php-gh-15179/build/Zend/zend.c:1423:3
+    #8 0x55ac04bdf784 in zend_error_va_list /php-gh-15179/build/Zend/zend.c:1525:2
+    #9 0x55ac04be0161 in zend_error_noreturn /php-gh-15179/build/Zend/zend.c:1632:2
+    #10 0x55ac04aca1f0 in zend_mm_safe_error /php-gh-15179/build/Zend/zend_alloc.c:383:3
+    #11 0x55ac04aae724 in tracked_check_limit /php-gh-15179/build/Zend/zend_alloc.c:2820:3
+    #12 0x55ac04aae724 in tracked_malloc /php-gh-15179/build/Zend/zend_alloc.c:2830:2
+    #13 0x55ac04ab42c3 in _malloc_custom /php-gh-15179/build/Zend/zend_alloc.c:2477:10
+    #14 0x55ac04ac000e in _emalloc /php-gh-15179/build/Zend/zend_alloc.c:2596:10
+    #15 0x55ac0527e099 in zend_string_alloc /php-gh-15179/build/Zend/zend_string.h:152:36
+    #16 0x55ac0527e099 in smart_str_erealloc /php-gh-15179/build/Zend/zend_smart_str.c:35:12
+    #17 0x55ac0486d198 in smart_str_alloc /php-gh-15179/build/Zend/zend_smart_str.h:49:5
+    #18 0x55ac0486d198 in smart_str_appendl_ex /php-gh-15179/build/Zend/zend_smart_str.h:129:19
+    #19 0x55ac0486d198 in smart_str_appendl /php-gh-15179/build/Zend/zend_smart_str.h:168:2
+    #20 0x55ac0486d198 in php_url_scanner_add_var_impl /php-gh-15179/build/ext/standard/url_scanner_ex.re:766:3
+    #21 0x55ac04871047 in php_url_scanner_add_var /php-gh-15179/build/ext/standard/url_scanner_ex.re:801:9
+    #22 0x55ac049dfa6c in zif_output_add_rewrite_var /php-gh-15179/build/main/output.c:1557:6
+    #23 0x55ac05001014 in ZEND_DO_ICALL_SPEC_RETVAL_UNUSED_HANDLER /php-gh-15179/build/Zend/zend_vm_execute.h:1250:2
+    #24 0x55ac04d005ef in execute_ex /php-gh-15179/build/Zend/zend_vm_execute.h:55866:7
+    #25 0x55ac04d01d86 in zend_execute /php-gh-15179/build/Zend/zend_vm_execute.h:60439:2
+    #26 0x55ac04be2496 in zend_execute_scripts /php-gh-15179/build/Zend/zend.c:1840:4
+    #27 0x55ac0498626b in php_execute_script /php-gh-15179/build/main/main.c:2578:13
+    #28 0x55ac0550c20c in do_cli /php-gh-15179/build/sapi/cli/php_cli.c:964:5
+    #29 0x55ac0550a1c9 in main /php-gh-15179/build/sapi/cli/php_cli.c:1333:18
+    #30 0x7fd98631a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #31 0x7fd98631a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #32 0x55ac03c03184 in _start (/php-gh-15179/build/sapi/cli/php+0x403184) (BuildId: 03c4569061996fb6e32c6db712e50ebfde14cda1)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-15179/build/ext/standard/url_scanner_ex.re:694:37 in php_url_scanner_session_handler_impl
+==3425645==ABORTING

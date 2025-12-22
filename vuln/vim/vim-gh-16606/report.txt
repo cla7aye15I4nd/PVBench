@@ -1,0 +1,16 @@
+==4377==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x5c59109a04f1 bp 0x7ffdf990fd50 sp 0x7ffdf990fcc0 T0)
+==4377==The signal is caused by a READ memory access.
+==4377==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x5c59109a04f1 in get_emsg_lnum /tmp/vim-gh-16606/build/src/message.c:521:9
+    #1 0x5c591099fd14 in msg_source /tmp/vim-gh-16606/build/src/message.c:558:9
+    #2 0x5c59109a1ac1 in emsg_core /tmp/vim-gh-16606/build/src/message.c:784:5
+    #3 0x5c59109a1d3b in semsg /tmp/vim-gh-16606/build/src/message.c:829:9
+    #4 0x5c59102f7f5b in ch_logfile /tmp/vim-gh-16606/build/src/logfile.c:51:6
+    #5 0x5c591098b1ea in main /tmp/vim-gh-16606/build/src/main.c:161:6
+    #6 0x772cf54401c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x772cf544028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #8 0x5c590fedcff4 in _start (/tmp/vim-gh-16606/build/src/vim+0x166ff4) (BuildId: 83908d97fa6400fdd99ce4d59797677184787434)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/vim-gh-16606/build/src/message.c:521:9 in get_emsg_lnum
+==4377==ABORTING

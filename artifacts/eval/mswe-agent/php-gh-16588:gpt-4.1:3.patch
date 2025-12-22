@@ -1,0 +1,79 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_observer.c b/ext/spl/spl_observer.c
+index cc2956ccc27..970a06ddfe5 100644
+--- a/ext/spl/spl_observer.c
++++ b/ext/spl/spl_observer.c
+@@ -789,21 +789,47 @@ PHP_METHOD(SplObjectStorage, serialize)
+ 
+ 	zend_hash_internal_pointer_reset_ex(&intern->storage, &pos);
+ 
++	/* Make a shallow copy of all storage elements to protect against modification during serialization */
++	uint32_t num_elements = zend_hash_num_elements(&intern->storage);
++	spl_SplObjectStorageElement **elements = emalloc(num_elements * sizeof(spl_SplObjectStorageElement *));
++	uint32_t i = 0;
++	zend_hash_internal_pointer_reset_ex(&intern->storage, &pos);
+ 	while (zend_hash_has_more_elements_ex(&intern->storage, &pos) == SUCCESS) {
+-		zval obj;
+-		if ((element = zend_hash_get_current_data_ptr_ex(&intern->storage, &pos)) == NULL) {
+-			smart_str_free(&buf);
+-			PHP_VAR_SERIALIZE_DESTROY(var_hash);
+-			RETURN_NULL();
++		element = zend_hash_get_current_data_ptr_ex(&intern->storage, &pos);
++		if (element) {
++			elements[i++] = element;
+ 		}
+-		ZVAL_OBJ(&obj, element->obj);
+-		php_var_serialize(&buf, &obj, &var_hash);
++		zend_hash_move_forward_ex(&intern->storage, &pos);
++	}
++
++	/* First pass: Make a deep copy of all objects and inf zvals */
++	typedef struct {
++		zval obj;
++		zval inf;
++	} storage_copy_t;
++	storage_copy_t *storage_copy = emalloc(num_elements * sizeof(storage_copy_t));
++	for (i = 0; i < num_elements; i++) {
++		ZVAL_OBJ(&storage_copy[i].obj, elements[i]->obj);
++		Z_ADDREF(storage_copy[i].obj);
++		ZVAL_COPY(&storage_copy[i].inf, &elements[i]->inf);
++	}
++
++	/* Second pass: Serialize */
++	for (i = 0; i < num_elements; i++) {
++		php_var_serialize(&buf, &storage_copy[i].obj, &var_hash);
+ 		smart_str_appendc(&buf, ',');
+-		php_var_serialize(&buf, &element->inf, &var_hash);
++		php_var_serialize(&buf, &storage_copy[i].inf, &var_hash);
+ 		smart_str_appendc(&buf, ';');
+-		zend_hash_move_forward_ex(&intern->storage, &pos);
+ 	}
+ 
++	/* Third pass: Delref all object and inf zvals */
++	for (i = 0; i < num_elements; i++) {
++		zval_ptr_dtor(&storage_copy[i].obj);
++		zval_ptr_dtor(&storage_copy[i].inf);
++	}
++	efree(storage_copy);
++
++	efree(elements);
+ 	/* members */
+ 	smart_str_appendl(&buf, "m:", 2);
+ 

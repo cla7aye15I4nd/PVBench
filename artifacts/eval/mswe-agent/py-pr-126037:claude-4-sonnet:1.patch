@@ -1,0 +1,83 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_elementtree.c b/Modules/_elementtree.c
+index d20bbcd21fd..4e339058d51 100644
+--- a/Modules/_elementtree.c
++++ b/Modules/_elementtree.c
+@@ -1264,8 +1264,12 @@ _elementtree_Element_find_impl(ElementObject *self, PyTypeObject *cls,
+     if (!self->extra)
+         Py_RETURN_NONE;
+ 
+-    for (i = 0; i < self->extra->length; i++) {
+-        PyObject* item = self->extra->children[i];
++    ElementObjectExtra *extra = self->extra;
++    if (!extra)
++        Py_RETURN_NONE;
++
++    for (i = 0; i < extra->length; i++) {
++        PyObject* item = extra->children[i];
+         int rc;
+         assert(Element_Check(st, item));
+         Py_INCREF(item);
+@@ -1310,8 +1314,13 @@ _elementtree_Element_findtext_impl(ElementObject *self, PyTypeObject *cls,
+         return Py_NewRef(default_value);
+     }
+ 
+-    for (i = 0; i < self->extra->length; i++) {
+-        PyObject *item = self->extra->children[i];
++    ElementObjectExtra *extra = self->extra;
++    if (!extra) {
++        return Py_NewRef(default_value);
++    }
++
++    for (i = 0; i < extra->length; i++) {
++        PyObject *item = extra->children[i];
+         int rc;
+         assert(Element_Check(st, item));
+         Py_INCREF(item);
+@@ -1366,8 +1375,12 @@ _elementtree_Element_findall_impl(ElementObject *self, PyTypeObject *cls,
+     if (!self->extra)
+         return out;
+ 
+-    for (i = 0; i < self->extra->length; i++) {
+-        PyObject* item = self->extra->children[i];
++    ElementObjectExtra *extra = self->extra;
++    if (!extra)
++        return out;
++
++    for (i = 0; i < extra->length; i++) {
++        PyObject* item = extra->children[i];
+         int rc;
+         assert(Element_Check(st, item));
+         Py_INCREF(item);
+@@ -1493,7 +1506,16 @@ element_getitem(PyObject *op, Py_ssize_t index)
+         return NULL;
+     }
+ 
+-    return Py_NewRef(self->extra->children[index]);
++    ElementObjectExtra *extra = self->extra;
++    if (!extra || index >= extra->length) {
++        PyErr_SetString(
++            PyExc_IndexError,
++            "child index out of range"
++            );
++        return NULL;
++    }
++
++    return Py_NewRef(extra->children[index]);
+ }
+ 
+ static int

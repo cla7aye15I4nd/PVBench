@@ -1,0 +1,35 @@
+diff --git a/NEWS b/NEWS
+index d5aa0983d5..2276e3ff22 100644
+--- a/NEWS
++++ b/NEWS
+@@ -10,6 +10,8 @@ PHP                                                                        NEWS
+     (nielsdos)
+   . Fixed OSS-Fuzz #69765. (nielsdos)
+   . Fixed bug GH-14741 (Segmentation fault in Zend/zend_types.h). (nielsdos)
++  . Fixed bug GH-14969 (Use-after-free in property coercion with __toString()).
++    (ilutov)
+ 
+ - Dom:
+   . Fixed bug GH-14702 (DOMDocument::xinclude() crash). (nielsdos)
+diff --git a/Zend/zend_object_handlers.c b/Zend/zend_object_handlers.c
+index 58301da038..d4586e53e4 100644
+--- a/Zend/zend_object_handlers.c
++++ b/Zend/zend_object_handlers.c
+@@ -819,7 +819,7 @@ ZEND_API zval *zend_std_write_property(zend_object *zobj, zend_string *name, zva
+ 
+ 				ZVAL_COPY_VALUE(&tmp, value);
+ 				if (UNEXPECTED(!zend_verify_property_type(prop_info, &tmp, property_uses_strict_types()))) {
+-					Z_TRY_DELREF_P(value);
++					zval_ptr_dtor(&tmp);
+ 					variable_ptr = &EG(error_zval);
+ 					goto exit;
+ 				}
+@@ -890,7 +890,7 @@ ZEND_API zval *zend_std_write_property(zend_object *zobj, zend_string *name, zva
+ 
+ 				ZVAL_COPY_VALUE(&tmp, value);
+ 				if (UNEXPECTED(!zend_verify_property_type(prop_info, &tmp, property_uses_strict_types()))) {
+-					zval_ptr_dtor(value);
++					zval_ptr_dtor(&tmp);
+ 					goto exit;
+ 				}
+ 				value = &tmp;

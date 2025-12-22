@@ -1,0 +1,75 @@
+==941==ERROR: AddressSanitizer: memcpy-param-overlap: memory ranges [0x50b000004451,0x50b000004465) and [0x50b000004450, 0x50b000004464) overlap
+    #0 0x55659c807434 in __asan_memcpy (/qjs-gh-379/build/build/qjs+0xec434) (BuildId: f22b2d9cb795ccdf0d9c9182d40461e754d5e14b)
+    #1 0x55659c9f402a in js_typed_array_slice /qjs-gh-379/build/quickjs.c:50330:13
+    #2 0x55659c86ad69 in js_call_c_function /qjs-gh-379/build/quickjs.c:14382:19
+    #3 0x55659c8a4fb6 in JS_CallInternal /qjs-gh-379/build/quickjs.c:14596:16
+    #4 0x55659c8aa919 in JS_CallInternal /qjs-gh-379/build/quickjs.c:15008:27
+    #5 0x55659c88aa38 in JS_CallFree /qjs-gh-379/build/quickjs.c:17102:19
+    #6 0x55659c8ca790 in JS_EvalFunctionInternal /qjs-gh-379/build/quickjs.c:32269:19
+    #7 0x55659c8df87b in __JS_EvalInternal /qjs-gh-379/build/quickjs.c:32400:19
+    #8 0x55659c8caa98 in JS_EvalInternal /qjs-gh-379/build/quickjs.c:32418:12
+    #9 0x55659c8ca979 in JS_EvalThis /qjs-gh-379/build/quickjs.c:32449:11
+    #10 0x55659c8cab73 in JS_Eval /qjs-gh-379/build/quickjs.c:32457:12
+    #11 0x55659c8499a9 in eval_buf /qjs-gh-379/build/qjs.c:62:15
+    #12 0x55659c849b9d in eval_file /qjs-gh-379/build/qjs.c:94:11
+    #13 0x55659c849203 in main /qjs-gh-379/build/qjs.c:489:17
+    #14 0x7f38eb4d51c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x7f38eb4d528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #16 0x55659c76e8b4 in _start (/qjs-gh-379/build/build/qjs+0x538b4) (BuildId: f22b2d9cb795ccdf0d9c9182d40461e754d5e14b)
+
+0x50b000004451 is located 1 bytes inside of 100-byte region [0x50b000004450,0x50b0000044b4)
+allocated by thread T0 here:
+    #0 0x55659c809703 in malloc (/qjs-gh-379/build/build/qjs+0xee703) (BuildId: f22b2d9cb795ccdf0d9c9182d40461e754d5e14b)
+    #1 0x55659c8e9d7a in js_def_malloc /qjs-gh-379/build/quickjs.c:1700:11
+    #2 0x55659c868d46 in js_malloc_rt /qjs-gh-379/build/quickjs.c:1369:12
+    #3 0x55659c868e7c in js_mallocz_rt /qjs-gh-379/build/quickjs.c:1390:11
+    #4 0x55659c869145 in js_mallocz /qjs-gh-379/build/quickjs.c:1419:11
+    #5 0x55659c8e2718 in js_array_buffer_constructor3 /qjs-gh-379/build/quickjs.c:48795:26
+    #6 0x55659c9ef415 in js_array_buffer_constructor2 /qjs-gh-379/build/quickjs.c:48830:12
+    #7 0x55659c9ef462 in js_array_buffer_constructor1 /qjs-gh-379/build/quickjs.c:48839:12
+    #8 0x55659c8e4375 in js_array_buffer_constructor /qjs-gh-379/build/quickjs.c:48873:12
+    #9 0x55659c86ad69 in js_call_c_function /qjs-gh-379/build/quickjs.c:14382:19
+    #10 0x55659c8c436f in JS_CallConstructorInternal /qjs-gh-379/build/quickjs.c:17207:16
+    #11 0x55659c8aa4ce in JS_CallInternal /qjs-gh-379/build/quickjs.c:14990:27
+    #12 0x55659c88aa38 in JS_CallFree /qjs-gh-379/build/quickjs.c:17102:19
+    #13 0x55659c8ca790 in JS_EvalFunctionInternal /qjs-gh-379/build/quickjs.c:32269:19
+    #14 0x55659c8df87b in __JS_EvalInternal /qjs-gh-379/build/quickjs.c:32400:19
+    #15 0x55659c8caa98 in JS_EvalInternal /qjs-gh-379/build/quickjs.c:32418:12
+    #16 0x55659c8ca979 in JS_EvalThis /qjs-gh-379/build/quickjs.c:32449:11
+    #17 0x55659c8cab73 in JS_Eval /qjs-gh-379/build/quickjs.c:32457:12
+    #18 0x55659c8499a9 in eval_buf /qjs-gh-379/build/qjs.c:62:15
+    #19 0x55659c849b9d in eval_file /qjs-gh-379/build/qjs.c:94:11
+    #20 0x55659c849203 in main /qjs-gh-379/build/qjs.c:489:17
+    #21 0x7f38eb4d51c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #22 0x7f38eb4d528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #23 0x55659c76e8b4 in _start (/qjs-gh-379/build/build/qjs+0x538b4) (BuildId: f22b2d9cb795ccdf0d9c9182d40461e754d5e14b)
+
+0x50b000004450 is located 0 bytes inside of 100-byte region [0x50b000004450,0x50b0000044b4)
+allocated by thread T0 here:
+    #0 0x55659c809703 in malloc (/qjs-gh-379/build/build/qjs+0xee703) (BuildId: f22b2d9cb795ccdf0d9c9182d40461e754d5e14b)
+    #1 0x55659c8e9d7a in js_def_malloc /qjs-gh-379/build/quickjs.c:1700:11
+    #2 0x55659c868d46 in js_malloc_rt /qjs-gh-379/build/quickjs.c:1369:12
+    #3 0x55659c868e7c in js_mallocz_rt /qjs-gh-379/build/quickjs.c:1390:11
+    #4 0x55659c869145 in js_mallocz /qjs-gh-379/build/quickjs.c:1419:11
+    #5 0x55659c8e2718 in js_array_buffer_constructor3 /qjs-gh-379/build/quickjs.c:48795:26
+    #6 0x55659c9ef415 in js_array_buffer_constructor2 /qjs-gh-379/build/quickjs.c:48830:12
+    #7 0x55659c9ef462 in js_array_buffer_constructor1 /qjs-gh-379/build/quickjs.c:48839:12
+    #8 0x55659c8e4375 in js_array_buffer_constructor /qjs-gh-379/build/quickjs.c:48873:12
+    #9 0x55659c86ad69 in js_call_c_function /qjs-gh-379/build/quickjs.c:14382:19
+    #10 0x55659c8c436f in JS_CallConstructorInternal /qjs-gh-379/build/quickjs.c:17207:16
+    #11 0x55659c8aa4ce in JS_CallInternal /qjs-gh-379/build/quickjs.c:14990:27
+    #12 0x55659c88aa38 in JS_CallFree /qjs-gh-379/build/quickjs.c:17102:19
+    #13 0x55659c8ca790 in JS_EvalFunctionInternal /qjs-gh-379/build/quickjs.c:32269:19
+    #14 0x55659c8df87b in __JS_EvalInternal /qjs-gh-379/build/quickjs.c:32400:19
+    #15 0x55659c8caa98 in JS_EvalInternal /qjs-gh-379/build/quickjs.c:32418:12
+    #16 0x55659c8ca979 in JS_EvalThis /qjs-gh-379/build/quickjs.c:32449:11
+    #17 0x55659c8cab73 in JS_Eval /qjs-gh-379/build/quickjs.c:32457:12
+    #18 0x55659c8499a9 in eval_buf /qjs-gh-379/build/qjs.c:62:15
+    #19 0x55659c849b9d in eval_file /qjs-gh-379/build/qjs.c:94:11
+    #20 0x55659c849203 in main /qjs-gh-379/build/qjs.c:489:17
+    #21 0x7f38eb4d51c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #22 0x7f38eb4d528a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #23 0x55659c76e8b4 in _start (/qjs-gh-379/build/build/qjs+0x538b4) (BuildId: f22b2d9cb795ccdf0d9c9182d40461e754d5e14b)
+
+SUMMARY: AddressSanitizer: memcpy-param-overlap (/qjs-gh-379/build/build/qjs+0xec434) (BuildId: f22b2d9cb795ccdf0d9c9182d40461e754d5e14b) in __asan_memcpy
+==941==ABORTING

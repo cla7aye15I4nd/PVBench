@@ -1,0 +1,15 @@
+==14434==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000017 (pc 0x7b1259b60846 bp 0x7ffc8125b210 sp 0x7ffc8125af70 T0)
+==14434==The signal is caused by a READ memory access.
+==14434==Hint: address points to the zero page.
+    #0 0x7b1259b60846 in xmlSchematronFormatReport /tmp/xml-gh-933/build/schematron.c:1442:57
+    #1 0x7b1259b5fe1b in xmlSchematronReportSuccess /tmp/xml-gh-933/build/schematron.c:1577:22
+    #2 0x7b1259b5c266 in xmlSchematronRunTest /tmp/xml-gh-933/build/schematron.c:1827:5
+    #3 0x7b1259b5b507 in xmlSchematronValidateDoc /tmp/xml-gh-933/build/schematron.c:1938:25
+    #4 0x5b32b58b69e5 in main /tmp/xml-gh-933/build/poc.c:65:18
+    #5 0x7b12594501c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #6 0x7b125945028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #7 0x5b32b57dd3f4 in _start (/tmp/xml-gh-933/build/poc+0x2c3f4) (BuildId: affb902d5f01ba2e2f0de9779bbaba836282a28d)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/xml-gh-933/build/schematron.c:1442:57 in xmlSchematronFormatReport
+==14434==ABORTING

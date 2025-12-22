@@ -1,0 +1,14 @@
+id: hermes-commit-dd94831
+project: hermes
+sanitizer: AddressSanitizer
+type: Stack Buffer Overflow
+binary: hermes
+trigger_commit: eff0c6a725667b75a301bc4a13854236be7dc4ff
+patch:
+  commit: dd948319311aa026c9e1cc00cbc1eeadb5090878
+  date: '2021-06-04T09:08:53-07:00'
+reference:
+- https://github.com/facebook/hermes
+- https://github.com/facebook/hermes/issues/None
+- https://github.com/facebook/hermes/commit/eff0c6a725667b75a301bc4a13854236be7dc4ff
+- https://github.com/facebook/hermes/commit/dd948319311aa026c9e1cc00cbc1eeadb5090878

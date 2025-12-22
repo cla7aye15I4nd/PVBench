@@ -1,0 +1,31 @@
+diff --git a/ext/simplexml/tests/gh14638.phpt b/ext/simplexml/tests/gh14638.phpt
+new file mode 100644
+index 0000000000..abb4e1ac14
+--- /dev/null
++++ b/ext/simplexml/tests/gh14638.phpt
+@@ -0,0 +1,25 @@
++--TEST--
++GH-14638: null pointer dereference on object cast __toString after failed XML parsing
++--EXTENSIONS--
++simplexml
++--CREDITS--
++YuanchengJiang
++--FILE--
++<?php
++$xml = '<?xml version="1.0" encoding="utf-8" ?>
++<test>
++</test>';
++$root = simplexml_load_string($xml);
++try {
++    $root->__construct("malformed");
++} catch (Exception $e) {
++    // Intentionally empty
++}
++echo $root;
++?>
++--EXPECTF--
++Warning: SimpleXMLElement::__construct(): Entity: line 1: parser error : Start tag expected, '<' not found in %s on line %d
++
++Warning: SimpleXMLElement::__construct(): malformed in %s on line %d
++
++Warning: SimpleXMLElement::__construct(): ^ in %s on line %d

@@ -1,0 +1,19 @@
+==2866762==ERROR: AddressSanitizer: SEGV on unknown address 0x50c20000837c (pc 0x5576d23fef3c bp 0x7ffee76e96b0 sp 0x7ffee76e93c0 T0)
+==2866762==The signal is caused by a READ memory access.
+    #0 0x5576d23fef3c in ValidateFormat /php-gh-15552/build/ext/standard/scanf.c:508:21
+    #1 0x5576d23ff4e8 in php_sscanf_internal /php-gh-15552/build/ext/standard/scanf.c:606:6
+    #2 0x5576d23e96fc in zif_sscanf /php-gh-15552/build/ext/standard/string.c:5600:11
+    #3 0x5576d2c0317f in ZEND_DO_ICALL_SPEC_RETVAL_USED_HANDLER /php-gh-15552/build/Zend/zend_vm_execute.h:1312:2
+    #4 0x5576d290160f in execute_ex /php-gh-15552/build/Zend/zend_vm_execute.h:55866:7
+    #5 0x5576d2902da6 in zend_execute /php-gh-15552/build/Zend/zend_vm_execute.h:60439:2
+    #6 0x5576d27e3246 in zend_execute_scripts /php-gh-15552/build/Zend/zend.c:1840:4
+    #7 0x5576d2586e1b in php_execute_script /php-gh-15552/build/main/main.c:2578:13
+    #8 0x5576d310d59c in do_cli /php-gh-15552/build/sapi/cli/php_cli.c:964:5
+    #9 0x5576d310b559 in main /php-gh-15552/build/sapi/cli/php_cli.c:1333:18
+    #10 0x7f14b3e161c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x7f14b3e1628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x5576d1803184 in _start (/php-gh-15552/build/sapi/cli/php+0x403184) (BuildId: fbecf5e712d77629bf69a3bb77e4aa9e13b072ea)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /php-gh-15552/build/ext/standard/scanf.c:508:21 in ValidateFormat
+==2866762==ABORTING

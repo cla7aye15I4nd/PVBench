@@ -1,0 +1,70 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_lsprof.c b/Modules/_lsprof.c
+index 5cf9eba243b..952f3042bba 100644
+--- a/Modules/_lsprof.c
++++ b/Modules/_lsprof.c
+@@ -54,6 +54,7 @@ typedef struct {
+     double externalTimerUnit;
+     int tool_id;
+     PyObject* missing;
++    int is_cleared;
+ } ProfilerObject;
+ 
+ #define POF_ENABLED     0x001
+@@ -287,7 +288,8 @@ static void clearEntries(ProfilerObject *pObj)
+         pObj->freelistProfilerContext = c->previous;
+         PyMem_Free(c);
+     }
+-    pObj->freelistProfilerContext = NULL;
++    pObj->is_cleared = 1;
++}
+ }
+ 
+ static void
+@@ -342,9 +344,10 @@ Stop(ProfilerObject *pObj, ProfilerContext *self, ProfilerEntry *entry)
+ static void
+ ptrace_enter_call(PyObject *self, void *key, PyObject *userObj)
+ {
+-    /* entering a call to the function identified by 'key'
+-       (which can be a PyCodeObject or a PyMethodDef pointer) */
+     ProfilerObject *pObj = (ProfilerObject*)self;
++    if (pObj->is_cleared) {
++        return;
++    }
+     ProfilerEntry *profEntry;
+     ProfilerContext *pContext;
+ 
+@@ -385,8 +388,10 @@ ptrace_enter_call(PyObject *self, void *key, PyObject *userObj)
+ static void
+ ptrace_leave_call(PyObject *self, void *key)
+ {
+-    /* leaving a call to the function identified by 'key' */
+     ProfilerObject *pObj = (ProfilerObject*)self;
++    if (pObj->is_cleared) {
++        return;
++    }
+     ProfilerEntry *profEntry;
+     ProfilerContext *pContext;
+ 
+@@ -404,7 +409,6 @@ ptrace_leave_call(PyObject *self, void *key)
+     pContext->previous = pObj->freelistProfilerContext;
+     pObj->freelistProfilerContext = pContext;
+ }
+-
+ static int
+ pending_exception(ProfilerObject *pObj)
+ {

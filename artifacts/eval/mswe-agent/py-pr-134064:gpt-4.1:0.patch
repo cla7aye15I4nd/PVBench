@@ -1,0 +1,31 @@
+
+diff --git a/.gitignore b/.gitignore
+index 2a6f249275c..b3c9b7a4ed8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -173,3 +173,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/sysmodule.c b/Python/sysmodule.c
+index dd048205757..5de07d26f13 100644
+--- a/Python/sysmodule.c
++++ b/Python/sysmodule.c
+@@ -2488,6 +2488,11 @@ sys_remote_exec_impl(PyObject *module, int pid, PyObject *script)
+     if (PyUnicode_FSConverter(script, &path) < 0) {
+         return NULL;
+     }
++    if (!PyBytes_Check(path)) {
++        PyErr_SetString(PyExc_TypeError, "script path is not a bytes object after FS conversion");
++        Py_DECREF(path);
++        return NULL;
++    }
+     debugger_script_path = PyBytes_AS_STRING(path);
+ #ifdef MS_WINDOWS
+     PyObject *unicode_path;

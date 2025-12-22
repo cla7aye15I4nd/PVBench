@@ -1,0 +1,31 @@
+diff --git a/NEWS b/NEWS
+index b5454bffcc..21ab2923e2 100644
+--- a/NEWS
++++ b/NEWS
+@@ -8,6 +8,10 @@ PHP                                                                        NEWS
+   . Fixed regression where signs after the first one were ignored while parsing
+     a signed integer, with the DateTimeInterface::modify() function. (Derick)
+ 
++- SimpleXML:
++  . Fixed bug GH-15837 (Segmentation fault in ext/simplexml/simplexml.c).
++    (nielsdos)
++
+ - SOAP:
+   . Fixed bug #62900 (Wrong namespace on xsd import error message). (nielsdos)
+ 
+diff --git a/ext/simplexml/simplexml.c b/ext/simplexml/simplexml.c
+index 6bcb9edcff..21cd5cdb4c 100644
+--- a/ext/simplexml/simplexml.c
++++ b/ext/simplexml/simplexml.c
+@@ -2547,6 +2547,11 @@ static void php_sxe_iterator_current_key(zend_object_iterator *iter, zval *key)
+ {
+ 	php_sxe_iterator *iterator = (php_sxe_iterator *)iter;
+ 	zval *curobj = &iterator->sxe->iter.data;
++	if (Z_ISUNDEF_P(curobj)) {
++		ZVAL_NULL(key);
++		return;
++	}
++
+ 	php_sxe_object *intern = Z_SXEOBJ_P(curobj);
+ 
+ 	xmlNodePtr curnode = NULL;

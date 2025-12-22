@@ -1,0 +1,14 @@
+id: tif-gh-647
+project: libtiff
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: poc-647
+trigger_commit: b00d0060ba2fb4c0f8bcb4bbb9fe4426ab5457dc
+patch:
+  commit: 986f906ed073afbbf61bf2af83687ed2543b38b7
+  date: '2024-08-27T21:45:54+00:00'
+reference:
+- https://gitlab.com/libtiff/libtiff
+- https://gitlab.com/libtiff/libtiff/-/merge_requests/647
+- https://gitlab.com/libtiff/libtiff/-/commit/b00d0060ba2fb4c0f8bcb4bbb9fe4426ab5457dc
+- https://gitlab.com/libtiff/libtiff/-/commit/986f906ed073afbbf61bf2af83687ed2543b38b7

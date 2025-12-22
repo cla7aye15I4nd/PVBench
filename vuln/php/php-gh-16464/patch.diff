@@ -1,0 +1,29 @@
+diff --git a/NEWS b/NEWS
+index be48244e19..217b7e07be 100644
+--- a/NEWS
++++ b/NEWS
+@@ -68,6 +68,8 @@ PHP                                                                        NEWS
+ 
+ - SPL:
+   . Fixed bug GH-16337 (Use-after-free in SplHeap). (nielsdos)
++  . Fixed bug GH-16464 (Use-after-free in SplDoublyLinkedList::offsetSet()).
++    (ilutov)
+ 
+ - Standard:
+   . Fixed bug GH-16293 (Failed assertion when throwing in assert() callback with
+diff --git a/ext/spl/spl_dllist.c b/ext/spl/spl_dllist.c
+index 186b9a34c7..6592efc4e5 100644
+--- a/ext/spl/spl_dllist.c
++++ b/ext/spl/spl_dllist.c
+@@ -737,8 +737,10 @@ PHP_METHOD(SplDoublyLinkedList, offsetSet)
+ 		if (element != NULL) {
+ 			/* the element is replaced, delref the old one as in
+ 			 * SplDoublyLinkedList::pop() */
+-			zval_ptr_dtor(&element->data);
++			zval garbage;
++			ZVAL_COPY_VALUE(&garbage, &element->data);
+ 			ZVAL_COPY(&element->data, value);
++			zval_ptr_dtor(&garbage);
+ 		} else {
+ 			zval_ptr_dtor(value);
+ 			zend_argument_error(spl_ce_OutOfRangeException, 1, "is an invalid offset");

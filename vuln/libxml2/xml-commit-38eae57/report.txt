@@ -1,0 +1,85 @@
+==12650==ERROR: AddressSanitizer: heap-use-after-free on address 0x525000000137 at pc 0x5b4e2a12bf92 bp 0x7ffee84fa330 sp 0x7ffee84fa328
+READ of size 1 at 0x525000000137 thread T0
+    #0 0x5b4e2a12bf91 in xmlSAX2AttributeNs /tmp/xml-commit-38eae57/build/SAX2.c:2035:6
+    #1 0x5b4e2a12b08d in xmlSAX2StartElementNs /tmp/xml-commit-38eae57/build/SAX2.c:2409:6
+    #2 0x5b4e29d802ff in xmlParseStartTag2 /tmp/xml-commit-38eae57/build/parser.c:9775:6
+    #3 0x5b4e29d783df in xmlParseElement /tmp/xml-commit-38eae57/build/parser.c:10156:16
+    #4 0x5b4e29d8bff5 in xmlParseDocument /tmp/xml-commit-38eae57/build/parser.c:10939:2
+    #5 0x5b4e29dadee9 in xmlDoRead /tmp/xml-commit-38eae57/build/parser.c:15418:5
+    #6 0x5b4e29dae10d in xmlReadFile /tmp/xml-commit-38eae57/build/parser.c:15480:13
+    #7 0x5b4e29cd9224 in parseAndPrintFile /tmp/xml-commit-38eae57/build/xmllint.c:2408:9
+    #8 0x5b4e29cd4b2e in main /tmp/xml-commit-38eae57/build/xmllint.c:3767:7
+    #9 0x7a68289f61c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x7a68289f628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x5b4e29bf6654 in _start (/tmp/xml-commit-38eae57/build/xmllint+0x9c654) (BuildId: b88909b3dedb5656739cbc8756d225791eb1044f)
+
+0x525000000137 is located 55 bytes inside of 8194-byte region [0x525000000100,0x525000002102)
+freed by thread T0 here:
+    #0 0x5b4e29c918c0 in realloc (/tmp/xml-commit-38eae57/build/xmllint+0x1378c0) (BuildId: b88909b3dedb5656739cbc8756d225791eb1044f)
+    #1 0x5b4e29f88990 in xmlBufGrowInternal /tmp/xml-commit-38eae57/build/buf.c:486:23
+    #2 0x5b4e29f87f20 in xmlBufGrow /tmp/xml-commit-38eae57/build/buf.c:515:11
+    #3 0x5b4e29e062c1 in xmlParserInputBufferGrow /tmp/xml-commit-38eae57/build/xmlIO.c:3326:9
+    #4 0x5b4e29d00a33 in xmlParserInputGrow /tmp/xml-commit-38eae57/build/parserInternals.c:320:8
+    #5 0x5b4e29d135e4 in xmlSkipBlankChars /tmp/xml-commit-38eae57/build/parser.c:2158:3
+    #6 0x5b4e29d7ccfd in xmlParseStartTag2 /tmp/xml-commit-38eae57/build/parser.c:9499:3
+    #7 0x5b4e29d783df in xmlParseElement /tmp/xml-commit-38eae57/build/parser.c:10156:16
+    #8 0x5b4e29d8bff5 in xmlParseDocument /tmp/xml-commit-38eae57/build/parser.c:10939:2
+    #9 0x5b4e29dadee9 in xmlDoRead /tmp/xml-commit-38eae57/build/parser.c:15418:5
+    #10 0x5b4e29dae10d in xmlReadFile /tmp/xml-commit-38eae57/build/parser.c:15480:13
+    #11 0x5b4e29cd9224 in parseAndPrintFile /tmp/xml-commit-38eae57/build/xmllint.c:2408:9
+    #12 0x5b4e29cd4b2e in main /tmp/xml-commit-38eae57/build/xmllint.c:3767:7
+    #13 0x7a68289f61c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x7a68289f628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x5b4e29bf6654 in _start (/tmp/xml-commit-38eae57/build/xmllint+0x9c654) (BuildId: b88909b3dedb5656739cbc8756d225791eb1044f)
+
+previously allocated by thread T0 here:
+    #0 0x5b4e29c914a3 in malloc (/tmp/xml-commit-38eae57/build/xmllint+0x1374a3) (BuildId: b88909b3dedb5656739cbc8756d225791eb1044f)
+    #1 0x5b4e29f858e2 in xmlBufCreateSize /tmp/xml-commit-38eae57/build/buf.c:172:36
+    #2 0x5b4e29e026ec in xmlAllocParserInputBuffer /tmp/xml-commit-38eae57/build/xmlIO.c:2432:19
+    #3 0x5b4e29e03c8f in __xmlParserInputBufferCreateFilename /tmp/xml-commit-38eae57/build/xmlIO.c:2661:11
+    #4 0x5b4e29e04077 in xmlParserInputBufferCreateFilename /tmp/xml-commit-38eae57/build/xmlIO.c:2717:9
+    #5 0x5b4e29d0a322 in xmlNewInputFromFile /tmp/xml-commit-38eae57/build/parserInternals.c:1522:11
+    #6 0x5b4e29e09e5e in xmlDefaultExternalEntityLoader /tmp/xml-commit-38eae57/build/xmlIO.c:4077:11
+    #7 0x5b4e29cd6796 in xmllintExternalEntityLoader /tmp/xml-commit-38eae57/build/xmllint.c:287:8
+    #8 0x5b4e29e0979e in xmlLoadExternalEntity /tmp/xml-commit-38eae57/build/xmlIO.c:4137:12
+    #9 0x5b4e29daa4b6 in xmlCreateURLParserCtxt /tmp/xml-commit-38eae57/build/parser.c:14319:19
+    #10 0x5b4e29dae0d3 in xmlReadFile /tmp/xml-commit-38eae57/build/parser.c:15477:12
+    #11 0x5b4e29cd9224 in parseAndPrintFile /tmp/xml-commit-38eae57/build/xmllint.c:2408:9
+    #12 0x5b4e29cd4b2e in main /tmp/xml-commit-38eae57/build/xmllint.c:3767:7
+    #13 0x7a68289f61c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x7a68289f628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x5b4e29bf6654 in _start (/tmp/xml-commit-38eae57/build/xmllint+0x9c654) (BuildId: b88909b3dedb5656739cbc8756d225791eb1044f)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /tmp/xml-commit-38eae57/build/SAX2.c:2035:6 in xmlSAX2AttributeNs
+Shadow bytes around the buggy address:
+  0x524ffffffe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x524fffffff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x524fffffff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x525000000000: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x525000000080: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x525000000100: fd fd fd fd fd fd[fd]fd fd fd fd fd fd fd fd fd
+  0x525000000180: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x525000000200: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x525000000280: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x525000000300: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x525000000380: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==12650==ABORTING

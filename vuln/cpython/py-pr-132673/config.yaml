@@ -1,0 +1,15 @@
+id: py-pr-132673
+project: cpython
+sanitizer: AddressSanitizer
+type: Divide by Zero
+trigger_commit: 38f305b9db30757d850703bd4ccb2bf547efd952
+binary: python
+patch:
+  commit: 47c8df6172db4fc4b10d0a500d9a4bfffa5d751f
+  date: '2025-04-19T14:29:05+00:00'
+reference:
+- https://github.com/python/cpython.git
+- https://github.com/python/cpython/pull/132695
+- https://github.com/python/cpython/issues/132673
+- https://github.com/python/cpython/commit/38f305b9db30757d850703bd4ccb2bf547efd952
+- https://github.com/python/cpython/commit/47c8df6172db4fc4b10d0a500d9a4bfffa5d751f

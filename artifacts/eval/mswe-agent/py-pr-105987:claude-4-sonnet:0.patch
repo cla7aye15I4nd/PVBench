@@ -1,0 +1,91 @@
+
+diff --git a/.gitignore b/.gitignore
+index dddf28da016..efa3374de86 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -158,3 +158,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 4b84c1de66b..7bb52104de4 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2048,18 +2048,21 @@ swap_current_task(asyncio_state *state, PyObject *loop, PyObject *task)
+         prev_task = Py_None;
+     }
+ 
++    /* Increment reference count immediately to prevent use-after-free */
++    Py_INCREF(prev_task);
++
+     if (task == Py_None) {
+         if (_PyDict_DelItem_KnownHash(state->current_tasks, loop, hash) == -1) {
++            Py_DECREF(prev_task);  /* Clean up on error */
+             return NULL;
+         }
+     } else {
+         if (_PyDict_SetItem_KnownHash(state->current_tasks, loop, task, hash) == -1) {
++            Py_DECREF(prev_task);  /* Clean up on error */
+             return NULL;
+         }
+     }
+ 
+-    Py_INCREF(prev_task);
+-
+     return prev_task;
+ }
+ 
+@@ -2492,6 +2495,9 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
++    if (self->task_coro == NULL) {
++        Py_RETURN_NONE;
++    }
+     return Py_NewRef(self->task_coro);
+ }
+ 
+@@ -2503,6 +2509,9 @@ static PyObject *
+ _asyncio_Task_get_context_impl(TaskObj *self)
+ /*[clinic end generated code: output=6996f53d3dc01aef input=87c0b209b8fceeeb]*/
+ {
++    if (self->task_context == NULL) {
++        Py_RETURN_NONE;
++    }
+     return Py_NewRef(self->task_context);
+ }
+ 
+diff --git a/test_fix.py b/test_fix.py
+new file mode 100644
+index 00000000000..04dc7d74c89
+--- /dev/null
++++ b/test_fix.py
+@@ -0,0 +1,22 @@
++import asyncio
++
++async def test_coro():
++    print("Test coroutine running")
++    return "result"
++
++async def main():
++    # Test normal case
++    task = asyncio.create_task(test_coro())
++    print("Task coro:", task.get_coro())
++    print("Task context:", task.get_context())
++    
++    # Wait for task to complete
++    result = await task
++    print("Task result:", result)
++    
++    # Test after completion
++    print("Task coro after completion:", task.get_coro())
++    print("Task context after completion:", task.get_context())
++
++if __name__ == "__main__":
++    asyncio.run(main())

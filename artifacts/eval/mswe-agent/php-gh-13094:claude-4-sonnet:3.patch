@@ -1,0 +1,38 @@
+
+diff --git a/.gitignore b/.gitignore
+index 49acc9f2e17..de22b095dfc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -297,3 +297,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/standard/array.c b/ext/standard/array.c
+index eee260f2243..2a672a4d45d 100644
+--- a/ext/standard/array.c
++++ b/ext/standard/array.c
+@@ -2960,6 +2960,15 @@ PHP_FUNCTION(range)
+ 		}
+ 
+ 		/* Generate array of characters */
++		/* Validate string pointers and length before accessing */
++		if (UNEXPECTED(!Z_STRVAL_P(user_start) || Z_STRLEN_P(user_start) == 0)) {
++			zend_argument_value_error(1, "must be a valid non-empty string");
++			RETURN_THROWS();
++		}
++		if (UNEXPECTED(!Z_STRVAL_P(user_end) || Z_STRLEN_P(user_end) == 0)) {
++			zend_argument_value_error(2, "must be a valid non-empty string");
++			RETURN_THROWS();
++		}
+ 		unsigned char low = (unsigned char)Z_STRVAL_P(user_start)[0];
+ 		unsigned char high = (unsigned char)Z_STRVAL_P(user_end)[0];
+ 

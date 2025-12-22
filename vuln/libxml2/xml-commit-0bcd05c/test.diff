@@ -1,0 +1,113 @@
+diff --git a/result/HTML/758606.html b/result/HTML/758606.html
+new file mode 100644
+index 00000000..4f21f628
+--- /dev/null
++++ b/result/HTML/758606.html
+@@ -0,0 +1,2 @@
++<!DOCTYPE >
++
+diff --git a/result/HTML/758606.html.err b/result/HTML/758606.html.err
+new file mode 100644
+index 00000000..060433a8
+--- /dev/null
++++ b/result/HTML/758606.html.err
+@@ -0,0 +1,16 @@
++./test/HTML/758606.html:1: HTML parser error : Comment not terminated 
++<!--
++<!--<!doctype
++    ^
++./test/HTML/758606.html:1: HTML parser error : Invalid char in CDATA 0xC
++<!--<!doctype
++    ^
++./test/HTML/758606.html:1: HTML parser error : Misplaced DOCTYPE declaration
++<!--<!doctype
++     ^
++./test/HTML/758606.html:2: HTML parser error : htmlParseDocTypeDecl : no DOCTYPE name !
++
++^
++./test/HTML/758606.html:2: HTML parser error : DOCTYPE improperly terminated
++
++^
+diff --git a/result/HTML/758606.html.sax b/result/HTML/758606.html.sax
+new file mode 100644
+index 00000000..d44a5cf4
+--- /dev/null
++++ b/result/HTML/758606.html.sax
+@@ -0,0 +1,10 @@
++SAX.setDocumentLocator()
++SAX.startDocument()
++SAX.error: Comment not terminated 
++<!--
++SAX.error: Invalid char in CDATA 0xC
++SAX.error: Misplaced DOCTYPE declaration
++SAX.error: htmlParseDocTypeDecl : no DOCTYPE name !
++SAX.error: DOCTYPE improperly terminated
++SAX.internalSubset((null), , )
++SAX.endDocument()
+diff --git a/result/HTML/758606_2.html b/result/HTML/758606_2.html
+new file mode 100644
+index 00000000..273816a0
+--- /dev/null
++++ b/result/HTML/758606_2.html
+@@ -0,0 +1,2 @@
++<!DOCTYPE >
++<html><body><p>&#145;</p></body></html>
+diff --git a/result/HTML/758606_2.html.err b/result/HTML/758606_2.html.err
+new file mode 100644
+index 00000000..4be039f4
+--- /dev/null
++++ b/result/HTML/758606_2.html.err
+@@ -0,0 +1,16 @@
++./test/HTML/758606_2.html:1: HTML parser error : Comment not terminated 
++<!--
++<!--‘<!dOctYPE
++    ^
++./test/HTML/758606_2.html:1: HTML parser error : Invalid char in CDATA 0xC
++<!--‘<!dOctYPE
++    ^
++./test/HTML/758606_2.html:1: HTML parser error : Misplaced DOCTYPE declaration
++Â‘<!dOctYPE
++  ^
++./test/HTML/758606_2.html:2: HTML parser error : htmlParseDocTypeDecl : no DOCTYPE name !
++
++^
++./test/HTML/758606_2.html:2: HTML parser error : DOCTYPE improperly terminated
++
++^
+diff --git a/result/HTML/758606_2.html.sax b/result/HTML/758606_2.html.sax
+new file mode 100644
+index 00000000..80ff3d77
+--- /dev/null
++++ b/result/HTML/758606_2.html.sax
+@@ -0,0 +1,17 @@
++SAX.setDocumentLocator()
++SAX.startDocument()
++SAX.error: Comment not terminated 
++<!--
++SAX.error: Invalid char in CDATA 0xC
++SAX.startElement(html)
++SAX.startElement(body)
++SAX.startElement(p)
++SAX.characters(&#145;, 2)
++SAX.error: Misplaced DOCTYPE declaration
++SAX.error: htmlParseDocTypeDecl : no DOCTYPE name !
++SAX.error: DOCTYPE improperly terminated
++SAX.internalSubset((null), , )
++SAX.endElement(p)
++SAX.endElement(body)
++SAX.endElement(html)
++SAX.endDocument()
+diff --git a/test/HTML/758606.html b/test/HTML/758606.html
+new file mode 100644
+index 00000000..01a013c5
+--- /dev/null
++++ b/test/HTML/758606.html
+@@ -0,0 +1 @@
++<!--<!doctype
+diff --git a/test/HTML/758606_2.html b/test/HTML/758606_2.html
+new file mode 100644
+index 00000000..daa185b8
+--- /dev/null
++++ b/test/HTML/758606_2.html
+@@ -0,0 +1 @@
++<!--‘<!dOctYPE

@@ -1,0 +1,23 @@
+diff --git a/clang/unittests/Format/FormatTest.cpp b/clang/unittests/Format/FormatTest.cpp
+index 8543c1b565d6..333d40d48102 100644
+--- a/clang/unittests/Format/FormatTest.cpp
++++ b/clang/unittests/Format/FormatTest.cpp
+@@ -6492,6 +6492,18 @@ TEST_F(FormatTest, IndentPreprocessorDirectives) {
+                "#if 1\n"
+                "#endif",
+                Style);
++
++  verifyFormat("#ifndef ABCDE\n"
++               "  #define ABCDE 0\n"
++               "#endif\n"
++               "\n"
++               "#define FGHIJK",
++               "#ifndef ABCDE\n"
++               "#define ABCDE 0\n"
++               "#endif\n"
++               "\n"
++               "#define FGHIJK",
++               Style);
+ }
+ 
+ TEST_F(FormatTest, FormatAlignInsidePreprocessorElseBlock) {

@@ -1,0 +1,95 @@
+==4413==ERROR: AddressSanitizer: attempting double-free on 0x502000096150 in thread T0:
+    #0 0x557c45d50bca in free (/tmp/vim-gh-17362/build/src/vim+0x206bca) (BuildId: 36a9f21ec8d51fc5005cf337b2f3cba62be50b3b)
+    #1 0x557c45d8fbb1 in vim_free /tmp/vim-gh-17362/build/src/alloc.c:616:2
+    #2 0x557c4652bc7c in clear_tv /tmp/vim-gh-17362/build/src/typval.c:130:6
+    #3 0x557c4665f06a in handle_import /tmp/vim-gh-17362/build/src/vim9script.c:644:5
+    #4 0x557c4665d35a in ex_import /tmp/vim-gh-17362/build/src/vim9script.c:666:15
+    #5 0x557c45f8a66b in do_one_cmd /tmp/vim-gh-17362/build/src/ex_docmd.c:2624:2
+    #6 0x557c45f82c67 in do_cmdline /tmp/vim-gh-17362/build/src/ex_docmd.c:1036:17
+    #7 0x557c46390d97 in do_source_ext /tmp/vim-gh-17362/build/src/scriptfile.c:1889:5
+    #8 0x557c4638e649 in cmd_source /tmp/vim-gh-17362/build/src/scriptfile.c:1364:6
+    #9 0x557c4638e38d in ex_source /tmp/vim-gh-17362/build/src/scriptfile.c:1407:2
+    #10 0x557c45f8a66b in do_one_cmd /tmp/vim-gh-17362/build/src/ex_docmd.c:2624:2
+    #11 0x557c45f82c67 in do_cmdline /tmp/vim-gh-17362/build/src/ex_docmd.c:1036:17
+    #12 0x557c46390d97 in do_source_ext /tmp/vim-gh-17362/build/src/scriptfile.c:1889:5
+    #13 0x557c4638ecf0 in do_source /tmp/vim-gh-17362/build/src/scriptfile.c:2035:12
+    #14 0x557c4638e88f in cmd_source /tmp/vim-gh-17362/build/src/scriptfile.c:1381:14
+    #15 0x557c4638e38d in ex_source /tmp/vim-gh-17362/build/src/scriptfile.c:1407:2
+    #16 0x557c45f8a66b in do_one_cmd /tmp/vim-gh-17362/build/src/ex_docmd.c:2624:2
+    #17 0x557c45f82c67 in do_cmdline /tmp/vim-gh-17362/build/src/ex_docmd.c:1036:17
+    #18 0x557c45f851b0 in do_cmdline_cmd /tmp/vim-gh-17362/build/src/ex_docmd.c:630:12
+    #19 0x557c467a0250 in exe_commands /tmp/vim-gh-17362/build/src/main.c:3225:2
+    #20 0x557c4679dff7 in vim_main2 /tmp/vim-gh-17362/build/src/main.c:837:6
+    #21 0x557c467988cc in main /tmp/vim-gh-17362/build/src/main.c:446:12
+    #22 0x788822e441c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #23 0x788822e4428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #24 0x557c45cb6014 in _start (/tmp/vim-gh-17362/build/src/vim+0x16c014) (BuildId: 36a9f21ec8d51fc5005cf337b2f3cba62be50b3b)
+
+0x502000096150 is located 0 bytes inside of 13-byte region [0x502000096150,0x50200009615d)
+freed by thread T0 here:
+    #0 0x557c45d50bca in free (/tmp/vim-gh-17362/build/src/vim+0x206bca) (BuildId: 36a9f21ec8d51fc5005cf337b2f3cba62be50b3b)
+    #1 0x557c45d8fbb1 in vim_free /tmp/vim-gh-17362/build/src/alloc.c:616:2
+    #2 0x557c4652bc7c in clear_tv /tmp/vim-gh-17362/build/src/typval.c:130:6
+    #3 0x557c46526096 in tuple_free_contents /tmp/vim-gh-17362/build/src/tuple.c:155:2
+    #4 0x557c46525bdb in tuple_free /tmp/vim-gh-17362/build/src/tuple.c:222:5
+    #5 0x557c46528854 in eval_tuple /tmp/vim-gh-17362/build/src/tuple.c:596:6
+    #6 0x557c45eec2f1 in eval9_nested_expr /tmp/vim-gh-17362/build/src/eval.c:5010:9
+    #7 0x557c45eeae9d in eval9 /tmp/vim-gh-17362/build/src/eval.c:5265:21
+    #8 0x557c45ef6af7 in eval8 /tmp/vim-gh-17362/build/src/eval.c:4748:11
+    #9 0x557c45ef4fb9 in eval7 /tmp/vim-gh-17362/build/src/eval.c:4646:9
+    #10 0x557c45ef397d in eval6 /tmp/vim-gh-17362/build/src/eval.c:4396:9
+    #11 0x557c45ef2fcd in eval5 /tmp/vim-gh-17362/build/src/eval.c:4190:9
+    #12 0x557c45ef2360 in eval4 /tmp/vim-gh-17362/build/src/eval.c:3977:9
+    #13 0x557c45ef1519 in eval3 /tmp/vim-gh-17362/build/src/eval.c:3838:9
+    #14 0x557c45ed86e9 in eval2 /tmp/vim-gh-17362/build/src/eval.c:3712:9
+    #15 0x557c45ec6a99 in eval1 /tmp/vim-gh-17362/build/src/eval.c:3558:9
+    #16 0x557c45ed8015 in eval0_retarg /tmp/vim-gh-17362/build/src/eval.c:3467:11
+    #17 0x557c4665d7d5 in handle_import /tmp/vim-gh-17362/build/src/vim9script.c:437:11
+    #18 0x557c4665d35a in ex_import /tmp/vim-gh-17362/build/src/vim9script.c:666:15
+    #19 0x557c45f8a66b in do_one_cmd /tmp/vim-gh-17362/build/src/ex_docmd.c:2624:2
+    #20 0x557c45f82c67 in do_cmdline /tmp/vim-gh-17362/build/src/ex_docmd.c:1036:17
+    #21 0x557c46390d97 in do_source_ext /tmp/vim-gh-17362/build/src/scriptfile.c:1889:5
+    #22 0x557c4638e649 in cmd_source /tmp/vim-gh-17362/build/src/scriptfile.c:1364:6
+    #23 0x557c4638e38d in ex_source /tmp/vim-gh-17362/build/src/scriptfile.c:1407:2
+    #24 0x557c45f8a66b in do_one_cmd /tmp/vim-gh-17362/build/src/ex_docmd.c:2624:2
+    #25 0x557c45f82c67 in do_cmdline /tmp/vim-gh-17362/build/src/ex_docmd.c:1036:17
+    #26 0x557c46390d97 in do_source_ext /tmp/vim-gh-17362/build/src/scriptfile.c:1889:5
+    #27 0x557c4638ecf0 in do_source /tmp/vim-gh-17362/build/src/scriptfile.c:2035:12
+    #28 0x557c4638e88f in cmd_source /tmp/vim-gh-17362/build/src/scriptfile.c:1381:14
+    #29 0x557c4638e38d in ex_source /tmp/vim-gh-17362/build/src/scriptfile.c:1407:2
+
+previously allocated by thread T0 here:
+    #0 0x557c45d50e63 in malloc (/tmp/vim-gh-17362/build/src/vim+0x206e63) (BuildId: 36a9f21ec8d51fc5005cf337b2f3cba62be50b3b)
+    #1 0x557c45d8f7c6 in lalloc /tmp/vim-gh-17362/build/src/alloc.c:246:11
+    #2 0x557c45d8f729 in alloc /tmp/vim-gh-17362/build/src/alloc.c:151:12
+    #3 0x557c4653a686 in eval_string /tmp/vim-gh-17362/build/src/typval.c:2569:28
+    #4 0x557c45eeac13 in eval9 /tmp/vim-gh-17362/build/src/eval.c:5205:21
+    #5 0x557c45ef6af7 in eval8 /tmp/vim-gh-17362/build/src/eval.c:4748:11
+    #6 0x557c45ef4fb9 in eval7 /tmp/vim-gh-17362/build/src/eval.c:4646:9
+    #7 0x557c45ef397d in eval6 /tmp/vim-gh-17362/build/src/eval.c:4396:9
+    #8 0x557c45ef2fcd in eval5 /tmp/vim-gh-17362/build/src/eval.c:4190:9
+    #9 0x557c45ef2360 in eval4 /tmp/vim-gh-17362/build/src/eval.c:3977:9
+    #10 0x557c45ef1519 in eval3 /tmp/vim-gh-17362/build/src/eval.c:3838:9
+    #11 0x557c45ed86e9 in eval2 /tmp/vim-gh-17362/build/src/eval.c:3712:9
+    #12 0x557c45ec6a99 in eval1 /tmp/vim-gh-17362/build/src/eval.c:3558:9
+    #13 0x557c45eec1b8 in eval9_nested_expr /tmp/vim-gh-17362/build/src/eval.c:5002:12
+    #14 0x557c45eeae9d in eval9 /tmp/vim-gh-17362/build/src/eval.c:5265:21
+    #15 0x557c45ef6af7 in eval8 /tmp/vim-gh-17362/build/src/eval.c:4748:11
+    #16 0x557c45ef4fb9 in eval7 /tmp/vim-gh-17362/build/src/eval.c:4646:9
+    #17 0x557c45ef397d in eval6 /tmp/vim-gh-17362/build/src/eval.c:4396:9
+    #18 0x557c45ef2fcd in eval5 /tmp/vim-gh-17362/build/src/eval.c:4190:9
+    #19 0x557c45ef2360 in eval4 /tmp/vim-gh-17362/build/src/eval.c:3977:9
+    #20 0x557c45ef1519 in eval3 /tmp/vim-gh-17362/build/src/eval.c:3838:9
+    #21 0x557c45ed86e9 in eval2 /tmp/vim-gh-17362/build/src/eval.c:3712:9
+    #22 0x557c45ec6a99 in eval1 /tmp/vim-gh-17362/build/src/eval.c:3558:9
+    #23 0x557c45ed8015 in eval0_retarg /tmp/vim-gh-17362/build/src/eval.c:3467:11
+    #24 0x557c4665d7d5 in handle_import /tmp/vim-gh-17362/build/src/vim9script.c:437:11
+    #25 0x557c4665d35a in ex_import /tmp/vim-gh-17362/build/src/vim9script.c:666:15
+    #26 0x557c45f8a66b in do_one_cmd /tmp/vim-gh-17362/build/src/ex_docmd.c:2624:2
+    #27 0x557c45f82c67 in do_cmdline /tmp/vim-gh-17362/build/src/ex_docmd.c:1036:17
+    #28 0x557c46390d97 in do_source_ext /tmp/vim-gh-17362/build/src/scriptfile.c:1889:5
+    #29 0x557c4638e649 in cmd_source /tmp/vim-gh-17362/build/src/scriptfile.c:1364:6
+
+SUMMARY: AddressSanitizer: double-free (/tmp/vim-gh-17362/build/src/vim+0x206bca) (BuildId: 36a9f21ec8d51fc5005cf337b2f3cba62be50b3b) in free
+==4413==ABORTING
+c>

@@ -1,0 +1,59 @@
+
+diff --git a/.gitignore b/.gitignore
+index dddf28da016..efa3374de86 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -158,3 +158,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Include/internal/pycore_ceval.h b/Include/internal/pycore_ceval.h
+index e9535023cec..463adc5e12b 100644
+--- a/Include/internal/pycore_ceval.h
++++ b/Include/internal/pycore_ceval.h
+@@ -103,10 +103,13 @@ static inline PyObject*
+ _PyEval_EvalFrame(PyThreadState *tstate, struct _PyInterpreterFrame *frame, int throwflag)
+ {
+     EVAL_CALL_STAT_INC(EVAL_CALL_TOTAL);
+-    if (tstate->interp->eval_frame == NULL) {
++    if (tstate == NULL) {
++        return NULL;
++    }
++    if (tstate->interp == NULL || tstate->interp->eval_frame == NULL) {
+         return _PyEval_EvalFrameDefault(tstate, frame, throwflag);
+     }
+-    return tstate->interp->eval_frame(tstate, frame, throwflag);
++    return NULL;
+ }
+ 
+ extern PyObject*
+diff --git a/Python/ceval.c b/Python/ceval.c
+index a22852ec13e..de8005b80ce 100644
+--- a/Python/ceval.c
++++ b/Python/ceval.c
+@@ -593,6 +593,9 @@ PyObject *
+ PyEval_EvalFrame(PyFrameObject *f)
+ {
+     /* Function kept for backward compatibility */
++    if (f == NULL) {
++        return NULL;
++    }
+     PyThreadState *tstate = _PyThreadState_GET();
+     return _PyEval_EvalFrame(tstate, f->f_frame, 0);
+ }
+@@ -600,6 +603,9 @@ PyEval_EvalFrame(PyFrameObject *f)
+ PyObject *
+ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
+ {
++    if (f == NULL) {
++        return NULL;
++    }
+     PyThreadState *tstate = _PyThreadState_GET();
+     return _PyEval_EvalFrame(tstate, f->f_frame, throwflag);
+ }

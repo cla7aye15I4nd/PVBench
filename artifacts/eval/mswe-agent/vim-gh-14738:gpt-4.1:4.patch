@@ -1,0 +1,38 @@
+
+diff --git a/.gitignore b/.gitignore
+index 241e96eaf..6bdb4f440 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -117,3 +117,11 @@ src/cscope.out
+ /.cache/clangd/
+ /.ccls-cache/
+ /compile_commands.json
++build/
++Build/
++bin/
++lib/
++*.out
++*.dll
++*.so
++*.dylib
+diff --git a/src/xxd/xxd.c b/src/xxd/xxd.c
+index cf8b4ea6a..24f1ba34e 100644
+--- a/src/xxd/xxd.c
++++ b/src/xxd/xxd.c
+@@ -224,11 +224,11 @@ char osver[] = "";
+  */
+ #define LLEN (2*(int)sizeof(unsigned long) + 2 +     /* addr + ": " */ \
+              (11 * 2 + 4 + 1) * (COLS / 2) +         /* 1st group */   \
+-	     1 +                                     /* space */       \
+-	     (1 + 11) * COLS +                       /* 2nd group */   \
+-	     1 +                                     /* new line */    \
+-	     1)                                      /* zero */
+-
++             1 +                                     /* space */       \
++             (1 + 11) * COLS +                       /* 2nd group */   \
++             1 +                                     /* new line */    \
++             1 +                                     /* zero */        \
++             1024)                                   /* safety margin */
+ char hexxa[] = "0123456789abcdef0123456789ABCDEF", *hexx = hexxa;
+ 
+ /* the different hextypes known by this program: */

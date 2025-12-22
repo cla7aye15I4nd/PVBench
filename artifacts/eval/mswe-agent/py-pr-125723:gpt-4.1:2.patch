@@ -1,0 +1,40 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Objects/frameobject.c b/Objects/frameobject.c
+index d6b4065e130..b5d8acdb22f 100644
+--- a/Objects/frameobject.c
++++ b/Objects/frameobject.c
+@@ -127,6 +127,10 @@ static PyObject *
+ framelocalsproxy_getitem(PyObject *self, PyObject *key)
+ {
+     PyFrameObject* frame = ((PyFrameLocalsProxyObject*)self)->frame;
++    if (frame == NULL) {
++        PyErr_SetString(PyExc_ReferenceError, "frame is no longer available");
++        return NULL;
++    }
+     PyCodeObject* co = _PyFrame_GetCode(frame->f_frame);
+ 
+     int i = framelocalsproxy_getkeyindex(frame, key, true);
+diff --git a/asan_stderr.log b/asan_stderr.log
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/strace.log b/strace.log
+new file mode 100644
+index 00000000000..97508825667
+--- /dev/null
++++ b/strace.log
+@@ -0,0 +1 @@
++/bin/bash: line 391: strace: command not found

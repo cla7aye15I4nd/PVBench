@@ -1,0 +1,73 @@
+
+diff --git a/.gitignore b/.gitignore
+index 02b6d1ad7..15fa78f8f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -28,3 +28,13 @@ contrib/vms/.vagrant
+ CMakeUserPresets.json
+ 
+ *cppcheck*
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/src/quicktimevideo.cpp b/src/quicktimevideo.cpp
+index 1c54b01b9..4c3f7d730 100644
+--- a/src/quicktimevideo.cpp
++++ b/src/quicktimevideo.cpp
+@@ -620,24 +620,27 @@ void QuickTimeVideo::tagDecoder(Exiv2::DataBuf& buf, size_t size) {
+     keysTagDecoder(size);
+ 
+   else if (equalsQTimeTag(buf, "url ")) {
+-    io_->readOrThrow(buf.data(), size);
++    DataBuf urlBuf(size);
++    io_->readOrThrow(urlBuf.data(), size);
+     if (currentStream_ == Video)
+-      xmpData_["Xmp.video.URL"] = Exiv2::toString(buf.data());
++      xmpData_["Xmp.video.URL"] = Exiv2::toString(urlBuf.data());
+     else if (currentStream_ == Audio)
+-      xmpData_["Xmp.audio.URL"] = Exiv2::toString(buf.data());
++      xmpData_["Xmp.audio.URL"] = Exiv2::toString(urlBuf.data());
+   }
+ 
+   else if (equalsQTimeTag(buf, "urn ")) {
+-    io_->readOrThrow(buf.data(), size);
++    DataBuf urnBuf(size);
++    io_->readOrThrow(urnBuf.data(), size);
+     if (currentStream_ == Video)
+-      xmpData_["Xmp.video.URN"] = Exiv2::toString(buf.data());
++      xmpData_["Xmp.video.URN"] = Exiv2::toString(urnBuf.data());
+     else if (currentStream_ == Audio)
+-      xmpData_["Xmp.audio.URN"] = Exiv2::toString(buf.data());
++      xmpData_["Xmp.audio.URN"] = Exiv2::toString(urnBuf.data());
+   }
+ 
+   else if (equalsQTimeTag(buf, "dcom")) {
+-    io_->readOrThrow(buf.data(), size);
+-    xmpData_["Xmp.video.Compressor"] = Exiv2::toString(buf.data());
++    DataBuf dcomBuf(size);
++    io_->readOrThrow(dcomBuf.data(), size);
++    xmpData_["Xmp.video.Compressor"] = Exiv2::toString(dcomBuf.data());
+   }
+ 
+   else if (equalsQTimeTag(buf, "smhd")) {
+diff --git a/test/data/issue_1998.xmp b/test/data/issue_1998.xmp
+index c1b84fa44..9bb7f0af4 100644
+--- a/test/data/issue_1998.xmp
++++ b/test/data/issue_1998.xmp
+@@ -3,7 +3,7 @@
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <rdf:Description rdf:about=""
+     xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+-   xmp:CreateDate="2021-02-03T12:34:56+02:00"/>
++   xmp:CreateDate="2021-02-03T12:00:00+01:00"/>
+  </rdf:RDF>
+ </x:xmpmeta>
+ <?xpacket end="w"?>
+\ No newline at end of file

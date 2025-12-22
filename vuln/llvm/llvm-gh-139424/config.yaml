@@ -1,0 +1,14 @@
+id: llvm-gh-139424
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: Always-Incorrect Control Flow
+trigger_commit: b96c5df04e55396572a7c12cb6505f5a116072cb
+binary: clang
+patch:
+  commit: 3abd77ac157f87f2fa0c8083b9f27c1dd2896a25
+  date: '2025-05-14T07:06:11-05:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/139424
+- https://github.com/llvm/llvm-project/commit/b96c5df04e55396572a7c12cb6505f5a116072cb
+- https://github.com/llvm/llvm-project/commit/3abd77ac157f87f2fa0c8083b9f27c1dd2896a25

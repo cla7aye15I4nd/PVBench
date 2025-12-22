@@ -1,0 +1,85 @@
+
+diff --git a/.gitignore b/.gitignore
+index 24208ddbb..e3bfbe6e6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -31,3 +31,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ # VS Code and Visual Studio
+ .vs
+ .vscode
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/Support/SHA1.h b/include/hermes/Support/SHA1.h
+index cfc82b4e2..0b34fbef3 100644
+--- a/include/hermes/Support/SHA1.h
++++ b/include/hermes/Support/SHA1.h
+@@ -10,7 +10,7 @@
+ 
+ #include <array>
+ #include <string>
+-
++#include <cstdint>
+ namespace hermes {
+ 
+ constexpr size_t SHA1_NUM_BYTES = 20;
+diff --git a/lib/Parser/JSParserImpl.cpp b/lib/Parser/JSParserImpl.cpp
+index 0589efb3a..7a928f896 100644
+--- a/lib/Parser/JSParserImpl.cpp
++++ b/lib/Parser/JSParserImpl.cpp
+@@ -5530,9 +5530,10 @@ Optional<ESTree::Node *> JSParserImpl::parseAssignmentExpression(
+     Optional<ESTree::Node *> optLeftExpr = llvh::None;
+     UniqueString *op = nullptr;
+     SMLoc debugLoc = {};
+-
+     explicit State() {}
+   };
++  CHECK_RECURSION;
++
+ 
+   auto parseHelper = [this](
+                          State &state,
+diff --git a/lib/Parser/JSParserImpl.h b/lib/Parser/JSParserImpl.h
+index 3043ab094..979fa32da 100644
+--- a/lib/Parser/JSParserImpl.h
++++ b/lib/Parser/JSParserImpl.h
+@@ -199,16 +199,8 @@ class JSParserImpl {
+   unsigned recursionDepth_{0};
+ 
+   /// Self-explanatory: the maximum depth of parser recursion.
+-  static constexpr unsigned MAX_RECURSION_DEPTH =
+-#ifdef HERMES_LIMIT_STACK_DEPTH
+-      128
+-#elif defined(_MSC_VER) && defined(HERMES_SLOW_DEBUG)
+-      128
+-#elif defined(_MSC_VER)
+-      512
+-#else
+-      1024
+-#endif
++  /// Self-explanatory: the maximum depth of parser recursion.
++  static constexpr unsigned MAX_RECURSION_DEPTH = 128;
+       ;
+ 
+   /// Set when the parser sees the 'use static builtin' directive in any scope.
+diff --git a/public/hermes/Public/DebuggerTypes.h b/public/hermes/Public/DebuggerTypes.h
+index fe651803f..ad4cbc686 100644
+--- a/public/hermes/Public/DebuggerTypes.h
++++ b/public/hermes/Public/DebuggerTypes.h
+@@ -10,7 +10,7 @@
+ 
+ #include <string>
+ #include <vector>
+-
++#include <cstdint>
+ namespace hermes {
+ namespace vm {
+ class Debugger;

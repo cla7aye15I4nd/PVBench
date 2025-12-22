@@ -1,0 +1,32 @@
+diff --git a/src/message_test.c b/src/message_test.c
+index 62f777247..83767ece9 100644
+--- a/src/message_test.c
++++ b/src/message_test.c
+@@ -508,7 +508,8 @@ main(int argc, char **argv)
+     CLEAR_FIELD(params);
+     params.argc = argc;
+     params.argv = argv;
+-    common_init(&params);
++    common_init_1();
++    common_init_2(&params);
+ 
+     set_option_value_give_err((char_u *)"encoding", 0, (char_u *)"utf-8", 0);
+     init_chartab();
+diff --git a/src/testdir/test_startup.vim b/src/testdir/test_startup.vim
+index 7c7039160..c16e4ae27 100644
+--- a/src/testdir/test_startup.vim
++++ b/src/testdir/test_startup.vim
+@@ -740,6 +740,13 @@ func Test_log()
+   call delete('Xlogfile')
+ endfunc
+ 
++func Test_log_nonexistent()
++  " this used to crash Vim
++  CheckFeature channel
++  let result = join(systemlist(GetVimCommand() .. ' --log /X/Xlogfile -c qa!'))
++  call assert_match("E484: Can't open file", result)
++endfunc
++
+ func Test_read_stdin()
+   let after =<< trim [CODE]
+     write Xtestout

@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/simplexml/simplexml.c b/ext/simplexml/simplexml.c
+index ce7c96a0d46..666e6a6966e 100644
+--- a/ext/simplexml/simplexml.c
++++ b/ext/simplexml/simplexml.c
+@@ -1868,7 +1868,9 @@ static zend_result sxe_object_cast_ex(zend_object *readobj, zval *writeobj, int
+ 
+ 		if (sxe->node && sxe->node->node) {
+ 			if (sxe->node->node->children) {
+-				contents = xmlNodeListGetString((xmlDocPtr) sxe->document->ptr, sxe->node->node->children, 1);
++				if (sxe->document && sxe->document->ptr) {
++					contents = xmlNodeListGetString((xmlDocPtr) sxe->document->ptr, sxe->node->node->children, 1);
++				}
+ 			} else if (sxe->node->node->type == XML_COMMENT_NODE || sxe->node->node->type == XML_PI_NODE) {
+ 				contents = sxe->node->node->content;
+ 				free_contents = false;

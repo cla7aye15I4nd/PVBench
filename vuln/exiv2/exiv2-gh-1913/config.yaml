@@ -1,0 +1,14 @@
+id: exiv2-gh-1913
+project: exiv2
+sanitizer: UndefinedBehaviorSanitizer
+type: Integer Overflow
+binary: exiv2
+trigger_commit: 04f4624718a55cf734e7911de614b44ecb6db35f
+patch:
+  commit: be296814c1d73aefe1164c8d377acc4082dcd924
+  date: '2021-09-21T10:52:14+01:00'
+reference:
+- https://github.com/Exiv2/exiv2
+- https://github.com/Exiv2/exiv2/issues/1913
+- https://github.com/Exiv2/exiv2/commit/04f4624718a55cf734e7911de614b44ecb6db35f
+- https://github.com/Exiv2/exiv2/commit/be296814c1d73aefe1164c8d377acc4082dcd924

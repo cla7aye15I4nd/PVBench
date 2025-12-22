@@ -1,0 +1,31 @@
+diff --git a/Misc/NEWS.d/next/Core_and_Builtins/2025-05-16-17-25-52.gh-issue-134100.5-FbLK.rst b/Misc/NEWS.d/next/Core_and_Builtins/2025-05-16-17-25-52.gh-issue-134100.5-FbLK.rst
+new file mode 100644
+index 00000000000..d672347f9ad
+--- /dev/null
++++ b/Misc/NEWS.d/next/Core_and_Builtins/2025-05-16-17-25-52.gh-issue-134100.5-FbLK.rst
+@@ -0,0 +1,2 @@
++Fix a use-after-free bug that occurs when an imported module isn't
++in :data:`sys.modules` after its initial import. Patch by Nico-Posada.
+diff --git a/Python/import.c b/Python/import.c
+index 9dec0f488a3..e7be1b90751 100644
+--- a/Python/import.c
++++ b/Python/import.c
+@@ -3854,15 +3854,17 @@ PyImport_ImportModuleLevelObject(PyObject *name, PyObject *globals,
+                 }
+ 
+                 final_mod = import_get_module(tstate, to_return);
+-                Py_DECREF(to_return);
+                 if (final_mod == NULL) {
+                     if (!_PyErr_Occurred(tstate)) {
+                         _PyErr_Format(tstate, PyExc_KeyError,
+                                       "%R not in sys.modules as expected",
+                                       to_return);
+                     }
++                    Py_DECREF(to_return);
+                     goto error;
+                 }
++
++                Py_DECREF(to_return);
+             }
+         }
+         else {

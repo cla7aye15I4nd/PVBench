@@ -1,0 +1,4 @@
+<?php
+$element = new DOMElement("b", null, "a");
+var_dump($element->getAttributeNames());
+?>

@@ -1,0 +1,14 @@
+id: pcap-gh-1580
+project: pcapplusplus
+sanitizer: AddressSanitizer
+type: NULL Pointer Dereference
+binary: poc
+trigger_commit: 1debe6b0848e2f9ef5872346112244ed74db3cf3
+patch:
+  commit: 3b572243a52ce2c5e4fc46e6b366b8d8f02eefdf
+  date: '2024-09-21T22:37:28+03:00'
+reference:
+- https://github.com/seladb/PcapPlusPlus
+- https://github.com/seladb/PcapPlusPlus/issues/1580
+- https://github.com/seladb/PcapPlusPlus/commit/1debe6b0848e2f9ef5872346112244ed74db3cf3
+- https://github.com/seladb/PcapPlusPlus/commit/3b572243a52ce2c5e4fc46e6b366b8d8f02eefdf

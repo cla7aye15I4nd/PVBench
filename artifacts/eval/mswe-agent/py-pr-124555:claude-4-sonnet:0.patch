@@ -1,0 +1,35 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_cursesmodule.c b/Modules/_cursesmodule.c
+index ece6b13c788..87c2947178f 100644
+--- a/Modules/_cursesmodule.c
++++ b/Modules/_cursesmodule.c
+@@ -3003,7 +3003,14 @@ De-initialize the library, and return terminal to normal status.
+ static PyObject *
+ _curses_endwin_impl(PyObject *module)
+ /*[clinic end generated code: output=c0150cd96d2f4128 input=e172cfa43062f3fa]*/
+-NoArgNoReturnFunctionBody(endwin)
++{
++    PyCursesStatefulInitialised(module);
++    int result = endwin();
++    // Always reset the flag when endwin() is called, even if it returns ERR
++    // This prevents NULL pointer dereference in subsequent initscr() calls
++    curses_initscr_called = FALSE;
++    return PyCursesCheckERR(module, result, "endwin");
++}
+ 
+ /*[clinic input]
+ _curses.erasechar

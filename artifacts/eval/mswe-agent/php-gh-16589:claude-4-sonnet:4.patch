@@ -1,0 +1,160 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_dllist.c b/ext/spl/spl_dllist.c
+index 6592efc4e5e..b930ee9ecbb 100644
+--- a/ext/spl/spl_dllist.c
++++ b/ext/spl/spl_dllist.c
+@@ -1,27 +1,3 @@
+-/*
+-   +----------------------------------------------------------------------+
+-   | Copyright (c) The PHP Group                                          |
+-   +----------------------------------------------------------------------+
+-   | This source file is subject to version 3.01 of the PHP license,      |
+-   | that is bundled with this package in the file LICENSE, and is        |
+-   | available through the world-wide-web at the following url:           |
+-   | https://www.php.net/license/3_01.txt                                 |
+-   | If you did not receive a copy of the PHP license and are unable to   |
+-   | obtain it through the world-wide-web, please send a note to          |
+-   | license@php.net so we can mail you a copy immediately.               |
+-   +----------------------------------------------------------------------+
+-   | Authors: Etienne Kneuss <colder@php.net>                             |
+-   +----------------------------------------------------------------------+
+- */
+-
+-#ifdef HAVE_CONFIG_H
+-# include "config.h"
+-#endif
+-
+-#include "php.h"
+-#include "zend_exceptions.h"
+-#include "zend_hash.h"
+-
+ #include "php_spl.h"
+ #include "ext/standard/info.h"
+ #include "ext/standard/php_var.h"
+@@ -32,6 +8,7 @@
+ #include "spl_dllist.h"
+ #include "spl_dllist_arginfo.h"
+ #include "spl_exceptions.h"
++#include "zend_exceptions.h"
+ 
+ zend_object_handlers spl_handler_SplDoublyLinkedList;
+ PHPAPI zend_class_entry  *spl_ce_SplDoublyLinkedList;
+@@ -1008,6 +985,7 @@ PHP_METHOD(SplDoublyLinkedList, serialize)
+ 	spl_ptr_llist_element *current  = intern->llist->head, *next;
+ 	zval                   flags;
+ 	php_serialize_data_t   var_hash;
++	uint32_t               original_count;
+ 
+ 	if (zend_parse_parameters_none() == FAILURE) {
+ 		RETURN_THROWS();
+@@ -1019,6 +997,9 @@ PHP_METHOD(SplDoublyLinkedList, serialize)
+ 	ZVAL_LONG(&flags, intern->flags);
+ 	php_var_serialize(&buf, &flags, &var_hash);
+ 
++	/* Store original count to detect modifications */
++	original_count = intern->llist->count;
++
+ 	/* elements */
+ 	while (current) {
+ 		smart_str_appendc(&buf, ':');
+@@ -1026,6 +1007,14 @@ PHP_METHOD(SplDoublyLinkedList, serialize)
+ 
+ 		php_var_serialize(&buf, &current->data, &var_hash);
+ 
++		/* Check if the list was modified during serialization */
++		if (intern->llist->count != original_count) {
++			PHP_VAR_SERIALIZE_DESTROY(var_hash);
++			smart_str_free(&buf);
++			zend_throw_exception_ex(spl_ce_RuntimeException, 0, "SplDoublyLinkedList was modified during serialization");
++			RETURN_THROWS();
++		}
++
+ 		current = next;
+ 	}
+ 
+@@ -1033,7 +1022,7 @@ PHP_METHOD(SplDoublyLinkedList, serialize)
+ 	PHP_VAR_SERIALIZE_DESTROY(var_hash);
+ 
+ 	RETURN_STR(smart_str_extract(&buf));
+-} /* }}} */
++}
+ 
+ /* {{{ Unserializes storage */
+ PHP_METHOD(SplDoublyLinkedList, unserialize)
+diff --git a/poc_readable.php b/poc_readable.php
+new file mode 100644
+index 00000000000..e5303502091
+--- /dev/null
++++ b/poc_readable.php
+@@ -0,0 +1,22 @@
++<?php
++
++class B {
++    public $b;
++    function __construct($arg) {
++        $this->b = $arg;
++    }
++}
++
++class C {
++    function __destruct() {
++        global $arr;
++        echo __METHOD__, "\n";
++        $arr->exchangeArray([]);
++    }
++}
++
++$arr = new ArrayObject(new B(new C));
++unset($arr["b"]);
++var_dump($arr);
++
++?>
+diff --git a/test_serialize.php b/test_serialize.php
+new file mode 100644
+index 00000000000..e125cabab4a
+--- /dev/null
++++ b/test_serialize.php
+@@ -0,0 +1,26 @@
++<?php
++
++class TestObject {
++    function __serialize() {
++        global $list;
++        echo "In __serialize, modifying list\n";
++        // This should trigger the RuntimeException with my fix
++        $list->pop();
++        return ["data" => "test"];
++    }
++}
++
++$list = new SplDoublyLinkedList();
++$list->push(new TestObject());
++$list->push("second element");
++$list->push("third element");
++
++echo "Starting serialization...\n";
++try {
++    $serialized = serialize($list);
++    echo "Serialization completed: " . $serialized . "\n";
++} catch (RuntimeException $e) {
++    echo "Caught expected exception: " . $e->getMessage() . "\n";
++}
++
++?>

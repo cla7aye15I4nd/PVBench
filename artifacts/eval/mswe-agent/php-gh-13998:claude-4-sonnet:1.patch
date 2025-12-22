@@ -1,0 +1,96 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/spl/spl_array.c b/ext/spl/spl_array.c
+index dbe110f7c40..20de3de03c3 100644
+--- a/ext/spl/spl_array.c
++++ b/ext/spl/spl_array.c
+@@ -540,6 +540,11 @@ static void spl_array_unset_dimension_ex(int check_inherited, zend_object *objec
+ 		zend_throw_error(NULL, "Modification of ArrayObject during sorting is prohibited");
+ 		return;
+ 	}
++	/* Prevent modification during object destruction to avoid use-after-free */
++	if (OBJ_FLAGS(object) & IS_OBJ_DESTRUCTOR_CALLED) {
++		zend_throw_error(NULL, "Modification of ArrayObject during destruction is prohibited");
++		return;
++	}
+ 
+ 	if (get_hash_key(&key, intern, offset) == FAILURE) {
+ 		zend_type_error("Illegal offset type in unset");
+@@ -1257,6 +1262,12 @@ PHP_METHOD(ArrayObject, exchangeArray)
+ 		RETURN_THROWS();
+ 	}
+ 
++	/* Prevent modification during object destruction to avoid use-after-free */
++	if (OBJ_FLAGS(Z_OBJ_P(object)) & IS_OBJ_DESTRUCTOR_CALLED) {
++		zend_throw_error(NULL, "Modification of ArrayObject during destruction is prohibited");
++		RETURN_THROWS();
++	}
++
+ 	RETVAL_ARR(zend_array_dup(spl_array_get_hash_table(intern)));
+ 	spl_array_set_array(object, intern, array, 0L, 1);
+ }
+diff --git a/test_fix.php b/test_fix.php
+new file mode 100644
+index 00000000000..d6e8ccb25df
+--- /dev/null
++++ b/test_fix.php
+@@ -0,0 +1,18 @@
++<?php
++class TestDestructor {
++    public function __destruct() {
++        global $arr;
++        echo "In destructor, trying to call exchangeArray\n";
++        try {
++            $arr->exchangeArray([]);
++        } catch (Error $e) {
++            echo "Caught error: " . $e->getMessage() . "\n";
++        }
++    }
++}
++
++$arr = new ArrayObject();
++$arr["test"] = new TestDestructor();
++echo "About to unset\n";
++unset($arr["test"]);
++echo "Done\n";
+diff --git a/test_unset.php b/test_unset.php
+new file mode 100644
+index 00000000000..14f70a25893
+--- /dev/null
++++ b/test_unset.php
+@@ -0,0 +1,19 @@
++<?php
++class TestDestructor {
++    public function __destruct() {
++        global $arr;
++        echo "In destructor, trying to unset\n";
++        try {
++            unset($arr["other"]);
++        } catch (Error $e) {
++            echo "Caught error: " . $e->getMessage() . "\n";
++        }
++    }
++}
++
++$arr = new ArrayObject();
++$arr["test"] = new TestDestructor();
++$arr["other"] = "some value";
++echo "About to unset\n";
++unset($arr["test"]);
++echo "Done\n";

@@ -1,0 +1,149 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+index 034612427..f4fa61ee7 100644
+--- a/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
++++ b/API/hermes/inspector/chrome/tests/SerialExecutor.cpp
+@@ -6,7 +6,7 @@
+  */
+ 
+ #include "SerialExecutor.h"
+-
++#include <stdexcept>
+ namespace facebook {
+ namespace hermes {
+ namespace inspector_modern {
+diff --git a/lib/Regex/Executor.cpp b/lib/Regex/Executor.cpp
+index fb73b8e56..5a406ee52 100644
+--- a/lib/Regex/Executor.cpp
++++ b/lib/Regex/Executor.cpp
+@@ -396,7 +396,9 @@ struct Context {
+   /// Traits used for canonicalization.
+   Traits traits_;
+ 
+-  /// The remaining number of times we will attempt to backtrack.
++  /// Recursion depth for match() to prevent stack overflow.
++  size_t recursionDepth_ = 0;
++  static constexpr size_t kMaxRecursionDepth = 1000;
+   /// This is effectively a timeout on the regexp execution.
+   uint32_t backtracksRemaining_ = kBacktrackLimit;
+ 
+@@ -964,9 +966,13 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+   using State = State<Traits>;
+   BacktrackStack backtrackStack;
+ 
+-  // We'll refer to the cursor often.
+-  Cursor<Traits> &c = s->cursor_;
+ 
++  Cursor<Traits> &c = s->cursor_;
++  // Recursion depth check to prevent stack overflow.
++  if (++recursionDepth_ > kMaxRecursionDepth) {
++    --recursionDepth_;
++    return ExecutionStatus::STACK_OVERFLOW;
++  }
+   // Pull out the instruction portion of the bytecode, following the header.
+   const uint8_t *const bytecode = &bytecodeStream_[sizeof(RegexBytecodeHeader)];
+ 
+@@ -994,8 +1000,10 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+ #define BACKTRACK()                            \
+   do {                                         \
+     auto btRes = backtrack(backtrackStack, s); \
+-    if (LLVM_UNLIKELY(!btRes))                 \
++    if (LLVM_UNLIKELY(!btRes)) {               \
++      --recursionDepth_;                       \
+       return btRes.getStatus();                \
++    }                                          \
+     if (*btRes)                                \
+       goto backtrackingSucceeded;              \
+     goto backtrackingExhausted;                \
+@@ -1011,6 +1019,7 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+       const Insn *base = reinterpret_cast<const Insn *>(&bytecode[s->ip_]);
+       switch (base->opcode) {
+         case Opcode::Goal:
++          --recursionDepth_;
+           return potentialMatchLocation;
+ 
+         case Opcode::LeftAnchor:
+@@ -1140,6 +1149,7 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+                 BacktrackInsn::makeSetPosition(
+                     alt->secondaryBranch, c.currentPointer()));
+             if (res != ExecutionStatus::RETURNED) {
++              --recursionDepth_;
+               return res;
+             }
+           } else if (primaryViable) {
+@@ -1206,6 +1216,7 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+               BacktrackInsn::makeSetCaptureGroup(
+                   insn->mexp, {kNotMatched, kNotMatched}));
+           if (res != ExecutionStatus::RETURNED) {
++            --recursionDepth_;
+             return res;
+           }
+           // When tracking backwards (in a lookbehind assertion) we traverse our
+@@ -1337,6 +1348,7 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+                 auto res = pushBacktrack(
+                     backtrackStack, BacktrackInsn::makeSetCaptureGroup(i, cr));
+                 if (res != ExecutionStatus::RETURNED)
++                  --recursionDepth_;
+                   return res;
+               }
+             } else {
+@@ -1407,9 +1419,8 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+ 
+           if (iteration < loop->min) {
+             auto res = prepareToEnterLoopBody(s, loop, backtrackStack);
+-            if (res != ExecutionStatus::RETURNED)
+-              return res;
+-            s->ip_ = loopTakenIp;
++            --recursionDepth_;
++            return res;
+           } else if (iteration == loop->max) {
+             s->ip_ = loop->notTakenTarget;
+           } else {
+@@ -1424,9 +1435,27 @@ auto Context<Traits>::match(State<Traits> *s, bool onlyAtStart)
+                   BacktrackInsn::makeEnterNonGreedyLoop(
+                       loop, loopTakenIp, loopData));
+               if (res != ExecutionStatus::RETURNED) {
++                --recursionDepth_;
+                 return res;
+-              }
+               s->ip_ = loop->notTakenTarget;
++            } else {
++              // Backtrack by exiting this greedy loop.
++              auto pushRes = pushBacktrack(
++                  backtrackStack,
++                  BacktrackInsn::makeSetPosition(
++                      loop->notTakenTarget, c.currentPointer()));
++              if (pushRes != ExecutionStatus::RETURNED) {
++                --recursionDepth_;
++                return pushRes;
++
++              auto prepRes = prepareToEnterLoopBody(s, loop, backtrackStack);
++              if (prepRes != ExecutionStatus::RETURNED) {
++                --recursionDepth_;
++                return prepRes;
++              s->ip_ = loopTakenIp;
++            }
++          }
++            }
+             } else {
+               // Backtrack by exiting this greedy loop.
+               auto pushRes = pushBacktrack(

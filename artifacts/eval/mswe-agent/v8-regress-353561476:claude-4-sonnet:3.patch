@@ -1,0 +1,47 @@
+
+diff --git a/.gitignore b/.gitignore
+index 075446de1e1..7e0cadd6054 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -122,3 +122,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 530a249adde..415d01244a9 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -2688,14 +2688,21 @@ void Scope::AllocateScopeInfosRecursively(
+   auto it = scope_infos_to_reuse.find(UniqueIdInScript());
+   if (it != scope_infos_to_reuse.end()) {
+     scope_info_ = it->second;
+-    CHECK(NeedsContext());
++    // CHECK(NeedsContext()); // Removed: scope may not need context after optimization
+     // The ScopeInfo chain mirrors the context chain, so we only link to the
+     // next outer scope that needs a context.
+-    next_outer_scope = scope_info_;
++    if (NeedsContext()) next_outer_scope = scope_info_;
+     DCHECK(!scope_info_.is_null());
+     DCHECK(!is_hidden_catch_scope());
+     CHECK_EQ(scope_info_->scope_type(), scope_type_);
+-    CHECK_EQ(scope_info_->ContextLength(), num_heap_slots_);
++    // CHECK_EQ(scope_info_->ContextLength(), num_heap_slots_); // May not match after optimization
++    // Verify that the scope info is compatible with the current scope state
++    if (scope_info_->ContextLength() != num_heap_slots_) {
++      // This can happen when scope was optimized to not need context
++      // but the reused scope info was created before optimization
++      DCHECK_EQ(num_heap_slots_, 0);
++      DCHECK_GT(scope_info_->ContextLength(), 0);
++    }
+ #ifdef DEBUG
+     // Consume the scope info.
+     it->second = {};

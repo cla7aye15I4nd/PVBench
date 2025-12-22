@@ -1,0 +1,23 @@
+==1698610==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x7f8c166a775d bp 0x7fff5e18a030 sp 0x7fff5e1897e8 T0)
+==1698610==The signal is caused by a READ memory access.
+==1698610==Hint: address points to the zero page.
+    #0 0x7f8c166a775d  (/lib/x86_64-linux-gnu/libc.so.6+0x18b75d) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #1 0x560531c1aa47 in strlen (/php-gh-15137/build/sapi/cli/php+0x41aa47) (BuildId: 2f37c50836e8e8f4640794a45d5ba814f40e7633)
+    #2 0x560532101281 in smart_str_appends /php-gh-15137/build/Zend/zend_smart_str.h:177:34
+    #3 0x560532101281 in dom_text_whole_text_read /php-gh-15137/build/ext/dom/text.c:80:3
+    #4 0x560532091ffd in dom_read_property /php-gh-15137/build/ext/dom/php_dom.c:370:13
+    #5 0x560533307da0 in ZEND_FETCH_OBJ_R_SPEC_TMPVAR_CONST_HANDLER /php-gh-15137/build/Zend/zend_vm_execute.h:16309:12
+    #6 0x560533116adc in execute_ex /php-gh-15137/build/Zend/zend_vm_execute.h:58354:7
+    #7 0x560533118377 in zend_execute /php-gh-15137/build/Zend/zend_vm_execute.h:64011:2
+    #8 0x56053379f2c0 in zend_execute_script /php-gh-15137/build/Zend/zend.c:1913:3
+    #9 0x560532bc56fd in php_execute_script_ex /php-gh-15137/build/main/main.c:2535:13
+    #10 0x560532bc5b88 in php_execute_script /php-gh-15137/build/main/main.c:2575:9
+    #11 0x5605337a75cf in do_cli /php-gh-15137/build/sapi/cli/php_cli.c:956:5
+    #12 0x5605337a54fb in main /php-gh-15137/build/sapi/cli/php_cli.c:1330:18
+    #13 0x7f8c165461c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #14 0x7f8c1654628a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #15 0x560531c033a4 in _start (/php-gh-15137/build/sapi/cli/php+0x4033a4) (BuildId: 2f37c50836e8e8f4640794a45d5ba814f40e7633)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/lib/x86_64-linux-gnu/libc.so.6+0x18b75d) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667) 
+==1698610==ABORTING

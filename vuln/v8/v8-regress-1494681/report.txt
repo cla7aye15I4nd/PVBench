@@ -1,0 +1,24 @@
+#
+# Fatal error in ../../src/execution/messages.cc, line 516
+# Missing argument to template (got 0): Unexpected identifier '%'
+#
+#
+#
+#FailureMessage Object: 0x7f7952c1fc60
+==== C stack trace ===============================
+
+    out/debug_asan/d8(___interceptor_backtrace+0x5e) [0x5572e534af5e]
+    out/debug_asan/d8(v8::base::debug::StackTrace::StackTrace()+0x19) [0x5572ed5f0259]
+    out/debug_asan/d8(+0xadd9409) [0x5572ed5ed409]
+    out/debug_asan/d8(V8_Fatal(char const*, int, char const*, ...)+0x283) [0x5572ed59f5f3]
+    out/debug_asan/d8(v8::internal::MessageFormatter::TryFormat(v8::internal::Isolate*, v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::String> const>)+0x63b) [0x5572e639839b]
+    out/debug_asan/d8(v8::internal::MessageFormatter::Format(v8::internal::Isolate*, v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::Object> const>)+0x244) [0x5572e6392dd4]
+    out/debug_asan/d8(v8::internal::ErrorUtils::MakeGenericError(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSFunction>, v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::Object> const>, v8::internal::FrameSkipMode)+0x11e) [0x5572e639c74e]
+    out/debug_asan/d8(v8::internal::Factory::NewError(v8::internal::Handle<v8::internal::JSFunction>, v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::Object> const>)+0xa3) [0x5572e672d853]
+    out/debug_asan/d8(v8::internal::Factory::NewSyntaxError(v8::internal::MessageTemplate, v8::base::Vector<v8::internal::Handle<v8::internal::Object> const>)+0x17e) [0x5572e672eade]
+    out/debug_asan/d8(v8::internal::PendingCompilationErrorHandler::ThrowPendingError(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Script>) const+0x288) [0x5572e7dbb668]
+    out/debug_asan/d8(+0x34991f4) [0x5572e5cad1f4]
+    out/debug_asan/d8(v8::internal::Compiler::GetFunctionFromEval(v8::internal::Handle<v8::internal::String>, v8::internal::Handle<v8::internal::SharedFunctionInfo>, v8::internal::Handle<v8::internal::Context>, v8::internal::LanguageMode, v8::internal::ParseRestriction, int, int, int, v8::internal::ParsingWhileDebugging)+0x10b9) [0x5572e5cb1b59]
+    out/debug_asan/d8(+0x5996f33) [0x5572e81aaf33]
+    out/debug_asan/d8(v8::internal::Runtime_ResolvePossiblyDirectEval(int, unsigned long*, v8::internal::Isolate*)+0x178) [0x5572e81a9c48]
+    out/debug_asan/d8(+0xa3ef2f8) [0x5572ecc032f8]

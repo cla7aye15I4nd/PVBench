@@ -1,0 +1,16 @@
+runtime error: signed integer overflow: 1651667876 * 60 cannot be represented in type 'int'
+    #0 0x77dc99abb12a in icu_75::ChineseCalendar::handleGetExtendedYear(UErrorCode&) /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/chnsecal.cpp:236:22
+    #1 0x77dc99aa783c in icu_75::Calendar::handleComputeJulianDay(UCalendarDateFields, UErrorCode&) /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/calendar.cpp:3394:16
+    #2 0x77dc99aa5093 in icu_75::Calendar::computeJulianDay(UErrorCode&) /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/calendar.cpp:3377:12
+    #3 0x77dc99aa346a in icu_75::Calendar::computeTime(UErrorCode&) /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/calendar.cpp:3117:25
+    #4 0x77dc99a89c60 in icu_75::Calendar::updateTime(UErrorCode&) /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/calendar.cpp:4124:5
+    #5 0x77dc99a8a6c5 in icu_75::Calendar::complete(UErrorCode&) /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/calendar.cpp:1342:9
+    #6 0x77dc99a8a2ac in icu_75::Calendar::get(UCalendarDateFields, UErrorCode&) const /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/calendar.cpp:1194:47
+    #7 0x77dc99a98343 in icu_75::Calendar::add(UCalendarDateFields, int, UErrorCode&) /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/calendar.cpp:2164:23
+    #8 0x77dc99abcf9d in icu_75::ChineseCalendar::add(UCalendarDateFields, int, UErrorCode&) /tmp/icu-issue-22633/build/i18n/.././icu4c/source/i18n/chnsecal.cpp:391:19
+    #9 0x5be47419c2e5 in main /tmp/icu-issue-22633/build/poc.cpp:32:8
+    #10 0x77dc96f411c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x77dc96f4128a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #12 0x5be474170464 in _start (/tmp/icu-issue-22633/build/poc+0x6464) (BuildId: 0349afd9ad175e1b34da153afdd797014d80a64c)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/chnsecal.cpp:236:22 

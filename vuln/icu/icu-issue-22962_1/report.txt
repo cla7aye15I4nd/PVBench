@@ -1,0 +1,14 @@
+runtime error: signed integer overflow: 2140331961 + 11662946 cannot be represented in type 'int32_t' (aka 'int')
+    #0 0x72b8c59bf589 in icu_77::Calendar::handleComputeJulianDay(UCalendarDateFields, UErrorCode&) /tmp/icu-issue-22962_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:3610:33
+    #1 0x72b8c5cdd8e4 in icu_77::GregorianCalendar::handleComputeJulianDay(UCalendarDateFields, UErrorCode&) /tmp/icu-issue-22962_1/build/i18n/.././icu4c/source/i18n/gregocal.cpp:500:28
+    #2 0x72b8c59baf03 in icu_77::Calendar::computeJulianDay(UErrorCode&) /tmp/icu-issue-22962_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:3388:12
+    #3 0x72b8c59b930a in icu_77::Calendar::computeTime(UErrorCode&) /tmp/icu-issue-22962_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:3127:25
+    #4 0x72b8c599fa40 in icu_77::Calendar::updateTime(UErrorCode&) /tmp/icu-issue-22962_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:4221:5
+    #5 0x72b8c599df1a in icu_77::Calendar::getTimeInMillis(UErrorCode&) const /tmp/icu-issue-22962_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:1124:38
+    #6 0x72b8c59b0480 in icu_77::Calendar::fieldDifference(double, UCalendarDateFields, UErrorCode&) /tmp/icu-issue-22962_1/build/i18n/.././icu4c/source/i18n/calendar.cpp:2334:22
+    #7 0x5fd21d096dee in main /tmp/icu-issue-22962_1/build/poc.cpp:19:10
+    #8 0x72b8c2c1d1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #9 0x72b8c2c1d28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x5fd21d06b454 in _start (/tmp/icu-issue-22962_1/build/poc+0x6454) (BuildId: 3c1330a53ccc1b822a7f6e0d09ea116c1b90e7f7)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior .././icu4c/source/i18n/calendar.cpp:3610:33 

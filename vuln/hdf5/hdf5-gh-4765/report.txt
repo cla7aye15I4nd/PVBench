@@ -1,0 +1,13 @@
+==18218==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x70dcc57dbe00 bp 0x7ffe24a9da40 sp 0x7ffe24a9d970 T0)
+==18218==The signal is caused by a READ memory access.
+==18218==Hint: address points to the zero page.
+    #0 0x70dcc57dbe00 in H5VL_link_move /tmp/hdf5-gh-4765/build/src/H5VLcallback.c:5104:16
+    #1 0x70dcc5011e39 in H5Gmove2 /tmp/hdf5-gh-4765/build/src/H5Gdeprec.c:552:9
+    #2 0x5fae7de7fc5c in main /tmp/hdf5-gh-4765/build/poc.cpp:24:11
+    #3 0x70dcc44be1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #4 0x70dcc44be28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #5 0x5fae7dda43d4 in _start (/tmp/hdf5-gh-4765/build/poc+0x2c3d4) (BuildId: aa1be846b8755cfd9bb4a1235578a4fd53b19695)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /tmp/hdf5-gh-4765/build/src/H5VLcallback.c:5104:16 in H5VL_link_move
+==18218==ABORTING

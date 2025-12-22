@@ -1,0 +1,67 @@
+diff --git a/ext/spl/tests/gh16588.phpt b/ext/spl/tests/gh16588.phpt
+new file mode 100644
+index 00000000000..6cf668716ac
+--- /dev/null
++++ b/ext/spl/tests/gh16588.phpt
+@@ -0,0 +1,22 @@
++--TEST--
++GH-16588 (UAF in Observer->serialize)
++--CREDITS--
++chibinz
++--FILE--
++<?php
++
++class C {
++    function __serialize(): array {
++        global $store;
++        $store->removeAll($store);
++        return [];
++    }
++}
++
++$store = new SplObjectStorage;
++$store[new C] = new stdClass;
++var_dump($store->serialize());
++
++?>
++--EXPECT--
++string(47) "x:i:1;O:1:"C":0:{},O:8:"stdClass":0:{};m:a:0:{}"
+diff --git a/ext/spl/tests/gh16588_1.phpt b/ext/spl/tests/gh16588_1.phpt
+new file mode 100644
+index 00000000000..7eec9e4a065
+--- /dev/null
++++ b/ext/spl/tests/gh16588_1.phpt
+@@ -0,0 +1,33 @@
++--TEST--
++GH-16588 2 (UAF in Observer->serialize)
++--FILE--
++<?php
++
++class A {}
++class C {}
++
++class B {
++    function __serialize(): array {
++        global $store, $a, $b, $c;
++        $store->removeAll($store);
++        $store[new C] = 4444;
++        $store[new A] = 5555;
++        $store[new B] = 6666;
++        return [];
++    }
++}
++
++$a = new A;
++$b = new B;
++$c = new C;
++
++
++$store = new SplObjectStorage;
++$store[$a] = 1111;
++$store[$b] = 2222;
++$store[$c] = 3333;
++
++var_dump($store->serialize());
++?>
++--EXPECT--
++string(98) "x:i:3;O:1:"A":0:{},i:1111;;O:1:"B":0:{},i:2222;;O:1:"A":0:{},i:5555;;O:1:"B":0:{},i:6666;;m:a:0:{}"

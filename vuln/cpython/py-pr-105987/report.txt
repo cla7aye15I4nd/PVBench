@@ -1,0 +1,127 @@
+==3086021==ERROR: AddressSanitizer: heap-use-after-free on address 0x5040002055b0 at pc 0x7ffff74d991c bp 0x7fffffff4380 sp 0x7fffffff4378
+READ of size 4 at 0x5040002055b0 thread T0
+    #0 0x7ffff74d991b in Py_INCREF /tmp/py-pr-105987/build/./Include/object.h:628:30
+    #1 0x7ffff74d991b in swap_current_task /tmp/py-pr-105987/build/./Modules/_asynciomodule.c:2061:5
+    #2 0x7ffff74d973c in _asyncio__swap_current_task_impl /tmp/py-pr-105987/build/./Modules/_asynciomodule.c:3496:12
+    #3 0x7ffff74d79d7 in _asyncio__swap_current_task /tmp/py-pr-105987/build/./Modules/clinic/_asynciomodule.c.h:1425:20
+    #4 0x555555b5b783 in cfunction_vectorcall_FASTCALL_KEYWORDS /tmp/py-pr-105987/build/Objects/methodobject.c:438:24
+    #5 0x555555a62aff in _PyObject_VectorcallTstate /tmp/py-pr-105987/build/./Include/internal/pycore_call.h:92:11
+    #6 0x555555a645a9 in PyObject_Vectorcall /tmp/py-pr-105987/build/Objects/call.c:325:12
+    #7 0x555555daca6a in _PyEval_EvalFrameDefault /tmp/py-pr-105987/build/Python/bytecodes.c:2752:19
+    #8 0x555555d81111 in _PyEval_EvalFrame /tmp/py-pr-105987/build/./Include/internal/pycore_ceval.h:88:16
+    #9 0x555555d80fce in _PyEval_Vector /tmp/py-pr-105987/build/Python/ceval.c:1683:12
+    #10 0x555555d8095f in PyEval_EvalCode /tmp/py-pr-105987/build/Python/ceval.c:579:21
+    #11 0x555555f19a04 in run_eval_code_obj /tmp/py-pr-105987/build/Python/pythonrun.c:1727:9
+    #12 0x555555f12805 in run_mod /tmp/py-pr-105987/build/Python/pythonrun.c:1748:19
+    #13 0x555555f10a9e in pyrun_file /tmp/py-pr-105987/build/Python/pythonrun.c:1648:15
+    #14 0x555555f0f549 in _PyRun_SimpleFileObject /tmp/py-pr-105987/build/Python/pythonrun.c:462:13
+    #15 0x555555f0ed28 in _PyRun_AnyFileObject /tmp/py-pr-105987/build/Python/pythonrun.c:78:15
+    #16 0x555555f9b136 in pymain_run_file_obj /tmp/py-pr-105987/build/Modules/main.c:360:15
+    #17 0x555555f9a0ab in pymain_run_file /tmp/py-pr-105987/build/Modules/main.c:379:15
+    #18 0x555555f9809d in pymain_run_python /tmp/py-pr-105987/build/Modules/main.c:610:21
+    #19 0x555555f97808 in Py_RunMain /tmp/py-pr-105987/build/Modules/main.c:688:5
+    #20 0x555555f984d8 in pymain_main /tmp/py-pr-105987/build/Modules/main.c:718:12
+    #21 0x555555f985e7 in Py_BytesMain /tmp/py-pr-105987/build/Modules/main.c:742:12
+    #22 0x55555589d481 in main /tmp/py-pr-105987/build/./Programs/python.c:15:12
+    #23 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #24 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #25 0x5555557c4074 in _start (/tmp/py-pr-105987/build/python+0x270074) (BuildId: 0ad8065f107aa485e69bb1a723fdd61a3ce54c2d)
+
+0x5040002055b0 is located 32 bytes inside of 48-byte region [0x504000205590,0x5040002055c0)
+freed by thread T0 here:
+    #0 0x55555585ec2a in free (/tmp/py-pr-105987/build/python+0x30ac2a) (BuildId: 0ad8065f107aa485e69bb1a723fdd61a3ce54c2d)
+    #1 0x555555b6fdc8 in _PyMem_RawFree /tmp/py-pr-105987/build/Objects/obmalloc.c:73:5
+    #2 0x555555b71f8f in PyObject_Free /tmp/py-pr-105987/build/Objects/obmalloc.c:830:5
+    #3 0x555555f9f996 in PyObject_GC_Del /tmp/py-pr-105987/build/Modules/gcmodule.c:2396:5
+    #4 0x555555ba50a5 in object_dealloc /tmp/py-pr-105987/build/Objects/typeobject.c:5531:5
+    #5 0x555555baa955 in subtype_dealloc /tmp/py-pr-105987/build/Objects/typeobject.c:2073:5
+    #6 0x555555b6f473 in _Py_Dealloc /tmp/py-pr-105987/build/Objects/object.c:2577:5
+    #7 0x555555b2240c in Py_DECREF /tmp/py-pr-105987/build/./Include/object.h:694:9
+    #8 0x555555b2240c in delitem_common /tmp/py-pr-105987/build/Objects/dictobject.c:1963:5
+    #9 0x555555b21be9 in _PyDict_DelItem_KnownHash /tmp/py-pr-105987/build/Objects/dictobject.c:2008:12
+    #10 0x7ffff74d9854 in swap_current_task /tmp/py-pr-105987/build/./Modules/_asynciomodule.c:2052:13
+    #11 0x7ffff74d973c in _asyncio__swap_current_task_impl /tmp/py-pr-105987/build/./Modules/_asynciomodule.c:3496:12
+    #12 0x7ffff74d79d7 in _asyncio__swap_current_task /tmp/py-pr-105987/build/./Modules/clinic/_asynciomodule.c.h:1425:20
+    #13 0x555555b5b783 in cfunction_vectorcall_FASTCALL_KEYWORDS /tmp/py-pr-105987/build/Objects/methodobject.c:438:24
+    #14 0x555555a62aff in _PyObject_VectorcallTstate /tmp/py-pr-105987/build/./Include/internal/pycore_call.h:92:11
+    #15 0x555555a645a9 in PyObject_Vectorcall /tmp/py-pr-105987/build/Objects/call.c:325:12
+    #16 0x555555daca6a in _PyEval_EvalFrameDefault /tmp/py-pr-105987/build/Python/bytecodes.c:2752:19
+    #17 0x555555d81111 in _PyEval_EvalFrame /tmp/py-pr-105987/build/./Include/internal/pycore_ceval.h:88:16
+    #18 0x555555d80fce in _PyEval_Vector /tmp/py-pr-105987/build/Python/ceval.c:1683:12
+    #19 0x555555d8095f in PyEval_EvalCode /tmp/py-pr-105987/build/Python/ceval.c:579:21
+    #20 0x555555f19a04 in run_eval_code_obj /tmp/py-pr-105987/build/Python/pythonrun.c:1727:9
+    #21 0x555555f12805 in run_mod /tmp/py-pr-105987/build/Python/pythonrun.c:1748:19
+    #22 0x555555f10a9e in pyrun_file /tmp/py-pr-105987/build/Python/pythonrun.c:1648:15
+    #23 0x555555f0f549 in _PyRun_SimpleFileObject /tmp/py-pr-105987/build/Python/pythonrun.c:462:13
+    #24 0x555555f0ed28 in _PyRun_AnyFileObject /tmp/py-pr-105987/build/Python/pythonrun.c:78:15
+    #25 0x555555f9b136 in pymain_run_file_obj /tmp/py-pr-105987/build/Modules/main.c:360:15
+    #26 0x555555f9a0ab in pymain_run_file /tmp/py-pr-105987/build/Modules/main.c:379:15
+    #27 0x555555f9809d in pymain_run_python /tmp/py-pr-105987/build/Modules/main.c:610:21
+    #28 0x555555f97808 in Py_RunMain /tmp/py-pr-105987/build/Modules/main.c:688:5
+    #29 0x555555f984d8 in pymain_main /tmp/py-pr-105987/build/Modules/main.c:718:12
+    #30 0x555555f985e7 in Py_BytesMain /tmp/py-pr-105987/build/Modules/main.c:742:12
+
+previously allocated by thread T0 here:
+    #0 0x55555585eec3 in malloc (/tmp/py-pr-105987/build/python+0x30aec3) (BuildId: 0ad8065f107aa485e69bb1a723fdd61a3ce54c2d)
+    #1 0x555555b6fd0b in _PyMem_RawMalloc /tmp/py-pr-105987/build/Objects/obmalloc.c:45:12
+    #2 0x555555b71d30 in PyObject_Malloc /tmp/py-pr-105987/build/Objects/obmalloc.c:801:12
+    #3 0x555555b9ca7e in _PyType_AllocNoTrack /tmp/py-pr-105987/build/Objects/typeobject.c:1720:19
+    #4 0x555555b9c9bc in PyType_GenericAlloc /tmp/py-pr-105987/build/Objects/typeobject.c:1744:21
+    #5 0x555555ba6316 in object_new /tmp/py-pr-105987/build/Objects/typeobject.c:5517:21
+    #6 0x555555ba3351 in type_call /tmp/py-pr-105987/build/Objects/typeobject.c:1663:11
+    #7 0x555555a63057 in _PyObject_MakeTpCall /tmp/py-pr-105987/build/Objects/call.c:240:18
+    #8 0x555555a62ad9 in _PyObject_VectorcallTstate /tmp/py-pr-105987/build/./Include/internal/pycore_call.h:90:16
+    #9 0x555555a645a9 in PyObject_Vectorcall /tmp/py-pr-105987/build/Objects/call.c:325:12
+    #10 0x555555daca6a in _PyEval_EvalFrameDefault /tmp/py-pr-105987/build/Python/bytecodes.c:2752:19
+    #11 0x555555d81111 in _PyEval_EvalFrame /tmp/py-pr-105987/build/./Include/internal/pycore_ceval.h:88:16
+    #12 0x555555d80fce in _PyEval_Vector /tmp/py-pr-105987/build/Python/ceval.c:1683:12
+    #13 0x555555d8095f in PyEval_EvalCode /tmp/py-pr-105987/build/Python/ceval.c:579:21
+    #14 0x555555f19a04 in run_eval_code_obj /tmp/py-pr-105987/build/Python/pythonrun.c:1727:9
+    #15 0x555555f12805 in run_mod /tmp/py-pr-105987/build/Python/pythonrun.c:1748:19
+    #16 0x555555f10a9e in pyrun_file /tmp/py-pr-105987/build/Python/pythonrun.c:1648:15
+    #17 0x555555f0f549 in _PyRun_SimpleFileObject /tmp/py-pr-105987/build/Python/pythonrun.c:462:13
+    #18 0x555555f0ed28 in _PyRun_AnyFileObject /tmp/py-pr-105987/build/Python/pythonrun.c:78:15
+    #19 0x555555f9b136 in pymain_run_file_obj /tmp/py-pr-105987/build/Modules/main.c:360:15
+    #20 0x555555f9a0ab in pymain_run_file /tmp/py-pr-105987/build/Modules/main.c:379:15
+    #21 0x555555f9809d in pymain_run_python /tmp/py-pr-105987/build/Modules/main.c:610:21
+    #22 0x555555f97808 in Py_RunMain /tmp/py-pr-105987/build/Modules/main.c:688:5
+    #23 0x555555f984d8 in pymain_main /tmp/py-pr-105987/build/Modules/main.c:718:12
+    #24 0x555555f985e7 in Py_BytesMain /tmp/py-pr-105987/build/Modules/main.c:742:12
+    #25 0x55555589d481 in main /tmp/py-pr-105987/build/./Programs/python.c:15:12
+    #26 0x7ffff7ca41c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #27 0x7ffff7ca428a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #28 0x5555557c4074 in _start (/tmp/py-pr-105987/build/python+0x270074) (BuildId: 0ad8065f107aa485e69bb1a723fdd61a3ce54c2d)
+
+SUMMARY: AddressSanitizer: heap-use-after-free /tmp/py-pr-105987/build/./Include/object.h:628:30 in Py_INCREF
+Shadow bytes around the buggy address:
+  0x504000205300: fa fa 00 00 00 00 00 00 fa fa fd fd fd fd fd fd
+  0x504000205380: fa fa fd fd fd fd fd fd fa fa fd fd fd fd fd fd
+  0x504000205400: fa fa fd fd fd fd fd fd fa fa fd fd fd fd fd fd
+  0x504000205480: fa fa fd fd fd fd fd fd fa fa 00 00 00 00 00 00
+  0x504000205500: fa fa 00 00 00 00 00 00 fa fa 00 00 00 00 00 00
+=>0x504000205580: fa fa fd fd fd fd[fd]fd fa fa fa fa fa fa fa fa
+  0x504000205600: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000205680: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000205700: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000205780: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x504000205800: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==3086021==ABORTING

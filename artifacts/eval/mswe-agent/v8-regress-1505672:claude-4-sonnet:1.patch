@@ -1,0 +1,33 @@
+
+diff --git a/.gitignore b/.gitignore
+index 0bddf641ac2..a03c5ada33d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -116,3 +116,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
+index da1e5936256..7b4723e275c 100644
+--- a/src/objects/lookup-inl.h
++++ b/src/objects/lookup-inl.h
+@@ -104,8 +104,8 @@ LookupIterator::LookupIterator(Isolate* isolate, Handle<Object> receiver,
+       uint32_t array_index;
+       DCHECK(!name_->AsArrayIndex(&array_index));
+     } else {
+-      size_t integer_index;
+-      DCHECK(!name_->AsIntegerIndex(&integer_index));
++      // Note: names can legitimately be integer indices in this case,
++      // so we don't assert against it like we do for array indices above.
+     }
+ #endif  // DEBUG
+     Start<false>();

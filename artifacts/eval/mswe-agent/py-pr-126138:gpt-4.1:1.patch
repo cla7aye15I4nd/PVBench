@@ -1,0 +1,41 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 7483e9c0f43..1a89592a16d 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2962,7 +2962,8 @@ task_step_handle_result_impl(asyncio_state *state, TaskObj *task, PyObject *resu
+         Py_DECREF(tmp);
+ 
+         /* task._fut_waiter = result */
+-        task->task_fut_waiter = result;  /* no incref is necessary */
++        Py_INCREF(result);
++        task->task_fut_waiter = result;  /* now we own a reference */
+ 
+         if (task->task_must_cancel) {
+             PyObject *r;
+@@ -3054,8 +3055,9 @@ task_step_handle_result_impl(asyncio_state *state, TaskObj *task, PyObject *resu
+         }
+         Py_DECREF(tmp);
+ 
+-        /* task._fut_waiter = result */
+-        task->task_fut_waiter = result;  /* no incref is necessary */
++        Py_INCREF(result);
++        task->task_fut_waiter = result;  /* now we own a reference */
++
+ 
+         if (task->task_must_cancel) {
+             PyObject *r;

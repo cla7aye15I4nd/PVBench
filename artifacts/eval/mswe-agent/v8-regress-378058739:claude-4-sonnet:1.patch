@@ -1,0 +1,44 @@
+
+diff --git a/.gitignore b/.gitignore
+index fa8fbb49d9d..d9670c75cbc 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -126,3 +126,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 8071ec0eb61..46690cf81ec 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -1342,7 +1342,11 @@ const AstRawString* Scope::FindVariableDeclaredIn(Scope* scope,
+ 
+ void DeclarationScope::DeserializeReceiver(AstValueFactory* ast_value_factory) {
+   if (is_script_scope()) {
+-    DCHECK_NOT_NULL(receiver_);
++    // For script scopes, initialize receiver if it's not already set
++    if (receiver_ == nullptr) {
++      receiver_ = DeclareDynamicGlobal(ast_value_factory->this_string(),
++                                       THIS_VARIABLE, this);
++    }
+     return;
+   }
+   DCHECK(has_this_declaration());
+@@ -2491,7 +2495,7 @@ void DeclarationScope::AllocateParameter(Variable* var, int index) {
+ }
+ 
+ void DeclarationScope::AllocateReceiver() {
+-  if (!has_this_declaration()) return;
++  if (!has_this_declaration() && !is_script_scope()) return;
+   DCHECK_NOT_NULL(receiver());
+   DCHECK_EQ(receiver()->scope(), this);
+   AllocateParameter(receiver(), -1);

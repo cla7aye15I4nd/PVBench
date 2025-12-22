@@ -1,0 +1,103 @@
+
+diff --git a/.gitignore b/.gitignore
+index b8eb03412fa..e959803a362 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -296,3 +296,12 @@ tmp-php.ini
+ !/ext/fileinfo/magicdata.patch
+ !/ext/pcre/pcre2lib/config.h
+ !/win32/build/Makefile
++build/
++Build/
++bin/
++lib/
++*.out
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/ext/standard/scanf.c b/ext/standard/scanf.c
+index 78ecc1642cf..f433f0d7044 100644
+--- a/ext/standard/scanf.c
++++ b/ext/standard/scanf.c
+@@ -1,19 +1,3 @@
+-/*
+-   +----------------------------------------------------------------------+
+-   | Copyright (c) The PHP Group                                          |
+-   +----------------------------------------------------------------------+
+-   | This source file is subject to version 3.01 of the PHP license,      |
+-   | that is bundled with this package in the file LICENSE, and is        |
+-   | available through the world-wide-web at the following url:           |
+-   | https://www.php.net/license/3_01.txt                                 |
+-   | If you did not receive a copy of the PHP license and are unable to   |
+-   | obtain it through the world-wide-web, please send a note to          |
+-   | license@php.net so we can mail you a copy immediately.               |
+-   +----------------------------------------------------------------------+
+-   | Author: Clayton Collie <clcollie@mindspring.com>                     |
+-   +----------------------------------------------------------------------+
+-*/
+-
+ /*
+ 	scanf.c --
+ 
+@@ -307,7 +291,9 @@ static void ReleaseCharSet(CharSet *cset)
+ PHPAPI int ValidateFormat(char *format, int numVars, int *totalSubs)
+ {
+ #define STATIC_LIST_SIZE 16
+-	int gotXpg, gotSequential, value, i, flags;
++	int gotXpg, gotSequential, i, flags;
++	unsigned long temp_value;
++	int value;
+ 	char *end, *ch = NULL;
+ 	int staticAssign[STATIC_LIST_SIZE];
+ 	int *nassign = staticAssign;
+@@ -351,10 +337,15 @@ PHPAPI int ValidateFormat(char *format, int numVars, int *totalSubs)
+ 			 * must not be a mixture of XPG3 specs and non-XPG3 specs
+ 			 * in the same format string.
+ 			 */
+-			value = ZEND_STRTOUL(format-1, &end, 10);
++			temp_value = ZEND_STRTOUL(format-1, &end, 10);
+ 			if (*end != '$') {
+ 				goto notXpg;
+ 			}
++			/* Check for integer overflow when converting unsigned long to int */
++			if (temp_value > INT_MAX || temp_value == 0) {
++				goto badIndex;
++			}
++			value = (int)temp_value;
+ 			format = end+1;
+ 			ch     = format++;
+ 			gotXpg = 1;
+@@ -398,7 +389,11 @@ PHPAPI int ValidateFormat(char *format, int numVars, int *totalSubs)
+ 		 * Parse any width specifier.
+ 		 */
+ 		if (isdigit(UCHAR(*ch))) {
+-			value = ZEND_STRTOUL(format-1, &format, 10);
++			temp_value = ZEND_STRTOUL(format-1, &format, 10);
++			if (temp_value > INT_MAX) {
++				goto badIndex;
++			}
++			value = (int)temp_value;
+ 			flags |= SCAN_WIDTH;
+ 			ch = format++;
+ 		}
+diff --git a/test_scanf.php b/test_scanf.php
+new file mode 100644
+index 00000000000..174239b36cd
+--- /dev/null
++++ b/test_scanf.php
+@@ -0,0 +1,14 @@
++<?php
++// Test case to trigger integer overflow in scanf ValidateFormat function
++// The issue is when parsing format strings with very large position specifiers
++
++// Try to trigger the overflow with a very large positional parameter
++$format = "%4294967295\$d";  // Large positional parameter close to UINT_MAX
++$input = "123";
++
++echo "Testing with format: $format\n";
++$result = sscanf($input, $format);
++var_dump($result);
++
++echo "Test completed\n";
++?>

@@ -1,0 +1,14 @@
+id: llvm-gh-132891
+project: llvm-project
+sanitizer: LLVMSanitizer
+type: NULL Pointer Dereference
+trigger_commit: ebe1ece4bbfdcd29dd2b578f466998970f28a333
+binary: mlir-opt
+patch:
+  commit: a6cb5cc0f0b6448e9b2d05017ea17fccf1eb1feb
+  date: '2025-03-28T10:11:14+08:00'
+reference:
+- https://github.com/llvm/llvm-project
+- https://github.com/llvm/llvm-project/issues/132891
+- https://github.com/llvm/llvm-project/commit/ebe1ece4bbfdcd29dd2b578f466998970f28a333
+- https://github.com/llvm/llvm-project/commit/a6cb5cc0f0b6448e9b2d05017ea17fccf1eb1feb

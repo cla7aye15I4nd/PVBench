@@ -1,0 +1,14 @@
+id: vim-commit-d889344
+project: vim
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: vim
+trigger_commit: 5a7b6dc23cd16450b5773849520d513de56bccbf
+patch:
+  commit: d88934406c5375d88f8f1b65331c9f0cab68cc6c
+  date: '2022-05-06T20:38:47+01:00'
+reference:
+- https://github.com/vim/vim
+- https://github.com/vim/vim/issues/None
+- https://github.com/vim/vim/commit/5a7b6dc23cd16450b5773849520d513de56bccbf
+- https://github.com/vim/vim/commit/d88934406c5375d88f8f1b65331c9f0cab68cc6c

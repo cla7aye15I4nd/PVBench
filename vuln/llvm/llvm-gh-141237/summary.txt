@@ -1,0 +1,24 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+opt: /tmp/llvm-gh-141237/build/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:7478: llvm::VectorizationFactor llvm::LoopVectorizationPlanner::computeBestVF(): Assertion `(BestFactor.Width == LegacyVF.Width || BestPlan.hasEarlyExit() || planContainsAdditionalSimplifications(getPlanFor(BestFactor.Width), CostCtx, OrigLoop) || planContainsAdditionalSimplifications(getPlanFor(LegacyVF.Width), CostCtx, OrigLoop)) && " VPlan cost model and legacy cost model disagreed"' failed.
+Stack dump:
+0.	Program arguments: ./build/bin/opt -O2 /testcases/llvm-gh-141237/input/poc.ll
+1.	Running pass "function<eager-inv>(float2int,lower-constant-intrinsics,loop(loop-rotate<header-duplication;no-prepare-for-lto>,loop-deletion),loop-distribute,inject-tli-mappings,loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>,infer-alignment,loop-load-elim,instcombine<max-iterations=1;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;forward-switch-cond;switch-range-to-icmp;switch-to-lookup;no-keep-loops;hoist-common-insts;no-hoist-loads-stores-with-cond-faulting;sink-common-insts;speculate-blocks;simplify-cond-branch;no-speculate-unpredictables>,slp-vectorizer,vector-combine,instcombine<max-iterations=1;no-verify-fixpoint>,loop-unroll<O2>,transform-warning,sroa<preserve-cfg>,infer-alignment,instcombine<max-iterations=1;no-verify-fixpoint>,loop-mssa(licm<allowspeculation>),alignment-from-assumptions,loop-sink,instsimplify,div-rem-pairs,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;hoist-loads-stores-with-cond-faulting;no-sink-common-insts;speculate-blocks;simplify-cond-branch;speculate-unpredictables>)" on module "/testcases/llvm-gh-141237/input/poc.ll"
+2.	Running pass "loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>" on function "reduced_test_"
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:888:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - llvm::LoopVectorizationPlanner::computeBestVF() llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:7484:3
+    - llvm::LoopVectorizePass::processLoop(llvm::Loop*) llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:10352:12
+    - llvm::LoopVectorizePass::runImpl(llvm::Function&) llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:10649:27
+    - llvm::LoopVectorizePass::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) llvm/lib/Transforms/Vectorize/LoopVectorize.cpp:10686:39
+    - llvm::detail::PassModel<llvm::Function, llvm::LoopVectorizePass, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) llvm/include/llvm/IR/PassManagerInternal.h:92:3
+    - llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) llvm/include/llvm/IR/PassManagerImpl.h:85:18
+    - llvm::detail::PassModel<llvm::Function, llvm::PassManager<llvm::Function, llvm::AnalysisManager<llvm::Function>>, llvm::AnalysisManager<llvm::Function>>::run(llvm::Function&, llvm::AnalysisManager<llvm::Function>&) llvm/include/llvm/IR/PassManagerInternal.h:92:3
+    - llvm::ModuleToFunctionPassAdaptor::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/lib/IR/PassManager.cpp:129:23
+    - llvm::detail::PassModel<llvm::Module, llvm::ModuleToFunctionPassAdaptor, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/include/llvm/IR/PassManagerInternal.h:92:3
+    - llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module>>::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) llvm/include/llvm/IR/PassManagerImpl.h:85:18
+    - llvm::runPassPipeline(llvm::StringRef, llvm::Module&, llvm::TargetMachine*, llvm::TargetLibraryInfoImpl*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::ToolOutputFile*, llvm::StringRef, llvm::ArrayRef<llvm::PassPlugin>, llvm::ArrayRef<std::function<void (llvm::PassBuilder&)>>, llvm::opt_tool::OutputKind, llvm::opt_tool::VerifierKind, bool, bool, bool, bool, bool, bool, bool) llvm/tools/opt/NewPMDriver.cpp:557:10
+    - optMain llvm/tools/opt/optdriver.cpp:729:27
+    - main llvm/tools/opt/opt.cpp:25:64

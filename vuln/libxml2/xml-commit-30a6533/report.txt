@@ -1,0 +1,15 @@
+runtime error: -5e+09 is outside the range of representable values of type 'int'
+    #0 0x5b20d73f145e in xmlXPathSubstringFunction /tmp/xml-commit-30a6533/build/xpath.c:9190:13
+    #1 0x5b20d7444ceb in xmlXPathCompOpEval /tmp/xml-commit-30a6533/build/xpath.c:13457:17
+    #2 0x5b20d744c911 in xmlXPathCompOpEval /tmp/xml-commit-30a6533/build/xpath.c:13801:26
+    #3 0x5b20d74014ce in xmlXPathRunEval /tmp/xml-commit-30a6533/build/xpath.c:14372:2
+    #4 0x5b20d7400516 in xmlXPathEvalExpr /tmp/xml-commit-30a6533/build/xpath.c:14844:5
+    #5 0x5b20d74015d3 in xmlXPathEval /tmp/xml-commit-30a6533/build/xpath.c:14869:5
+    #6 0x5b20d70a1a80 in doXPathQuery /tmp/xml-commit-30a6533/build/xmllint.c:2140:11
+    #7 0x5b20d709993d in parseAndPrintFile /tmp/xml-commit-30a6533/build/xmllint.c:2433:9
+    #8 0x5b20d7093203 in main /tmp/xml-commit-30a6533/build/xmllint.c:3732:7
+    #9 0x7cd690bae1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #10 0x7cd690bae28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #11 0x5b20d705a9e4 in _start (/tmp/xml-commit-30a6533/build/xmllint+0x4ef9e4) (BuildId: c179288193a7735b18afe0611916b46126a8151d)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior xpath.c:9190:13 

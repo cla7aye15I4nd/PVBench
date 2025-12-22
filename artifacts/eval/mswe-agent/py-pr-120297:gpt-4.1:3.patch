@@ -1,0 +1,51 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_asynciomodule.c b/Modules/_asynciomodule.c
+index 05ac09fe31c..96b26ce6c1e 100644
+--- a/Modules/_asynciomodule.c
++++ b/Modules/_asynciomodule.c
+@@ -2524,9 +2524,11 @@ static PyObject *
+ _asyncio_Task_get_coro_impl(TaskObj *self)
+ /*[clinic end generated code: output=bcac27c8cc6c8073 input=d2e8606c42a7b403]*/
+ {
+-    return Py_NewRef(self->task_coro);
++    if (self->task_coro) {
++        return Py_NewRef(self->task_coro);
++    }
++    Py_RETURN_NONE;
+ }
+-
+ /*[clinic input]
+ _asyncio.Task.get_context
+ [clinic start generated code]*/
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 00000000000..7abe0928350
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,12 @@
++import _lsprof
++
++# Read the POC file as required by the issue
++with open("/home/poc/0.bin", "rb") as f:
++    data = f.read()
++
++prof = _lsprof.Profiler()
++prof.enable()
++# Do nothing, just enable/disable to trigger the bug
++prof.disable()
++
++print("Script completed successfully, no errors.")

@@ -1,0 +1,62 @@
+diff --git a/NEWS b/NEWS
+index 4926783cc4..71e619788d 100644
+--- a/NEWS
++++ b/NEWS
+@@ -10,6 +10,8 @@ PHP                                                                        NEWS
+ 
+ - DOM:
+   . Fixed bug GH-16594 (Assertion failure in DOM -> before). (nielsdos)
++  . Fixed bug GH-16593 (Assertion failure in DOM->replaceChild). (nielsdos)
++  . Fixed bug GH-16595 (Another UAF in DOM -> cloneNode). (nielsdos)
+ 
+ - GD:
+   . Fixed bug GH-16559 (UBSan abort in ext/gd/libgd/gd_interpolation.c:1007).
+diff --git a/ext/dom/node.c b/ext/dom/node.c
+index c0fd56a472..55d3e24454 100644
+--- a/ext/dom/node.c
++++ b/ext/dom/node.c
+@@ -895,21 +895,23 @@ static void dom_node_insert_before_legacy(zval *return_value, zval *ref, dom_obj
+ 		RETURN_FALSE;
+ 	}
+ 
+-	if (child->doc == NULL && parentp->doc != NULL) {
+-		dom_set_document_ref_pointers(child, intern->document);
+-	}
+-
+-	php_libxml_invalidate_node_list_cache(intern->document);
+-
++	xmlNodePtr refp = NULL;
+ 	if (ref != NULL) {
+-		xmlNodePtr refp;
+ 		dom_object *refpobj;
+ 		DOM_GET_OBJ(refp, ref, xmlNodePtr, refpobj);
+ 		if (refp->parent != parentp) {
+ 			php_dom_throw_error(NOT_FOUND_ERR, stricterror);
+ 			RETURN_FALSE;
+ 		}
++	}
++
++	if (child->doc == NULL && parentp->doc != NULL) {
++		dom_set_document_ref_pointers(child, intern->document);
++	}
++
++	php_libxml_invalidate_node_list_cache(intern->document);
+ 
++	if (ref != NULL) {
+ 		if (child->parent != NULL) {
+ 			xmlUnlinkNode(child);
+ 		}
+@@ -1196,6 +1198,13 @@ static void dom_node_replace_child(INTERNAL_FUNCTION_PARAMETERS, bool modern)
+ 			RETURN_FALSE;
+ 		}
+ 
++		/* This is already disallowed by libxml, but we should check it here to avoid
++		 * breaking assumptions and assertions. */
++		if ((oldchild->type == XML_ATTRIBUTE_NODE) != (newchild->type == XML_ATTRIBUTE_NODE)) {
++			php_dom_throw_error(HIERARCHY_REQUEST_ERR, stricterror);
++			RETURN_FALSE;
++		}
++
+ 		if (oldchild->parent != nodep) {
+ 			php_dom_throw_error(NOT_FOUND_ERR, stricterror);
+ 			RETURN_FALSE;

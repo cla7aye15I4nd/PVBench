@@ -1,0 +1,14 @@
+id: vim-gh-17005
+project: vim
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: vim
+trigger_commit: c6336acfe3e80904458d7ea735929b4c91346702
+patch:
+  commit: f13c8561544dad4f82b7f4f71041d35f55b5feaa
+  date: '2025-03-30T15:19:05+02:00'
+reference:
+- https://github.com/vim/vim
+- https://github.com/vim/vim/issues/17005
+- https://github.com/vim/vim/commit/c6336acfe3e80904458d7ea735929b4c91346702
+- https://github.com/vim/vim/commit/f13c8561544dad4f82b7f4f71041d35f55b5feaa

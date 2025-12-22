@@ -1,0 +1,15 @@
+<?php
+
+class C {
+    function __serialize(): array {
+        global $store;
+        $store->removeAll($store);
+        return [];
+    }
+}
+
+$store = new SplObjectStorage;
+$store[new C] = new stdClass;
+var_dump($store->serialize());
+
+?>

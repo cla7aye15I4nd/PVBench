@@ -1,0 +1,40 @@
+
+diff --git a/.gitignore b/.gitignore
+index 9142623efa8..926f616c81e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -124,3 +124,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/objects/js-atomics-synchronization.cc b/src/objects/js-atomics-synchronization.cc
+index d091021dbd5..a61ca74fe56 100644
+--- a/src/objects/js-atomics-synchronization.cc
++++ b/src/objects/js-atomics-synchronization.cc
+@@ -1237,12 +1237,17 @@ uint32_t JSAtomicsCondition::Notify(Isolate* requester,
+           old_head = *waiter_head;
+           *waiter_head = nullptr;
+         } else {
++          if (count <= 0) return 0;
+           old_head = WaiterQueueNode::Split(waiter_head, count);
+         }
+         if (!old_head) return 0;
+         // Notify while holding the queue lock to avoid notifying
+         // waiters that have been deleted in other threads.
+         return old_head->NotifyAllInList();
++        if (!old_head) return 0;
++        // Notify while holding the queue lock to avoid notifying
++        // waiters that have been deleted in other threads.
++        return old_head->NotifyAllInList();
+       });
+ }
+ 

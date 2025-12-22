@@ -1,0 +1,38 @@
+
+diff --git a/.gitignore b/.gitignore
+index 9142623efa8..926f616c81e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -124,3 +124,12 @@ bazel-bin
+ bazel-out
+ bazel-testlogs
+ bazel-v8
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.dll
++*.dylib
+diff --git a/src/heap/object-stats.cc b/src/heap/object-stats.cc
+index 37ecfc79099..09e5a0d4dcb 100644
+--- a/src/heap/object-stats.cc
++++ b/src/heap/object-stats.cc
+@@ -490,10 +490,11 @@ template <typename Dictionary>
+ void ObjectStatsCollectorImpl::RecordHashTableVirtualObjectStats(
+     Tagged<HeapObject> parent, Tagged<Dictionary> hash_table,
+     ObjectStats::VirtualInstanceType type) {
+-  size_t over_allocated =
+-      (hash_table->Capacity() - (hash_table->NumberOfElements() +
+-                                 hash_table->NumberOfDeletedElements())) *
+-      Dictionary::kEntrySize * kTaggedSize;
++  size_t used = hash_table->NumberOfElements() + hash_table->NumberOfDeletedElements();
++  size_t over_allocated = 0;
++  if (hash_table->Capacity() > used) {
++    over_allocated = (hash_table->Capacity() - used) * Dictionary::kEntrySize * kTaggedSize;
++  }
+   RecordVirtualObjectStats(parent, hash_table, type, hash_table->Size(),
+                            over_allocated);
+ }

@@ -1,0 +1,29 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6ed7197e3ab..0c0663b8668 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -161,3 +161,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/_collectionsmodule.c b/Modules/_collectionsmodule.c
+index ef77d34b10e..7ef2d6e477a 100644
+--- a/Modules/_collectionsmodule.c
++++ b/Modules/_collectionsmodule.c
+@@ -1219,7 +1219,9 @@ deque_index_impl(dequeobject *deque, PyObject *v, Py_ssize_t start,
+     while (--n >= 0) {
+         CHECK_NOT_END(b);
+         item = b->data[index];
++        Py_INCREF(item);  /* Hold a reference during comparison */
+         cmp = PyObject_RichCompareBool(item, v, Py_EQ);
++        Py_DECREF(item);  /* Release the reference */
+         if (cmp > 0)
+             return PyLong_FromSsize_t(stop - n - 1);
+         if (cmp < 0)

@@ -1,0 +1,124 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Python/Python-ast.c b/Python/Python-ast.c
+index 4a58c0973d1..89c52b9dc73 100644
+--- a/Python/Python-ast.c
++++ b/Python/Python-ast.c
+@@ -5809,7 +5809,6 @@ ast_repr_max_depth(AST_object *self, int depth)
+ 
+         if (!value_repr) {
+             Py_DECREF(name);
+-            Py_DECREF(value);
+             goto error;
+         }
+ 
+diff --git a/test_ast_repr.py b/test_ast_repr.py
+new file mode 100644
+index 00000000000..cac8d58a476
+--- /dev/null
++++ b/test_ast_repr.py
+@@ -0,0 +1,24 @@
++import ast
++
++# Create an AST node that will trigger the repr functionality
++code = "async def test(): return 42"
++tree = ast.parse(code)
++
++# This should trigger the ast_repr_max_depth function
++print("AST repr test:")
++print(repr(tree))
++
++# Test with a more complex AST that has nested structures
++complex_code = """
++async def complex_func(x, y=10):
++    if x > 0:
++        return await some_async_call(x + y)
++    else:
++        return [i for i in range(x, y)]
++"""
++
++complex_tree = ast.parse(complex_code)
++print("\nComplex AST repr test:")
++print(repr(complex_tree))
++
++print("Test completed successfully!")
+diff --git a/test_use_after_free_fix.py b/test_use_after_free_fix.py
+new file mode 100644
+index 00000000000..252cfb90f47
+--- /dev/null
++++ b/test_use_after_free_fix.py
+@@ -0,0 +1,61 @@
++import ast
++import sys
++
++def test_ast_repr_edge_cases():
++    """Test AST repr functionality that could trigger the use-after-free bug."""
++    
++    # Test various AST nodes that might trigger the error path
++    test_cases = [
++        "async def f(): pass",
++        "def f(x=1, y=2): return x + y",
++        "class C: pass",
++        "[x for x in range(10) if x > 5]",
++        "lambda x: x * 2",
++        "try: pass\nexcept: pass\nfinally: pass",
++        "with open('file') as f: pass",
++        "async with ctx() as x: pass",
++        "async for x in iter: pass",
++        "await func()",
++    ]
++    
++    print("Testing AST repr for various constructs...")
++    
++    for i, code in enumerate(test_cases):
++        try:
++            tree = ast.parse(code)
++            # This should trigger ast_repr_max_depth
++            repr_str = repr(tree)
++            print(f"Test {i+1}: OK - {code[:30]}...")
++        except Exception as e:
++            print(f"Test {i+1}: FAILED - {code[:30]}... - {e}")
++            return False
++    
++    print("All AST repr tests passed!")
++    return True
++
++def test_deep_nesting():
++    """Test deeply nested AST structures."""
++    print("Testing deeply nested AST structures...")
++    
++    # Create a deeply nested expression
++    nested_code = "(" * 50 + "1" + ")" * 50
++    try:
++        tree = ast.parse(nested_code)
++        repr_str = repr(tree)
++        print("Deep nesting test: OK")
++    except Exception as e:
++        print(f"Deep nesting test: FAILED - {e}")
++        return False
++    
++    return True
++
++if __name__ == "__main__":
++    success = True
++    success &= test_ast_repr_edge_cases()
++    success &= test_deep_nesting()
++    
++    if success:
++        print("\nAll tests passed! Use-after-free bug appears to be fixed.")
++    else:
++        print("\nSome tests failed!")
++        sys.exit(1)

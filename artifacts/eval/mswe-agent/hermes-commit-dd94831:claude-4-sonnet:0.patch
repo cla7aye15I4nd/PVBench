@@ -1,0 +1,117 @@
+
+diff --git a/.gitignore b/.gitignore
+index 1ba8d67d9..8556f202b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,3 +24,14 @@ test/ApplePlatformsIntegrationTestApp/Podfile.lock
+ test/ApplePlatformsIntegrationTestApp/Pods
+ test/ApplePlatformsIntegrationTestApp/**/xcuserdata
+ test/ApplePlatformsIntegrationTestApp/ApplePlatformsIntegrationTestApp.xcworkspace
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/include/hermes/Support/SHA1.h b/include/hermes/Support/SHA1.h
+index 48f70b538..dd78f4a38 100644
+--- a/include/hermes/Support/SHA1.h
++++ b/include/hermes/Support/SHA1.h
+@@ -9,6 +9,7 @@
+ #define HERMES_SUPPORT_SHA1_H
+ 
+ #include <array>
++#include <cstdint>
+ #include <string>
+ 
+ namespace hermes {
+diff --git a/include/hermes/VM/JSCallableProxy.h b/include/hermes/VM/JSCallableProxy.h
+index 5aab5d3de..6e22a21d4 100644
+--- a/include/hermes/VM/JSCallableProxy.h
++++ b/include/hermes/VM/JSCallableProxy.h
+@@ -10,6 +10,10 @@
+ 
+ #include "hermes/VM/Callable.h"
+ #include "hermes/VM/JSProxy.h"
++#include "hermes/VM/JSFunction.h"
++#include "hermes/VM/BoundFunction.h"
++#include "hermes/VM/NativeFunction.h"
++#include "hermes/VM/NativeConstructor.h"
+ 
+ namespace hermes {
+ namespace vm {
+@@ -38,8 +42,41 @@ class JSCallableProxy : public NativeFunction {
+       Handle<JSObject> handler);
+ 
+   bool isConstructor(Runtime *runtime) {
+-    return vm::isConstructor(
+-        runtime, vmcast_or_null<Callable>(slots_.target.get(runtime)));
++    // Get the target callable directly to avoid infinite recursion
++    // when the target is also a JSCallableProxy
++    auto *target = vmcast_or_null<Callable>(slots_.target.get(runtime));
++    if (!target) {
++      return false;
++    }
++
++    // Handle BoundFunction target chain
++    while (BoundFunction *b = dyn_vmcast<BoundFunction>(target)) {
++      target = b->getTarget(runtime);
++    }
++
++    // If it is a bytecode function, check the flags.
++    if (auto *func = dyn_vmcast<JSFunction>(target)) {
++      auto *cb = func->getCodeBlock();
++      // Even though it doesn't make sense logically, we need to compile the
++      // function in order to access it flags.
++      cb->lazyCompile(runtime);
++      return !func->getCodeBlock()->getHeaderFlags().isCallProhibited(true);
++    }
++
++    // We check for NativeFunction since those are defined to not be
++    // constructible, with the exception of NativeConstructor.
++    if (!vmisa<NativeFunction>(target) || vmisa<NativeConstructor>(target)) {
++      return true;
++    }
++
++    // For JSCallableProxy targets, we need to avoid recursion.
++    // If the target is another JSCallableProxy, we recursively check its target
++    // but avoid calling vm::isConstructor to prevent infinite recursion.
++    if (auto *cproxy = dyn_vmcast<JSCallableProxy>(target)) {
++      return cproxy->isConstructor(runtime);
++    }
++
++    return false;
+   }
+ 
+ #ifdef HERMESVM_SERIALIZE
+diff --git a/lib/VM/Operations.cpp b/lib/VM/Operations.cpp
+index 60820798a..33403c382 100644
+--- a/lib/VM/Operations.cpp
++++ b/lib/VM/Operations.cpp
+@@ -37,8 +37,7 @@ CallResult<Handle<SymbolID>> stringToSymbolID(
+     Runtime *runtime,
+     PseudoHandle<StringPrimitive> strPrim) {
+   // Unique the string.
+-  return runtime->getIdentifierTable().getSymbolHandleFromPrimitive(
+-      runtime, std::move(strPrim));
++  return runtime->getIdentifierTable().getSymbolHandle(runtime, strPrim);
+ }
+ 
+ CallResult<Handle<SymbolID>> valueToSymbolID(
+diff --git a/public/hermes/Public/DebuggerTypes.h b/public/hermes/Public/DebuggerTypes.h
+index 191a81d1a..6243ff915 100644
+--- a/public/hermes/Public/DebuggerTypes.h
++++ b/public/hermes/Public/DebuggerTypes.h
+@@ -9,6 +9,7 @@
+ #define HERMES_PUBLIC_DEBUGGERTYPES_H
+ 
+ #include <string>
++#include <cstdint>
+ #include <vector>
+ 
+ namespace hermes {

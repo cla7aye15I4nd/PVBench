@@ -1,0 +1,42 @@
+This is an LLVM error report. Please refer the error message for more details.
+
+workshare
+Unexpected directive
+UNREACHABLE executed at /tmp/llvm-gh-139424/build/clang/lib/Basic/OpenMPKinds.cpp:855!
+Stack dump:
+0.	Program arguments: /tmp/llvm-gh-139424/build/build/bin/clang-21 -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -dumpdir a- -disable-free -clear-ast-before-backend -main-file-name poc.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/tmp/llvm-gh-139424/build -fcoverage-compilation-dir=/tmp/llvm-gh-139424/build -resource-dir /tmp/llvm-gh-139424/build/build/lib/clang/21 -internal-isystem /tmp/llvm-gh-139424/build/build/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include -internal-externc-isystem /usr/include/x86_64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -ferror-limit 19 -fopenmp -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o /tmp/poc-bcb88a.o -x c /testcases/llvm-gh-139424/input/poc.c
+1.	/testcases/llvm-gh-139424/input/poc.c:3:5: current parser token '}'
+2.	/testcases/llvm-gh-139424/input/poc.c:1:9: parsing function body 'f'
+3.	/testcases/llvm-gh-139424/input/poc.c:1:9: in compound statement ('{}')
+    - llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) llvm/lib/Support/Unix/Signals.inc:804:22
+    - PrintStackTraceSignalHandler(void*) llvm/lib/Support/Unix/Signals.inc:888:1
+    - llvm::sys::RunSignalHandlers() llvm/lib/Support/Signals.cpp:105:20
+    - SignalHandler(int, siginfo_t*, void*) llvm/lib/Support/Unix/Signals.inc:418:13
+    - bindingsErrorHandler(void*, char const*, bool) llvm/lib/Support/ErrorHandling.cpp:242:55
+    - clang::getOpenMPCaptureRegions(llvm::SmallVectorImpl<llvm::omp::Directive>&, llvm::omp::Directive)::'lambda'(llvm::omp::Directive)::operator()(llvm::omp::Directive) const clang/lib/Basic/OpenMPKinds.cpp:857:12
+    - clang::getOpenMPCaptureRegions(llvm::SmallVectorImpl<llvm::omp::Directive>&, llvm::omp::Directive) clang/lib/Basic/OpenMPKinds.cpp:862:26
+    - processCapturedRegions(clang::Sema&, llvm::omp::Directive, clang::Scope*, clang::SourceLocation) clang/lib/Sema/SemaOpenMP.cpp:4344:60
+    - clang::SemaOpenMP::ActOnOpenMPRegionStart(llvm::omp::Directive, clang::Scope*) clang/lib/Sema/SemaOpenMP.cpp:4412:5
+    - clang::Parser::ParseOpenMPExecutableDirective(clang::Parser::ParsedStmtContext, llvm::omp::Directive, clang::SourceLocation, bool) clang/lib/Parse/ParseOpenMP.cpp:2504:66
+    - clang::Parser::ParseOpenMPDeclarativeOrExecutableDirective(clang::Parser::ParsedStmtContext, bool) clang/lib/Parse/ParseOpenMP.cpp:2627:47
+    - clang::Parser::ParseStatementOrDeclarationAfterAttributes(llvm::SmallVector<clang::Stmt*, 24u>&, clang::Parser::ParsedStmtContext, clang::SourceLocation*, clang::ParsedAttributes&, clang::ParsedAttributes&) clang/lib/Parse/ParseStmt.cpp:452:55
+    - clang::Parser::ParseStatementOrDeclaration(llvm::SmallVector<clang::Stmt*, 24u>&, clang::Parser::ParsedStmtContext, clang::SourceLocation*) clang/lib/Parse/ParseStmt.cpp:74:62
+    - clang::Parser::ParseCompoundStatementBody(bool) clang/lib/Parse/ParseStmt.cpp:1151:38
+    - clang::Parser::ParseFunctionStatementBody(clang::Decl*, clang::Parser::ParseScope&) clang/lib/Parse/ParseStmt.cpp:2389:47
+    - clang::Parser::ParseFunctionDefinition(clang::ParsingDeclarator&, clang::Parser::ParsedTemplateInfo const&, clang::Parser::LateParsedAttrList*) clang/lib/Parse/Parser.cpp:1450:36
+    - clang::Parser::ParseDeclGroup(clang::ParsingDeclSpec&, clang::DeclaratorContext, clang::ParsedAttributes&, clang::Parser::ParsedTemplateInfo&, clang::SourceLocation*, clang::Parser::ForRangeInit*) clang/lib/Parse/ParseDecl.cpp:2271:40
+    - clang::Parser::ParseDeclOrFunctionDefInternal(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec&, clang::AccessSpecifier) clang/lib/Parse/Parser.cpp:1188:24
+    - clang::Parser::ParseDeclarationOrFunctionDefinition(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*, clang::AccessSpecifier) clang/lib/Parse/Parser.cpp:1210:42
+    - clang::Parser::ParseExternalDeclaration(clang::ParsedAttributes&, clang::ParsedAttributes&, clang::ParsingDeclSpec*) clang/lib/Parse/Parser.cpp:1033:50
+    - clang::Parser::ParseTopLevelDecl(clang::OpaquePtr<clang::DeclGroupRef>&, clang::Sema::ModuleImportState&) clang/lib/Parse/Parser.cpp:746:36
+    - clang::Parser::ParseFirstTopLevelDecl(clang::OpaquePtr<clang::DeclGroupRef>&, clang::Sema::ModuleImportState&) clang/lib/Parse/Parser.cpp:602:43
+    - clang::ParseAST(clang::Sema&, bool, bool) clang/lib/Parse/ParseAST.cpp:170:47
+    - clang::ASTFrontendAction::ExecuteAction() clang/lib/Frontend/FrontendAction.cpp:1339:11
+    - clang::CodeGenAction::ExecuteAction() clang/lib/CodeGen/CodeGenAction.cpp:1112:5
+    - clang::FrontendAction::Execute() clang/lib/Frontend/FrontendAction.cpp:1225:38
+    - clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) clang/lib/Frontend/CompilerInstance.cpp:1057:42
+    - clang::ExecuteCompilerInvocation(clang::CompilerInstance*) clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:300:38
+    - cc1_main(llvm::ArrayRef<char const*>, char const*, void*) clang/tools/driver/cc1_main.cpp:297:40
+    - ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&, llvm::ToolContext const&) clang/tools/driver/driver.cpp:223:20
+    - clang_main(int, char**, llvm::ToolContext const&) clang/tools/driver/driver.cpp:264:26
+    - main build/tools/clang/tools/driver/clang-driver.cpp:17:20

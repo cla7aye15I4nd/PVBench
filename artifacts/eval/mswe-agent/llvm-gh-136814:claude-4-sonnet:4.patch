@@ -1,0 +1,71 @@
+
+diff --git a/.gitignore b/.gitignore
+index a84268a7f686..ff15b5180e1f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -73,3 +73,14 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/clang/lib/Format/UnwrappedLineParser.cpp b/clang/lib/Format/UnwrappedLineParser.cpp
+index df58e5ef4d6a..0d587185c47f 100644
+--- a/clang/lib/Format/UnwrappedLineParser.cpp
++++ b/clang/lib/Format/UnwrappedLineParser.cpp
+@@ -1,16 +1,9 @@
+-//===--- UnwrappedLineParser.cpp - Format C++ code ------------------------===//
++//===--- UnwrappedLineParser.cpp - Format C++ code ----------------------===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+ // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ //
+-//===----------------------------------------------------------------------===//
+-///
+-/// \file
+-/// This file contains the implementation of the UnwrappedLineParser,
+-/// which turns a stream of tokens into UnwrappedLines.
+-///
+-//===----------------------------------------------------------------------===//
+ 
+ #include "UnwrappedLineParser.h"
+ #include "FormatToken.h"
+@@ -1185,7 +1178,7 @@ void UnwrappedLineParser::parsePPDefine() {
+   addUnwrappedLine();
+   ++Line->Level;
+ 
+-  Line->PPLevel = PPBranchLevel + (IncludeGuard == IG_Defined ? 0 : 1);
++  Line->PPLevel = std::max(0, PPBranchLevel + (IncludeGuard == IG_Defined ? 0 : 1));
+   assert((int)Line->PPLevel >= 0);
+   Line->InMacroBody = true;
+ 
+diff --git a/test_case.cpp b/test_case.cpp
+new file mode 100644
+index 000000000000..0f420e649070
+--- /dev/null
++++ b/test_case.cpp
+@@ -0,0 +1,4 @@
++#else
++#else
++#else
++#define TEST 1
+diff --git a/trigger_test.cpp b/trigger_test.cpp
+new file mode 100644
+index 000000000000..7945288b0a57
+--- /dev/null
++++ b/trigger_test.cpp
+@@ -0,0 +1,4 @@
++#endif
++#endif
++#endif
++#define MACRO 1

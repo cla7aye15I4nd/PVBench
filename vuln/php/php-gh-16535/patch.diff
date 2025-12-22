@@ -1,0 +1,29 @@
+diff --git a/NEWS b/NEWS
+index 428dcaf71c..eb434beaf2 100644
+--- a/NEWS
++++ b/NEWS
+@@ -32,6 +32,7 @@ PHP                                                                        NEWS
+   . Fixed bug GH-16473 (dom_import_simplexml stub is wrong). (nielsdos)
+   . Fixed bug GH-16533 (Segfault when adding attribute to parent that is not
+     an element). (nielsdos)
++  . Fixed bug GH-16535 (UAF when using document as a child). (nielsdos)
+ 
+ - EXIF:
+   . Fixed bug GH-16409 (Segfault in exif_thumbnail when not dealing with a
+diff --git a/ext/dom/node.c b/ext/dom/node.c
+index 4be876c494..a8e3b035d1 100644
+--- a/ext/dom/node.c
++++ b/ext/dom/node.c
+@@ -878,6 +878,12 @@ static bool dom_node_check_legacy_insertion_validity(xmlNodePtr parentp, xmlNode
+ 		return false;
+ 	}
+ 
++	/* Documents can never be a child. */
++	if (child->type == XML_DOCUMENT_NODE || child->type == XML_HTML_DOCUMENT_NODE) {
++		php_dom_throw_error(HIERARCHY_REQUEST_ERR, stricterror);
++		return false;
++	}
++
+ 	return true;
+ }
+ 

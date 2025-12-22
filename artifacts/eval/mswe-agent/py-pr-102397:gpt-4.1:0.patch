@@ -1,0 +1,50 @@
+
+diff --git a/.gitignore b/.gitignore
+index d42e111666f..6df96840d41 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -151,3 +151,9 @@ Python/frozen_modules/MANIFEST
+ # Ignore ./python binary on Unix but still look into ./Python/ directory.
+ /python
+ !/Python/
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
+index 60a8067fc8c..c19879c4909 100644
+--- a/Modules/signalmodule.c
++++ b/Modules/signalmodule.c
+@@ -157,9 +157,12 @@ typedef struct {
+ 
+ 
+ Py_LOCAL_INLINE(PyObject *)
++
+ get_handler(int i)
+ {
+-    return (PyObject *)_Py_atomic_load(&Handlers[i].func);
++    PyObject *obj = (PyObject *)_Py_atomic_load(&Handlers[i].func);
++    Py_XINCREF(obj);
++    return obj;
+ }
+ 
+ Py_LOCAL_INLINE(void)
+@@ -611,7 +614,7 @@ signal_getsignal_impl(PyObject *module, int signalnum)
+     }
+     old_handler = get_handler(signalnum);
+     if (old_handler != NULL) {
+-        return Py_NewRef(old_handler);
++        return old_handler;
+     }
+     else {
+         Py_RETURN_NONE;
+@@ -1924,6 +1927,7 @@ PyErr_SetInterruptEx(int signum)
+             && !compare_handler(func, state->default_handler)) {
+         trip_signal(signum);
+     }
++    Py_XDECREF(func);
+     return 0;
+ }
+ 

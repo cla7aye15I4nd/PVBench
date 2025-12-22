@@ -1,0 +1,35 @@
+
+diff --git a/.gitignore b/.gitignore
+index 8872e9d5508..959a12bbd57 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -171,3 +171,9 @@ Python/frozen_modules/MANIFEST
+ 
+ # main branch only: ABI files are not checked/maintained.
+ Doc/data/python*.abi
++build/
++Build/
++bin/
++lib/
++*.out
++*.obj
+diff --git a/Modules/readline.c b/Modules/readline.c
+index 35655c70a46..f7fec46dec0 100644
+--- a/Modules/readline.c
++++ b/Modules/readline.c
+@@ -362,8 +362,13 @@ readline_append_history_file_impl(PyObject *module, int nelements,
+         filename_bytes = NULL;
+         filename = NULL;
+     }
+-    errno = err = append_history(
+-        nelements - libedit_append_replace_history_offset, filename);
++    int adjusted_nelements = nelements - libedit_append_replace_history_offset;
++    if (nelements < 0 || adjusted_nelements < 0) {
++        PyErr_SetString(PyExc_ValueError, "nelements must be non-negative");
++        Py_XDECREF(filename_bytes);
++        return NULL;
++    }
++    errno = err = append_history(adjusted_nelements, filename);
+     if (!err && _history_length >= 0)
+         history_truncate_file(filename, _history_length);
+     Py_XDECREF(filename_bytes);

@@ -1,0 +1,72 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/lib/Regex/Executor.cpp b/lib/Regex/Executor.cpp
+index fb73b8e56..601d87272 100644
+--- a/lib/Regex/Executor.cpp
++++ b/lib/Regex/Executor.cpp
+@@ -372,6 +372,10 @@ struct Context {
+   /// overflow error.
+   static constexpr size_t kMaxBacktrackDepth = 1u << 24;
+ 
++  /// The maximum recursion depth for the match function. Beyond this we return a stack
++  /// overflow error to prevent actual stack overflow.
++  static constexpr size_t kMaxRecursionDepth = 1000;
++
+   /// The stream of bytecode instructions, including the header.
+   llvh::ArrayRef<uint8_t> bytecodeStream_;
+ 
+@@ -427,7 +431,8 @@ struct Context {
+   /// state->cursor_.currentPointer().
+   ExecutorResult<const CodeUnit *> match(
+       State<Traits> *state,
+-      bool onlyAtStart);
++      bool onlyAtStart,
++      size_t recursionDepth = 0);
+ 
+   /// Backtrack the given state \p s with the backtrack stack \p bts.
+   /// \return true if we backtracked, false if we exhausted the stack.
+diff --git a/reproduce_issue.sh b/reproduce_issue.sh
+new file mode 100755
+index 000000000..705f2cd7c
+--- /dev/null
++++ b/reproduce_issue.sh
+@@ -0,0 +1,5 @@
++#!/bin/bash -eu
++export CXXFLAGS="-include stdexcept ${CXXFLAGS:-}"
++cmake -S . -B build -G Ninja
++cmake --build build -j 16
++test -f build/bin/hermes
+diff --git a/run_test.sh b/run_test.sh
+new file mode 100755
+index 000000000..faaafc3bc
+--- /dev/null
++++ b/run_test.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++./build/bin/hermes -O /home/poc/0.bin
+diff --git a/run_test_asan.sh b/run_test_asan.sh
+new file mode 100755
+index 000000000..21445b9bc
+--- /dev/null
++++ b/run_test_asan.sh
+@@ -0,0 +1,2 @@
++#!/bin/bash -eu
++./build_asan/bin/hermes -O /home/poc/0.bin

@@ -1,0 +1,41 @@
+==4335==ERROR: AddressSanitizer: global-buffer-overflow on address 0x5c92a346fd16 at pc 0x5c92a2ad9245 bp 0x7ffc1126eaf0 sp 0x7ffc1126eae8
+WRITE of size 1 at 0x5c92a346fd16 thread T0
+    #0 0x5c92a2ad9244 in main /tmp/vim-gh-14738/build/src/xxd/xxd.c:1101:11
+    #1 0x7f9fd5bfc1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #2 0x7f9fd5bfc28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 42c84c92e6f98126b3e2230ebfdead22c235b667)
+    #3 0x5c92a29fc414 in _start (/tmp/vim-gh-14738/build/src/xxd/xxd+0x2d414) (BuildId: 3acc557b0294aba805851b8071095cab532d231f)
+
+0x5c92a346fd16 is located 0 bytes after global variable 'main.l' defined in '/tmp/vim-gh-14738/build/src/xxd/xxd.c:673' (0x5c92a346e380) of size 6550
+SUMMARY: AddressSanitizer: global-buffer-overflow /tmp/vim-gh-14738/build/src/xxd/xxd.c:1101:11 in main
+Shadow bytes around the buggy address:
+  0x5c92a346fa80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x5c92a346fb00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x5c92a346fb80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x5c92a346fc00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x5c92a346fc80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x5c92a346fd00: 00 00[06]f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9
+  0x5c92a346fd80: f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9
+  0x5c92a346fe00: f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9
+  0x5c92a346fe80: f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9
+  0x5c92a346ff00: f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9
+  0x5c92a346ff80: f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9 f9
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==4335==ABORTING

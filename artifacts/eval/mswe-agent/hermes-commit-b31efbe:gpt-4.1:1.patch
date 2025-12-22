@@ -1,0 +1,57 @@
+
+diff --git a/.gitignore b/.gitignore
+index 6da7d9204..71c032a2d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -34,3 +34,14 @@ android/intltest/java/com/facebook/hermes/test/assets/**
+ 
+ # clangd cache
+ .cache/
++build/
++Build/
++bin/
++lib/
++*.o
++*.out
++*.obj
++*.exe
++*.dll
++*.so
++*.dylib
+diff --git a/lib/AST/ES6Class.cpp b/lib/AST/ES6Class.cpp
+index 42155e587..989ac0575 100644
+--- a/lib/AST/ES6Class.cpp
++++ b/lib/AST/ES6Class.cpp
+@@ -223,12 +223,19 @@ class ES6ClassesTransformations {
+   }
+ 
+   bool incRecursionDepth(ESTree::Node *) {
++    if (++recursionDepth_ > kMaxRecursionDepth) {
++      recursionFailed_ = true;
++      return false;
++    }
+     return true;
+   }
+ 
+-  void decRecursionDepth() {}
+-
+- private:
++  void decRecursionDepth() {
++    --recursionDepth_;
++  }
++  static constexpr int kMaxRecursionDepth = 512;
++  int recursionDepth_ = 0;
++  bool recursionFailed_ = false;
+   Context &context_;
+   UniqueString *const identVar_;
+   VisitedClass *_currentProcessingClass = nullptr;
+@@ -765,6 +772,9 @@ class ES6ClassesTransformations {
+ void transformES6Classes(Context &context, ESTree::Node *node) {
+   ES6ClassesTransformations transformations(context);
+   visitESTreeNode(transformations, node);
++  if (transformations.recursionFailed_) {
++    hermes_fatal("Stack overflow: maximum AST recursion depth exceeded during ES6 class transformation");
++  }
+ }
+ 
+ } // namespace hermes

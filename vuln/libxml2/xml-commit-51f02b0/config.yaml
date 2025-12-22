@@ -1,0 +1,13 @@
+id: xml-commit-51f02b0
+project: libxml2
+sanitizer: AddressSanitizer
+type: Heap Buffer Overflow
+binary: xmllint 
+trigger_commit: ef709ce2f7b792d5fb69ed142796d743fb1eb388
+patch:
+  commit: 51f02b0a03ea1fa6c65b3f9fd88cf60fb5803783
+  date: '2015-09-15T16:50:32+08:00'
+reference:
+- https://gitlab.gnome.org/GNOME/libxml2
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/ef709ce2f7b792d5fb69ed142796d743fb1eb388
+- https://gitlab.gnome.org/GNOME/libxml2/-/commit/51f02b0a03ea1fa6c65b3f9fd88cf60fb5803783

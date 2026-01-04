@@ -271,35 +271,9 @@ The AVR patch incorrectly throws an error, violating PHP's specification that al
 ### Prerequisites
 
 - Docker (recommended) or native build environment
-- Python 3.8+
+- Python 3.12+
 - Git
 
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/anonymous/PVBench.git
-cd PVBench
-
-# Build using Docker (recommended)
-docker build -t pvbench .
-
-# Or install dependencies manually
-pip install -r requirements.txt
-```
-
-### Running Evaluations
-
-```bash
-# Run basic validation
-python evaluate.py --tool patchagent --model gpt-4.1 --validation basic
-
-# Run PoC+ validation
-python evaluate.py --tool patchagent --model gpt-4.1 --validation poc_plus
-
-# Generate PoC+ tests
-python generate_poc_plus.py --project php --category output_checking
-```
 
 ### Directory Structure
 

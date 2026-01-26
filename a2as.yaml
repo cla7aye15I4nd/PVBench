@@ -1,0 +1,929 @@
+manifest:
+  version: "0.1.2"
+  schema: https://a2as.org/cert/schema
+  subject:
+    name: cla7aye15i4nd/pvbench
+    source: https://github.com/cla7aye15i4nd/pvbench
+    branch: main
+    commit: "e5982b98"
+    scope: [cold/builder.py, cold/cli.py, cold/env.py, cold/generator.py, cold/generator_cpython.py, cold/generator_mruby.py,
+      cold/generator_quickjs.py, cold/generator_v8.py, cold/generator_vim.py, cold/llvm.py, cold/logger.py]
+  issued:
+    by: A2AS.org
+    at: '2026-01-26T16:10:55Z'
+  signatures:
+    digest: sha256:DXom8zPUGyJxLEDTj93ovdqdJhKQV3Ji0GCb5PDXzZQ
+    key: ed25519:_szh0GREpYamiJqFIJzABgy5BGlfptZy5aZUaBONFxk
+    sig: ed25519:qKpXczqM_-bqGx4aVB9_wtxI1jnC_EZfzJ5R5DGqPM1WFVkwjzgY4R3MR7nsgn03P5kOa3hRRc1997GgLrTODA
+
+agents:
+  agent.0:
+    type: instance
+    models: [MODEL]
+    tools: [write_tool, run_tool]
+    params:
+      function: generate_test
+      name: V8TestGenerator
+      instance: agent
+      instructions: [instructions]
+  agent.1:
+    type: instance
+    models: [MODEL]
+    tools: [write_tool]
+    params:
+      function: generate_test
+      name: CodeGenerator
+      instance: agent
+      instructions: [instructions]
+  agent.2:
+    type: instance
+    models: [MODEL]
+    tools: [write_tool, run_tool]
+    params:
+      function: generate_test
+      name: QuickJSTestGenerator
+      instance: agent
+      instructions: [instructions]
+  agent.3:
+    type: instance
+    models: [MODEL]
+    tools: [write_tool, run_tool]
+    params:
+      function: generate_test
+      name: VimTestGenerator
+      instance: agent
+      instructions: [instructions]
+  agent.4:
+    type: instance
+    models: [MODEL]
+    tools: [write_tool, run_tool]
+    params:
+      function: generate_test
+      name: MrubyTestGenerator
+      instance: agent
+      instructions: [instructions]
+  agent.5:
+    type: instance
+    models: [MODEL]
+    tools: [write_tool, run_tool]
+    params:
+      function: generate_test
+      name: PythonTestGenerator
+      instance: agent
+      instructions: [instructions]
+
+models:
+  MODEL:
+    type: variable
+    agents: [agent.0, agent.1, agent.2, agent.3, agent.4, agent.5]
+
+tools:
+  run_tool:
+    type: variable
+    agents: [agent.0, agent.2, agent.3, agent.4, agent.5]
+    params:
+      dynamic: "True"
+  write_tool:
+    type: variable
+    agents: [agent.0, agent.1, agent.2, agent.3, agent.4, agent.5]
+    params:
+      dynamic: "True"
+
+imports:
+  ACTION: cold.env.ACTION
+  Agent: agents.Agent
+  agent_generator: patchagent.agent.generator.agent_generator
+  Anthropic: anthropic.Anthropic
+  AnthropicError: anthropic.AnthropicError
+  Any: typing.Any
+  ARCHIVE: cold.env.ARCHIVE
+  argparse: argparse
+  as_completed: concurrent.futures.as_completed
+  backdoor_subprocess_run: cold.utils.backdoor_subprocess_run
+  BaseModel: pydantic.BaseModel
+  Builder: patchagent.builder.Builder
+  BuilderProcessError: patchagent.builder.utils.BuilderProcessError
+  BuilderTimeoutError: patchagent.builder.utils.BuilderTimeoutError
+  cached_property: functools.cached_property
+  Claude4SonnetPatcher: san2patch.patching.llm.anthropic_llm_patcher.Claude4SonnetPatcher
+  ColdBuilder: cold.builder.ColdBuilder
+  ColdPoC: cold.builder.ColdPoC
+  CtagsServer: patchagent.lsp.ctags.CtagsServer
+  CWE: patchagent.parser.cwe.CWE
+  datetime: datetime
+  DCC: cold.env.DCC
+  Dict: typing.Dict
+  DPP: cold.env.DPP
+  extract_v8_flags: cold.generator_v8.extract_v8_flags
+  Field: pydantic.Field
+  FunctionTool: agents.FunctionTool
+  futures: concurrent.futures
+  generate_test: cold.generator_vim.generate_test
+  GENTEST: cold.env.GENTEST
+  GENTEST_CPYTHON: cold.env.GENTEST_CPYTHON
+  GENTEST_MRUBY: cold.env.GENTEST_MRUBY
+  GENTEST_QUICKJS: cold.env.GENTEST_QUICKJS
+  GENTEST_V8: cold.env.GENTEST_V8
+  GENTEST_VIM: cold.env.GENTEST_VIM
+  guess_relpath: patchagent.parser.utils.guess_relpath
+  HUMAN_PROMPT: cold.prompt.HUMAN_PROMPT
+  HybridCServer: patchagent.lsp.hybridc.HybridCServer
+  json: json
+  Lang: patchagent.lang.Lang
+  List: typing.List
+  LLMSanitizerReport: cold.llmsan.LLMSanitizerReport
+  LLVMSanitizerReport: cold.llvm.LLVMSanitizerReport
+  logger: cold.logger.logger
+  logging: logging
+  MAX_PROC: cold.env.MAX_PROC
+  MODEL: cold.env.MODEL
+  OpenAIGPT41Patcher: san2patch.patching.llm.openai_llm_patcher.GPT41Patcher
+  Optional: typing.Optional
+  os: os
+  parse_sanitizer_report: patchagent.parser.parse_sanitizer_report
+  PatchTask: patchagent.task.PatchTask
+  Path: pathlib.Path
+  PoC: patchagent.builder.PoC
+  re: re
+  remove_empty_stacktrace: patchagent.parser.utils.remove_empty_stacktrace
+  Repo: git.Repo
+  REPO: cold.env.REPO
+  Runner: agents.Runner
+  safe_subprocess_run: patchagent.builder.utils.safe_subprocess_run
+  San2Patcher: san2patch.patching.patcher.San2Patcher
+  San2PatchInternalError: san2patch.internal_error.San2PatchInternalError
+  Sanitizer: patchagent.parser.Sanitizer
+  SanitizerReport: patchagent.parser.SanitizerReport
+  shutil: shutil
+  SOURCE: cold.env.SOURCE
+  subprocess: subprocess
+  sys: sys
+  SYSTEM_PROMPT: cold.prompt.SYSTEM_PROMPT
+  TemporaryDirectory: tempfile.TemporaryDirectory
+  TestEvalRetCode: san2patch.patching.patcher.TestEvalRetCode
+  ThreadPoolExecutor: concurrent.futures.ThreadPoolExecutor
+  traceback: traceback
+  Tuple: typing.Tuple
+  Union: typing.Union
+  V8SanitizerReport: cold.v8.V8SanitizerReport
+  ValidationError: pydantic_core.ValidationError
+  ValidationResult: patchagent.task.ValidationResult
+  WORKSPACE: cold.env.WORKSPACE
+  yaml: yaml
+
+functions:
+  __init__:
+    type: sync
+    module: cold.llmsan
+    args: [self, summary, poc_input, out, err]
+  apply_patch:
+    type: sync
+    module: cold.builder
+    args: [self, patch, path]
+    params:
+      returns: None
+  backdoor_subprocess_run:
+    type: sync
+    module: cold.utils
+    args: [command, cwd, input, timeout, env]
+    params:
+      returns: Tuple
+  build:
+    type: sync
+    module: cold.builder
+    args: [self, patch]
+    params:
+      returns: None
+  build_path:
+    type: sync
+    module: cold.builder
+    args: [self]
+    params:
+      returns: Path
+  build_script:
+    type: sync
+    module: cold.builder
+    args: [self]
+    params:
+      returns: Path
+  check:
+    type: sync
+    module: cold.cli
+    params:
+      returns: None
+  check_internal:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  create_run_tool:
+    type: sync
+    module: cold.generator_cpython
+    args: [output_path, work_dir, python_exec]
+  create_write_tool:
+    type: sync
+    module: cold.generator_cpython
+    args: [output_path]
+  double_check:
+    type: sync
+    module: cold.cli
+    params:
+      returns: None
+  double_check_internal:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  exploit_script:
+    type: sync
+    module: cold.builder
+    args: [self]
+    params:
+      returns: Path
+  extract_v8_flags:
+    type: sync
+    module: cold.generator_v8
+    args: [content]
+    params:
+      returns: List[str]
+  find_all_cases_for_project:
+    type: sync
+    module: cold.generator
+    args: [project]
+    params:
+      returns: List[Tuple]
+  find_cases_for_vuln_id:
+    type: sync
+    module: cold.generator
+    args: [vuln_id]
+    params:
+      returns: Optional[Tuple]
+  find_file:
+    type: sync
+    module: cold.builder
+    args: [self, script]
+    params:
+      returns: Path
+  function_test:
+    type: sync
+    module: cold.builder
+    args: [self, patch]
+    params:
+      returns: None
+  generate_test:
+    type: sync
+    module: cold.generator_cpython
+    args: [case_dir, gen_num, validate_fn]
+    params:
+      returns: Tuple
+  gentest:
+    type: sync
+    module: cold.cli
+    params:
+      returns: None
+  gentest_internal:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  gentest_internal_cc:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  gentest_internal_cpython:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  gentest_internal_mruby:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  gentest_internal_quickjs:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  gentest_internal_v8:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  gentest_internal_vim:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  get_compile_command:
+    type: sync
+    module: cold.generator
+    args: [project, build_path, gen_file, output_file, build_env]
+    params:
+      returns: List[str]
+  get_gentest_compile_command:
+    type: sync
+    module: cold.cli
+    args: [project, build_path, test_file, output_file, build_env]
+    params:
+      returns: List[str]
+  get_project_for_vuln_id:
+    type: sync
+    module: cold.generator
+    args: [vuln_id]
+    params:
+      returns: Optional[str]
+  language:
+    type: sync
+    module: cold.builder
+    args: [self]
+    params:
+      returns: Lang
+  language_server:
+    type: sync
+    module: cold.builder
+    args: [self]
+  llvm_simplify_and_extract_stacktraces:
+    type: sync
+    module: cold.llvm
+    args: [lines, source_path, work_path]
+    params:
+      returns: Tuple
+  parse:
+    type: sync
+    module: cold.llmsan
+    args: [poc_input, out, err, max_retries]
+    params:
+      returns: Optional[LLMSanitizerReport]
+  parse_sanitizer_report:
+    type: sync
+    module: cold.builder
+    args: [self, report]
+    params:
+      returns: Optional[SanitizerReport]
+  patchagent:
+    type: sync
+    module: cold.cli
+    params:
+      returns: None
+  patchagent_interal:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  post_function_test:
+    type: sync
+    module: cold.builder
+    args: [self, patch]
+    params:
+      returns: None
+  replay:
+    type: sync
+    module: cold.builder
+    args: [self, poc, patch]
+    params:
+      returns: Optional[SanitizerReport]
+  run_fix_invalid:
+    type: sync
+    module: cold.generator
+    args: [use_feedback, workers]
+  run_fn:
+    type: async
+    module: cold.generator_cpython
+    args: [ctx, args]
+    params:
+      returns: str
+  run_generate:
+    type: sync
+    module: cold.generator
+    args: [vuln_id, use_feedback, workers]
+  san2patch:
+    type: sync
+    module: cold.cli
+    params:
+      returns: None
+  san2patch_internal:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  san2patch_internal_once:
+    type: sync
+    module: cold.cli
+    args: [id_path, i]
+  source_repo:
+    type: sync
+    module: cold.builder
+    args: [self]
+    params:
+      returns: Repo
+  summary:
+    type: sync
+    module: cold.llmsan
+    args: [self]
+    params:
+      returns: str
+  swe_agent:
+    type: sync
+    module: cold.cli
+    params:
+      returns: None
+  swe_agent_internal:
+    type: sync
+    module: cold.cli
+    args: [id_path]
+    params:
+      returns: None
+  test:
+    type: sync
+    module: cold.builder
+    params:
+      returns: None
+  test_script:
+    type: sync
+    module: cold.builder
+    args: [self]
+    params:
+      returns: Path
+  validate_fn:
+    type: sync
+    module: cold.cli
+    args: [gen_file]
+  validate_test:
+    type: sync
+    module: cold.generator
+    args: [project, vuln_id, gen_file]
+    params:
+      returns: Tuple
+  write_fn:
+    type: async
+    module: cold.generator_cpython
+    args: [ctx, args]
+    params:
+      returns: str
+
+variables:
+  COLD_ACTION:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  COLD_GENTEST:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  COLD_GENTEST_CPYTHON:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  COLD_GENTEST_MRUBY:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  COLD_GENTEST_QUICKJS:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  COLD_GENTEST_V8:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  COLD_GENTEST_VIM:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  COLD_MAX_PROC:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  COLD_MODEL:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env]
+  DCC_SAN2PATCH:
+    type: env
+    params:
+      caller: [os.environ]
+  DPP_SAN2PATCH:
+    type: env
+    params:
+      caller: [os.environ]
+  OPENAI_MODEL:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [cold.env, cold.generator_v8, cold.generator, cold.generator_quickjs, cold.generator_vim, cold.generator_mruby,
+        cold.generator_cpython]
+
+files:
+  ./:
+    type: pattern
+    actions: [read]
+    params:
+      patterns: ['{vuln_id}:*:post.json', 'dev:gen*.invalid.json']
+      caller: [gentest_internal_cpython, gentest_internal_cc, gentest_internal_mruby, gentest_internal_quickjs, gentest_internal_v8,
+        gentest_internal_vim, run_fix_invalid]
+  .cache/:
+    type: literal
+    actions: [read]
+    params:
+      caller: [__init__]
+      path: [WORKSPACE]
+  .log:
+    type: literal
+    actions: [read]
+    params:
+      path: [logs_dir]
+  .test_binary:
+    type: literal
+    actions: [read]
+    params:
+      caller: [validate_test]
+      path: [builder.build_path]
+  .test_binary_:
+    type: literal
+    actions: [read]
+    params:
+      caller: [gentest_internal_cc]
+      path: [output_dir]
+  .txt:
+    type: literal
+    actions: [read]
+    params:
+      caller: [generate_test]
+      path: [DOCS_DIR]
+  /archive:
+    type: literal
+    actions: [read]
+  /repo:
+    type: literal
+    actions: [read]
+  /testcases:
+    type: literal
+    actions: [read]
+  /tmp:
+    type: literal
+    actions: [read]
+  agent_dir:
+    type: variable
+    actions: [read]
+    params:
+      caller: [agent_dir.glob]
+  build.sh:
+    type: literal
+    actions: [read]
+    params:
+      caller: [san2patch_internal_once]
+      path: [script_dir]
+  check.js:
+    type: literal
+    actions: [read]
+    params:
+      caller: [generate_test]
+      path: [case_dir]
+  check.py:
+    type: literal
+    actions: [read]
+    params:
+      caller: [generate_test]
+      path: [case_dir]
+  check.rb:
+    type: literal
+    actions: [read]
+    params:
+      caller: [generate_test]
+      path: [case_dir]
+  check.vim:
+    type: literal
+    actions: [read]
+    params:
+      caller: [generate_test]
+      path: [case_dir]
+  check_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [check_path.read_text]
+  compile_commands.json:
+    type: literal
+    actions: [read]
+    params:
+      caller: [language_server]
+      path: [clangd_source]
+  config.yaml:
+    type: literal
+    actions: [read]
+    params:
+      caller: [check, double_check, patchagent, san2patch_internal_once, san2patch, swe_agent, gentest_internal_cc, gentest_internal,
+        gentest, __init__]
+      path: [id_path]
+  config_file:
+    type: variable
+    actions: [read]
+    params:
+      caller: [config_file.read_text]
+  current_repo_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [current_repo_dir.mkdir]
+  data_dir:
+    type: literal
+    actions: [read, write]
+    params:
+      caller: [Path(data_dir_tmp.name), data_dir.mkdir]
+  dev_patch_file:
+    type: variable
+    actions: [read]
+    params:
+      caller: [dev_patch_file.read_text]
+  doc_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [doc_path.read_text]
+  dump.txt:
+    type: literal
+    actions: [read]
+    params:
+      caller: [generate_test]
+      path: [case_dir]
+  dump_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [dump_path.read_text]
+  err_file:
+    type: variable
+    actions: [write]
+    params:
+      caller: [err_file.write_text]
+  exp.sh:
+    type: literal
+    actions: [read]
+    params:
+      caller: [san2patch_internal_once]
+      path: [script_dir]
+  filepath:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path]
+  gen_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [gen_dir.mkdir]
+  gen_file:
+    type: variable
+    actions: [delete, read]
+    params:
+      caller: [gen_file.unlink, gen_file.read_text]
+  generated.cc:
+    type: literal
+    actions: [read]
+    params:
+      caller: [gentest_internal_cc, generate_test, run_fix_invalid]
+      path: [case_dir]
+  harness.cc:
+    type: literal
+    actions: [read]
+    params:
+      caller: [gentest_internal_cc, generate_test, find_all_cases_for_project]
+      path: [case_dir]
+  harness_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [harness_path.read_text]
+  input_dir:
+    type: variable
+    actions: [write, read]
+    params:
+      caller: [input_dir.mkdir, input_dir.iterdir]
+  invalid_file:
+    type: variable
+    actions: [delete]
+    params:
+      caller: [invalid_file.unlink]
+  log_file:
+    type: variable
+    actions: [write, read]
+    params:
+      caller: [log_file.write_bytes, log_file.read_text, log_file.write_text]
+  logs_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [logs_dir.mkdir]
+  normpath:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path.resolve()]
+  output_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [output_dir.mkdir]
+  output_path:
+    type: variable
+    actions: [write, read, delete]
+    params:
+      caller: [output_path.parent.mkdir, output_path.write_text, output_path.read_text, output_path.unlink]
+  patch.diff:
+    type: literal
+    actions: [read]
+    params:
+      caller: [generate_test, check_internal, gentest_internal_cpython, gentest_internal_cc, gentest_internal_mruby, gentest_internal_quickjs,
+        gentest_internal_v8, gentest_internal_vim, validate_test]
+      path: [case_dir]
+  patch_file:
+    type: variable
+    actions: [read]
+    params:
+      caller: [patch_file.read_text]
+  patch_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [patch_path.read_text]
+  poc.js:
+    type: literal
+    actions: [read]
+    params:
+      caller: [generate_test, gentest_internal_quickjs, gentest_internal_v8]
+      path: [case_dir]
+  poc.py:
+    type: literal
+    actions: [read]
+    params:
+      caller: [gentest_internal_cpython, generate_test]
+      path: [case_dir]
+  poc.rb:
+    type: literal
+    actions: [read]
+    params:
+      caller: [gentest_internal_mruby, generate_test]
+      path: [case_dir]
+  poc.vim:
+    type: literal
+    actions: [read]
+    params:
+      caller: [gentest_internal_vim, generate_test]
+      path: [case_dir]
+  poc_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [poc_path.read_text, poc_path.read_bytes]
+  post_file:
+    type: variable
+    actions: [read, write]
+    params:
+      caller: [post_file.read_text, post_file.write_text]
+  PROJ_DIR:
+    type: variable
+    actions: [read]
+    params:
+      caller: [PROJ_DIR.iterdir]
+  proj_dir:
+    type: variable
+    actions: [read]
+    params:
+      caller: [proj_dir.iterdir]
+  proj_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [proj_path.iterdir]
+  repo_copy_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [repo_copy_dir.mkdir]
+  repo_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [repo_dir.mkdir]
+  repo_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [shutil.copytree]
+  report.txt:
+    type: literal
+    actions: [read]
+    params:
+      caller: [check_internal, patchagent_interal, san2patch_internal_once]
+      path: [id_path]
+  result_file:
+    type: variable
+    actions: [write]
+    params:
+      caller: [result_file.write_text]
+  sanitizer_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [sanitizer_dir.mkdir]
+  sanitizer_raw_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [sanitizer_raw_dir.mkdir]
+  script_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [script_dir.mkdir]
+  source_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [shutil.rmtree]
+  source_repo.working_dir:
+    type: variable
+    actions: [read]
+    params:
+      caller: [shutil.copytree]
+  success_diff_file:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path]
+  summary.txt:
+    type: literal
+    actions: [read]
+    params:
+      path: [vuln_path]
+  test.sh:
+    type: literal
+    actions: [read]
+    params:
+      caller: [san2patch_internal_once]
+      path: [script_dir]
+  tmp_file:
+    type: variable
+    actions: [read, delete]
+    params:
+      caller: [tmp_file.read_bytes, tmp_file.unlink]
+  vuln/llvm:
+    type: literal
+    actions: [read]
+    params:
+      path: [Path.parent.parent]
+  vuln/v8:
+    type: literal
+    actions: [read]
+    params:
+      path: [Path.parent.parent]
+  vuln_dir:
+    type: variable
+    actions: [write, read]
+    params:
+      caller: [vuln_dir.mkdir, vuln_dir.glob]
+
+processes:
+  mruby_exec:
+    type: shell
+    actions: [exec]
+    args: [[str(output_path)]]
+    params:
+      caller: [subprocess.run]
+      shell: ["False"]
+  python_exec:
+    type: shell
+    actions: [exec]
+    args: [[str(output_path)]]
+    params:
+      caller: [subprocess.run]
+      shell: ["False"]
+  qjs_exec:
+    type: shell
+    actions: [exec]
+    args: [[str(output_path)]]
+    params:
+      caller: [subprocess.run]
+      shell: ["False"]

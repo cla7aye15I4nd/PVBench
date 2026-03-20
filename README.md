@@ -5,7 +5,7 @@ A comprehensive evaluation benchmark for **Automated Vulnerability Repair** tool
 ## Overview
 
 - **Vulnerability Dataset**: Real-world bugs with ground-truth patches, test cases, and PoCs
-- **COLD Framework**: Automated evaluation infrastructure for patch validation
+- **Framework**: Automated evaluation infrastructure for patch validation
 
 ## Repository Structure
 
@@ -13,7 +13,6 @@ A comprehensive evaluation benchmark for **Automated Vulnerability Repair** tool
 PVBench/
 ├── PatchAgent/              # LLM-based program repair agent (submodule)
 ├── San2Patch/               # Sanitizer-to-Patch framework (submodule)
-├── pvbench-v8/              # V8 regression test cases (submodule)
 ├── vuln/                    # Vulnerability dataset (21 projects, 209 vulnerabilities)
 ├── cold/                    # COLD evaluation framework
 ├── litellm/                 # LiteLLM proxy for unified LLM API access
@@ -43,7 +42,7 @@ vuln/{project}/{id}/
 
 ## Components
 
-### COLD Framework
+### Framework
 
 Evaluation infrastructure (`cold/` directory):
 
